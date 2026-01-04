@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Plus, Trash2, Edit } from "lucide-react";
-import { API_URL } from "../config";
+import { appRoutes } from "../config/routes";
+
 
 interface TypeItem {
   id: number;
