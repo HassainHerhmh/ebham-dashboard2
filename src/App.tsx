@@ -35,10 +35,10 @@ import Accounting from "./pages/Accounting";
 import Currencies from "./pages/Setup/Currencies";
 import Accounts from "./pages/Setup/Accounts";
 import AccountGroups from "./pages/Setup/AccountGroups";
-import AccountCeiling from "./pages/Setup/AccountCeiling";
+import AccountCategories from "./pages/Setup/AccountCeiling";
 import Banks from "./pages/Setup/Banks";
 import BankGroups from "./pages/Setup/BankGroups";
-import CashBoxes from "./pages/Setup/CashBoxes";
+import CashBoxes from "./pages/Setup/CashBoxes"; 
 import CashBoxGroups from "./pages/Setup/CashBoxGroups";
 import ReceiptTypes from "./pages/Setup/ReceiptTypes";
 import PaymentTypes from "./pages/Setup/PaymentTypes";
@@ -50,11 +50,13 @@ import ReceiptVoucher from "./pages/Operations/ReceiptVoucher";
 import PaymentVoucher from "./pages/Operations/PaymentVoucher";
 import JournalEntry from "./pages/Operations/JournalEntry";
 
-// الإعدادات
+
+// الإعدادات ✅
 import Settings from "./pages/Settings";
 
 // الحماية
 import ProtectedRoute from "./routes/ProtectedRoute";
+import AccountCeiling from "./pages/Setup/AccountCeiling";
 
 const App: React.FC = () => {
   const [user, setUser] = useState<any>(null);
@@ -98,7 +100,15 @@ const App: React.FC = () => {
         <main className="flex-1 overflow-y-auto p-6">
           <Routes>
             {/* الصفحات العامة */}
-            <Route path="/" element={<ProtectedRoute section="dashboard"><Dashboard /></ProtectedRoute>} />
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute section="dashboard">
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+
             <Route path="/orders" element={<ProtectedRoute section="orders"><Orders /></ProtectedRoute>} />
             <Route path="/types" element={<ProtectedRoute section="types"><Types /></ProtectedRoute>} />
             <Route path="/customers" element={<ProtectedRoute section="customers"><Customers /></ProtectedRoute>} />
@@ -114,7 +124,53 @@ const App: React.FC = () => {
             <Route path="/users" element={<ProtectedRoute section="users"><Users /></ProtectedRoute>} />
 
             {/* =========================
-               الحسابات (Layout واحد فقط)
+   العمليات
+========================= */}
+<Route
+  path="/accounts"
+  element={
+    <ProtectedRoute section="accounts">
+      <Accounting />
+    </ProtectedRoute>
+  }
+>
+  {/* التهيئة */}
+  <Route path="setup/*" element={<Outlet />} />
+
+  {/* العمليات */}
+  <Route path="operations" element={<Operations />}>
+    <Route path="receipt-voucher" element={<ReceiptVoucher />} />
+    <Route path="payment-voucher" element={<PaymentVoucher />} />
+    <Route path="journal-entry" element={<JournalEntry />} />
+  </Route>
+</Route>
+
+
+
+            {/* الوكلاء */}
+            <Route path="/agents" element={<ProtectedRoute section="agents"><Agents /></ProtectedRoute>} />
+            <Route path="/agents/info" element={<ProtectedRoute section="agent_info"><AgentInfo /></ProtectedRoute>} />
+            <Route path="/agents/groups" element={<ProtectedRoute section="agent_groups"><AgentGroups /></ProtectedRoute>} />
+
+            {/* =========================
+               الإعدادات ✅ (تمت الإضافة)
+            ========================= */}
+            <Route
+              path="/settings/:tab"
+              element={
+                <ProtectedRoute section="settings">
+                  <Settings />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/settings"
+              element={<Navigate to="/settings/stores" replace />}
+            />
+
+            {/* =========================
+               الحسابات (Layout ثابت)
             ========================= */}
             <Route
               path="/accounts"
@@ -124,7 +180,6 @@ const App: React.FC = () => {
                 </ProtectedRoute>
               }
             >
-              {/* التهيئة */}
               <Route path="setup/accounts" element={<Accounts />} />
               <Route path="setup/currencies" element={<Currencies />} />
               <Route path="setup/account-groups" element={<AccountGroups />} />
@@ -136,23 +191,7 @@ const App: React.FC = () => {
               <Route path="setup/receipt-types" element={<ReceiptTypes />} />
               <Route path="setup/payment-types" element={<PaymentTypes />} />
               <Route path="setup/journal-types" element={<JournalTypes />} />
-
-              {/* العمليات */}
-              <Route path="operations" element={<Operations />}>
-                <Route path="receipt-voucher" element={<ReceiptVoucher />} />
-                <Route path="payment-voucher" element={<PaymentVoucher />} />
-                <Route path="journal-entry" element={<JournalEntry />} />
-              </Route>
             </Route>
-
-            {/* الوكلاء */}
-            <Route path="/agents" element={<ProtectedRoute section="agents"><Agents /></ProtectedRoute>} />
-            <Route path="/agents/info" element={<ProtectedRoute section="agent_info"><AgentInfo /></ProtectedRoute>} />
-            <Route path="/agents/groups" element={<ProtectedRoute section="agent_groups"><AgentGroups /></ProtectedRoute>} />
-
-            {/* الإعدادات */}
-            <Route path="/settings/:tab" element={<ProtectedRoute section="settings"><Settings /></ProtectedRoute>} />
-            <Route path="/settings" element={<Navigate to="/settings/stores" replace />} />
 
             {/* أخطاء */}
             <Route path="/unauthorized" element={<Unauthorized />} />
