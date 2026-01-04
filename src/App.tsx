@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 
 import Sidebar from "./components/Sidebar";
@@ -55,106 +55,93 @@ import Settings from "./pages/Settings";
 import ProtectedRoute from "./routes/ProtectedRoute";
 
 const App: React.FC = () => {
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    setUser(storedUser ? JSON.parse(storedUser) : null);
-    setLoading(false);
-
-    const handleStorage = () => {
-      const u = localStorage.getItem("user");
-      setUser(u ? JSON.parse(u) : null);
-    };
-
-    window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
-  }, []);
-
-  /* =========================
-     تحميل
-  ========================= */
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="spinner" />
-      </div>
-    );
-  }
-
-  /* =========================
-     غير مسجل دخول
-  ========================= */
-  if (!user) {
-    return (
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
-    );
-  }
-
-  /* =========================
-     التطبيق
-  ========================= */
   return (
-    <div className="flex min-h-screen bg-gray-100" dir="rtl">
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+    <div className="min-h-screen bg-gray-100" dir="rtl">
+      <Routes>
+        {/* ===== Login بدون Layout ===== */}
+        <Route path="/login" element={<Login />} />
 
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header onMenuClick={() => setSidebarOpen(true)} />
+        {/* ===== Layout ===== */}
+        <Route
+          path="/*"
+          element={
+            <div className="flex min-h-screen">
+              <Sidebar
+                isOpen={sidebarOpen}
+                onClose={() => setSidebarOpen(false)}
+              />
 
-        <main className="flex-1 overflow-y-auto p-6">
-          <Routes>
-            <Route path="/" element={<ProtectedRoute section="dashboard"><Dashboard /></ProtectedRoute>} />
-            <Route path="/orders" element={<ProtectedRoute section="orders"><Orders /></ProtectedRoute>} />
-            <Route path="/types" element={<ProtectedRoute section="types"><Types /></ProtectedRoute>} />
-            <Route path="/customers" element={<ProtectedRoute section="customers"><Customers /></ProtectedRoute>} />
-            <Route path="/restaurants" element={<ProtectedRoute section="restaurants"><Restaurants /></ProtectedRoute>} />
-            <Route path="/products" element={<ProtectedRoute section="products"><Products /></ProtectedRoute>} />
-            <Route path="/categories" element={<ProtectedRoute section="categories"><Categories /></ProtectedRoute>} />
-            <Route path="/units" element={<ProtectedRoute section="units"><Units /></ProtectedRoute>} />
-            <Route path="/captains" element={<ProtectedRoute section="captains"><Captains /></ProtectedRoute>} />
-            <Route path="/marketing" element={<ProtectedRoute section="marketing"><Marketing /></ProtectedRoute>} />
-            <Route path="/reports" element={<ProtectedRoute section="reports"><Reports /></ProtectedRoute>} />
-            <Route path="/cities" element={<ProtectedRoute section="cities"><Cities /></ProtectedRoute>} />
-            <Route path="/neighborhoods" element={<ProtectedRoute section="neighborhoods"><Neighborhoods /></ProtectedRoute>} />
-            <Route path="/users" element={<ProtectedRoute section="users"><Users /></ProtectedRoute>} />
+              <div className="flex-1 flex flex-col overflow-hidden">
+                <Header onMenuClick={() => setSidebarOpen(true)} />
 
-            <Route path="/accounts" element={<ProtectedRoute section="accounts"><Accounting /></ProtectedRoute>}>
-              <Route path="setup/accounts" element={<Accounts />} />
-              <Route path="setup/currencies" element={<Currencies />} />
-              <Route path="setup/account-groups" element={<AccountGroups />} />
-              <Route path="setup/account-ceiling" element={<AccountCeiling />} />
-              <Route path="setup/banks" element={<Banks />} />
-              <Route path="setup/bank-groups" element={<BankGroups />} />
-              <Route path="setup/cash-boxes" element={<CashBoxes />} />
-              <Route path="setup/cash-box-groups" element={<CashBoxGroups />} />
-              <Route path="setup/receipt-types" element={<ReceiptTypes />} />
-              <Route path="setup/payment-types" element={<PaymentTypes />} />
-              <Route path="setup/journal-types" element={<JournalTypes />} />
+                <main className="flex-1 overflow-y-auto p-6">
+                  <Routes>
+                    <Route
+                      path="/"
+                      element={
+                        <ProtectedRoute section="dashboard">
+                          <Dashboard />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route path="/orders" element={<ProtectedRoute section="orders"><Orders /></ProtectedRoute>} />
+                    <Route path="/types" element={<ProtectedRoute section="types"><Types /></ProtectedRoute>} />
+                    <Route path="/customers" element={<ProtectedRoute section="customers"><Customers /></ProtectedRoute>} />
+                    <Route path="/restaurants" element={<ProtectedRoute section="restaurants"><Restaurants /></ProtectedRoute>} />
+                    <Route path="/products" element={<ProtectedRoute section="products"><Products /></ProtectedRoute>} />
+                    <Route path="/categories" element={<ProtectedRoute section="categories"><Categories /></ProtectedRoute>} />
+                    <Route path="/units" element={<ProtectedRoute section="units"><Units /></ProtectedRoute>} />
+                    <Route path="/captains" element={<ProtectedRoute section="captains"><Captains /></ProtectedRoute>} />
+                    <Route path="/marketing" element={<ProtectedRoute section="marketing"><Marketing /></ProtectedRoute>} />
+                    <Route path="/reports" element={<ProtectedRoute section="reports"><Reports /></ProtectedRoute>} />
+                    <Route path="/cities" element={<ProtectedRoute section="cities"><Cities /></ProtectedRoute>} />
+                    <Route path="/neighborhoods" element={<ProtectedRoute section="neighborhoods"><Neighborhoods /></ProtectedRoute>} />
+                    <Route path="/users" element={<ProtectedRoute section="users"><Users /></ProtectedRoute>} />
 
-              <Route path="operations" element={<Operations />}>
-                <Route path="receipt-voucher" element={<ReceiptVoucher />} />
-                <Route path="payment-voucher" element={<PaymentVoucher />} />
-                <Route path="journal-entry" element={<JournalEntry />} />
-              </Route>
-            </Route>
+                    {/* الحسابات */}
+                    <Route
+                      path="/accounts"
+                      element={<ProtectedRoute section="accounts"><Accounting /></ProtectedRoute>}
+                    >
+                      <Route path="setup/accounts" element={<Accounts />} />
+                      <Route path="setup/currencies" element={<Currencies />} />
+                      <Route path="setup/account-groups" element={<AccountGroups />} />
+                      <Route path="setup/account-ceiling" element={<AccountCeiling />} />
+                      <Route path="setup/banks" element={<Banks />} />
+                      <Route path="setup/bank-groups" element={<BankGroups />} />
+                      <Route path="setup/cash-boxes" element={<CashBoxes />} />
+                      <Route path="setup/cash-box-groups" element={<CashBoxGroups />} />
+                      <Route path="setup/receipt-types" element={<ReceiptTypes />} />
+                      <Route path="setup/payment-types" element={<PaymentTypes />} />
+                      <Route path="setup/journal-types" element={<JournalTypes />} />
 
-            <Route path="/agents" element={<ProtectedRoute section="agents"><Agents /></ProtectedRoute>} />
-            <Route path="/agents/info" element={<ProtectedRoute section="agent_info"><AgentInfo /></ProtectedRoute>} />
-            <Route path="/agents/groups" element={<ProtectedRoute section="agent_groups"><AgentGroups /></ProtectedRoute>} />
+                      <Route path="operations" element={<Operations />}>
+                        <Route path="receipt-voucher" element={<ReceiptVoucher />} />
+                        <Route path="payment-voucher" element={<PaymentVoucher />} />
+                        <Route path="journal-entry" element={<JournalEntry />} />
+                      </Route>
+                    </Route>
 
-            <Route path="/settings/:tab" element={<ProtectedRoute section="settings"><Settings /></ProtectedRoute>} />
-            <Route path="/settings" element={<Navigate to="/settings/stores" replace />} />
+                    {/* الوكلاء */}
+                    <Route path="/agents" element={<ProtectedRoute section="agents"><Agents /></ProtectedRoute>} />
+                    <Route path="/agents/info" element={<ProtectedRoute section="agent_info"><AgentInfo /></ProtectedRoute>} />
+                    <Route path="/agents/groups" element={<ProtectedRoute section="agent_groups"><AgentGroups /></ProtectedRoute>} />
 
-            <Route path="/unauthorized" element={<Unauthorized />} />
-            <Route path="*" element={<Unauthorized />} />
-          </Routes>
-        </main>
-      </div>
+                    {/* الإعدادات */}
+                    <Route path="/settings/:tab" element={<ProtectedRoute section="settings"><Settings /></ProtectedRoute>} />
+                    <Route path="/settings" element={<Navigate to="/settings/stores" replace />} />
+
+                    <Route path="/unauthorized" element={<Unauthorized />} />
+                    <Route path="*" element={<Unauthorized />} />
+                  </Routes>
+                </main>
+              </div>
+            </div>
+          }
+        />
+      </Routes>
     </div>
   );
 };
