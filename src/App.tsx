@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Routes, Route, Navigate, Outlet } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 
 import Sidebar from "./components/Sidebar";
 import Header from "./components/Header";
@@ -7,7 +7,7 @@ import Header from "./components/Header";
 import Login from "./pages/Login";
 import Unauthorized from "./pages/Unauthorized";
 
-// الصفحات العامة
+// الصفحات
 import Dashboard from "./pages/Dashboard";
 import Orders from "./pages/Orders";
 import Types from "./pages/Types";
@@ -28,17 +28,15 @@ import Agents from "./pages/Agents";
 import AgentGroups from "./pages/AgentGroups";
 import AgentInfo from "./pages/AgentInfo";
 
-// الحسابات (Layout)
+// الحسابات
 import Accounting from "./pages/Accounting";
-
-// الحسابات - التهيئة
 import Currencies from "./pages/Setup/Currencies";
 import Accounts from "./pages/Setup/Accounts";
 import AccountGroups from "./pages/Setup/AccountGroups";
-import AccountCategories from "./pages/Setup/AccountCeiling";
+import AccountCeiling from "./pages/Setup/AccountCeiling";
 import Banks from "./pages/Setup/Banks";
 import BankGroups from "./pages/Setup/BankGroups";
-import CashBoxes from "./pages/Setup/CashBoxes"; 
+import CashBoxes from "./pages/Setup/CashBoxes";
 import CashBoxGroups from "./pages/Setup/CashBoxGroups";
 import ReceiptTypes from "./pages/Setup/ReceiptTypes";
 import PaymentTypes from "./pages/Setup/PaymentTypes";
@@ -50,21 +48,21 @@ import ReceiptVoucher from "./pages/Operations/ReceiptVoucher";
 import PaymentVoucher from "./pages/Operations/PaymentVoucher";
 import JournalEntry from "./pages/Operations/JournalEntry";
 
-
-// الإعدادات ✅
+// الإعدادات
 import Settings from "./pages/Settings";
 
 // الحماية
 import ProtectedRoute from "./routes/ProtectedRoute";
-import AccountCeiling from "./pages/Setup/AccountCeiling";
 
 const App: React.FC = () => {
   const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     setUser(storedUser ? JSON.parse(storedUser) : null);
+    setLoading(false);
 
     const handleStorage = () => {
       const u = localStorage.getItem("user");
@@ -74,6 +72,17 @@ const App: React.FC = () => {
     window.addEventListener("storage", handleStorage);
     return () => window.removeEventListener("storage", handleStorage);
   }, []);
+
+  /* =========================
+     تحميل
+  ========================= */
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="spinner" />
+      </div>
+    );
+  }
 
   /* =========================
      غير مسجل دخول
@@ -91,7 +100,7 @@ const App: React.FC = () => {
      التطبيق
   ========================= */
   return (
-    <div className="flex h-screen bg-gray-100" dir="rtl">
+    <div className="flex min-h-screen bg-gray-100" dir="rtl">
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -99,16 +108,7 @@ const App: React.FC = () => {
 
         <main className="flex-1 overflow-y-auto p-6">
           <Routes>
-            {/* الصفحات العامة */}
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute section="dashboard">
-                  <Dashboard />
-                </ProtectedRoute>
-              }
-            />
-
+            <Route path="/" element={<ProtectedRoute section="dashboard"><Dashboard /></ProtectedRoute>} />
             <Route path="/orders" element={<ProtectedRoute section="orders"><Orders /></ProtectedRoute>} />
             <Route path="/types" element={<ProtectedRoute section="types"><Types /></ProtectedRoute>} />
             <Route path="/customers" element={<ProtectedRoute section="customers"><Customers /></ProtectedRoute>} />
@@ -123,63 +123,7 @@ const App: React.FC = () => {
             <Route path="/neighborhoods" element={<ProtectedRoute section="neighborhoods"><Neighborhoods /></ProtectedRoute>} />
             <Route path="/users" element={<ProtectedRoute section="users"><Users /></ProtectedRoute>} />
 
-            {/* =========================
-   العمليات
-========================= */}
-<Route
-  path="/accounts"
-  element={
-    <ProtectedRoute section="accounts">
-      <Accounting />
-    </ProtectedRoute>
-  }
->
-  {/* التهيئة */}
-  <Route path="setup/*" element={<Outlet />} />
-
-  {/* العمليات */}
-  <Route path="operations" element={<Operations />}>
-    <Route path="receipt-voucher" element={<ReceiptVoucher />} />
-    <Route path="payment-voucher" element={<PaymentVoucher />} />
-    <Route path="journal-entry" element={<JournalEntry />} />
-  </Route>
-</Route>
-
-
-
-            {/* الوكلاء */}
-            <Route path="/agents" element={<ProtectedRoute section="agents"><Agents /></ProtectedRoute>} />
-            <Route path="/agents/info" element={<ProtectedRoute section="agent_info"><AgentInfo /></ProtectedRoute>} />
-            <Route path="/agents/groups" element={<ProtectedRoute section="agent_groups"><AgentGroups /></ProtectedRoute>} />
-
-            {/* =========================
-               الإعدادات ✅ (تمت الإضافة)
-            ========================= */}
-            <Route
-              path="/settings/:tab"
-              element={
-                <ProtectedRoute section="settings">
-                  <Settings />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/settings"
-              element={<Navigate to="/settings/stores" replace />}
-            />
-
-            {/* =========================
-               الحسابات (Layout ثابت)
-            ========================= */}
-            <Route
-              path="/accounts"
-              element={
-                <ProtectedRoute section="accounts">
-                  <Accounting />
-                </ProtectedRoute>
-              }
-            >
+            <Route path="/accounts" element={<ProtectedRoute section="accounts"><Accounting /></ProtectedRoute>}>
               <Route path="setup/accounts" element={<Accounts />} />
               <Route path="setup/currencies" element={<Currencies />} />
               <Route path="setup/account-groups" element={<AccountGroups />} />
@@ -191,9 +135,21 @@ const App: React.FC = () => {
               <Route path="setup/receipt-types" element={<ReceiptTypes />} />
               <Route path="setup/payment-types" element={<PaymentTypes />} />
               <Route path="setup/journal-types" element={<JournalTypes />} />
+
+              <Route path="operations" element={<Operations />}>
+                <Route path="receipt-voucher" element={<ReceiptVoucher />} />
+                <Route path="payment-voucher" element={<PaymentVoucher />} />
+                <Route path="journal-entry" element={<JournalEntry />} />
+              </Route>
             </Route>
 
-            {/* أخطاء */}
+            <Route path="/agents" element={<ProtectedRoute section="agents"><Agents /></ProtectedRoute>} />
+            <Route path="/agents/info" element={<ProtectedRoute section="agent_info"><AgentInfo /></ProtectedRoute>} />
+            <Route path="/agents/groups" element={<ProtectedRoute section="agent_groups"><AgentGroups /></ProtectedRoute>} />
+
+            <Route path="/settings/:tab" element={<ProtectedRoute section="settings"><Settings /></ProtectedRoute>} />
+            <Route path="/settings" element={<Navigate to="/settings/stores" replace />} />
+
             <Route path="/unauthorized" element={<Unauthorized />} />
             <Route path="*" element={<Unauthorized />} />
           </Routes>
