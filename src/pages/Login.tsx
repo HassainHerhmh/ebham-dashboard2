@@ -4,7 +4,6 @@ import api from "../services/api";
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
-
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -21,14 +20,12 @@ const Login: React.FC = () => {
         password,
       });
 
-      const data = res.data;
-
-      if (!data.success) {
-        setError(data.message || "بيانات الدخول غير صحيحة");
+      if (!res.data.success) {
+        setError(res.data.message);
         return;
       }
 
-      localStorage.setItem("user", JSON.stringify(data.user));
+      localStorage.setItem("user", JSON.stringify(res.data.user));
       navigate("/");
     } catch {
       setError("فشل الاتصال بالسيرفر");
@@ -38,67 +35,54 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100" dir="rtl">
+    <div className="flex items-center justify-center min-h-screen bg-gray-100 px-4">
       <form
         onSubmit={handleSubmit}
-        className="bg-white w-full max-w-md rounded-2xl shadow-lg p-8"
+        className="bg-white w-full max-w-md rounded-xl shadow-lg p-8"
       >
-        {/* العنوان */}
-        <h1 className="text-3xl font-bold text-center text-gray-800 mb-8">
+        <h1 className="text-3xl font-bold text-center mb-6 text-gray-800">
           تسجيل الدخول
         </h1>
 
-        {/* البريد / الجوال */}
         <div className="mb-5">
-          <label className="block mb-2 text-sm font-medium text-gray-700">
+          <label className="block text-right mb-2 text-gray-700 font-medium">
             البريد الإلكتروني أو رقم الجوال
           </label>
           <input
-            type="text"
+            className="w-full border rounded-lg px-4 py-3 text-right focus:ring-2 focus:ring-blue-500 outline-none"
             placeholder="05XXXXXXXX أو example@mail.com"
             value={identifier}
             onChange={(e) => setIdentifier(e.target.value)}
-            className="w-full rounded-lg border border-gray-300 px-4 py-3 text-right
-                       focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
           />
         </div>
 
-        {/* كلمة المرور */}
         <div className="mb-6">
-          <label className="block mb-2 text-sm font-medium text-gray-700">
+          <label className="block text-right mb-2 text-gray-700 font-medium">
             كلمة المرور
           </label>
           <input
             type="password"
+            className="w-full border rounded-lg px-4 py-3 text-right focus:ring-2 focus:ring-blue-500 outline-none"
             placeholder="أدخل كلمة المرور"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-lg border border-gray-300 px-4 py-3 text-right
-                       focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
           />
         </div>
 
-        {/* رسالة خطأ */}
         {error && (
-          <p className="mb-4 text-center text-sm text-red-600">
-            {error}
-          </p>
+          <p className="text-red-600 text-center mb-4">{error}</p>
         )}
 
-        {/* زر الدخول */}
         <button
-          type="submit"
           disabled={loading}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white
-                     font-semibold py-3 rounded-lg transition disabled:opacity-60"
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg text-lg transition disabled:opacity-60"
         >
-          {loading ? "جاري الدخول..." : "تسجيل الدخول"}
+          {loading ? "جاري..." : "تسجيل الدخول"}
         </button>
 
-        {/* الفوتر */}
-        <p className="mt-6 text-center text-sm text-gray-500">
+        <p className="text-center text-gray-500 text-sm mt-6">
           © 2026 جميع الحقوق محفوظة
         </p>
       </form>
