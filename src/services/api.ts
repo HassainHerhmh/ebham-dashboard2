@@ -1,13 +1,7 @@
 import axios from "axios";
 
-/* =========================
-   Base API URL
-========================= */
 const API_URL = import.meta.env.VITE_API_URL;
 
-/* =========================
-   Axios Instance
-========================= */
 const api = axios.create({
   baseURL: API_URL,
   headers: {
@@ -15,23 +9,22 @@ const api = axios.create({
   },
 });
 
-/* =========================
-   Request Interceptor
-========================= */
 api.interceptors.request.use((config) => {
   const userStr = localStorage.getItem("user");
+
   if (userStr) {
     try {
       const user = JSON.parse(userStr);
       if (user?.token) {
         config.headers.Authorization = `Bearer ${user.token}`;
       }
-    } catch {}
+    } catch {
+      // لو البيانات فاسدة نمسحها
+      localStorage.removeItem("user");
+    }
   }
+
   return config;
 });
 
-/* =========================
-   Export
-========================= */
 export default api;
