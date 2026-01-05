@@ -3,7 +3,6 @@ import { ReactNode } from "react";
 
 interface Props {
   children: ReactNode;
-  section?: string;
 }
 
 const ProtectedRoute = ({ children }: Props) => {
@@ -15,9 +14,13 @@ const ProtectedRoute = ({ children }: Props) => {
 
   try {
     const user = JSON.parse(userStr);
-    if (!user?.token) {
+
+    // تحقق بسيط
+    if (!user?.id || user?.is_active !== 1) {
+      localStorage.removeItem("user");
       return <Navigate to="/login" replace />;
     }
+
   } catch {
     localStorage.removeItem("user");
     return <Navigate to="/login" replace />;
