@@ -4,6 +4,7 @@ import api from "../services/api";
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
+
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -20,15 +21,17 @@ const Login: React.FC = () => {
         password,
       });
 
-      if (!res.data.success) {
-        setError(res.data.message);
+      if (!res.data?.success || !res.data?.user) {
+        setError(res.data?.message || "فشل تسجيل الدخول");
         return;
       }
 
       localStorage.setItem("user", JSON.stringify(res.data.user));
-      navigate("/");
-    } catch {
-      setError("فشل الاتصال بالسيرفر");
+      navigate("/", { replace: true });
+    } catch (err: any) {
+      setError(
+        err?.response?.data?.message || "فشل الاتصال بالسيرفر"
+      );
     } finally {
       setLoading(false);
     }
@@ -40,36 +43,26 @@ const Login: React.FC = () => {
         onSubmit={handleSubmit}
         className="bg-white w-full max-w-md rounded-xl shadow-lg p-8"
       >
-        <h1 className="text-3xl font-bold text-center mb-6 text-gray-800">
+        <h1 className="text-3xl font-bold text-center mb-6">
           تسجيل الدخول
         </h1>
 
-        <div className="mb-5">
-          <label className="block text-right mb-2 text-gray-700 font-medium">
-            البريد الإلكتروني أو رقم الجوال
-          </label>
-          <input
-            className="w-full border rounded-lg px-4 py-3 text-right focus:ring-2 focus:ring-blue-500 outline-none"
-            placeholder="05XXXXXXXX أو example@mail.com"
-            value={identifier}
-            onChange={(e) => setIdentifier(e.target.value)}
-            required
-          />
-        </div>
+        <input
+          className="w-full border rounded-lg px-4 py-3 mb-4 text-right"
+          placeholder="admin@ebham.com"
+          value={identifier}
+          onChange={(e) => setIdentifier(e.target.value)}
+          required
+        />
 
-        <div className="mb-6">
-          <label className="block text-right mb-2 text-gray-700 font-medium">
-            كلمة المرور
-          </label>
-          <input
-            type="password"
-            className="w-full border rounded-lg px-4 py-3 text-right focus:ring-2 focus:ring-blue-500 outline-none"
-            placeholder="أدخل كلمة المرور"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </div>
+        <input
+          type="password"
+          className="w-full border rounded-lg px-4 py-3 mb-4 text-right"
+          placeholder="123456"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
 
         {error && (
           <p className="text-red-600 text-center mb-4">{error}</p>
@@ -77,14 +70,10 @@ const Login: React.FC = () => {
 
         <button
           disabled={loading}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg text-lg transition disabled:opacity-60"
+          className="w-full bg-blue-600 text-white py-3 rounded-lg"
         >
           {loading ? "جاري..." : "تسجيل الدخول"}
         </button>
-
-        <p className="text-center text-gray-500 text-sm mt-6">
-          © 2026 جميع الحقوق محفوظة
-        </p>
       </form>
     </div>
   );
