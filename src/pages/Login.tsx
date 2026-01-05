@@ -21,7 +21,7 @@ const Login: React.FC = () => {
         password,
       });
 
-      if (!res.data?.success || !res.data?.user) {
+      if (!res.data?.success) {
         setError(res.data?.message || "فشل تسجيل الدخول");
         return;
       }
@@ -38,43 +38,71 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100 px-4">
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white w-full max-w-md rounded-xl shadow-lg p-8"
-      >
-        <h1 className="text-3xl font-bold text-center mb-6">
-          تسجيل الدخول
-        </h1>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-gray-100 px-4">
+      <div className="w-full max-w-md">
 
-        <input
-          className="w-full border rounded-lg px-4 py-3 mb-4 text-right"
-          placeholder="admin@ebham.com"
-          value={identifier}
-          onChange={(e) => setIdentifier(e.target.value)}
-          required
-        />
+        {/* ===== العنوان ===== */}
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-extrabold text-gray-800">
+            لوحة تحكم شركة <span className="text-blue-600">إبهام</span>
+          </h1>
+          <p className="text-gray-500 mt-2">
+            نظام إدارة الطلبات والتوصيل
+          </p>
+        </div>
 
-        <input
-          type="password"
-          className="w-full border rounded-lg px-4 py-3 mb-4 text-right"
-          placeholder="123456"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-
-        {error && (
-          <p className="text-red-600 text-center mb-4">{error}</p>
-        )}
-
-        <button
-          disabled={loading}
-          className="w-full bg-blue-600 text-white py-3 rounded-lg"
+        {/* ===== كرت تسجيل الدخول ===== */}
+        <form
+          onSubmit={handleSubmit}
+          className="bg-white rounded-2xl shadow-xl p-8"
         >
-          {loading ? "جاري..." : "تسجيل الدخول"}
-        </button>
-      </form>
+          <h2 className="text-2xl font-bold text-center mb-6 text-gray-700">
+            تسجيل الدخول
+          </h2>
+
+          <div className="mb-4">
+            <label className="block text-right text-sm mb-2 text-gray-600">
+              البريد الإلكتروني أو رقم الجوال
+            </label>
+            <input
+              className="w-full border rounded-lg px-4 py-3 text-right focus:ring-2 focus:ring-blue-500 outline-none"
+              placeholder="admin@ebham.com"
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="mb-6">
+            <label className="block text-right text-sm mb-2 text-gray-600">
+              كلمة المرور
+            </label>
+            <input
+              type="password"
+              className="w-full border rounded-lg px-4 py-3 text-right focus:ring-2 focus:ring-blue-500 outline-none"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+
+          {error && (
+            <p className="text-red-600 text-center mb-4">{error}</p>
+          )}
+
+          <button
+            disabled={loading}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg text-lg font-semibold transition disabled:opacity-60"
+          >
+            {loading ? "جاري الدخول..." : "تسجيل الدخول"}
+          </button>
+
+          <p className="text-center text-gray-400 text-sm mt-6">
+            © 2026 شركة إبهام
+          </p>
+        </form>
+      </div>
     </div>
   );
 };
