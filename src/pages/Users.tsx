@@ -122,7 +122,7 @@ const Users: React.FC = () => {
     try {
       const formData = new FormData();
       formData.append("name", name);
-      formData.append("username", username);
+      formData.append("email", username);
 
       if (password) formData.append("password", password);
       if (image) formData.append("image", image);
