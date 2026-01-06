@@ -15,8 +15,8 @@ const ProtectedRoute = ({ children }: Props) => {
   try {
     const user = JSON.parse(userStr);
 
-    // تحقق بسيط
-    if (!user?.id || user?.is_active !== 1) {
+    // ✅ تحقق منطقي وصحيح
+    if (!user?.id || user?.status !== "active") {
       localStorage.removeItem("user");
       return <Navigate to="/login" replace />;
     }
