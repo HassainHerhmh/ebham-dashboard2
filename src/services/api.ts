@@ -95,7 +95,7 @@ api.customers = {
     const res = await api.put(`/customers/${id}/reset-password`);
     return res.data;
   },
-};
+
 
 /* ======================================================
    📍 Customer Addresses API
@@ -120,7 +120,7 @@ api.customerAddresses = {
     const res = await api.delete(`/customer-addresses/${id}`);
     return res.data;
   },
-};
+
 
 /* ======================================================
    🏙️ Cities & Neighborhoods API
