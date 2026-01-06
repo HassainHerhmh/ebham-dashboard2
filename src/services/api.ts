@@ -130,8 +130,58 @@ api.cities = {
     const res = await api.get("/cities");
     return res.data;
   },
-  
+
+  addCity: async (name: string, delivery_fee: number) => {
+    const res = await api.post("/cities", { name, delivery_fee });
+    return res.data;
+  },
+
+  deleteCity: async (id: number) => {
+    const res = await api.delete(`/cities/${id}`);
+    return res.data;
+  },
+
+  // 🔍 بحث الأحياء
+  searchNeighborhoods: async (q: string) => {
+    const res = await api.get(
+      `/cities/neighborhoods/search?q=${encodeURIComponent(q)}`
+    );
+    return res.data;
+  },
+
+  addNeighborhood: async (
+    city_id: number,
+    name: string,
+    delivery_fee: number
+  ) => {
+    const res = await api.post("/cities/neighborhoods", {
+      city_id,
+      name,
+      delivery_fee,
+    });
+    return res.data;
+  },
+
+  updateNeighborhood: async (
+    id: number,
+    name: string,
+    delivery_fee: number,
+    city_id: number
+  ) => {
+    const res = await api.put(`/cities/neighborhoods/${id}`, {
+      name,
+      delivery_fee,
+      city_id,
+    });
+    return res.data;
+  },
+
+  deleteNeighborhood: async (id: number) => {
+    const res = await api.delete(`/cities/neighborhoods/${id}`);
+    return res.data;
+  },
 };
+
 
 export default api;
 
