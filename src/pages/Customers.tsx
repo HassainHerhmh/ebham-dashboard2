@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import api from "../services/api";
 
 declare global {
   interface Window {
@@ -34,8 +35,6 @@ interface Address {
   longitude?: string;
 }
 
-const API_URL = "http://localhost:5000";
-
 const Customers: React.FC = () => {
   const [cities, setCities] = useState<City[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -45,25 +44,21 @@ const Customers: React.FC = () => {
   const [searchCustomer, setSearchCustomer] = useState("");
   const [searchAddress, setSearchAddress] = useState("");
 
-  // Modals
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isAddressesOpen, setIsAddressesOpen] = useState(false);
 
-  // Add Customer Fields
   const [newName, setNewName] = useState("");
   const [newPhone, setNewPhone] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  // Edit Fields
   const [editCustomer, setEditCustomer] = useState<Customer | null>(null);
   const [editName, setEditName] = useState("");
   const [editPhone, setEditPhone] = useState("");
   const [editEmail, setEditEmail] = useState("");
 
-  // Address Fields
   const [selectedCustomer, setSelectedCustomer] = useState("");
   const [province, setProvince] = useState("");
   const [district, setDistrict] = useState("");
@@ -73,43 +68,25 @@ const Customers: React.FC = () => {
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
 
-  const [editAddress, setEditAddress] = useState<Address | null>(null);
-
-  // Maps
-  const [isMapOpen, setIsMapOpen] = useState(false);
-  const [isEditMapOpen, setIsEditMapOpen] = useState(false);
-
   const mapAddRef = useRef<HTMLDivElement | null>(null);
-  const mapEditRef = useRef<HTMLDivElement | null>(null);
 
-  // Load Google Maps Script
-  useEffect(() => {
-    if (window.google) return;
-    const script = document.createElement("script");
-    script.src =
-      "https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_API_KEY&libraries=places";
-    script.async = true;
-    document.body.appendChild(script);
-  }, []);
-
-  // Fetch Data
+  /* =========================
+     Fetch Data
+  ========================= */
   const fetchCities = async () => {
-    const res = await fetch(`${API_URL}/cities`);
-    const data = await res.json();
+    const data = await api.cities.getCities();
     if (data.success) setCities(data.cities);
   };
 
   const fetchCustomers = async () => {
     setLoading(true);
-    const res = await fetch(`${API_URL}/customers`);
-    const data = await res.json();
+    const data = await api.customers.getCustomers();
     if (data.success) setCustomers(data.customers);
     setLoading(false);
   };
 
   const fetchAddresses = async () => {
-    const res = await fetch(`${API_URL}/customer-addresses`);
-    const data = await res.json();
+    const data = await api.customers.getAddresses();
     if (data.success) setAddresses(data.addresses);
   };
 
@@ -126,28 +103,21 @@ const Customers: React.FC = () => {
     if (newPassword !== confirmPassword)
       return alert("❌ كلمة المرور غير متطابقة");
 
-    const res = await fetch(`${API_URL}/customers`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: newName,
-        phone: newPhone,
-        email: newEmail,
-        password: newPassword,
-      }),
+    const data = await api.customers.addCustomer({
+      name: newName,
+      phone: newPhone,
+      email: newEmail,
+      password: newPassword,
     });
 
-    const data = await res.json();
     if (data.success) {
       alert("✔ تم إضافة العميل");
-
+      setIsAddOpen(false);
       setNewName("");
       setNewPhone("");
       setNewEmail("");
       setNewPassword("");
       setConfirmPassword("");
-
-      setIsAddOpen(false);
       fetchCustomers();
     }
   };
@@ -156,14 +126,10 @@ const Customers: React.FC = () => {
   const handleEditCustomer = async () => {
     if (!editCustomer) return;
 
-    await fetch(`${API_URL}/customers/${editCustomer.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: editName,
-        phone: editPhone,
-        email: editEmail,
-      }),
+    await api.customers.updateCustomer(editCustomer.id, {
+      name: editName,
+      phone: editPhone,
+      email: editEmail,
     });
 
     setIsEditOpen(false);
@@ -172,30 +138,20 @@ const Customers: React.FC = () => {
 
   /* ================= RESET PASSWORD ================= */
   const handleResetPassword = async (id: number) => {
-    const res = await fetch(`${API_URL}/customers/${id}/reset-password`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-    });
-
-    const data = await res.json();
+    const data = await api.customers.resetPassword(id);
     if (data.success) {
-      const pass = data.new_password;
-
-      navigator.clipboard.writeText(pass);
-
-      alert(`🔑 كلمة المرور الجديدة: ${pass}\n📋 تم نسخها تلقائيًا`);
+      navigator.clipboard.writeText(data.new_password);
+      alert(`🔑 كلمة المرور الجديدة: ${data.new_password}`);
     }
   };
 
   /* ================= DELETE CUSTOMER ================= */
   const deleteCustomer = async (id: number) => {
     if (!window.confirm("هل أنت متأكد من الحذف؟")) return;
-
-    await fetch(`${API_URL}/customers/${id}`, { method: "DELETE" });
+    await api.customers.deleteCustomer(id);
     fetchCustomers();
   };
 
-  /* ================= FILTER ================= */
   const filteredCustomers = customers.filter(
     (c) =>
       c.name.toLowerCase().includes(searchCustomer.toLowerCase()) ||
@@ -232,7 +188,6 @@ const Customers: React.FC = () => {
         onChange={(e) => setSearchCustomer(e.target.value)}
       />
 
-      {/* Customers Table */}
       <div className="bg-white rounded shadow overflow-auto">
         <table className="w-full text-center">
           <thead className="bg-gray-100">
@@ -248,7 +203,7 @@ const Customers: React.FC = () => {
 
           <tbody>
             {filteredCustomers.map((c) => (
-              <tr key={c.id} className="border-b hover:bg-gray-50">
+              <tr key={c.id} className="border-b">
                 <td>{c.id}</td>
                 <td>{c.name}</td>
                 <td>{c.phone}</td>
