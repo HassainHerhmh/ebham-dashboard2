@@ -5,14 +5,11 @@ const API_URL =
 
 const api = axios.create({
   baseURL: API_URL,
-  headers: {
-    "Content-Type": "application/json",
-  },
+  headers: { "Content-Type": "application/json" },
 });
 
 api.interceptors.request.use((config) => {
   const userStr = localStorage.getItem("user");
-
   if (userStr) {
     try {
       const user = JSON.parse(userStr);
@@ -20,164 +17,106 @@ api.interceptors.request.use((config) => {
         config.headers.Authorization = `Bearer ${user.token}`;
       }
     } catch {
-      // لو البيانات فاسدة نمسحها
       localStorage.removeItem("user");
     }
   }
-
   return config;
 });
 
 /* =========================
-   Users API
+   USERS
 ========================= */
-api.users = {
-  getUsers: async () => {
-    const res = await api.get("/users");
-    return res.data;
-  },
+(api as any).users = {
+  getUsers: async () => (await api.get("/users")).data,
 
-  addUser: async (formData: FormData) => {
-    const res = await api.post("/users", formData, {
+  addUser: async (formData: FormData) =>
+    (await api.post("/users", formData, {
       headers: { "Content-Type": "multipart/form-data" },
-    });
-    return res.data;
-  },
+    })).data,
 
-  updateUser: async (id: number, formData: FormData) => {
-    const res = await api.put(`/users/${id}`, formData, {
+  updateUser: async (id: number, formData: FormData) =>
+    (await api.put(`/users/${id}`, formData, {
       headers: { "Content-Type": "multipart/form-data" },
-    });
-    return res.data;
-  },
+    })).data,
 
-  deleteUser: async (id: number) => {
-    const res = await api.delete(`/users/${id}`);
-    return res.data;
-  },
+  deleteUser: async (id: number) =>
+    (await api.delete(`/users/${id}`)).data,
 
-  disableUser: async (id: number) => {
-    const res = await api.put(`/users/${id}/disable`);
-    return res.data;
-  },
+  disableUser: async (id: number) =>
+    (await api.put(`/users/${id}/disable`)).data,
 
-  resetPassword: async (id: number) => {
-    const res = await api.post(`/users/${id}/reset-password`);
-    return res.data;
-  },
-
-
-  /* =========================
-     CITIES
-  ========================= */
-  cities: {
-    getCities: async () => {
-      const res = await api.get("/cities");
-      return res.data;
-    },
-
-    addCity: async (name: string, delivery_fee: number) => {
-      const res = await api.post("/cities", { name, delivery_fee });
-      return res.data;
-    },
-
-    deleteCity: async (id: number) => {
-      const res = await api.delete(`/cities/${id}`);
-      return res.data;
-    },
-
-    /* =========================
-       NEIGHBORHOODS
-    ========================= */
-    searchNeighborhoods: async (search: string) => {
-      const res = await api.get("/neighborhoods", {
-        params: { search },
-      });
-      return res.data;
-    },
-
-    addNeighborhood: async (
-      city_id: number,
-      name: string,
-      delivery_fee: number
-    ) => {
-      const res = await api.post("/neighborhoods", {
-        city_id,
-        name,
-        delivery_fee,
-      });
-      return res.data;
-    },
-
-   updateNeighborhood: async (
-  id: number,
-  city_id: number,
-  name: string,
-  delivery_fee: number
-) => {
-  const res = await api.put(`/neighborhoods/${id}`, {
-    city_id,
-    name,
-    delivery_fee,
-  });
-  return res.data;
-},
-
-
-    deleteNeighborhood: async (id: number) => {
-      const res = await api.delete(`/neighborhoods/${id}`);
-      return res.data;
-    },
-  },
+  resetPassword: async (id: number) =>
+    (await api.post(`/users/${id}/reset-password`)).data,
+};
 
 /* =========================
-   CUSTOMER ADDRESSES
+   CITIES & NEIGHBORHOODS
 ========================= */
-customers: {
-  // الموجودين عندك (اتركهم)
-  getCustomers: async () => {
-    const res = await api.get("/customers");
-    return res.data;
-  },
+(api as any).cities = {
+  getCities: async () => (await api.get("/cities")).data,
 
-  addCustomer: async (data) => {
-    const res = await api.post("/customers", data);
-    return res.data;
-  },
+  addCity: async (name: string, delivery_fee: number) =>
+    (await api.post("/cities", { name, delivery_fee })).data,
 
-  updateCustomer: async (id, data) => {
-    const res = await api.put(`/customers/${id}`, data);
-    return res.data;
-  },
+  deleteCity: async (id: number) =>
+    (await api.delete(`/cities/${id}`)).data,
 
-  deleteCustomer: async (id) => {
-    const res = await api.delete(`/customers/${id}`);
-    return res.data;
-  },
+  searchNeighborhoods: async (search: string) =>
+    (await api.get("/neighborhoods", { params: { search } })).data,
 
-  resetPassword: async (id) => {
-    const res = await api.put(`/customers/${id}/reset-password`);
-    return res.data;
-  },
+  addNeighborhood: async (
+    city_id: number,
+    name: string,
+    delivery_fee: number
+  ) =>
+    (await api.post("/neighborhoods", {
+      city_id,
+      name,
+      delivery_fee,
+    })).data,
 
-  /* 🔴 هذا الناقص */
-  getAddresses: async () => {
-    const res = await api.get("/customer-addresses");
-    return res.data;
-  },
+  updateNeighborhood: async (
+    id: number,
+    city_id: number,
+    name: string,
+    delivery_fee: number
+  ) =>
+    (await api.put(`/neighborhoods/${id}`, {
+      city_id,
+      name,
+      delivery_fee,
+    })).data,
 
-  addAddress: async (data) => {
-    const res = await api.post("/customer-addresses", data);
-    return res.data;
-  },
+  deleteNeighborhood: async (id: number) =>
+    (await api.delete(`/neighborhoods/${id}`)).data,
+};
 
-  deleteAddress: async (id: number) => {
-    const res = await api.delete(`/customer-addresses/${id}`);
-    return res.data;
-  },
-},
+/* =========================
+   CUSTOMERS & ADDRESSES
+========================= */
+(api as any).customers = {
+  getCustomers: async () => (await api.get("/customers")).data,
 
+  addCustomer: async (data: any) =>
+    (await api.post("/customers", data)).data,
+
+  updateCustomer: async (id: number, data: any) =>
+    (await api.put(`/customers/${id}`, data)).data,
+
+  deleteCustomer: async (id: number) =>
+    (await api.delete(`/customers/${id}`)).data,
+
+  resetPassword: async (id: number) =>
+    (await api.put(`/customers/${id}/reset-password`)).data,
+
+  getAddresses: async () =>
+    (await api.get("/customer-addresses")).data,
+
+  addAddress: async (data: any) =>
+    (await api.post("/customer-addresses", data)).data,
+
+  deleteAddress: async (id: number) =>
+    (await api.delete(`/customer-addresses/${id}`)).data,
 };
 
 export default api;
-
