@@ -40,9 +40,6 @@ const Customers: React.FC = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [loading, setLoading] = useState(true);
-// Maps
-const [isMapOpen, setIsMapOpen] = useState(false);
-const [isEditMapOpen, setIsEditMapOpen] = useState(false);
 
   const [searchCustomer, setSearchCustomer] = useState("");
   const [searchAddress, setSearchAddress] = useState("");
@@ -50,6 +47,9 @@ const [isEditMapOpen, setIsEditMapOpen] = useState(false);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isAddressesOpen, setIsAddressesOpen] = useState(false);
+
+  const [isMapOpen, setIsMapOpen] = useState(false);
+  const [isEditMapOpen, setIsEditMapOpen] = useState(false);
 
   const [newName, setNewName] = useState("");
   const [newPhone, setNewPhone] = useState("");
@@ -71,7 +71,10 @@ const [isEditMapOpen, setIsEditMapOpen] = useState(false);
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
 
+  const [editAddress, setEditAddress] = useState<Address | null>(null);
+
   const mapAddRef = useRef<HTMLDivElement | null>(null);
+  const mapEditRef = useRef<HTMLDivElement | null>(null);
 
   /* =========================
      Fetch Data
@@ -114,7 +117,6 @@ const [isEditMapOpen, setIsEditMapOpen] = useState(false);
     });
 
     if (data.success) {
-      alert("✔ تم إضافة العميل");
       setIsAddOpen(false);
       setNewName("");
       setNewPhone("");
@@ -144,13 +146,13 @@ const [isEditMapOpen, setIsEditMapOpen] = useState(false);
     const data = await api.customers.resetPassword(id);
     if (data.success) {
       navigator.clipboard.writeText(data.new_password);
-      alert(`🔑 كلمة المرور الجديدة: ${data.new_password}`);
+      alert(`كلمة المرور الجديدة: ${data.new_password}`);
     }
   };
 
-  /* ================= DELETE CUSTOMER ================= */
+  /* ================= DELETE ================= */
   const deleteCustomer = async (id: number) => {
-    if (!window.confirm("هل أنت متأكد من الحذف؟")) return;
+    if (!window.confirm("تأكيد الحذف؟")) return;
     await api.customers.deleteCustomer(id);
     fetchCustomers();
   };
@@ -186,7 +188,7 @@ const [isEditMapOpen, setIsEditMapOpen] = useState(false);
 
       <input
         className="border p-2 rounded w-full"
-        placeholder="🔍 بحث عن عميل"
+        placeholder="بحث عن عميل"
         value={searchCustomer}
         onChange={(e) => setSearchCustomer(e.target.value)}
       />
@@ -203,7 +205,6 @@ const [isEditMapOpen, setIsEditMapOpen] = useState(false);
               <th>إجراءات</th>
             </tr>
           </thead>
-
           <tbody>
             {filteredCustomers.map((c) => (
               <tr key={c.id} className="border-b">
@@ -212,8 +213,7 @@ const [isEditMapOpen, setIsEditMapOpen] = useState(false);
                 <td>{c.phone}</td>
                 <td>{c.email || "-"}</td>
                 <td>{c.created_at?.slice(0, 10)}</td>
-
-                <td className="flex gap-2 justify-center py-2">
+                <td className="flex gap-2 justify-center">
                   <button
                     onClick={() => {
                       setEditCustomer(c);
@@ -222,21 +222,19 @@ const [isEditMapOpen, setIsEditMapOpen] = useState(false);
                       setEditEmail(c.email || "");
                       setIsEditOpen(true);
                     }}
-                    className="bg-blue-600 text-white px-3 py-1 rounded"
+                    className="text-blue-600"
                   >
                     تعديل
                   </button>
-
                   <button
                     onClick={() => handleResetPassword(c.id)}
-                    className="bg-purple-600 text-white px-3 py-1 rounded"
+                    className="text-purple-600"
                   >
-                    كلمة مرور جديدة
+                    كلمة مرور
                   </button>
-
                   <button
                     onClick={() => deleteCustomer(c.id)}
-                    className="bg-red-600 text-white px-3 py-1 rounded"
+                    className="text-red-600"
                   >
                     حذف
                   </button>
