@@ -37,6 +37,7 @@ interface Address {
 
 const Customers: React.FC = () => {
   const [cities, setCities] = useState<City[]>([]);
+  const [neighborhoods, setNeighborhoods] = useState<Neighborhood[]>([]); 
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [loading, setLoading] = useState(true);
@@ -98,6 +99,7 @@ const Customers: React.FC = () => {
 
   useEffect(() => {
     fetchCities();
+        fetchNeighborhoods();
     fetchCustomers();
   }, []);
 
@@ -421,9 +423,12 @@ const Customers: React.FC = () => {
                 {cities.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
 
-              <select className="border p-2 rounded w-full"
+            {/* ✅ هذا هو التعديل الوحيد المهم */}
+              <select
+                className="border p-2 rounded w-full"
                 value={district}
-                onChange={(e)=>setDistrict(e.target.value)}>
+                onChange={(e) => setDistrict(e.target.value)}
+              >
                 <option value="">اختر الحي</option>
                 {cities.find(c=>String(c.id)===province)?.neighborhoods.map(n=>
                   <option key={n.id} value={n.id}>{n.name}</option>
