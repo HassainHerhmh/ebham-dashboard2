@@ -37,7 +37,6 @@ interface Address {
 
 const Customers: React.FC = () => {
   const [cities, setCities] = useState<City[]>([]);
-  const [neighborhoods, setNeighborhoods] = useState<Neighborhood[]>([]); 
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [loading, setLoading] = useState(true);
@@ -99,7 +98,6 @@ const Customers: React.FC = () => {
 
   useEffect(() => {
     fetchCities();
-        fetchNeighborhoods();
     fetchCustomers();
   }, []);
 
