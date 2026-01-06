@@ -40,6 +40,9 @@ const Customers: React.FC = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [loading, setLoading] = useState(true);
+// Maps
+const [isMapOpen, setIsMapOpen] = useState(false);
+const [isEditMapOpen, setIsEditMapOpen] = useState(false);
 
   const [searchCustomer, setSearchCustomer] = useState("");
   const [searchAddress, setSearchAddress] = useState("");
