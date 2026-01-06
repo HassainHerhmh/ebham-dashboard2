@@ -130,43 +130,53 @@ api.users = {
     },
   },
 
-  /* =========================
-     CUSTOMERS
-  ========================= */
-  customers: {
-    getCustomers: async () => {
-      const res = await api.get("/customers");
-      return res.data;
-    },
-
-    addCustomer: async (data: {
-      name: string;
-      phone: string;
-      email?: string;
-      password: string;
-    }) => {
-      const res = await api.post("/customers", data);
-      return res.data;
-    },
-
-    updateCustomer: async (
-      id: number,
-      data: { name: string; phone: string; email?: string }
-    ) => {
-      const res = await api.put(`/customers/${id}`, data);
-      return res.data;
-    },
-
-    deleteCustomer: async (id: number) => {
-      const res = await api.delete(`/customers/${id}`);
-      return res.data;
-    },
-
-    resetPassword: async (id: number) => {
-      const res = await api.put(`/customers/${id}/reset-password`);
-      return res.data;
-    },
+/* =========================
+   CUSTOMER ADDRESSES
+========================= */
+customers: {
+  // الموجودين عندك (اتركهم)
+  getCustomers: async () => {
+    const res = await api.get("/customers");
+    return res.data;
   },
+
+  addCustomer: async (data) => {
+    const res = await api.post("/customers", data);
+    return res.data;
+  },
+
+  updateCustomer: async (id, data) => {
+    const res = await api.put(`/customers/${id}`, data);
+    return res.data;
+  },
+
+  deleteCustomer: async (id) => {
+    const res = await api.delete(`/customers/${id}`);
+    return res.data;
+  },
+
+  resetPassword: async (id) => {
+    const res = await api.put(`/customers/${id}/reset-password`);
+    return res.data;
+  },
+
+  /* 🔴 هذا الناقص */
+  getAddresses: async () => {
+    const res = await api.get("/customer-addresses");
+    return res.data;
+  },
+
+  addAddress: async (data) => {
+    const res = await api.post("/customer-addresses", data);
+    return res.data;
+  },
+
+  deleteAddress: async (id: number) => {
+    const res = await api.delete(`/customer-addresses/${id}`);
+    return res.data;
+  },
+},
+
 };
 
 export default api;
