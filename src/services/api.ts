@@ -64,6 +64,73 @@ api.users = {
     const res = await api.post(`/users/${id}/reset-password`);
     return res.data;
   },
+
+
+
+/* ======================================================
+   🧑‍💼 Customers API
+====================================================== */
+api.customers = {
+  getCustomers: async () => {
+    const res = await api.get("/customers");
+    return res.data;
+  },
+
+  addCustomer: async (data: any) => {
+    const res = await api.post("/customers", data);
+    return res.data;
+  },
+
+  updateCustomer: async (id: number, data: any) => {
+    const res = await api.put(`/customers/${id}`, data);
+    return res.data;
+  },
+
+  deleteCustomer: async (id: number) => {
+    const res = await api.delete(`/customers/${id}`);
+    return res.data;
+  },
+
+  resetPassword: async (id: number) => {
+    const res = await api.put(`/customers/${id}/reset-password`);
+    return res.data;
+  },
+};
+
+/* ======================================================
+   📍 Customer Addresses API
+====================================================== */
+api.customerAddresses = {
+  getAll: async () => {
+    const res = await api.get("/customer-addresses");
+    return res.data;
+  },
+
+  add: async (data: any) => {
+    const res = await api.post("/customer-addresses", data);
+    return res.data;
+  },
+
+  update: async (id: number, data: any) => {
+    const res = await api.put(`/customer-addresses/${id}`, data);
+    return res.data;
+  },
+
+  delete: async (id: number) => {
+    const res = await api.delete(`/customer-addresses/${id}`);
+    return res.data;
+  },
+};
+
+/* ======================================================
+   🏙️ Cities & Neighborhoods API
+====================================================== */
+api.cities = {
+  getCities: async () => {
+    const res = await api.get("/cities");
+    return res.data;
+  },
+  
 };
 
 export default api;
