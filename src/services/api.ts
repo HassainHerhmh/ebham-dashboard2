@@ -108,19 +108,20 @@ api.users = {
       return res.data;
     },
 
-    updateNeighborhood: async (
-      id: number,
-      name: string,
-      delivery_fee: number,
-      city_id: number
-    ) => {
-      const res = await api.put(`/neighborhoods/${id}`, {
-        name,
-        delivery_fee,
-        city_id,
-      });
-      return res.data;
-    },
+   updateNeighborhood: async (
+  id: number,
+  city_id: number,
+  name: string,
+  delivery_fee: number
+) => {
+  const res = await api.put(`/neighborhoods/${id}`, {
+    city_id,
+    name,
+    delivery_fee,
+  });
+  return res.data;
+},
+
 
     deleteNeighborhood: async (id: number) => {
       const res = await api.delete(`/neighborhoods/${id}`);
