@@ -373,23 +373,35 @@ const Customers: React.FC = () => {
               const res = await fetch(`${API_URL}/customer-addresses`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  customer_id: selectedCustomer,
-                  province,
-                  district,
-                  location_type: locationType,
-                  address: detailAddress,
-                  gps_link: gpsLink,
-                  latitude,
-                  longitude
-                })
+           body: JSON.stringify({
+  customer_id: Number(selectedCustomer),
+  city_id: Number(province),
+  neighborhood_id: Number(district),
+  location_type: locationType,
+  address: detailAddress,
+  gps_link: gpsLink,
+  latitude,
+  longitude
+})
+
               });
 
               const data = await res.json();
               if (data.success) {
-                alert("✔ تم إضافة العنوان");
-                fetchAddresses();
-              }
+  alert("✔ تم إضافة العنوان");
+
+  // تفريغ الحقول
+  setProvince("");
+  setDistrict("");
+  setLocationType("");
+  setDetailAddress("");
+  setGpsLink("");
+  setLatitude("");
+  setLongitude("");
+
+  fetchAddresses();
+}
+
             }} className="space-y-3">
 
               <select className="border p-2 rounded w-full"
