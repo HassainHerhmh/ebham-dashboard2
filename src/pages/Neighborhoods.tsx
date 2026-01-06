@@ -93,7 +93,7 @@ const Neighborhoods: React.FC = () => {
 
     try {
       if (editId) {
-        await api.cities.updateNeighborhood(editId, name, fee, cityId);
+        await api.cities.updateNeighborhood(editId, cityId, name, fee);
       } else {
         await api.cities.addNeighborhood(cityId, name, fee);
       }
