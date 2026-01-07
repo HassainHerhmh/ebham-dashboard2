@@ -35,8 +35,16 @@ interface Address {
   longitude?: string;
 }
 
+interface Neighborhood {
+  id: number;
+  name: string;
+  city_id: number;
+}
+
 const Customers: React.FC = () => {
   const [cities, setCities] = useState<City[]>([]);
+  const [neighborhoods, setNeighborhoods] = useState<Neighborhood[]>([]);
+
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [loading, setLoading] = useState(true);
@@ -75,6 +83,25 @@ const Customers: React.FC = () => {
 
   const mapAddRef = useRef<HTMLDivElement | null>(null);
   const mapEditRef = useRef<HTMLDivElement | null>(null);
+
+
+
+
+  const fetchNeighborhoodsByCity = async (cityId: string) => {
+  if (!cityId) {
+    setNeighborhoods([]);
+    return;
+  }
+
+  const data = await api.cities.searchNeighborhoods("");
+  if (data.success) {
+    setNeighborhoods(
+      data.neighborhoods.filter(
+        (n: Neighborhood) => String(n.city_id) === cityId
+      )
+    );
+  }
+};
 
   /* =========================
      Fetch Data
@@ -413,10 +440,13 @@ const Customers: React.FC = () => {
 
               <select className="border p-2 rounded w-full"
                 value={province}
-                onChange={(e)=>{
-                  setProvince(e.target.value);
-                  setDistrict("");
-                }}>
+            onChange={(e)=>{
+  const cityId = e.target.value;
+  setProvince(cityId);
+  setDistrict("");
+  fetchNeighborhoodsByCity(cityId);
+}}
+
                 <option value="">اختر المدينة</option>
                 {cities.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
