@@ -62,10 +62,6 @@ api.interceptors.request.use((config) => {
     (await api.delete(`/cities/${id}`)).data,
 
 
-  (api as any).neighborhoods = {
-  getByCity: async (cityId: number) =>
-    (await api.get(`/neighborhoods/by-city/${cityId}`)).data,
-
   searchNeighborhoods: async (search: string) =>
     (await api.get("/neighborhoods", { params: { search } })).data,
 
@@ -122,6 +118,11 @@ api.interceptors.request.use((config) => {
 
   deleteAddress: async (id: number) =>
     (await api.delete(`/customer-addresses/${id}`)).data,
+};
+
+(api as any).neighborhoods = {
+  getByCity: async (cityId: number) =>
+    (await api.get(`/neighborhoods/by-city/${cityId}`)).data,
 };
 
 export default api;
