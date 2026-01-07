@@ -39,12 +39,11 @@ const Neighborhoods: React.FC = () => {
     try {
       setLoading(true);
       const res = await api.cities.searchNeighborhoods(query);
-if (res?.success && Array.isArray(res.list)) {
-  setNeighborhoods(res.list);
-} else {
-  setNeighborhoods([]);
-}
-
+      if (res?.success && Array.isArray(res.neighborhoods)) {
+        setNeighborhoods(res.neighborhoods);
+      } else {
+        setNeighborhoods([]);
+      }
     } catch (err) {
       console.error("❌ خطأ جلب الأحياء:", err);
       setNeighborhoods([]);
