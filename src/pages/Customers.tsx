@@ -451,14 +451,15 @@ const Customers: React.FC = () => {
     if (!cityId) return;
 
     // 👇 جلب الأحياء الخاصة بالمدينة
-    const res = await api.cities.searchNeighborhoods("");
-    if (res.success) {
-      setNeighborhoods(
-        res.neighborhoods.filter(
-          (n: any) => String(n.city_id) === cityId
-        )
-      );
-    }
+const res = await api.cities.searchNeighborhoods("");
+if (res.success) {
+  setNeighborhoods(
+    res.neighborhoods.filter(
+      (n: any) => String(n.city_id) === cityId
+    )
+  );
+}
+
   }}
 >
   <option value="">اختر المدينة</option>
