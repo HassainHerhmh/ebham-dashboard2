@@ -458,9 +458,12 @@ const Customers: React.FC = () => {
                 onChange={(e) => setDistrict(e.target.value)}
               >
                 <option value="">اختر الحي</option>
-                {cities.find(c=>String(c.id)===province)?.neighborhoods.map(n=>
-                  <option key={n.id} value={n.id}>{n.name}</option>
-                )}
+               {neighborhoods.map(n => (
+  <option key={n.id} value={n.id}>
+    {n.name}
+  </option>
+))}
+
               </select>
 
               <select className="border p-2 rounded w-full"
