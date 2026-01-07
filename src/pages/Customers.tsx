@@ -440,23 +440,18 @@ const Customers: React.FC = () => {
               </select>
 
 <select
-  className="border p-2 rounded w-full"
   value={province}
   onChange={async (e) => {
-    const cityId = e.target.value;
-    setProvince(cityId);
+    const cityId = Number(e.target.value);
+    setProvince(String(cityId));
     setDistrict("");
     setNeighborhoods([]);
 
     if (!cityId) return;
 
-    const res = await api.cities.searchNeighborhoods("");
-    if (res?.success && Array.isArray(res.list)) {
-      setNeighborhoods(
-        res.list.filter(
-          (n: any) => String(n.city_id) === cityId
-        )
-      );
+    const res = await api.neighborhoods.getByCity(cityId);
+    if (res.success) {
+      setNeighborhoods(res.neighborhoods);
     }
   }}
 >
@@ -467,6 +462,7 @@ const Customers: React.FC = () => {
     </option>
   ))}
 </select>
+
 
 
 
