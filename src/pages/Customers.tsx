@@ -7,11 +7,19 @@ declare global {
   }
 }
 
+/* =========================
+   Interfaces
+========================= */
 interface City {
   id: number;
   name: string;
   delivery_fee: number;
-  neighborhoods: { id: number; name: string }[];
+}
+
+interface Neighborhood {
+  id: number;
+  name: string;
+  city_id: number;
 }
 
 interface Customer {
@@ -35,8 +43,12 @@ interface Address {
   longitude?: string;
 }
 
+/* =========================
+   Component
+========================= */
 const Customers: React.FC = () => {
   const [cities, setCities] = useState<City[]>([]);
+  const [neighborhoods, setNeighborhoods] = useState<Neighborhood[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [loading, setLoading] = useState(true);
@@ -96,12 +108,30 @@ const Customers: React.FC = () => {
     if (data.success) setAddresses(data.addresses);
   };
 
+  const fetchNeighborhoodsByCity = async (cityId: string) => {
+    if (!cityId) {
+      setNeighborhoods([]);
+      return;
+    }
+
+    const data = await api.cities.searchNeighborhoods("");
+    if (data.success) {
+      setNeighborhoods(
+        data.neighborhoods.filter(
+          (n: Neighborhood) => String(n.city_id) === cityId
+        )
+      );
+    }
+  };
+
   useEffect(() => {
     fetchCities();
     fetchCustomers();
   }, []);
 
-  /* ================= ADD CUSTOMER ================= */
+  /* =========================
+     Customers Logic
+  ========================= */
   const handleAddCustomer = async () => {
     if (!newName || !newPhone || !newPassword)
       return alert("❌ جميع الحقول مطلوبة");
@@ -127,7 +157,6 @@ const Customers: React.FC = () => {
     }
   };
 
-  /* ================= EDIT CUSTOMER ================= */
   const handleEditCustomer = async () => {
     if (!editCustomer) return;
 
@@ -141,7 +170,6 @@ const Customers: React.FC = () => {
     fetchCustomers();
   };
 
-  /* ================= RESET PASSWORD ================= */
   const handleResetPassword = async (id: number) => {
     const data = await api.customers.resetPassword(id);
     if (data.success) {
@@ -150,7 +178,6 @@ const Customers: React.FC = () => {
     }
   };
 
-  /* ================= DELETE ================= */
   const deleteCustomer = async (id: number) => {
     if (!window.confirm("تأكيد الحذف؟")) return;
     await api.customers.deleteCustomer(id);
@@ -163,6 +190,9 @@ const Customers: React.FC = () => {
       c.phone.includes(searchCustomer)
   );
 
+  /* =========================
+     JSX
+  ========================= */
   return (
     <div className="p-6 space-y-6" dir="rtl">
       <h1 className="text-2xl font-bold">📋 العملاء</h1>
@@ -245,332 +275,96 @@ const Customers: React.FC = () => {
         </table>
       </div>
 
-      {/* Add Customer Modal */}
-      {isAddOpen && (
-        <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50">
-          <div className="bg-white p-6 rounded w-full max-w-md space-y-4">
-
-            <h2 className="text-xl font-bold">➕ إضافة عميل</h2>
-
-            <input
-              className="border p-2 rounded w-full"
-              placeholder="الاسم"
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-            />
-
-            <input
-              className="border p-2 rounded w-full"
-              placeholder="الجوال"
-              value={newPhone}
-              onChange={(e) => setNewPhone(e.target.value)}
-            />
-
-            <input
-              className="border p-2 rounded w-full"
-              placeholder="البريد الإلكتروني"
-              value={newEmail}
-              onChange={(e) => setNewEmail(e.target.value)}
-            />
-
-            <input
-              className="border p-2 rounded w-full"
-              type="password"
-              placeholder="كلمة المرور"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-            />
-
-            <input
-              className="border p-2 rounded w-full"
-              type="password"
-              placeholder="تأكيد كلمة المرور"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-            />
-
-            <button
-              onClick={handleAddCustomer}
-              className="bg-green-600 text-white px-4 py-2 rounded w-full"
-            >
-              حفظ
-            </button>
-
-            <button
-              onClick={() => setIsAddOpen(false)}
-              className="bg-gray-500 text-white px-4 py-2 rounded w-full"
-            >
-              إغلاق
-            </button>
-
-          </div>
-        </div>
-      )}
-
-      {/* Edit Customer Modal */}
-      {isEditOpen && editCustomer && (
-        <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50">
-          <div className="bg-white p-6 rounded w-full max-w-md space-y-4">
-
-            <h2 className="text-xl font-bold">✏️ تعديل عميل</h2>
-
-            <input
-              className="border p-2 rounded w-full"
-              value={editName}
-              onChange={(e) => setEditName(e.target.value)}
-            />
-
-            <input
-              className="border p-2 rounded w-full"
-              value={editPhone}
-              onChange={(e) => setEditPhone(e.target.value)}
-            />
-
-            <input
-              className="border p-2 rounded w-full"
-              value={editEmail}
-              onChange={(e) => setEditEmail(e.target.value)}
-            />
-
-            <button
-              onClick={handleEditCustomer}
-              className="bg-blue-600 text-white px-4 py-2 rounded w-full"
-            >
-              حفظ التعديل
-            </button>
-
-            <button
-              onClick={() => setIsEditOpen(false)}
-              className="bg-gray-500 text-white px-4 py-2 rounded w-full"
-            >
-              إغلاق
-            </button>
-
-          </div>
-        </div> 
-      )}
-      
       {/* إدارة العناوين */}
       {isAddressesOpen && (
         <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
           <div className="bg-white p-6 rounded w-full max-w-4xl h-[90vh] overflow-auto">
-
             <h2 className="text-xl font-bold mb-3">📍 إدارة العناوين</h2>
 
-            <input
-              className="border p-2 rounded w-full mb-3"
-              placeholder="🔍 بحث في العناوين"
-              value={searchAddress}
-              onChange={(e) => setSearchAddress(e.target.value)}
-            />
+            <form
+              className="space-y-3"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (!selectedCustomer || !province || !district)
+                  return alert("❌ البيانات مطلوبة");
 
-            {/* إضافة عنوان */}
-            <form onSubmit={async(e)=>{
-              e.preventDefault();
-              if (!selectedCustomer || !province || !district)
-                return alert("❌ البيانات مطلوبة");
+                const data = await api.customers.addAddress({
+                  customer_id: Number(selectedCustomer),
+                  city_id: Number(province),
+                  neighborhood_id: Number(district),
+                  location_type: locationType,
+                  address: detailAddress,
+                  gps_link: gpsLink,
+                  latitude,
+                  longitude,
+                });
 
-              const res = await fetch(`${API_URL}/customer-addresses`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-           body: JSON.stringify({
-  customer_id: Number(selectedCustomer),
-  city_id: Number(province),
-  neighborhood_id: Number(district),
-  location_type: locationType,
-  address: detailAddress,
-  gps_link: gpsLink,
-  latitude,
-  longitude
-})
-
-              });
-
-              const data = await res.json();
-              if (data.success) {
-  alert("✔ تم إضافة العنوان");
-
-  // تفريغ الحقول
-  setProvince("");
-  setDistrict("");
-  setLocationType("");
-  setDetailAddress("");
-  setGpsLink("");
-  setLatitude("");
-  setLongitude("");
-
-  fetchAddresses();
-}
-
-            }} className="space-y-3">
-
-              <select className="border p-2 rounded w-full"
+                if (data.success) {
+                  alert("✔ تم إضافة العنوان");
+                  setProvince("");
+                  setDistrict("");
+                  setNeighborhoods([]);
+                  fetchAddresses();
+                }
+              }}
+            >
+              <select
+                className="border p-2 rounded w-full"
                 value={selectedCustomer}
-                onChange={(e)=>setSelectedCustomer(e.target.value)}>
+                onChange={(e) => setSelectedCustomer(e.target.value)}
+              >
                 <option value="">اختر عميل</option>
-                {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                {customers.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
               </select>
 
-              <select className="border p-2 rounded w-full"
+              <select
+                className="border p-2 rounded w-full"
                 value={province}
-                onChange={(e)=>{
+                onChange={(e) => {
                   setProvince(e.target.value);
                   setDistrict("");
-                }}>
+                  fetchNeighborhoodsByCity(e.target.value);
+                }}
+              >
                 <option value="">اختر المدينة</option>
-                {cities.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
+                {cities.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
               </select>
 
-            {/* ✅ هذا هو التعديل الوحيد المهم */}
               <select
                 className="border p-2 rounded w-full"
                 value={district}
                 onChange={(e) => setDistrict(e.target.value)}
               >
                 <option value="">اختر الحي</option>
-                {cities.find(c=>String(c.id)===province)?.neighborhoods.map(n=>
-                  <option key={n.id} value={n.id}>{n.name}</option>
-                )}
+                {neighborhoods.map((n) => (
+                  <option key={n.id} value={n.id}>
+                    {n.name}
+                  </option>
+                ))}
               </select>
 
-              <select className="border p-2 rounded w-full"
-                value={locationType}
-                onChange={(e)=>setLocationType(e.target.value)}>
-                <option value="">نوع الموقع</option>
-                <option value="منزل">منزل</option>
-                <option value="شقة">شقة</option>
-                <option value="عمل">عمل</option>
-                <option value="مستودع">مستودع</option>
-                <option value="فيلا">فيلا</option>
-              </select>
-
-              <input className="border p-2 rounded w-full"
-                placeholder="العنوان التفصيلي"
-                value={detailAddress}
-                onChange={(e)=>setDetailAddress(e.target.value)} />
-
-              <input className="border p-2 rounded w-full"
-                placeholder="GPS Link"
-                value={gpsLink}
-                onChange={(e)=>setGpsLink(e.target.value)} />
-
-              <div className="flex gap-2">
-                <input className="border p-2 rounded w-full"
-                placeholder="Latitude"
-                value={latitude}
-                onChange={(e)=>setLatitude(e.target.value)} />
-
-                <input className="border p-2 rounded w-full"
-                placeholder="Longitude"
-                value={longitude}
-                onChange={(e)=>setLongitude(e.target.value)} />
-              </div>
-
-              <button type="button"
-                onClick={()=>setIsMapOpen(true)}
-                className="bg-blue-600 text-white p-2 rounded w-full">
-                🗺 اختيار الموقع من الخريطة
-              </button>
-
-              <button type="submit"
-                className="bg-green-600 text-white p-2 rounded w-full">
+              <button className="bg-green-600 text-white p-2 rounded w-full">
                 حفظ العنوان
               </button>
-
             </form>
 
-            {/* جدول العناوين */}
-            <table className="w-full mt-4 text-sm border">
-              <thead className="bg-gray-100">
-                <tr>
-                  <th>العميل</th>
-                  <th>المدينة</th>
-                  <th>الحي</th>
-                  <th>نوع</th>
-                  <th>العنوان</th>
-                  <th>GPS</th>
-                  <th>إحداثيات</th>
-                  <th>تعديل</th>
-                  <th>حذف</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {addresses.map(a=>(
-                  <tr key={a.id} className="border-t">
-                    <td>{a.customer_name}</td>
-                    <td>{cities.find(c=>c.id===a.province)?.name}</td>
-                    <td>{cities.flatMap(c=>c.neighborhoods).find(n=>n.id===a.district)?.name}</td>
-                    <td>{a.location_type}</td>
-                    <td>{a.address}</td>
-                    <td>{a.gps_link ? <a href={a.gps_link} className="text-blue-600">رابط</a> : "-"}</td>
-                    <td>{a.latitude}, {a.longitude}</td>
-
-                    <td>
-                      <button
-                        onClick={()=>setEditAddress(a)}
-                        className="bg-blue-600 text-white px-2 py-1 rounded">
-                        ✏️
-                      </button>
-                    </td>
-
-                    <td>
-                      <button
-                        onClick={async()=>{
-                          if(!window.confirm("❌ حذف العنوان؟")) return;
-                          await fetch(`${API_URL}/customer-addresses/${a.id}`, {method:"DELETE"});
-                          fetchAddresses();
-                        }}
-                        className="bg-red-600 text-white px-2 py-1 rounded">
-                        🗑
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-
-            </table>
-
             <button
-              onClick={()=>setIsAddressesOpen(false)}
-              className="bg-gray-500 text-white px-4 py-2 rounded w-full mt-4">
+              onClick={() => setIsAddressesOpen(false)}
+              className="bg-gray-500 text-white px-4 py-2 rounded w-full mt-4"
+            >
               إغلاق
             </button>
-
           </div>
         </div>
       )}
-
-      {/* خرائط الإضافة */}
-      {isMapOpen && (
-        <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50">
-          <div className="bg-white w-full max-w-2xl h-[500px] rounded shadow relative">
-            <div ref={mapAddRef} className="w-full h-full"></div>
-
-            <button
-              onClick={()=>setIsMapOpen(false)}
-              className="absolute top-2 right-2 bg-red-600 text-white px-3 py-1 rounded">
-              ✖
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* خرائط التعديل */}
-      {isEditMapOpen && editAddress && (
-        <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50">
-          <div className="bg-white w-full max-w-2xl h-[500px] rounded shadow relative">
-            <div ref={mapEditRef} className="w-full h-full"></div>
-
-            <button
-              onClick={()=>setIsEditMapOpen(false)}
-              className="absolute top-2 right-2 bg-red-600 text-white px-3 py-1 rounded">
-              ✖
-            </button>
-          </div>
-        </div>
-      )}
-
     </div>
   );
 };
