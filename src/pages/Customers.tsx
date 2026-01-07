@@ -84,9 +84,6 @@ const Customers: React.FC = () => {
   const mapAddRef = useRef<HTMLDivElement | null>(null);
   const mapEditRef = useRef<HTMLDivElement | null>(null);
 
-const [neighborhoods, setNeighborhoods] = useState<
-  { id: number; name: string }[]
->([]);
 
 
 
