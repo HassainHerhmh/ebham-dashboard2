@@ -102,6 +102,9 @@ const Customers: React.FC = () => {
     );
   }
 };
+const [neighborhoods, setNeighborhoods] = useState<
+  { id: number; name: string; city_id: number }[]
+>([]);
 
   /* =========================
      Fetch Data
