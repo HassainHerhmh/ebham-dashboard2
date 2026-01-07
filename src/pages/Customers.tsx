@@ -448,7 +448,6 @@ const Customers: React.FC = () => {
 }}
 
                 <option value="">اختر المدينة</option>
-
                 {cities.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
 
