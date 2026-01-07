@@ -103,7 +103,7 @@ const Customers: React.FC = () => {
   }
 };
   
-const [neighborhoods, setNeighborhoods] = useState<Array<{
+const [neighborhoods, setNeighborhoods] = useState<Neighborhood[]>([]);
   id: number;
   name: string;
   city_id: number;
