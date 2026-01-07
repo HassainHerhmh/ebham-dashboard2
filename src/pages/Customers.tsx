@@ -438,18 +438,24 @@ const Customers: React.FC = () => {
                 {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
 
-              <select className="border p-2 rounded w-full"
-                value={province}
-            onChange={(e)=>{
-  const cityId = e.target.value;
-  setProvince(cityId);
-  setDistrict("");
-  fetchNeighborhoodsByCity(cityId);
-}}
+      <select
+  className="border p-2 rounded w-full"
+  value={province}
+  onChange={(e) => {
+    const cityId = e.target.value;
+    setProvince(cityId);
+    setDistrict("");
+    fetchNeighborhoodsByCity(cityId);
+  }}
+>
+  <option value="">اختر المدينة</option>
+  {cities.map((c) => (
+    <option key={c.id} value={c.id}>
+      {c.name}
+    </option>
+  ))}
+</select>
 
-                <option value="">اختر المدينة</option>
-                {cities.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
 
             {/* ✅ هذا هو التعديل الوحيد المهم */}
               <select
