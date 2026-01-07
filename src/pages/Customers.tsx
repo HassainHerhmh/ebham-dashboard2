@@ -397,10 +397,7 @@ const Customers: React.FC = () => {
               if (!selectedCustomer || !province || !district)
                 return alert("❌ البيانات مطلوبة");
 
-              const res = await fetch(`${API_URL}/customer-addresses`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-     body: JSON.stringify({
+    const data = await api.customers.addAddress({
   customer_id: Number(selectedCustomer),
   province: Number(province),
   district: Number(district),
@@ -408,17 +405,12 @@ const Customers: React.FC = () => {
   address: detailAddress,
   gps_link: gpsLink,
   latitude,
-  longitude
-})
+  longitude,
+});
 
-
-              });
-
-              const data = await res.json();
-              if (data.success) {
+if (data.success) {
   alert("✔ تم إضافة العنوان");
 
-  // تفريغ الحقول
   setProvince("");
   setDistrict("");
   setLocationType("");
