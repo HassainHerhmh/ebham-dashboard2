@@ -400,16 +400,17 @@ const Customers: React.FC = () => {
               const res = await fetch(`${API_URL}/customer-addresses`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-           body: JSON.stringify({
+     body: JSON.stringify({
   customer_id: Number(selectedCustomer),
-  city_id: Number(province),
-  neighborhood_id: Number(district),
+  province: Number(province),
+  district: Number(district),
   location_type: locationType,
   address: detailAddress,
   gps_link: gpsLink,
   latitude,
   longitude
 })
+
 
               });
 
