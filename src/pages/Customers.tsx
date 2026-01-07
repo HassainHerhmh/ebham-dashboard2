@@ -84,6 +84,9 @@ const Customers: React.FC = () => {
   const mapAddRef = useRef<HTMLDivElement | null>(null);
   const mapEditRef = useRef<HTMLDivElement | null>(null);
 
+const [neighborhoods, setNeighborhoods] = useState<
+  { id: number; name: string }[]
+>([]);
 
 
 
@@ -438,14 +441,26 @@ const Customers: React.FC = () => {
                 {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
 
-      <select
+   <select
   className="border p-2 rounded w-full"
   value={province}
-  onChange={(e) => {
+  onChange={async (e) => {
     const cityId = e.target.value;
     setProvince(cityId);
     setDistrict("");
-    fetchNeighborhoodsByCity(cityId);
+    setNeighborhoods([]);
+
+    if (!cityId) return;
+
+    // 👇 جلب الأحياء الخاصة بالمدينة
+    const res = await api.cities.searchNeighborhoods("");
+    if (res.success) {
+      setNeighborhoods(
+        res.neighborhoods.filter(
+          (n: any) => String(n.city_id) === cityId
+        )
+      );
+    }
   }}
 >
   <option value="">اختر المدينة</option>
@@ -457,20 +472,21 @@ const Customers: React.FC = () => {
 </select>
 
 
-            {/* ✅ هذا هو التعديل الوحيد المهم */}
-              <select
-                className="border p-2 rounded w-full"
-                value={district}
-                onChange={(e) => setDistrict(e.target.value)}
-              >
-                <option value="">اختر الحي</option>
-               {neighborhoods.map(n => (
-  <option key={n.id} value={n.id}>
-    {n.name}
-  </option>
-))}
 
-              </select>
+<select
+  className="border p-2 rounded w-full"
+  value={district}
+  onChange={(e) => setDistrict(e.target.value)}
+>
+  <option value="">اختر الحي</option>
+
+  {neighborhoods.map((n) => (
+    <option key={n.id} value={n.id}>
+      {n.name}
+    </option>
+  ))}
+</select>
+
 
               <select className="border p-2 rounded w-full"
                 value={locationType}
