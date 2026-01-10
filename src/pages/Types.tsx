@@ -2,6 +2,9 @@ import React, { useState, useEffect } from "react";
 import { Plus, Trash2, Edit } from "lucide-react";
 import { appRoutes } from "../config/routes";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
+
 
 interface TypeItem {
   id: number;
