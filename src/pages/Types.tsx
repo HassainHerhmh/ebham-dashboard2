@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { Plus, Trash2, Edit } from "lucide-react";
 import { appRoutes } from "../config/routes";
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL || "";
+const BASE_URL = API_URL.replace(/\/api$/, "");
 
 
 
@@ -146,11 +147,12 @@ const Types: React.FC = () => {
                   <td className="p-3">{t.name}</td>
                   <td className="p-3">
                     {t.image_url ? (
-                      <img
-                        src={`${API_URL}${t.image_url}`}
-                        alt={t.name}
-                        className="w-16 h-16 object-cover rounded mx-auto"
-                      />
+                   <img
+  src={`${BASE_URL}${t.image_url}`}
+  alt={t.name}
+  className="w-16 h-16 object-cover rounded mx-auto"
+/>
+
                     ) : (
                       "-"
                     )}
