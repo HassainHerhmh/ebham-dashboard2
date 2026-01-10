@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../services/api";
@@ -15,12 +16,11 @@ const Login: React.FC = () => {
     setError("");
     setLoading(true);
 
-const res = await api.post("/auth/login", {
+    try {
+     const res = await api.post("/auth/login", {
   identifier,
   password,
 });
-
-
 
       if (!res.data?.success) {
         setError(res.data?.message || "فشل تسجيل الدخول");
