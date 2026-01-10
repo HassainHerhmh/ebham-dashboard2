@@ -16,10 +16,11 @@ const Login: React.FC = () => {
     setLoading(true);
 
     try {
-      const res = await api.post("/login", {
-        identifier,
-        password,
-      });
+const res = await api.post("/auth/login", {
+  identifier,
+  password,
+});
+
 
       if (!res.data?.success) {
         setError(res.data?.message || "فشل تسجيل الدخول");
