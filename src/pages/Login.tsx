@@ -15,11 +15,7 @@ const Login: React.FC = () => {
     setError("");
     setLoading(true);
 
-    try {
-const res = await api.post("/auth/login", {
-  identifier,
-  password,
-});
+try { const res = await api.post("/login", { identifier, password, });
 
 
       if (!res.data?.success) {
