@@ -125,4 +125,30 @@ api.interceptors.request.use((config) => {
     (await api.get(`/neighborhoods/by-city/${cityId}`)).data,
 };
 
+/* =========================
+   TYPES
+========================= */
+(api as any).types = {
+  getTypes: async () =>
+    (await api.get("/types")).data,
+
+  addType: async (formData: FormData) =>
+    (
+      await api.post("/types", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      })
+    ).data,
+
+  updateType: async (id: number, formData: FormData) =>
+    (
+      await api.put(`/types/${id}`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      })
+    ).data,
+
+  deleteType: async (id: number) =>
+    (await api.delete(`/types/${id}`)).data,
+};
+
+
 export default api;
