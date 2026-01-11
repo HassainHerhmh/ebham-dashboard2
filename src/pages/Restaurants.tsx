@@ -2,19 +2,14 @@ import React, { useState, useEffect } from "react";
 import { Store, Plus, X, Trash2, Edit3 } from "lucide-react";
 import api from "../services/api";
 
-
 interface Restaurant {
   id: number;
   name: string;
   address: string;
   phone: string;
   image_url: string;
-  type_name?: string;
-  type_id?: number;
   categories?: string;
   category_ids?: string;
-  delivery_time?: string;
-  pricing_plan?: string;
   created_at: string;
   latitude?: number;
   longitude?: number;
@@ -22,11 +17,6 @@ interface Restaurant {
 }
 
 interface Category {
-  id: number;
-  name: string;
-}
-
-interface Type {
   id: number;
   name: string;
 }
@@ -54,9 +44,7 @@ const daysOfWeek = [
 const Restaurants: React.FC = () => {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [types, setTypes] = useState<Type[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
-  const [selectedType, setSelectedType] = useState<number | null>(null);
   const [storeSchedule, setStoreSchedule] = useState<ScheduleItem[]>(
     daysOfWeek.map((day) => ({ day, start: "", end: "", closed: false }))
   );
@@ -66,13 +54,6 @@ const Restaurants: React.FC = () => {
   const [editMode, setEditMode] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
-  const [selectedRestaurantId, setSelectedRestaurantId] = useState<number | null>(
-    null
-  );
-
-  const [showScheduleModal, setShowScheduleModal] = useState(false);
-  const [currentSchedule, setCurrentSchedule] = useState<ScheduleItem[]>([]);
-  const [currentRestaurantName, setCurrentRestaurantName] = useState("");
 
   const [formData, setFormData] = useState({
     id: 0,
@@ -80,8 +61,6 @@ const Restaurants: React.FC = () => {
     address: "",
     phone: "",
     image_url: "",
-    delivery_time: "",
-    pricing_plan: "",
   });
 
   const [latitude, setLatitude] = useState("");
@@ -89,24 +68,20 @@ const Restaurants: React.FC = () => {
 
   const fetchRestaurants = async () => {
     const res = await api.get(`/restaurants`);
-    setRestaurants(res.data.restaurants || res.data);
+    const data = res.data;
+    setRestaurants(Array.isArray(data) ? data : data.restaurants || []);
     setLoading(false);
   };
 
   const fetchCategories = async () => {
     const res = await api.get(`/categories`);
-    setCategories(res.data);
-  };
-
-  const fetchTypes = async () => {
-    const res = await api.get(`/types`);
-    setTypes(res.data.types || res.data);
+    const data = res.data;
+    setCategories(Array.isArray(data) ? data : data.categories || []);
   };
 
   useEffect(() => {
     fetchRestaurants();
     fetchCategories();
-    fetchTypes();
   }, []);
 
   const toggleCategory = (id: number) => {
@@ -127,11 +102,8 @@ const Restaurants: React.FC = () => {
     e.preventDefault();
     const data = new FormData();
     data.append("name", formData.name);
-    if (selectedType) data.append("type_id", String(selectedType));
     data.append("address", formData.address);
     data.append("phone", formData.phone);
-    data.append("delivery_time", formData.delivery_time);
-    data.append("pricing_plan", formData.pricing_plan);
     data.append("category_ids", JSON.stringify(selectedCategories));
     data.append("schedule", JSON.stringify(storeSchedule));
     if (latitude) data.append("latitude", latitude);
@@ -156,19 +128,14 @@ const Restaurants: React.FC = () => {
       address: r.address,
       phone: r.phone,
       image_url: r.image_url || "",
-      delivery_time: r.delivery_time || "",
-      pricing_plan: r.pricing_plan || "",
     });
 
     const categoryIds = r.category_ids
-      ? String(r.category_ids)
-          .split(",")
-          .map((id) => Number(id))
+      ? String(r.category_ids).split(",").map((id) => Number(id))
       : [];
 
     setSelectedCategories(categoryIds);
-    setSelectedType(r.type_id || null);
-    setPreview(r.image_url ? `{r.image_url}` : null);
+    setPreview(r.image_url ? `${API_URL}${r.image_url}` : null);
     setLatitude(r.latitude ? String(r.latitude) : "");
     setLongitude(r.longitude ? String(r.longitude) : "");
     setStoreSchedule(
@@ -192,17 +159,8 @@ const Restaurants: React.FC = () => {
   };
 
   const resetForm = () => {
-    setFormData({
-      id: 0,
-      name: "",
-      address: "",
-      phone: "",
-      image_url: "",
-      delivery_time: "",
-      pricing_plan: "",
-    });
+    setFormData({ id: 0, name: "", address: "", phone: "", image_url: "" });
     setSelectedCategories([]);
-    setSelectedType(null);
     setLatitude("");
     setLongitude("");
     setStoreSchedule(daysOfWeek.map((day) => ({ day, start: "", end: "", closed: false })));
@@ -293,9 +251,7 @@ const Restaurants: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-lg overflow-y-auto max-h-screen">
             <div className="flex justify-between mb-4">
-              <h2 className="text-xl font-bold">
-                {editMode ? "تعديل" : "إضافة"}
-              </h2>
+              <h2 className="text-xl font-bold">{editMode ? "تعديل" : "إضافة"}</h2>
               <button onClick={resetForm}>
                 <X />
               </button>
@@ -306,9 +262,7 @@ const Restaurants: React.FC = () => {
                 type="text"
                 placeholder="اسم المطعم"
                 value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 required
                 className="border rounded-lg px-3 py-2 w-full"
               />
@@ -317,88 +271,85 @@ const Restaurants: React.FC = () => {
                 type="text"
                 placeholder="العنوان"
                 value={formData.address}
-                onChange={(e) =>
-                  setFormData({ ...formData, address: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                 className="border rounded-lg px-3 py-2 w-full"
               />
 
-                 <input
-  type="text"
-  placeholder="الهاتف"
-  value={formData.phone}
-  onChange={(e) =>
-    setFormData({ ...formData, phone: e.target.value })
-  }
-  className="border rounded-lg px-3 py-2 w-full"
-/>
-<div className="border p-3 rounded-lg max-h-32 overflow-y-auto">
-  <h3 className="font-semibold mb-2">الفئات</h3>
-  {categories.map((c) => (
-    <label key={c.id} className="flex items-center gap-2 mb-1">
-      <input
-        type="checkbox"
-        checked={selectedCategories.includes(c.id)}
-        onChange={() => toggleCategory(c.id)}
-      />
-      {c.name}
-    </label>
-  ))}
-</div>
+              <input
+                type="text"
+                placeholder="الهاتف"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                className="border rounded-lg px-3 py-2 w-full"
+              />
 
+              <div className="border p-3 rounded-lg max-h-32 overflow-y-auto">
+                <h3 className="font-semibold mb-2">الفئات</h3>
+                {categories.map((c) => (
+                  <label key={c.id} className="flex items-center gap-2 mb-1">
+                    <input
+                      type="checkbox"
+                      checked={selectedCategories.includes(c.id)}
+                      onChange={() => toggleCategory(c.id)}
+                    />
+                    {c.name}
+                  </label>
+                ))}
+              </div>
+
+              {/* التوقيت */}
               <div className="border p-3 rounded-lg">
-  <h3 className="font-semibold mb-2">🕐 جدول التوقيت</h3>
-  {storeSchedule.map((dayItem, index) => (
-    <div key={dayItem.day} className="flex items-center gap-2 mb-2">
-      <label className="w-20">{dayItem.day}</label>
-      {dayItem.closed ? (
-        <span className="text-red-600 font-medium">مغلق</span>
-      ) : (
-        <>
-          <input
-            type="time"
-            value={dayItem.start}
-            onChange={(e) => {
-              const copy = [...storeSchedule];
-              copy[index].start = e.target.value;
-              setStoreSchedule(copy);
-            }}
-            className="border px-2 py-1 rounded"
-          />
-          <span>-</span>
-          <input
-            type="time"
-            value={dayItem.end}
-            onChange={(e) => {
-              const copy = [...storeSchedule];
-              copy[index].end = e.target.value;
-              setStoreSchedule(copy);
-            }}
-            className="border px-2 py-1 rounded"
-          />
-        </>
-      )}
-      <label className="flex items-center gap-1">
-        <input
-          type="checkbox"
-          checked={dayItem.closed}
-          onChange={(e) => {
-            const copy = [...storeSchedule];
-            copy[index].closed = e.target.checked;
-            if (e.target.checked) {
-              copy[index].start = "";
-              copy[index].end = "";
-            }
-            setStoreSchedule(copy);
-          }}
-        />
-        مغلق
-      </label>
-    </div>
-  ))}
-</div>
+                <h3 className="font-semibold mb-2">🕐 جدول التوقيت</h3>
+                {storeSchedule.map((dayItem, index) => (
+                  <div key={dayItem.day} className="flex items-center gap-2 mb-2">
+                    <label className="w-20">{dayItem.day}</label>
+                    {dayItem.closed ? (
+                      <span className="text-red-600 font-medium">مغلق</span>
+                    ) : (
+                      <>
+                        <input
+                          type="time"
+                          value={dayItem.start}
+                          onChange={(e) => {
+                            const copy = [...storeSchedule];
+                            copy[index].start = e.target.value;
+                            setStoreSchedule(copy);
+                          }}
+                          className="border px-2 py-1 rounded"
+                        />
+                        <span>-</span>
+                        <input
+                          type="time"
+                          value={dayItem.end}
+                          onChange={(e) => {
+                            const copy = [...storeSchedule];
+                            copy[index].end = e.target.value;
+                            setStoreSchedule(copy);
+                          }}
+                          className="border px-2 py-1 rounded"
+                        />
+                      </>
+                    )}
+                    <label className="flex items-center gap-1">
+                      <input
+                        type="checkbox"
+                        checked={dayItem.closed}
+                        onChange={(e) => {
+                          const copy = [...storeSchedule];
+                          copy[index].closed = e.target.checked;
+                          if (e.target.checked) {
+                            copy[index].start = "";
+                            copy[index].end = "";
+                          }
+                          setStoreSchedule(copy);
+                        }}
+                      />
+                      مغلق
+                    </label>
+                  </div>
+                ))}
+              </div>
 
-              
               <div className="grid grid-cols-2 gap-2">
                 <input
                   type="text"
@@ -416,29 +367,15 @@ const Restaurants: React.FC = () => {
                 />
               </div>
 
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageChange}
-                className="w-full"
-              />
+              <input type="file" accept="image/*" onChange={handleImageChange} />
 
-              {preview && (
-                <img src={preview} alt="معاينة" className="w-16 h-16 rounded" />
-              )}
+              {preview && <img src={preview} alt="معاينة" className="w-16 h-16 rounded" />}
 
               <div className="flex gap-2">
-                <button
-                  type="submit"
-                  className="flex-1 bg-blue-600 text-white px-4 py-2 rounded"
-                >
+                <button type="submit" className="flex-1 bg-blue-600 text-white px-4 py-2 rounded">
                   حفظ
                 </button>
-                <button
-                  type="button"
-                  onClick={resetForm}
-                  className="flex-1 bg-gray-400 text-white px-4 py-2 rounded"
-                >
+                <button type="button" onClick={resetForm} className="flex-1 bg-gray-400 text-white px-4 py-2 rounded">
                   إلغاء
                 </button>
               </div>
