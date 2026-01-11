@@ -1,14 +1,14 @@
-import React, { useState, useEffect, FormEvent } from "react";
+import React, { useEffect, useState, FormEvent } from "react";
 import api from "../services/api";
 
 interface Product {
   id: number;
   name: string;
   price: number;
-  image_url?: string;
   notes?: string;
-  category_id?: number;
-  category_name?: string;
+  image_url?: string;
+  category_ids?: string; // "1,2,3"
+  category_names?: string;
   unit_id?: number;
   unit_name?: string;
   restaurant_id?: number;
@@ -25,31 +25,23 @@ const Products: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
 
+  const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
 
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
   const [notes, setNotes] = useState("");
   const [restaurantId, setRestaurantId] = useState("");
-  const [categoryId, setCategoryId] = useState("");
   const [unitId, setUnitId] = useState("");
+  const [categoryIds, setCategoryIds] = useState<string[]>([]);
 
   const [image, setImage] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
-  const [showForm, setShowForm] = useState(false);
-
-  const [searchName, setSearchName] = useState("");
-  const [searchRestaurant, setSearchRestaurant] = useState("");
-  const [searchCategory, setSearchCategory] = useState("");
-
-  /* ================= FETCH ================= */
 
   const fetchProducts = async () => {
     const res = await api.get("/products");
     const data = res.data;
-    if (Array.isArray(data)) setProducts(data);
-    else if (Array.isArray(data.products)) setProducts(data.products);
-    else setProducts([]);
+    setProducts(Array.isArray(data) ? data : data.products || []);
   };
 
   const fetchRestaurants = async () => {
@@ -77,62 +69,52 @@ const Products: React.FC = () => {
     fetchUnits();
   }, []);
 
-  /* ================= RESET ================= */
-
   const resetForm = () => {
     setEditingId(null);
     setName("");
     setPrice("");
     setNotes("");
     setRestaurantId("");
-    setCategoryId("");
     setUnitId("");
+    setCategoryIds([]);
     setImage(null);
     setPreview(null);
+    setShowForm(false);
   };
 
-  /* ================= SUBMIT ================= */
+  const toggleCategory = (id: number) => {
+    const s = String(id);
+    setCategoryIds((prev) =>
+      prev.includes(s) ? prev.filter((c) => c !== s) : [...prev, s]
+    );
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
-    if (!categoryId) return alert("❌ اختر الفئة");
-    if (!restaurantId) return alert("❌ اختر المطعم");
-    if (!unitId) return alert("❌ اختر الوحدة");
+    if (!restaurantId) return alert("اختر المطعم");
+    if (!unitId) return alert("اختر الوحدة");
+    if (!categoryIds.length) return alert("اختر فئة واحدة على الأقل");
 
-    const formData = new FormData();
-    formData.append("name", name);
-    formData.append("price", price);
-    formData.append("notes", notes);
-    formData.append("restaurant_id", restaurantId);
-    formData.append("category_id", categoryId);
-    formData.append("unit_id", unitId);
-    if (image) formData.append("image", image);
+    const form = new FormData();
+    form.append("name", name);
+    form.append("price", price);
+    form.append("notes", notes);
+    form.append("restaurant_id", restaurantId);
+    form.append("unit_id", unitId);
+    form.append("category_ids", JSON.stringify(categoryIds));
+    if (image) form.append("image", image);
 
     const res = editingId
-      ? await api.put(`/products/${editingId}`, formData)
-      : await api.post("/products", formData);
+      ? await api.put(`/products/${editingId}`, form)
+      : await api.post("/products", form);
 
     if (res.data?.success) {
       alert(editingId ? "تم تعديل المنتج" : "تم إضافة المنتج");
       resetForm();
-      setShowForm(false);
       fetchProducts();
     }
   };
-
-  /* ================= DELETE ================= */
-
-  const handleDelete = async (id: number) => {
-    if (!window.confirm("⚠️ حذف المنتج؟")) return;
-    const res = await api.delete(`/products/${id}`);
-    if (res.data?.success) {
-      alert("🗑️ تم حذف المنتج");
-      fetchProducts();
-    }
-  };
-
-  /* ================= EDIT ================= */
 
   const handleEdit = (p: Product) => {
     setEditingId(p.id);
@@ -140,117 +122,104 @@ const Products: React.FC = () => {
     setPrice(String(p.price));
     setNotes(p.notes || "");
     setRestaurantId(p.restaurant_id?.toString() || "");
-    setCategoryId(p.category_id?.toString() || "");
     setUnitId(p.unit_id?.toString() || "");
+    setCategoryIds(p.category_ids ? p.category_ids.split(",") : []);
     setPreview(p.image_url || null);
     setShowForm(true);
   };
 
-  /* ================= FILTER ================= */
-
-  const filteredProducts = products
-    .filter((p) => p.name.toLowerCase().includes(searchName.toLowerCase()))
-    .filter((p) =>
-      p.restaurant_name?.toLowerCase().includes(searchRestaurant.toLowerCase())
-    )
-    .filter((p) =>
-      searchCategory ? String(p.category_id) === searchCategory : true
-    );
+  const handleDelete = async (id: number) => {
+    if (!window.confirm("حذف المنتج؟")) return;
+    const res = await api.delete(`/products/${id}`);
+    if (res.data?.success) fetchProducts();
+  };
 
   return (
-    <div className="space-y-4">
-      <div className="flex gap-3">
-        <input
-          placeholder="بحث بالاسم"
-          value={searchName}
-          onChange={(e) => setSearchName(e.target.value)}
-          className="border rounded px-3 py-2"
-        />
-        <input
-          placeholder="بحث بالمطعم"
-          value={searchRestaurant}
-          onChange={(e) => setSearchRestaurant(e.target.value)}
-          className="border rounded px-3 py-2"
-        />
-        <select
-          value={searchCategory}
-          onChange={(e) => setSearchCategory(e.target.value)}
-          className="border rounded px-3 py-2"
-        >
-          <option value="">كل الفئات</option>
-          {categories.map((c) => (
-            <option key={c.id} value={c.id}>{c.name}</option>
-          ))}
-        </select>
-
+    <div className="p-6 space-y-4">
+      <div className="flex justify-between">
+        <h2 className="text-xl font-bold">📦 المنتجات</h2>
         <button
           onClick={() => setShowForm(true)}
           className="bg-blue-600 text-white px-4 py-2 rounded"
         >
-          إضافة منتج
+          ➕ إضافة منتج
         </button>
       </div>
 
-      {/* الجدول */}
       <table className="w-full border">
-        <thead>
+        <thead className="bg-gray-100">
           <tr>
             <th>#</th>
             <th>الاسم</th>
-            <th>السعر</th>
+            <th>الفئات</th>
             <th>المطعم</th>
-            <th>الفئة</th>
             <th>الوحدة</th>
+            <th>السعر</th>
             <th>خيارات</th>
           </tr>
         </thead>
         <tbody>
-          {filteredProducts.map((p, i) => (
+          {products.map((p, i) => (
             <tr key={p.id}>
               <td>{i + 1}</td>
               <td>{p.name}</td>
+              <td>{p.category_names}</td>
+              <td>{p.restaurant_name}</td>
+              <td>{p.unit_name}</td>
               <td>{p.price}</td>
-              <td>{p.restaurant_name || "-"}</td>
-              <td>{p.category_name || "-"}</td>
-              <td>{p.unit_name || "-"}</td>
-              <td className="flex gap-2">
-                <button onClick={() => handleEdit(p)}>تعديل</button>
-                <button onClick={() => handleDelete(p.id)}>حذف</button>
+              <td className="flex gap-2 justify-center">
+                <button onClick={() => handleEdit(p)} className="text-blue-600">
+                  تعديل
+                </button>
+                <button onClick={() => handleDelete(p.id)} className="text-red-600">
+                  حذف
+                </button>
               </td>
             </tr>
           ))}
         </tbody>
       </table>
 
-      {/* النموذج */}
       {showForm && (
-        <form onSubmit={handleSubmit} className="border p-4 space-y-2">
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="الاسم" className="border p-2 w-full" />
-          <input value={price} onChange={(e) => setPrice(e.target.value)} placeholder="السعر" className="border p-2 w-full" />
-          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="ملاحظات" className="border p-2 w-full" />
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-xl w-full max-w-lg">
+            <h3 className="font-bold mb-3">
+              {editingId ? "تعديل منتج" : "إضافة منتج"}
+            </h3>
 
-          <select value={restaurantId} onChange={(e) => setRestaurantId(e.target.value)} className="border p-2 w-full">
-            <option value="">اختر المطعم</option>
-            {restaurants.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
-          </select>
+            <form onSubmit={handleSubmit} className="space-y-3">
+              <input value={name} onChange={(e) => setName(e.target.value)} placeholder="اسم المنتج" className="border w-full px-3 py-2 rounded" />
+              <input value={price} onChange={(e) => setPrice(e.target.value)} placeholder="السعر" className="border w-full px-3 py-2 rounded" />
 
-          <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className="border p-2 w-full">
-            <option value="">اختر الفئة</option>
-            {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
+              <select value={restaurantId} onChange={(e) => setRestaurantId(e.target.value)} className="border w-full px-3 py-2 rounded">
+                <option value="">اختر المطعم</option>
+                {restaurants.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+              </select>
 
-          <select value={unitId} onChange={(e) => setUnitId(e.target.value)} className="border p-2 w-full">
-            <option value="">اختر الوحدة</option>
-            {units.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-          </select>
+              <select value={unitId} onChange={(e) => setUnitId(e.target.value)} className="border w-full px-3 py-2 rounded">
+                <option value="">اختر الوحدة</option>
+                {units.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+              </select>
 
-          <input type="file" onChange={(e) => setImage(e.target.files?.[0] || null)} />
+              <div className="border p-2 rounded max-h-32 overflow-y-auto">
+                {categories.map(c => (
+                  <label key={c.id} className="block">
+                    <input type="checkbox" checked={categoryIds.includes(String(c.id))} onChange={() => toggleCategory(c.id)} /> {c.name}
+                  </label>
+                ))}
+              </div>
 
-          <div className="flex gap-2">
-            <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded">حفظ</button>
-            <button type="button" onClick={() => { resetForm(); setShowForm(false); }} className="bg-gray-400 px-4 py-2 rounded">إلغاء</button>
+              <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="ملاحظات" className="border w-full px-3 py-2 rounded" />
+
+              <input type="file" onChange={(e) => e.target.files && setImage(e.target.files[0])} />
+
+              <div className="flex gap-2">
+                <button className="flex-1 bg-blue-600 text-white py-2 rounded">حفظ</button>
+                <button type="button" onClick={resetForm} className="flex-1 bg-gray-300 py-2 rounded">إلغاء</button>
+              </div>
+            </form>
           </div>
-        </form>
+        </div>
       )}
     </div>
   );
