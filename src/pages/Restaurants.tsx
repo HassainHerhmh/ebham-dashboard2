@@ -323,6 +323,82 @@ const Restaurants: React.FC = () => {
                 className="border rounded-lg px-3 py-2 w-full"
               />
 
+                 <input
+  type="text"
+  placeholder="الهاتف"
+  value={formData.phone}
+  onChange={(e) =>
+    setFormData({ ...formData, phone: e.target.value })
+  }
+  className="border rounded-lg px-3 py-2 w-full"
+/>
+<div className="border p-3 rounded-lg max-h-32 overflow-y-auto">
+  <h3 className="font-semibold mb-2">الفئات</h3>
+  {categories.map((c) => (
+    <label key={c.id} className="flex items-center gap-2 mb-1">
+      <input
+        type="checkbox"
+        checked={selectedCategories.includes(c.id)}
+        onChange={() => toggleCategory(c.id)}
+      />
+      {c.name}
+    </label>
+  ))}
+</div>
+
+              <div className="border p-3 rounded-lg">
+  <h3 className="font-semibold mb-2">🕐 جدول التوقيت</h3>
+  {storeSchedule.map((dayItem, index) => (
+    <div key={dayItem.day} className="flex items-center gap-2 mb-2">
+      <label className="w-20">{dayItem.day}</label>
+      {dayItem.closed ? (
+        <span className="text-red-600 font-medium">مغلق</span>
+      ) : (
+        <>
+          <input
+            type="time"
+            value={dayItem.start}
+            onChange={(e) => {
+              const copy = [...storeSchedule];
+              copy[index].start = e.target.value;
+              setStoreSchedule(copy);
+            }}
+            className="border px-2 py-1 rounded"
+          />
+          <span>-</span>
+          <input
+            type="time"
+            value={dayItem.end}
+            onChange={(e) => {
+              const copy = [...storeSchedule];
+              copy[index].end = e.target.value;
+              setStoreSchedule(copy);
+            }}
+            className="border px-2 py-1 rounded"
+          />
+        </>
+      )}
+      <label className="flex items-center gap-1">
+        <input
+          type="checkbox"
+          checked={dayItem.closed}
+          onChange={(e) => {
+            const copy = [...storeSchedule];
+            copy[index].closed = e.target.checked;
+            if (e.target.checked) {
+              copy[index].start = "";
+              copy[index].end = "";
+            }
+            setStoreSchedule(copy);
+          }}
+        />
+        مغلق
+      </label>
+    </div>
+  ))}
+</div>
+
+              
               <div className="grid grid-cols-2 gap-2">
                 <input
                   type="text"
