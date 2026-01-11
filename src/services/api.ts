@@ -150,5 +150,49 @@ api.interceptors.request.use((config) => {
     (await api.delete(`/types/${id}`)).data,
 };
 
+/* ===============================
+   Types
+================================ */
+export interface Unit {
+  id: number;
+  name: string;
+}
+
+export interface UnitsResponse {
+  success: boolean;
+  units: Unit[];
+}
+
+/* ===============================
+   🟢 جلب جميع الوحدات
+================================ */
+export const getUnits = async (): Promise<Unit[]> => {
+  const res = await api.get<UnitsResponse>("/units");
+  return res.data.units;
+};
+
+/* ===============================
+   ✅ إضافة وحدة
+================================ */
+export const createUnit = async (name: string) => {
+  const res = await api.post("/units", { name });
+  return res.data;
+};
+
+/* ===============================
+   ✏️ تعديل وحدة
+================================ */
+export const updateUnit = async (id: number, name: string) => {
+  const res = await api.put(`/units/${id}`, { name });
+  return res.data;
+};
+
+/* ===============================
+   🗑️ حذف وحدة
+================================ */
+export const deleteUnit = async (id: number) => {
+  const res = await api.delete(`/units/${id}`);
+  return res.data;
+};
 
 export default api;
