@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Store, Plus, X, Trash2, Edit3 } from "lucide-react";
-import axios from "axios";
+import api from "../services/api";
+
 
 interface Restaurant {
   id: number;
@@ -87,18 +88,18 @@ const Restaurants: React.FC = () => {
   const [longitude, setLongitude] = useState("");
 
   const fetchRestaurants = async () => {
-    const res = await axios.get(`${API_URL}/restaurants`);
+    const res = await api.get(`/restaurants`);
     setRestaurants(res.data.restaurants || res.data);
     setLoading(false);
   };
 
   const fetchCategories = async () => {
-    const res = await axios.get(`${API_URL}/categories`);
+    const res = await api.get(`/categories`);
     setCategories(res.data);
   };
 
   const fetchTypes = async () => {
-    const res = await axios.get(`${API_URL}/types`);
+    const res = await api.get(`/types`);
     setTypes(res.data.types || res.data);
   };
 
@@ -138,10 +139,10 @@ const Restaurants: React.FC = () => {
     if (file) data.append("image", file);
 
     if (editMode) {
-      await axios.put(`${API_URL}/restaurants/${formData.id}`, data);
+      await api.put(`/restaurants/${formData.id}`, data);
       alert("✅ تم تعديل المطعم");
     } else {
-      await axios.post(`${API_URL}/restaurants`, data);
+      await api.post(`/restaurants`, data);
       alert("✅ تم إضافة المطعم");
     }
     resetForm();
@@ -167,7 +168,7 @@ const Restaurants: React.FC = () => {
 
     setSelectedCategories(categoryIds);
     setSelectedType(r.type_id || null);
-    setPreview(r.image_url ? `${API_URL}${r.image_url}` : null);
+    setPreview(r.image_url ? `{r.image_url}` : null);
     setLatitude(r.latitude ? String(r.latitude) : "");
     setLongitude(r.longitude ? String(r.longitude) : "");
     setStoreSchedule(
@@ -186,7 +187,7 @@ const Restaurants: React.FC = () => {
 
   const handleDelete = async (id: number) => {
     if (!window.confirm("تأكيد حذف المطعم؟")) return;
-    await axios.delete(`${API_URL}/restaurants/${id}`);
+    await api.delete(`/restaurants/${id}`);
     fetchRestaurants();
   };
 
