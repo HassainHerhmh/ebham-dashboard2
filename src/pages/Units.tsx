@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import api from "../api/units";
 
 interface Unit {
   id: number;
   name: string;
 }
 
-const API_URL = "http://localhost:5000";
+
 
 const Units: React.FC = () => {
   const [units, setUnits] = useState<Unit[]>([]);
