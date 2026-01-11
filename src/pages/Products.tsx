@@ -58,6 +58,7 @@ const fetchProducts = async () => {
 };
 
 
+
 const fetchRestaurants = async () => {
   const res = await api.get("/restaurants");
   const data = res.data;
