@@ -183,4 +183,45 @@ export const deleteUnit = async (id: number) => {
   return res.data;
 };
 
+
+/* ===============================
+   🟢 جلب جميع الفئات
+================================ */
+export const getCategories = async (): Promise<Category[]> => {
+  const res = await api.get<CategoriesResponse>("/categories");
+  return res.data.categories;
+};
+
+/* ===============================
+   ✅ إضافة فئة جديدة (مع صورة)
+================================ */
+export const createCategory = async (formData: FormData) => {
+  const res = await api.post("/categories", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+  return res.data;
+};
+
+/* ===============================
+   ✏️ تعديل فئة
+================================ */
+export const updateCategory = async (id: number, formData: FormData) => {
+  const res = await api.put(`/categories/${id}`, formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+  return res.data;
+};
+
+/* ===============================
+   🗑️ حذف فئة
+================================ */
+export const deleteCategory = async (id: number) => {
+  const res = await api.delete(`/categories/${id}`);
+  return res.data;
+};
+
 export default api;
