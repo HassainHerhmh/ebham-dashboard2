@@ -14,60 +14,64 @@ const Units: React.FC = () => {
   const [editId, setEditId] = useState<number | null>(null);
   const [nameValue, setNameValue] = useState("");
 
-  const fetchUnits = async () => {
-    try {
-      const res = await api.get(`${API_URL}/api/units`);
-      setUnits(res.data);
-    } catch (err) {
-      alert("❌ فشل في جلب البيانات");
-      console.error(err);
-    }
-  };
+const fetchUnits = async () => {
+  try {
+    const res = await api.get("/units");
+    setUnits(res.data.units); // لأن السيرفر يرجع { success, units }
+  } catch (err) {
+    alert("❌ فشل في جلب البيانات");
+    console.error(err);
+  }
+};
 
-  useEffect(() => {
+useEffect(() => {
+  fetchUnits();
+}, []);
+
+const handleSave = async () => {
+  if (!nameValue.trim()) {
+    alert("❌ يرجى إدخال اسم الوحدة");
+    return;
+  }
+
+  try {
+    if (editId) {
+      await api.put(`/units/${editId}`, { name: nameValue });
+      alert("✅ تم تعديل الوحدة");
+    } else {
+      await api.post("/units", { name: nameValue });
+      alert("✅ تم إضافة الوحدة");
+    }
+
+    setShowModal(false);
+    setEditId(null);
+    setNameValue("");
     fetchUnits();
-  }, []);
+  } catch (err) {
+    alert("❌ حدث خطأ أثناء الحفظ");
+    console.error(err);
+  }
+};
 
-  const handleSave = async () => {
-    if (!nameValue.trim()) {
-      alert("❌ يرجى إدخال اسم الوحدة");
-      return;
-    }
-    try {
-      if (editId) {
-        await api.put(`${API_URL}/aunits/${editId}`, { name: nameValue });
-        alert("✅ تم تعديل الوحدة");
-      } else {
-        await api.post(`${API_URL}/units`, { name: nameValue });
-        alert("✅ تم إضافة الوحدة");
-      }
-      setShowModal(false);
-      setEditId(null);
-      setNameValue("");
-      fetchUnits();
-    } catch (err) {
-      alert("❌ حدث خطأ أثناء الحفظ");
-      console.error(err);
-    }
-  };
+const handleEdit = (unit: Unit) => {
+  setEditId(unit.id);
+  setNameValue(unit.name);
+  setShowModal(true);
+};
 
-  const handleEdit = (unit: Unit) => {
-    setEditId(unit.id);
-    setNameValue(unit.name);
-    setShowModal(true);
-  };
+const handleDelete = async (id: number) => {
+  if (!window.confirm("هل تريد حذف هذه الوحدة؟")) return;
 
-  const handleDelete = async (id: number) => {
-    if (!window.confirm("هل تريد حذف هذه الوحدة؟")) return;
-    try {
-      await api.delete(`${API_URL}/aunits/${id}`);
-      alert("🗑 تم حذف الوحدة");
-      fetchUnits();
-    } catch (err) {
-      alert("❌ حدث خطأ أثناء الحذف");
-      console.error(err);
-    }
-  };
+  try {
+    await api.delete(`/units/${id}`);
+    alert("🗑 تم حذف الوحدة");
+    fetchUnits();
+  } catch (err) {
+    alert("❌ حدث خطأ أثناء الحذف");
+    console.error(err);
+  }
+};
+
 
   return (
     <div className="p-6" dir="rtl">
