@@ -116,17 +116,21 @@ const Products: React.FC = () => {
     }
   };
 
-  const handleEdit = (p: Product) => {
+const handleEdit = (p: Product) => {
+  setShowForm(true);
+
+  setTimeout(() => {
     setEditingId(p.id);
     setName(p.name);
     setPrice(String(p.price));
     setNotes(p.notes || "");
-    setRestaurantId(p.restaurant_id?.toString() || "");
-    setUnitId(p.unit_id?.toString() || "");
+    setRestaurantId(p.restaurant_id ? String(p.restaurant_id) : "");
+    setUnitId(p.unit_id ? String(p.unit_id) : "");
     setCategoryIds(p.category_ids ? p.category_ids.split(",") : []);
     setPreview(p.image_url || null);
-    setShowForm(true);
-  };
+  }, 0);
+};
+
 
   const handleDelete = async (id: number) => {
     if (!window.confirm("حذف المنتج؟")) return;
