@@ -173,31 +173,62 @@ const Restaurants: React.FC = () => {
   };
 
   // ======= السحب والترتيب =======
-  const handleDragStart = (index: number) => {
-    setDragIndex(index);
-  };
+ <tbody>
+  {restaurants.map((r, index) => (
+    <tr
+      key={r.id}
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={() => handleDrop(index)}
+    >
+      <td
+        draggable
+        onDragStart={() => handleDragStart(index)}
+        className="cursor-grab text-gray-400 select-none"
+        title="اسحب للترتيب"
+      >
+        ⋮⋮
+      </td>
 
-  const handleDrop = async (dropIndex: number) => {
-    if (dragIndex === null || dragIndex === dropIndex) return;
+      <td>#{index + 1}</td>
+      <td>{r.name}</td>
+      <td>{r.address}</td>
+      <td>{r.phone}</td>
+      <td>{r.categories || "-"}</td>
+      <td>
+        {r.latitude && r.longitude ? (
+          <a
+            href={`https://www.google.com/maps?q=${r.latitude},${r.longitude}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 underline"
+          >
+            عرض الموقع
+          </a>
+        ) : (
+          "-"
+        )}
+      </td>
+      <td>
+        {r.image_url && (
+          <img
+            src={`${API_URL}${r.image_url}`}
+            alt={r.name}
+            className="w-16 h-16 object-cover rounded"
+          />
+        )}
+      </td>
+      <td className="flex gap-2 justify-center">
+        <button onClick={() => handleEdit(r)} className="text-blue-600">
+          <Edit3 />
+        </button>
+        <button onClick={() => handleDelete(r.id)} className="text-red-600">
+          <Trash2 />
+        </button>
+      </td>
+    </tr>
+  ))}
+</tbody>
 
-    const updated = [...restaurants];
-    const moved = updated.splice(dragIndex, 1)[0];
-    updated.splice(dropIndex, 0, moved);
-
-    setRestaurants(updated);
-    setDragIndex(null);
-
-    const order = updated.map((r, i) => ({
-      id: r.id,
-      sort_order: i + 1,
-    }));
-
-    try {
-      await api.post("/restaurants/reorder", { order });
-    } catch (e) {
-      console.error("خطأ في حفظ الترتيب", e);
-    }
-  };
   // ===============================
 
   return (
