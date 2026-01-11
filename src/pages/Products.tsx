@@ -44,25 +44,26 @@ const [searchCategory, setSearchCategory] = useState("");
 
   /* ================= FETCH ================= */
 
-  const fetchProducts = async () => {
-    const res = await api.get("/products");
-    setProducts(res.data.products);
-  };
+const fetchProducts = async () => {
+  const res = await api.get("/products");
+  setProducts(res.data);
+};
 
-  const fetchRestaurants = async () => {
-    const res = await api.get("/restaurants");
-    setRestaurants(res.data.restaurants);
-  };
+const fetchRestaurants = async () => {
+  const res = await api.get("/restaurants");
+  setRestaurants(res.data);
+};
 
-  const fetchCategories = async () => {
-    const res = await api.get("/categories");
-    setCategories(res.data.categories);
-  };
+const fetchCategories = async () => {
+  const res = await api.get("/categories");
+  setCategories(res.data);
+};
 
-  const fetchUnits = async () => {
-    const res = await api.get("/units");
-    setUnits(res.data.units);
-  };
+const fetchUnits = async () => {
+  const res = await api.get("/units");
+  setUnits(res.data);
+};
+
 
   useEffect(() => {
     fetchProducts();
