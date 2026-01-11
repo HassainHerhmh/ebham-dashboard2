@@ -15,6 +15,8 @@ interface Restaurant {
   delivery_time?: string;
   pricing_plan?: string;
   created_at: string;
+  latitude?: number;
+  longitude?: number;
   schedule?: ScheduleItem[];
 }
 
@@ -67,7 +69,6 @@ const Restaurants: React.FC = () => {
     null
   );
 
-  // مودال التوقيت
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [currentSchedule, setCurrentSchedule] = useState<ScheduleItem[]>([]);
   const [currentRestaurantName, setCurrentRestaurantName] = useState("");
@@ -82,7 +83,9 @@ const Restaurants: React.FC = () => {
     pricing_plan: "",
   });
 
-  // 🔹 جلب البيانات
+  const [latitude, setLatitude] = useState("");
+  const [longitude, setLongitude] = useState("");
+
   const fetchRestaurants = async () => {
     const res = await axios.get(`${API_URL}/restaurants`);
     setRestaurants(res.data.restaurants || res.data);
@@ -105,14 +108,12 @@ const Restaurants: React.FC = () => {
     fetchTypes();
   }, []);
 
-  // 🔹 اختيار فئة
   const toggleCategory = (id: number) => {
     setSelectedCategories((prev) =>
       prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]
     );
   };
 
-  // 🔹 صورة
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const img = e.target.files?.[0];
     if (img) {
@@ -121,7 +122,6 @@ const Restaurants: React.FC = () => {
     }
   };
 
-  // 🔹 حفظ (إضافة / تعديل)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const data = new FormData();
@@ -133,7 +133,9 @@ const Restaurants: React.FC = () => {
     data.append("pricing_plan", formData.pricing_plan);
     data.append("category_ids", JSON.stringify(selectedCategories));
     data.append("schedule", JSON.stringify(storeSchedule));
-    if (file) data.append("image_url", file);
+    if (latitude) data.append("latitude", latitude);
+    if (longitude) data.append("longitude", longitude);
+    if (file) data.append("image", file);
 
     if (editMode) {
       await axios.put(`${API_URL}/restaurants/${formData.id}`, data);
@@ -146,7 +148,6 @@ const Restaurants: React.FC = () => {
     fetchRestaurants();
   };
 
-  // 🔹 تعديل
   const handleEdit = (r: Restaurant) => {
     setFormData({
       id: r.id,
@@ -167,6 +168,8 @@ const Restaurants: React.FC = () => {
     setSelectedCategories(categoryIds);
     setSelectedType(r.type_id || null);
     setPreview(r.image_url ? `${API_URL}${r.image_url}` : null);
+    setLatitude(r.latitude ? String(r.latitude) : "");
+    setLongitude(r.longitude ? String(r.longitude) : "");
     setStoreSchedule(
       r.schedule
         ? r.schedule.map((s) => ({
@@ -181,14 +184,12 @@ const Restaurants: React.FC = () => {
     setShowModal(true);
   };
 
-  // 🔹 حذف
   const handleDelete = async (id: number) => {
     if (!window.confirm("تأكيد حذف المطعم؟")) return;
     await axios.delete(`${API_URL}/restaurants/${id}`);
     fetchRestaurants();
   };
 
-  // 🔹 إعادة تعيين
   const resetForm = () => {
     setFormData({
       id: 0,
@@ -201,6 +202,8 @@ const Restaurants: React.FC = () => {
     });
     setSelectedCategories([]);
     setSelectedType(null);
+    setLatitude("");
+    setLongitude("");
     setStoreSchedule(daysOfWeek.map((day) => ({ day, start: "", end: "", closed: false })));
     setFile(null);
     setPreview(null);
@@ -208,40 +211,6 @@ const Restaurants: React.FC = () => {
     setShowModal(false);
   };
 
-  // 🔹 عرض مودال التوقيت
-  const showSchedule = (schedule: any[], name: string, id: number) => {
-    setCurrentRestaurantName(name);
-    setCurrentSchedule(
-      schedule && schedule.length > 0
-        ? schedule.map((s) => ({
-            day: s.day,
-            start_time: s.start_time || s.start,
-            end_time: s.end_time || s.end,
-            closed: s.closed,
-          }))
-        : daysOfWeek.map((d) => ({ day: d, start_time: "", end_time: "", closed: false }))
-    );
-    setSelectedRestaurantId(id);
-    setShowScheduleModal(true);
-  };
-
-  // 🔹 حفظ جدول التوقيت المعدل
-  const saveSchedule = async () => {
-    try {
-      await axios.put(`${API_URL}/restaurants/schedule/update`, {
-        restaurant_id: selectedRestaurantId,
-        schedule: currentSchedule,
-      });
-      alert("✅ تم حفظ التغييرات بنجاح");
-      setShowScheduleModal(false);
-      fetchRestaurants();
-    } catch (err) {
-      console.error(err);
-      alert("❌ حدث خطأ أثناء الحفظ");
-    }
-  };
-
-  // 🔹 واجهة العرض
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -265,12 +234,10 @@ const Restaurants: React.FC = () => {
               <tr>
                 <th>#</th>
                 <th>الاسم</th>
-                <th>النوع</th>
                 <th>العنوان</th>
                 <th>الهاتف</th>
-                <th>وقت التوصيل</th>
-                <th>خطة التسعيرة</th>
                 <th>الفئات</th>
+                <th>الموقع</th>
                 <th>الصورة</th>
                 <th>الإجراءات</th>
               </tr>
@@ -280,12 +247,23 @@ const Restaurants: React.FC = () => {
                 <tr key={r.id}>
                   <td>#{index + 1}</td>
                   <td>{r.name}</td>
-                  <td>{r.type_name || "-"}</td>
                   <td>{r.address}</td>
                   <td>{r.phone}</td>
-                  <td>{r.delivery_time || "-"}</td>
-                  <td>{r.pricing_plan || "-"}</td>
                   <td>{r.categories || "-"}</td>
+                  <td>
+                    {r.latitude && r.longitude ? (
+                      <a
+                        href={`https://www.google.com/maps?q=${r.latitude},${r.longitude}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 underline"
+                      >
+                        عرض الموقع
+                      </a>
+                    ) : (
+                      "-"
+                    )}
+                  </td>
                   <td>
                     {r.image_url && (
                       <img
@@ -296,24 +274,10 @@ const Restaurants: React.FC = () => {
                     )}
                   </td>
                   <td className="flex gap-2 justify-center">
-                    <button
-                      onClick={() => handleEdit(r)}
-                      className="text-blue-600"
-                    >
+                    <button onClick={() => handleEdit(r)} className="text-blue-600">
                       <Edit3 />
                     </button>
-                    <button
-                      onClick={() =>
-                        showSchedule(r.schedule || [], r.name, r.id)
-                      }
-                      className="text-green-600"
-                    >
-                      📅
-                    </button>
-                    <button
-                      onClick={() => handleDelete(r.id)}
-                      className="text-red-600"
-                    >
+                    <button onClick={() => handleDelete(r.id)} className="text-red-600">
                       <Trash2 />
                     </button>
                   </td>
@@ -324,7 +288,6 @@ const Restaurants: React.FC = () => {
         )}
       </div>
 
-      {/* 🟦 مودال الإضافة / التعديل */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-lg overflow-y-auto max-h-screen">
@@ -349,20 +312,6 @@ const Restaurants: React.FC = () => {
                 className="border rounded-lg px-3 py-2 w-full"
               />
 
-              <select
-                value={selectedType || ""}
-                onChange={(e) => setSelectedType(Number(e.target.value))}
-                className="border rounded-lg px-3 py-2 w-full"
-                required
-              >
-                <option value="">اختر النوع</option>
-                {types.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name}
-                  </option>
-                ))}
-              </select>
-
               <input
                 type="text"
                 placeholder="العنوان"
@@ -373,101 +322,21 @@ const Restaurants: React.FC = () => {
                 className="border rounded-lg px-3 py-2 w-full"
               />
 
-              <input
-                type="text"
-                placeholder="الهاتف"
-                value={formData.phone}
-                onChange={(e) =>
-                  setFormData({ ...formData, phone: e.target.value })
-                }
-                className="border rounded-lg px-3 py-2 w-full"
-              />
-
-              <input
-                type="text"
-                placeholder="وقت التوصيل مثال: 30-60 دقيقة"
-                value={formData.delivery_time}
-                onChange={(e) =>
-                  setFormData({ ...formData, delivery_time: e.target.value })
-                }
-                className="border rounded-lg px-3 py-2 w-full"
-              />
-
-              <input
-                type="text"
-                placeholder="خطة التسعيرة"
-                value={formData.pricing_plan}
-                onChange={(e) =>
-                  setFormData({ ...formData, pricing_plan: e.target.value })
-                }
-                className="border rounded-lg px-3 py-2 w-full"
-              />
-
-              <div className="border p-2 rounded-lg max-h-32 overflow-y-auto">
-                {categories.map((c) => (
-                  <label key={c.id} className="block">
-                    <input
-                      type="checkbox"
-                      checked={selectedCategories.includes(c.id)}
-                      onChange={() => toggleCategory(c.id)}
-                      className="mr-2"
-                    />
-                    {c.name}
-                  </label>
-                ))}
-              </div>
-
-              {/* التوقيت */}
-              <div className="border p-3 rounded-lg">
-                <h3 className="font-semibold mb-2">🕐 جدول التوقيت</h3>
-                {storeSchedule.map((dayItem, index) => (
-                  <div key={dayItem.day} className="flex items-center gap-2 mb-2">
-                    <label className="w-20">{dayItem.day}</label>
-                    {dayItem.closed ? (
-                      <span className="text-red-600 font-medium">مغلق</span>
-                    ) : (
-                      <>
-                        <input
-                          type="time"
-                          value={dayItem.start}
-                          onChange={(e) => {
-                            const copy = [...storeSchedule];
-                            copy[index].start = e.target.value;
-                            setStoreSchedule(copy);
-                          }}
-                          className="border px-2 py-1 rounded"
-                        />
-                        <span>-</span>
-                        <input
-                          type="time"
-                          value={dayItem.end}
-                          onChange={(e) => {
-                            const copy = [...storeSchedule];
-                            copy[index].end = e.target.value;
-                            setStoreSchedule(copy);
-                          }}
-                          className="border px-2 py-1 rounded"
-                        />
-                      </>
-                    )}
-                    <label>
-                      <input
-                        type="checkbox"
-                        checked={dayItem.closed}
-                        onChange={(e) => {
-                          const copy = [...storeSchedule];
-                          copy[index].closed = e.target.checked;
-                          if (e.target.checked) {
-                            copy[index].start = "";
-                            copy[index].end = "";
-                          }
-                          setStoreSchedule(copy);
-                        }}
-                      />{" "}
-                      مغلق
-                    </label>
-                  </div>
-                ))}
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  type="text"
+                  placeholder="Latitude"
+                  value={latitude}
+                  onChange={(e) => setLatitude(e.target.value)}
+                  className="border rounded-lg px-3 py-2 w-full"
+                />
+                <input
+                  type="text"
+                  placeholder="Longitude"
+                  value={longitude}
+                  onChange={(e) => setLongitude(e.target.value)}
+                  className="border rounded-lg px-3 py-2 w-full"
+                />
               </div>
 
               <input
@@ -476,6 +345,7 @@ const Restaurants: React.FC = () => {
                 onChange={handleImageChange}
                 className="w-full"
               />
+
               {preview && (
                 <img src={preview} alt="معاينة" className="w-16 h-16 rounded" />
               )}
@@ -496,96 +366,6 @@ const Restaurants: React.FC = () => {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
-
-      {/* 🟩 مودال التوقيت */}
-      {showScheduleModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md">
-            <div className="flex justify-between mb-4">
-              <h2 className="text-xl font-bold">
-                🕒 تعديل جدول التوقيت – {currentRestaurantName}
-              </h2>
-              <button
-                onClick={() => setShowScheduleModal(false)}
-                className="text-gray-600 hover:text-black"
-              >
-                ✖
-              </button>
-            </div>
-
-            <div className="space-y-2 max-h-[60vh] overflow-y-auto">
-              {currentSchedule.map((s, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between border-b pb-2"
-                >
-                  <span className="font-medium w-20">{s.day}</span>
-                  <div className="flex items-center gap-2">
-                    {s.closed ? (
-                      <span className="text-red-600 text-sm font-semibold">
-                        مغلق
-                      </span>
-                    ) : (
-                      <>
-                        <input
-                          type="time"
-                          value={s.start_time || s.start || ""}
-                          onChange={(e) => {
-                            const copy = [...currentSchedule];
-                            copy[index].start_time = e.target.value;
-                            setCurrentSchedule(copy);
-                          }}
-                          className="border rounded px-1 text-sm w-24"
-                        />
-                        <span>-</span>
-                        <input
-                          type="time"
-                          value={s.end_time || s.end || ""}
-                          onChange={(e) => {
-                            const copy = [...currentSchedule];
-                            copy[index].end_time = e.target.value;
-                            setCurrentSchedule(copy);
-                          }}
-                          className="border rounded px-1 text-sm w-24"
-                        />
-                      </>
-                    )}
-                    <input
-                      type="checkbox"
-                      checked={s.closed}
-                      onChange={(e) => {
-                        const copy = [...currentSchedule];
-                        copy[index].closed = e.target.checked;
-                        if (e.target.checked) {
-                          copy[index].start_time = "";
-                          copy[index].end_time = "";
-                        }
-                        setCurrentSchedule(copy);
-                      }}
-                    />
-                    <span className="text-xs">مغلق</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="flex justify-end mt-4 gap-2">
-              <button
-                onClick={() => setShowScheduleModal(false)}
-                className="bg-gray-400 text-white px-4 py-2 rounded"
-              >
-                إغلاق
-              </button>
-              <button
-                onClick={saveSchedule}
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-              >
-                💾 حفظ التغييرات
-              </button>
-            </div>
           </div>
         </div>
       )}
