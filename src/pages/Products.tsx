@@ -33,6 +33,7 @@ const Products: React.FC = () => {
   const [restaurantId, setRestaurantId] = useState("");
   const [categoryIds, setCategoryIds] = useState<string[]>([]);
   const [unitId, setUnitId] = useState("");
+  const [categoryIds, setCategoryIds] = useState<string[]>([]);
 
   const [image, setImage] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -144,7 +145,8 @@ const Products: React.FC = () => {
     const ids = p.category_ids
       ? String(p.category_ids).split(",").map((x) => x.trim())
       : [];
-    setCategoryIds(ids);
+    setCategoryIds(p.category_ids ? String(p.category_ids).split(",") : []);
+
 
     setPreview(p.image_url || null);
     setShowForm(true);
