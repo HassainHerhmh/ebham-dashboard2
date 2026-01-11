@@ -150,18 +150,6 @@ api.interceptors.request.use((config) => {
     (await api.delete(`/types/${id}`)).data,
 };
 
-/* ===============================
-   Types
-================================ */
-export interface Unit {
-  id: number;
-  name: string;
-}
-
-export interface UnitsResponse {
-  success: boolean;
-  units: Unit[];
-}
 
 /* ===============================
    🟢 جلب جميع الوحدات
