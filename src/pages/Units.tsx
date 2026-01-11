@@ -16,7 +16,7 @@ const Units: React.FC = () => {
 
   const fetchUnits = async () => {
     try {
-      const res = await axios.get(`${API_URL}/units`);
+      const res = await api.get(`${API_URL}/units`);
       setUnits(res.data);
     } catch (err) {
       alert("❌ فشل في جلب البيانات");
@@ -35,10 +35,10 @@ const Units: React.FC = () => {
     }
     try {
       if (editId) {
-        await axios.put(`${API_URL}/aunits/${editId}`, { name: nameValue });
+        await api.put(`${API_URL}/aunits/${editId}`, { name: nameValue });
         alert("✅ تم تعديل الوحدة");
       } else {
-        await axios.post(`${API_URL}/units`, { name: nameValue });
+        await api.post(`${API_URL}/units`, { name: nameValue });
         alert("✅ تم إضافة الوحدة");
       }
       setShowModal(false);
@@ -60,7 +60,7 @@ const Units: React.FC = () => {
   const handleDelete = async (id: number) => {
     if (!window.confirm("هل تريد حذف هذه الوحدة؟")) return;
     try {
-      await axios.delete(`${API_URL}/aunits/${id}`);
+      await api.delete(`${API_URL}/aunits/${id}`);
       alert("🗑 تم حذف الوحدة");
       fetchUnits();
     } catch (err) {
