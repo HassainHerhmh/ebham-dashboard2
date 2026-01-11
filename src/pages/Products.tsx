@@ -1,4 +1,5 @@
 import React, { useState, useEffect, ChangeEvent, FormEvent } from "react";
+import api from "../services/api";
 
 interface Product {
   id: number;
@@ -18,7 +19,7 @@ interface Restaurant { id: number; name: string }
 interface Category { id: number; name: string }
 interface Unit { id: number; name: string }
 
-const API_URL = "http://localhost:5000";
+
 
 const Products: React.FC = () => {
 
@@ -47,25 +48,25 @@ const Products: React.FC = () => {
   // ============== FETCH =================
 
   const fetchProducts = async () => {
-    const res = await fetch(`${API_URL}/products`);
+    const res = await fetch(`/products`);
     const data = await res.json();
     if (data.success) setProducts(data.products);
   };
 
   const fetchRestaurants = async () => {
-    const res = await fetch(`${API_URL}/restaurants`);
+    const res = await fetch(`/restaurants`);
     const data = await res.json();
     if (data.success) setRestaurants(data.restaurants);
   };
 
   const fetchCategories = async () => {
-    const res = await fetch(`${API_URL}/categories`);
+    const res = await fetch(`/categories`);
     const data = await res.json();
     if (Array.isArray(data)) setCategories(data);
   };
 
   const fetchUnits = async () => {
-    const res = await fetch(`${API_URL}/units`);
+    const res = await fetch(`/units`);
     const data = await res.json();
     if (Array.isArray(data)) setUnits(data);
   };
@@ -111,8 +112,8 @@ const Products: React.FC = () => {
     if (image) formData.append("image", image);
 
     const url = editingId
-      ? `${API_URL}/products/${editingId}`
-      : `${API_URL}/products`;
+      ? `/products/${editingId}`
+      : `/products`;
 
     const method = editingId ? "PUT" : "POST";
 
@@ -131,7 +132,7 @@ const Products: React.FC = () => {
 
   const handleDelete = async (id: number) => {
     if (!window.confirm("⚠️ حذف المنتج؟")) return;
-    const res = await fetch(`${API_URL}/products/${id}`, { method: "DELETE" });
+    const res = await fetch(/products/${id}`, { method: "DELETE" });
     const result = await res.json();
     if (result.success) {
       alert("🗑️ تم حذف المنتج");
