@@ -173,6 +173,37 @@ const Restaurants: React.FC = () => {
   };
 
   // ======= السحب والترتيب =======
+const [dragIndex, setDragIndex] = useState<number | null>(null);
+
+const handleDragStart = (index: number) => {
+  setDragIndex(index);
+};
+
+const handleDrop = async (dropIndex: number) => {
+  if (dragIndex === null || dragIndex === dropIndex) return;
+
+  const updated = [...restaurants];
+  const [moved] = updated.splice(dragIndex, 1);
+  updated.splice(dropIndex, 0, moved);
+
+  setRestaurants(updated);
+  setDragIndex(null);
+
+  // إرسال الترتيب الجديد للسيرفر
+  const order = updated.map((r, i) => ({
+    id: r.id,
+    sort_order: i + 1,
+  }));
+
+  try {
+    await api.post("/restaurants/reorder", { order });
+  } catch (err) {
+    console.error("فشل حفظ الترتيب", err);
+  }
+};
+
+  
+  
  <tbody>
   {restaurants.map((r, index) => (
     <tr
