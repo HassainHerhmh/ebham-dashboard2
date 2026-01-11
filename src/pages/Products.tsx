@@ -46,23 +46,36 @@ const [searchCategory, setSearchCategory] = useState("");
 
 const fetchProducts = async () => {
   const res = await api.get("/products");
-  setProducts(res.data);
+  const data = res.data;
+
+  if (Array.isArray(data)) {
+    setProducts(data);
+  } else if (Array.isArray(data.products)) {
+    setProducts(data.products);
+  } else {
+    setProducts([]);
+  }
 };
+
 
 const fetchRestaurants = async () => {
   const res = await api.get("/restaurants");
-  setRestaurants(res.data);
+  const data = res.data;
+  setRestaurants(Array.isArray(data) ? data : data.restaurants || []);
 };
 
 const fetchCategories = async () => {
   const res = await api.get("/categories");
-  setCategories(res.data);
+  const data = res.data;
+  setCategories(Array.isArray(data) ? data : data.categories || []);
 };
 
 const fetchUnits = async () => {
   const res = await api.get("/units");
-  setUnits(res.data);
+  const data = res.data;
+  setUnits(Array.isArray(data) ? data : data.units || []);
 };
+
 
 
   useEffect(() => {
