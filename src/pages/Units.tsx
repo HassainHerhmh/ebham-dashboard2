@@ -16,7 +16,7 @@ const Units: React.FC = () => {
 
   const fetchUnits = async () => {
     try {
-      const res = await api.get(`${API_URL}/units`);
+      const res = await api.get(`${API_URL}/api/units`);
       setUnits(res.data);
     } catch (err) {
       alert("❌ فشل في جلب البيانات");
