@@ -264,4 +264,43 @@ export const deleteProduct = async (id: number) => {
   return res.data;
 };
 
+/* ===============================
+   🟢 جلب جميع المطاعم
+================================ */
+export const getRestaurants = async (): Promise<Restaurant[]> => {
+  const res = await api.get("/restaurants");
+  return res.data.restaurants;
+};
+
+/* ===============================
+   ✅ إضافة مطعم جديد (مع صورة + موقع)
+================================ */
+export const createRestaurant = async (formData: FormData) => {
+  const res = await api.post("/restaurants", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+  return res.data;
+};
+
+/* ===============================
+   ✏️ تعديل مطعم
+================================ */
+export const updateRestaurant = async (id: number, formData: FormData) => {
+  const res = await api.put(`/restaurants/${id}`, formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+  return res.data;
+};
+
+/* ===============================
+   🗑️ حذف مطعم
+================================ */
+export const deleteRestaurant = async (id: number) => {
+  const res = await api.delete(`/restaurants/${id}`);
+  return res.data;
+};
 export default api;
