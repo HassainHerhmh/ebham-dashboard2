@@ -33,7 +33,7 @@ const Products: React.FC = () => {
   const [restaurantId, setRestaurantId] = useState("");
   const [categoryIds, setCategoryIds] = useState<string[]>([]);
   const [unitId, setUnitId] = useState("");
-  const [categoryIds, setCategoryIds] = useState<string[]>([]);
+
 
   const [image, setImage] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
