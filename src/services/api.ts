@@ -224,4 +224,44 @@ export const deleteCategory = async (id: number) => {
   return res.data;
 };
 
+/* ===============================
+   🟢 جلب جميع المنتجات
+================================ */
+export const getProducts = async (): Promise<Product[]> => {
+  const res = await api.get<ProductsResponse>("/products");
+  return res.data.products;
+};
+
+/* ===============================
+   ✅ إضافة منتج جديد (مع صورة)
+================================ */
+export const createProduct = async (formData: FormData) => {
+  const res = await api.post("/products", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+  return res.data;
+};
+
+/* ===============================
+   ✏️ تعديل منتج
+================================ */
+export const updateProduct = async (id: number, formData: FormData) => {
+  const res = await api.put(`/products/${id}`, formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+  return res.data;
+};
+
+/* ===============================
+   🗑️ حذف منتج
+================================ */
+export const deleteProduct = async (id: number) => {
+  const res = await api.delete(`/products/${id}`);
+  return res.data;
+};
+
 export default api;
