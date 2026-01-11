@@ -1,6 +1,6 @@
 import React, { useState, useEffect, ChangeEvent, FormEvent } from "react";
 import { PlusCircle, Edit3, Trash2, X } from "lucide-react";
-
+import api from "../services/api"; //
 interface Category {
   id: number;
   name: string;
@@ -29,81 +29,80 @@ const Categories: React.FC = () => {
   const [isAddSidebarOpen, setIsAddSidebarOpen] = useState(false);
   const [isEditSidebarOpen, setIsEditSidebarOpen] = useState(false);
 
-  const fetchCategories = async () => {
-    try {
-      const res = await fetch("http://localhost:5000/categories");
-      const data = await res.json();
-      setCategories(data);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+const fetchCategories = async () => {
+  try {
+    const res = await api.get("/categories");
+    setCategories(res.data.categories);
+  } catch (err) {
+    console.error(err);
+  }
+};
 
-  useEffect(() => {
+useEffect(() => {
+  fetchCategories();
+}, []);
+
+const handleAdd = async (e: FormEvent) => {
+  e.preventDefault();
+
+  const formData = new FormData();
+  formData.append("name", name);
+  formData.append("description", description);
+  formData.append("icon_url", iconUrl);
+  if (image) formData.append("image", image);
+
+  const res = await api.post("/categories", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+
+  if (res.data?.success) {
+    alert("✅ تمت إضافة الفئة بنجاح!");
+    setName("");
+    setDescription("");
+    setIconUrl("");
+    setImage(null);
+    setIsAddSidebarOpen(false);
     fetchCategories();
-  }, []);
+  }
+};
 
-  const handleAdd = async (e: FormEvent) => {
-    e.preventDefault();
-    const formData = new FormData();
-    formData.append("name", name);
-    formData.append("description", description);
-    formData.append("icon_url", iconUrl);
-    if (image) formData.append("image", image);
+const handleDelete = async (id: number) => {
+  if (!window.confirm("هل أنت متأكد من الحذف؟")) return;
 
-    const res = await fetch("http://localhost:5000/categories", {
-      method: "POST",
-      body: formData,
-    });
+  const res = await api.delete(`/categories/${id}`);
 
-    if (res.ok) {
-      alert("✅ تمت إضافة الفئة بنجاح!");
-      setName("");
-      setDescription("");
-      setIconUrl("");
-      setImage(null);
-      setIsAddSidebarOpen(false);
-      fetchCategories();
-    }
-  };
+  if (res.data?.success) {
+    alert("🗑 تم حذف الفئة");
+    fetchCategories();
+  }
+};
 
-  const handleDelete = async (id: number) => {
-    if (!window.confirm("هل أنت متأكد من الحذف؟")) return;
-    const res = await fetch(`http://localhost:5000/categories/${id}`, {
-      method: "DELETE",
-    });
-    if (res.ok) {
-      alert("🗑 تم حذف الفئة");
-      fetchCategories();
-    }
-  };
+const handleUpdate = async (e: FormEvent) => {
+  e.preventDefault();
+  if (!editId) return;
 
-  const handleUpdate = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!editId) return;
-    const formData = new FormData();
-    formData.append("name", editName);
-    formData.append("description", editDescription);
-    formData.append("icon_url", editIcon);
-    if (editImage) formData.append("image", editImage);
+  const formData = new FormData();
+  formData.append("name", editName);
+  formData.append("description", editDescription);
+  formData.append("icon_url", editIcon);
+  if (editImage) formData.append("image", editImage);
 
-    const res = await fetch(`http://localhost:5000/categories/${editId}`, {
-      method: "PUT",
-      body: formData,
-    });
+  const res = await api.put(`/categories/${editId}`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
 
-    if (res.ok) {
-      alert("✏ تم تعديل الفئة");
-      setEditId(null);
-      setEditName("");
-      setEditDescription("");
-      setEditIcon("");
-      setEditImage(null);
-      setIsEditSidebarOpen(false);
-      fetchCategories();
-      
-    }
-  };
+  if (res.data?.success) {
+    alert("✏ تم تعديل الفئة");
+    setEditId(null);
+    setEditName("");
+    setEditDescription("");
+    setEditIcon("");
+    setEditImage(null);
+    setIsEditSidebarOpen(false);
+    fetchCategories();
+  }
+};
+
 
   return (
     <div className="p-6 relative" dir="rtl">
