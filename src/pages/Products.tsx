@@ -26,6 +26,7 @@ const Products: React.FC = () => {
   const [units, setUnits] = useState<Unit[]>([]);
 
   const [editingId, setEditingId] = useState<number | null>(null);
+const [searchCategory, setSearchCategory] = useState("");
 
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
