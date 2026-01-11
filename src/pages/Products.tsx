@@ -26,7 +26,6 @@ const Products: React.FC = () => {
   const [units, setUnits] = useState<Unit[]>([]);
 
   const [editingId, setEditingId] = useState<number | null>(null);
-const [searchCategory, setSearchCategory] = useState("");
 
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
@@ -41,43 +40,35 @@ const [searchCategory, setSearchCategory] = useState("");
 
   const [searchName, setSearchName] = useState("");
   const [searchRestaurant, setSearchRestaurant] = useState("");
+  const [searchCategory, setSearchCategory] = useState("");
 
   /* ================= FETCH ================= */
 
-const fetchProducts = async () => {
-  const res = await api.get("/products");
-  const data = res.data;
+  const fetchProducts = async () => {
+    const res = await api.get("/products");
+    const data = res.data;
+    if (Array.isArray(data)) setProducts(data);
+    else if (Array.isArray(data.products)) setProducts(data.products);
+    else setProducts([]);
+  };
 
-  if (Array.isArray(data)) {
-    setProducts(data);
-  } else if (Array.isArray(data.products)) {
-    setProducts(data.products);
-  } else {
-    setProducts([]);
-  }
-};
+  const fetchRestaurants = async () => {
+    const res = await api.get("/restaurants");
+    const data = res.data;
+    setRestaurants(Array.isArray(data) ? data : data.restaurants || []);
+  };
 
+  const fetchCategories = async () => {
+    const res = await api.get("/categories");
+    const data = res.data;
+    setCategories(Array.isArray(data) ? data : data.categories || []);
+  };
 
-
-const fetchRestaurants = async () => {
-  const res = await api.get("/restaurants");
-  const data = res.data;
-  setRestaurants(Array.isArray(data) ? data : data.restaurants || []);
-};
-
-const fetchCategories = async () => {
-  const res = await api.get("/categories");
-  const data = res.data;
-  setCategories(Array.isArray(data) ? data : data.categories || []);
-};
-
-const fetchUnits = async () => {
-  const res = await api.get("/units");
-  const data = res.data;
-  setUnits(Array.isArray(data) ? data : data.units || []);
-};
-
-
+  const fetchUnits = async () => {
+    const res = await api.get("/units");
+    const data = res.data;
+    setUnits(Array.isArray(data) ? data : data.units || []);
+  };
 
   useEffect(() => {
     fetchProducts();
@@ -116,7 +107,6 @@ const fetchUnits = async () => {
     formData.append("restaurant_id", restaurantId);
     formData.append("category_id", categoryId);
     formData.append("unit_id", unitId);
-
     if (image) formData.append("image", image);
 
     const res = editingId
@@ -159,259 +149,109 @@ const fetchUnits = async () => {
   /* ================= FILTER ================= */
 
   const filteredProducts = products
-    .filter((p) =>
-      p.name.toLowerCase().includes(searchName.toLowerCase())
-    )
+    .filter((p) => p.name.toLowerCase().includes(searchName.toLowerCase()))
     .filter((p) =>
       p.restaurant_name?.toLowerCase().includes(searchRestaurant.toLowerCase())
+    )
+    .filter((p) =>
+      searchCategory ? String(p.category_id) === searchCategory : true
     );
 
-
-
-  // ============== UI =================
-
   return (
-    <div className="p-6" dir="rtl">
-
-      <div className="flex justify-between mb-4">
-        <h2 className="text-xl font-bold">📦 المنتجات</h2>
-        <button
-          className="bg-green-600 text-white px-4 py-2 rounded"
-          onClick={() => {
-            resetForm();
-            setShowForm(true);
-          }}
-        >
-          ➕ إضافة منتج
-        </button>
-      </div>
-
-      {/* البحث */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+    <div className="space-y-4">
+      <div className="flex gap-3">
         <input
-          className="border p-2 rounded"
-          placeholder="🔍 بحث بالاسم"
+          placeholder="بحث بالاسم"
           value={searchName}
           onChange={(e) => setSearchName(e.target.value)}
+          className="border rounded px-3 py-2"
         />
-
         <input
-          className="border p-2 rounded"
-          placeholder="🍽 بحث بالمطعم"
+          placeholder="بحث بالمطعم"
           value={searchRestaurant}
           onChange={(e) => setSearchRestaurant(e.target.value)}
+          className="border rounded px-3 py-2"
         />
-
         <select
-          className="border p-2 rounded"
           value={searchCategory}
           onChange={(e) => setSearchCategory(e.target.value)}
+          className="border rounded px-3 py-2"
         >
-          <option value="">🏷 كل الفئات</option>
+          <option value="">كل الفئات</option>
           {categories.map((c) => (
             <option key={c.id} value={c.id}>{c.name}</option>
           ))}
         </select>
+
+        <button
+          onClick={() => setShowForm(true)}
+          className="bg-blue-600 text-white px-4 py-2 rounded"
+        >
+          إضافة منتج
+        </button>
       </div>
 
-      {/* جدول المنتجات */}
-      <table className="table-auto w-full border-collapse border border-gray-300 text-right">
-        <thead className="bg-gray-100">
+      {/* الجدول */}
+      <table className="w-full border">
+        <thead>
           <tr>
             <th>#</th>
-            <th>📷</th>
             <th>الاسم</th>
             <th>السعر</th>
             <th>المطعم</th>
-            <th>الفئات</th>
+            <th>الفئة</th>
             <th>الوحدة</th>
             <th>خيارات</th>
           </tr>
         </thead>
-
         <tbody>
           {filteredProducts.map((p, i) => (
-            <tr
-              key={p.id}
-              className="border-b border-gray-300 hover:bg-gray-50"
-            >
+            <tr key={p.id}>
               <td>{i + 1}</td>
-
-              <td className="text-center">
-                {p.image_url ? (
-                  <img
-                    src={`${API_URL}${p.image_url}`}
-                    className="w-12 h-12 object-cover rounded"
-                  />
-                ) : (
-                  "-"
-                )}
-              </td>
-
               <td>{p.name}</td>
-              <td>{p.price} ريال</td>
-              <td>{p.restaurant_name}</td>
-
-              <td>
-                {p.category_names
-                  ? p.category_names.split(",").join("، ")
-                  : "—"}
-              </td>
-
-              <td>{p.unit_name}</td>
-
-              <td className="flex gap-2 justify-center">
-                <button
-                  className="bg-blue-600 text-white px-3 py-1 rounded"
-                  onClick={() => handleEdit(p)}
-                >
-                  تعديل
-                </button>
-
-                <button
-                  className="bg-red-600 text-white px-3 py-1 rounded"
-                  onClick={() => handleDelete(p.id)}
-                >
-                  حذف
-                </button>
+              <td>{p.price}</td>
+              <td>{p.restaurant_name || "-"}</td>
+              <td>{p.category_name || "-"}</td>
+              <td>{p.unit_name || "-"}</td>
+              <td className="flex gap-2">
+                <button onClick={() => handleEdit(p)}>تعديل</button>
+                <button onClick={() => handleDelete(p.id)}>حذف</button>
               </td>
             </tr>
           ))}
         </tbody>
       </table>
 
-      {/* نموذج الإضافة/التعديل */}
+      {/* النموذج */}
       {showForm && (
-        <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50">
-          <div className="bg-white p-6 rounded-lg w-full max-w-lg shadow-xl">
+        <form onSubmit={handleSubmit} className="border p-4 space-y-2">
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="الاسم" className="border p-2 w-full" />
+          <input value={price} onChange={(e) => setPrice(e.target.value)} placeholder="السعر" className="border p-2 w-full" />
+          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="ملاحظات" className="border p-2 w-full" />
 
-            <h3 className="text-lg font-bold mb-4">
-              {editingId ? "✏️ تعديل المنتج" : "➕ إضافة منتج جديد"}
-            </h3>
+          <select value={restaurantId} onChange={(e) => setRestaurantId(e.target.value)} className="border p-2 w-full">
+            <option value="">اختر المطعم</option>
+            {restaurants.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+          </select>
 
-            <form onSubmit={handleSubmit} className="space-y-3">
+          <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className="border p-2 w-full">
+            <option value="">اختر الفئة</option>
+            {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
 
-              <input
-                className="border p-2 rounded w-full"
-                placeholder="اسم المنتج"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-              />
+          <select value={unitId} onChange={(e) => setUnitId(e.target.value)} className="border p-2 w-full">
+            <option value="">اختر الوحدة</option>
+            {units.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+          </select>
 
-              <input
-                type="number"
-                className="border p-2 rounded w-full"
-                placeholder="السعر"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-                required
-              />
+          <input type="file" onChange={(e) => setImage(e.target.files?.[0] || null)} />
 
-              <textarea
-                className="border p-2 rounded w-full"
-                placeholder="ملاحظات"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-              />
-
-              {/* المطعم */}
-              <select
-                className="border p-2 rounded w-full"
-                value={restaurantId}
-                onChange={(e) => setRestaurantId(e.target.value)}
-                required
-              >
-                <option value="">اختر المطعم</option>
-                {restaurants.map((r) => (
-                  <option key={r.id} value={r.id}>{r.name}</option>
-                ))}
-              </select>
-
-              {/* ⭐ الفئات (Tags) */}
-              <label className="font-bold">الفئات:</label>
-              <div className="flex flex-wrap gap-2 border p-3 rounded bg-white">
-                {categories.map((c) => {
-                  const selected = categoryIds.includes(c.id.toString());
-                  return (
-                    <div
-                      key={c.id}
-                      onClick={() => {
-                        if (selected) {
-                          setCategoryIds(categoryIds.filter((id) => id !== c.id.toString()));
-                        } else {
-                          setCategoryIds([...categoryIds, c.id.toString()]);
-                        }
-                      }}
-                      className={
-                        "px-3 py-1 rounded-full cursor-pointer border " +
-                        (selected
-                          ? "bg-blue-600 text-white border-blue-600"
-                          : "bg-gray-200 text-gray-700 border-gray-300 hover:bg-gray-300")
-                      }
-                    >
-                      {c.name}
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* الوحدة */}
-              <select
-                className="border p-2 rounded w-full"
-                value={unitId}
-                onChange={(e) => setUnitId(e.target.value)}
-                required
-              >
-                <option value="">اختر الوحدة</option>
-                {units.map((u) => (
-                  <option key={u.id} value={u.id}>{u.name}</option>
-                ))}
-              </select>
-
-              {/* الصورة */}
-              <input
-                type="file"
-                onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                  const file = e.target.files?.[0] || null;
-                  setImage(file);
-                  if (file) setPreview(URL.createObjectURL(file));
-                }}
-              />
-
-              {preview && (
-                <img
-                  src={preview}
-                  className="w-24 h-24 object-cover rounded border"
-                />
-              )}
-
-              <div className="flex gap-2 pt-4">
-                <button
-                  type="submit"
-                  className="bg-green-600 text-white px-4 py-2 rounded w-full"
-                >
-                  حفظ
-                </button>
-
-                <button
-                  type="button"
-                  className="bg-gray-400 text-white px-4 py-2 rounded w-full"
-                  onClick={() => {
-                    resetForm();
-                    setShowForm(false);
-                  }}
-                >
-                  إلغاء
-                </button>
-              </div>
-
-            </form>
-
+          <div className="flex gap-2">
+            <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded">حفظ</button>
+            <button type="button" onClick={() => { resetForm(); setShowForm(false); }} className="bg-gray-400 px-4 py-2 rounded">إلغاء</button>
           </div>
-        </div>
+        </form>
       )}
-
     </div>
   );
 };
