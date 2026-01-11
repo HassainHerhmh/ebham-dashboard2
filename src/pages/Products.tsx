@@ -1,4 +1,4 @@
-import React, { useState, useEffect, ChangeEvent, FormEvent } from "react";
+import React, { useState, useEffect, FormEvent } from "react";
 import api from "../services/api";
 
 interface Product {
@@ -7,8 +7,8 @@ interface Product {
   price: number;
   image_url?: string;
   notes?: string;
-  category_ids?: string;
-  category_names?: string;
+  category_id?: number;
+  category_name?: string;
   unit_id?: number;
   unit_name?: string;
   restaurant_id?: number;
@@ -19,10 +19,7 @@ interface Restaurant { id: number; name: string }
 interface Category { id: number; name: string }
 interface Unit { id: number; name: string }
 
-
-
 const Products: React.FC = () => {
-
   const [products, setProducts] = useState<Product[]>([]);
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -34,7 +31,7 @@ const Products: React.FC = () => {
   const [price, setPrice] = useState("");
   const [notes, setNotes] = useState("");
   const [restaurantId, setRestaurantId] = useState("");
-  const [categoryIds, setCategoryIds] = useState<string[]>([]);
+  const [categoryId, setCategoryId] = useState("");
   const [unitId, setUnitId] = useState("");
 
   const [image, setImage] = useState<File | null>(null);
@@ -43,32 +40,27 @@ const Products: React.FC = () => {
 
   const [searchName, setSearchName] = useState("");
   const [searchRestaurant, setSearchRestaurant] = useState("");
-  const [searchCategory, setSearchCategory] = useState("");
 
-  // ============== FETCH =================
+  /* ================= FETCH ================= */
 
   const fetchProducts = async () => {
-    const res = await fetch(`/products`);
-    const data = await res.json();
-    if (data.success) setProducts(data.products);
+    const res = await api.get("/products");
+    setProducts(res.data.products);
   };
 
   const fetchRestaurants = async () => {
-    const res = await fetch(`/restaurants`);
-    const data = await res.json();
-    if (data.success) setRestaurants(data.restaurants);
+    const res = await api.get("/restaurants");
+    setRestaurants(res.data.restaurants);
   };
 
   const fetchCategories = async () => {
-    const res = await fetch(`/categories`);
-    const data = await res.json();
-    if (Array.isArray(data)) setCategories(data);
+    const res = await api.get("/categories");
+    setCategories(res.data.categories);
   };
 
   const fetchUnits = async () => {
-    const res = await fetch(`/units`);
-    const data = await res.json();
-    if (Array.isArray(data)) setUnits(data);
+    const res = await api.get("/units");
+    setUnits(res.data.units);
   };
 
   useEffect(() => {
@@ -78,7 +70,7 @@ const Products: React.FC = () => {
     fetchUnits();
   }, []);
 
-  // ============== RESET =================
+  /* ================= RESET ================= */
 
   const resetForm = () => {
     setEditingId(null);
@@ -86,18 +78,18 @@ const Products: React.FC = () => {
     setPrice("");
     setNotes("");
     setRestaurantId("");
-    setCategoryIds([]);
+    setCategoryId("");
     setUnitId("");
     setImage(null);
     setPreview(null);
   };
 
-  // ============== SUBMIT =================
+  /* ================= SUBMIT ================= */
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
-    if (!categoryIds.length) return alert("❌ يجب اختيار فئة واحدة على الأقل");
+    if (!categoryId) return alert("❌ اختر الفئة");
     if (!restaurantId) return alert("❌ اختر المطعم");
     if (!unitId) return alert("❌ اختر الوحدة");
 
@@ -106,41 +98,35 @@ const Products: React.FC = () => {
     formData.append("price", price);
     formData.append("notes", notes);
     formData.append("restaurant_id", restaurantId);
+    formData.append("category_id", categoryId);
     formData.append("unit_id", unitId);
-    formData.append("category_ids", JSON.stringify(categoryIds));
 
     if (image) formData.append("image", image);
 
-    const url = editingId
-      ? `/products/${editingId}`
-      : `/products`;
+    const res = editingId
+      ? await api.put(`/products/${editingId}`, formData)
+      : await api.post("/products", formData);
 
-    const method = editingId ? "PUT" : "POST";
-
-    const res = await fetch(url, { method, body: formData });
-    const result = await res.json();
-
-    if (result.success) {
+    if (res.data?.success) {
       alert(editingId ? "تم تعديل المنتج" : "تم إضافة المنتج");
       resetForm();
       setShowForm(false);
       fetchProducts();
-    } else alert("❌ حدث خطأ أثناء الحفظ");
+    }
   };
 
-  // ============== DELETE =================
+  /* ================= DELETE ================= */
 
   const handleDelete = async (id: number) => {
     if (!window.confirm("⚠️ حذف المنتج؟")) return;
-    const res = await fetch(/products/${id}`, { method: "DELETE" });
-    const result = await res.json();
-    if (result.success) {
+    const res = await api.delete(`/products/${id}`);
+    if (res.data?.success) {
       alert("🗑️ تم حذف المنتج");
       fetchProducts();
     }
   };
 
-  // ============== EDIT =================
+  /* ================= EDIT ================= */
 
   const handleEdit = (p: Product) => {
     setEditingId(p.id);
@@ -148,26 +134,23 @@ const Products: React.FC = () => {
     setPrice(String(p.price));
     setNotes(p.notes || "");
     setRestaurantId(p.restaurant_id?.toString() || "");
+    setCategoryId(p.category_id?.toString() || "");
     setUnitId(p.unit_id?.toString() || "");
-
-    setCategoryIds(p.category_ids ? p.category_ids.split(",") : []);
-
-    setPreview(p.image_url ? `${API_URL}${p.image_url}` : null);
+    setPreview(p.image_url || null);
     setShowForm(true);
   };
 
-  // ============== FILTER =================
+  /* ================= FILTER ================= */
 
   const filteredProducts = products
-    .filter((p) => p.name.toLowerCase().includes(searchName.toLowerCase()))
     .filter((p) =>
-      p.restaurant_name?.toLowerCase().includes(searchRestaurant.toLowerCase())
+      p.name.toLowerCase().includes(searchName.toLowerCase())
     )
     .filter((p) =>
-      searchCategory
-        ? p.category_ids?.split(",").includes(searchCategory)
-        : true
+      p.restaurant_name?.toLowerCase().includes(searchRestaurant.toLowerCase())
     );
+
+
 
   // ============== UI =================
 
