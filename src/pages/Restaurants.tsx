@@ -295,10 +295,129 @@ const Restaurants: React.FC = () => {
                 <X />
               </button>
             </div>
-
+            
             <form onSubmit={handleSubmit} className="space-y-3">
-              {/* نفس نموذجك السابق بدون تغيير */}
-              {/* ... */}
+              <input
+                type="text"
+                placeholder="اسم المطعم"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                required
+                className="border rounded-lg px-3 py-2 w-full"
+              />
+
+              <input
+                type="text"
+                placeholder="العنوان"
+                value={formData.address}
+                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                className="border rounded-lg px-3 py-2 w-full"
+              />
+
+              <input
+                type="text"
+                placeholder="الهاتف"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                className="border rounded-lg px-3 py-2 w-full"
+              />
+
+              <div className="border p-3 rounded-lg max-h-32 overflow-y-auto">
+                <h3 className="font-semibold mb-2">الفئات</h3>
+                {categories.map((c) => (
+                  <label key={c.id} className="flex items-center gap-2 mb-1">
+                    <input
+                      type="checkbox"
+                      checked={selectedCategories.includes(c.id)}
+                      onChange={() => toggleCategory(c.id)}
+                    />
+                    {c.name}
+                  </label>
+                ))}
+              </div>
+
+              {/* التوقيت */}
+              <div className="border p-3 rounded-lg">
+                <h3 className="font-semibold mb-2">🕐 جدول التوقيت</h3>
+                {storeSchedule.map((dayItem, index) => (
+                  <div key={dayItem.day} className="flex items-center gap-2 mb-2">
+                    <label className="w-20">{dayItem.day}</label>
+                    {dayItem.closed ? (
+                      <span className="text-red-600 font-medium">مغلق</span>
+                    ) : (
+                      <>
+                        <input
+                          type="time"
+                          value={dayItem.start}
+                          onChange={(e) => {
+                            const copy = [...storeSchedule];
+                            copy[index].start = e.target.value;
+                            setStoreSchedule(copy);
+                          }}
+                          className="border px-2 py-1 rounded"
+                        />
+                        <span>-</span>
+                        <input
+                          type="time"
+                          value={dayItem.end}
+                          onChange={(e) => {
+                            const copy = [...storeSchedule];
+                            copy[index].end = e.target.value;
+                            setStoreSchedule(copy);
+                          }}
+                          className="border px-2 py-1 rounded"
+                        />
+                      </>
+                    )}
+                    <label className="flex items-center gap-1">
+                      <input
+                        type="checkbox"
+                        checked={dayItem.closed}
+                        onChange={(e) => {
+                          const copy = [...storeSchedule];
+                          copy[index].closed = e.target.checked;
+                          if (e.target.checked) {
+                            copy[index].start = "";
+                            copy[index].end = "";
+                          }
+                          setStoreSchedule(copy);
+                        }}
+                      />
+                      مغلق
+                    </label>
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  type="text"
+                  placeholder="Latitude"
+                  value={latitude}
+                  onChange={(e) => setLatitude(e.target.value)}
+                  className="border rounded-lg px-3 py-2 w-full"
+                />
+                <input
+                  type="text"
+                  placeholder="Longitude"
+                  value={longitude}
+                  onChange={(e) => setLongitude(e.target.value)}
+                  className="border rounded-lg px-3 py-2 w-full"
+                />
+              </div>
+
+              <input type="file" accept="image/*" onChange={handleImageChange} />
+
+              {preview && <img src={preview} alt="معاينة" className="w-16 h-16 rounded" />}
+
+              <div className="flex gap-2">
+                <button type="submit" className="flex-1 bg-blue-600 text-white px-4 py-2 rounded">
+                  حفظ
+                </button>
+                <button type="button" onClick={resetForm} className="flex-1 bg-gray-400 text-white px-4 py-2 rounded">
+                  إلغاء
+                </button>
+              </div>
             </form>
           </div>
         </div>
