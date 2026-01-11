@@ -263,13 +263,30 @@ const Products: React.FC = () => {
               ))}
             </select>
 
-            <select multiple value={categoryIds} onChange={(e) =>
-              setCategoryIds(Array.from(e.target.selectedOptions, o => o.value))
-            } className="border w-full px-3 py-2 h-32">
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
+           <div className="border p-3 rounded-lg max-h-40 overflow-y-auto">
+  <h4 className="font-semibold mb-2">الفئات</h4>
+  {categories.map((c) => (
+    <label
+      key={c.id}
+      className="flex items-center gap-2 mb-1 cursor-pointer"
+    >
+      <input
+        type="checkbox"
+        checked={categoryIds.includes(String(c.id))}
+        onChange={() => {
+          const id = String(c.id);
+          setCategoryIds((prev) =>
+            prev.includes(id)
+              ? prev.filter((x) => x !== id)
+              : [...prev, id]
+          );
+        }}
+      />
+      <span>{c.name}</span>
+    </label>
+  ))}
+</div>
+
 
             <select value={unitId} onChange={(e) => setUnitId(e.target.value)} className="border w-full px-3 py-2">
               <option value="">اختر الوحدة</option>
