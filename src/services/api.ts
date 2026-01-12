@@ -303,4 +303,28 @@ export const deleteRestaurant = async (id: number) => {
   const res = await api.delete(`/restaurants/${id}`);
   return res.data;
 };
+
+
+
+  // 🔥 أضف هذا القسم للكباتن
+  captains: {
+    getCaptains: async () => {
+      const res = await instance.get("/captains");
+      return res.data.captains || res.data;
+    },
+
+    addCaptain: (data: any) =>
+      instance.post("/captains", data),
+
+    updateCaptain: (id: number, data: any) =>
+      instance.put(`/captains/${id}`, data),
+
+    deleteCaptain: (id: number) =>
+      instance.delete(`/captains/${id}`),
+
+    updateStatus: (id: number, status: string) =>
+      instance.put(`/captains/${id}/status`, { status }),
+  },
+};
+
 export default api;
