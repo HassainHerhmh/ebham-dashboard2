@@ -1,17 +1,27 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Menu, Bell, User, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import api from "../services/api";
 
 interface HeaderProps {
   onMenuClick: () => void;
+}
+
+interface Branch {
+  id: number;
+  name: string;
 }
 
 const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
 
+  const [branches, setBranches] = useState<Branch[]>([]);
+  const [currentBranch, setCurrentBranch] = useState<number | null>(null);
+
   const handleLogout = () => {
     localStorage.removeItem("user");
+    localStorage.removeItem("branch_id");
     window.dispatchEvent(new Event("storage"));
     navigate("/login", { replace: true });
   };
@@ -20,13 +30,59 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
     ? JSON.parse(localStorage.getItem("user")!)
     : null;
 
+  // جلب الفروع
+  const fetchBranches = async () => {
+    try {
+      const res = await api.get("/branches");
+      const list = res.data.branches || [];
+      setBranches(list);
+
+      const saved = localStorage.getItem("branch_id");
+      if (saved) {
+        setCurrentBranch(Number(saved));
+      } else if (list.length > 0) {
+        setCurrentBranch(list[0].id);
+        localStorage.setItem("branch_id", String(list[0].id));
+      }
+    } catch (err) {
+      console.error("خطأ في جلب الفروع:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchBranches();
+  }, []);
+
+  const handleChangeBranch = (id: number) => {
+    setCurrentBranch(id);
+    localStorage.setItem("branch_id", String(id));
+    window.location.reload(); // لإعادة تحميل البيانات حسب الفرع
+  };
+
   return (
     <header className="bg-white shadow-md px-6 py-4 flex items-center justify-between relative">
       <button onClick={onMenuClick} className="p-2 rounded-lg hover:bg-gray-100">
         <Menu size={24} className="text-gray-600" />
       </button>
+
       <div className="flex items-center gap-4">
+        {/* اختيار الفرع */}
+        {branches.length > 0 && (
+          <select
+            value={currentBranch ?? ""}
+            onChange={(e) => handleChangeBranch(Number(e.target.value))}
+            className="border rounded px-3 py-1 text-sm bg-white"
+          >
+            {branches.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
+            ))}
+          </select>
+        )}
+
         <Bell size={20} className="text-gray-600" />
+
         <div className="relative">
           <div
             className="flex items-center gap-2 cursor-pointer select-none"
@@ -44,6 +100,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
               <User size={16} className="text-white" />
             </div>
           </div>
+
           {menuOpen && (
             <div className="absolute left-0 mt-3 w-40 bg-white border rounded-lg shadow-lg z-50 text-right">
               <button
