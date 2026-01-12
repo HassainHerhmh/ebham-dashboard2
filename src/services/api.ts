@@ -311,7 +311,6 @@ export const deleteRestaurant = async (id: number) => {
     getCaptains: async () => {
       const res = await instance.get("/captains");
       return res.data.captains || res.data;
-    },
 
     addCaptain: (data: any) =>
       instance.post("/captains", data),
