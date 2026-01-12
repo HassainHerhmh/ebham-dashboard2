@@ -75,7 +75,7 @@ const SortableRow: React.FC<SortableRowProps> = ({ method, children }) => {
 const PaymentSettings: React.FC = () => {
   const [methods, setMethods] = useState<PaymentMethod[]>([]);
 
-  // الإضافة / التعديل (كما هي)
+  // الإضافة / التعديل
   const [company, setCompany] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
   const [ownerName, setOwnerName] = useState("");
@@ -84,7 +84,7 @@ const PaymentSettings: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [message, setMessage] = useState("");
 
-  // 🆕 سجل التغييرات
+  // سجل التغييرات
   const [logsOpen, setLogsOpen] = useState(false);
   const [logsLoading, setLogsLoading] = useState(false);
   const [logs, setLogs] = useState<PaymentMethodLog[]>([]);
@@ -93,15 +93,13 @@ const PaymentSettings: React.FC = () => {
 
   /* ===== Load ===== */
   const loadMethods = async () => {
-    const res = await api.paymentMethods.getAll();
-    if (res.success) {
-      setMethods(
-        res.methods.map((m: any) => ({
-          ...m,
-          is_active: Number(m.is_active),
-        }))
-      );
-    }
+    const rows = await api.paymentMethods.getAll();
+    setMethods(
+      (rows || []).map((m: any) => ({
+        ...m,
+        is_active: Number(m.is_active),
+      }))
+    );
   };
 
   useEffect(() => {
@@ -143,7 +141,7 @@ const PaymentSettings: React.FC = () => {
   /* ===== Delete ===== */
   const deleteMethod = async (id: number) => {
     if (!window.confirm("هل أنت متأكد من الحذف؟")) return;
-    const res = await api.paymentMethods.delete(id);
+    const res = await api.paymentMethods.remove(id);
     setMessage(res.message);
     loadMethods();
   };
@@ -158,7 +156,7 @@ const PaymentSettings: React.FC = () => {
     setModalOpen(true);
   };
 
-  /* ===== Toggle Active (🆕 مع تأكيد + أيقونات) ===== */
+  /* ===== Toggle Active ===== */
   const toggleActive = async (m: PaymentMethod) => {
     if (m.is_active === 1) {
       const ok = window.confirm(
@@ -188,26 +186,26 @@ const PaymentSettings: React.FC = () => {
     const newList = arrayMove(methods, oldIndex, newIndex);
     setMethods(newList);
 
-    await api.paymentMethods.reorder({
-      orders: newList.map((m: PaymentMethod, i: number) => ({
+    await api.paymentMethods.reorder(
+      newList.map((m: PaymentMethod, i: number) => ({
         id: m.id,
         sort_order: i + 1,
-      })),
-    });
+      }))
+    );
   };
 
-  /* ===== Open Logs (🆕) ===== */
+  /* ===== Open Logs ===== */
   const openLogs = async (methodId: number) => {
     setCurrentMethodId(methodId);
     setLogsOpen(true);
     setLogsLoading(true);
 
-    const res = await api.paymentMethods.getLogs(
+    const rows = await api.paymentMethods.getLogs(
       methodId,
       filterDays ?? undefined
     );
 
-    if (res.success) setLogs(res.logs);
+    setLogs(rows || []);
     setLogsLoading(false);
   };
 
@@ -253,51 +251,40 @@ const PaymentSettings: React.FC = () => {
                   <td>{m.account_number}</td>
                   <td>{m.owner_name}</td>
                   <td>{m.address}</td>
-                  <td>
-                    {m.is_active === 1 ? "مفعّلة" : "معطّلة"}
-                  </td>
+                  <td>{m.is_active === 1 ? "مفعّلة" : "معطّلة"}</td>
                   <td className="flex gap-2 items-center">
-  {/* تعديل */}
-  <button
-    onClick={() => startEdit(m)}
-    title="تعديل"
-    className="text-blue-600 hover:underline"
-  >
-    تعديل
-  </button>
+                    <button
+                      onClick={() => startEdit(m)}
+                      className="text-blue-600 hover:underline"
+                    >
+                      تعديل
+                    </button>
 
-  {/* حذف */}
-  <button
-    onClick={() => deleteMethod(m.id)}
-    title="حذف"
-    className="text-red-600 hover:underline"
-  >
-    حذف
-  </button>
+                    <button
+                      onClick={() => deleteMethod(m.id)}
+                      className="text-red-600 hover:underline"
+                    >
+                      حذف
+                    </button>
 
-  {/* تعطيل / تفعيل */}
-  <button
-    onClick={() => toggleActive(m)}
-    title={m.is_active ? "تعطيل" : "تفعيل"}
-    className={`w-8 h-8 flex items-center justify-center rounded ${
-      m.is_active
-        ? "bg-red-100 text-red-600"
-        : "bg-green-100 text-green-600"
-    }`}
-  >
-    {m.is_active ? "⛔" : "✅"}
-  </button>
+                    <button
+                      onClick={() => toggleActive(m)}
+                      className={`w-8 h-8 flex items-center justify-center rounded ${
+                        m.is_active
+                          ? "bg-red-100 text-red-600"
+                          : "bg-green-100 text-green-600"
+                      }`}
+                    >
+                      {m.is_active ? "⛔" : "✅"}
+                    </button>
 
-  {/* عرض السجل */}
-  <button
-    onClick={() => openLogs(m.id)}
-    title="سجل التغييرات"
-    className="w-8 h-8 flex items-center justify-center rounded bg-gray-100 text-gray-700"
-  >
-    👁️
-  </button>
-</td>
-
+                    <button
+                      onClick={() => openLogs(m.id)}
+                      className="w-8 h-8 flex items-center justify-center rounded bg-gray-100 text-gray-700"
+                    >
+                      👁️
+                    </button>
+                  </td>
                 </SortableRow>
               ))}
             </tbody>
@@ -305,7 +292,7 @@ const PaymentSettings: React.FC = () => {
         </SortableContext>
       </DndContext>
 
-      {/* Modal الإضافة / التعديل (كما هو) */}
+      {/* Modal الإضافة / التعديل */}
       {modalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded w-full max-w-md space-y-3">
@@ -313,50 +300,20 @@ const PaymentSettings: React.FC = () => {
               {editingId ? "تعديل طريقة الدفع" : "إضافة طريقة دفع"}
             </h3>
 
-            <input
-              className="border p-2 w-full rounded"
-              placeholder="اسم الشركة"
-              value={company}
-              onChange={(e) => setCompany(e.target.value)}
-            />
-            <input
-              className="border p-2 w-full rounded"
-              placeholder="رقم الحساب"
-              value={accountNumber}
-              onChange={(e) => setAccountNumber(e.target.value)}
-            />
-            <input
-              className="border p-2 w-full rounded"
-              placeholder="اسم صاحب الحساب"
-              value={ownerName}
-              onChange={(e) => setOwnerName(e.target.value)}
-            />
-            <input
-              className="border p-2 w-full rounded"
-              placeholder="العنوان"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-            />
+            <input className="border p-2 w-full rounded" placeholder="اسم الشركة" value={company} onChange={(e) => setCompany(e.target.value)} />
+            <input className="border p-2 w-full rounded" placeholder="رقم الحساب" value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} />
+            <input className="border p-2 w-full rounded" placeholder="اسم صاحب الحساب" value={ownerName} onChange={(e) => setOwnerName(e.target.value)} />
+            <input className="border p-2 w-full rounded" placeholder="العنوان" value={address} onChange={(e) => setAddress(e.target.value)} />
 
             <div className="flex justify-end gap-2 pt-2">
-              <button
-                onClick={() => setModalOpen(false)}
-                className="bg-gray-400 text-white px-4 py-2 rounded"
-              >
-                إلغاء
-              </button>
-              <button
-                onClick={saveMethod}
-                className="bg-green-600 text-white px-4 py-2 rounded"
-              >
-                حفظ
-              </button>
+              <button onClick={() => setModalOpen(false)} className="bg-gray-400 text-white px-4 py-2 rounded">إلغاء</button>
+              <button onClick={saveMethod} className="bg-green-600 text-white px-4 py-2 rounded">حفظ</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* 🆕 Modal سجل التغييرات */}
+      {/* Modal سجل التغييرات */}
       {logsOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
           <div className="bg-white w-full max-w-lg p-6 rounded space-y-4">
@@ -380,9 +337,7 @@ const PaymentSettings: React.FC = () => {
             {logsLoading ? (
               <p>جاري التحميل...</p>
             ) : logs.length === 0 ? (
-              <p className="text-center text-gray-500">
-                لا يوجد سجل تغييرات
-              </p>
+              <p className="text-center text-gray-500">لا يوجد سجل تغييرات</p>
             ) : (
               <table className="w-full border">
                 <thead className="bg-gray-100">
@@ -395,15 +350,9 @@ const PaymentSettings: React.FC = () => {
                 <tbody>
                   {logs.map((log, i) => (
                     <tr key={i} className="text-center border-t">
-                      <td>
-                        {log.action === "activate"
-                          ? "✅ تفعيل"
-                          : "⛔ تعطيل"}
-                      </td>
+                      <td>{log.action === "activate" ? "✅ تفعيل" : "⛔ تعطيل"}</td>
                       <td>{log.user_name ?? "النظام"}</td>
-                      <td>
-                        {new Date(log.created_at).toLocaleString("ar-YE")}
-                      </td>
+                      <td>{new Date(log.created_at).toLocaleString("ar-YE")}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -412,7 +361,7 @@ const PaymentSettings: React.FC = () => {
 
             {currentMethodId && (
               <a
-                href={`/payment-methods/${currentMethodId}/logs/pdf`}
+                href={`/api/payment-methods/${currentMethodId}/logs/pdf`}
                 target="_blank"
                 rel="noreferrer"
                 className="inline-block bg-blue-600 text-white px-4 py-2 rounded"
