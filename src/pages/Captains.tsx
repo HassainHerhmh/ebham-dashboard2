@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Bike } from 'lucide-react'
+import api from "../services/api";
 
 interface Captain {
   id: number
@@ -35,10 +36,9 @@ const Captains: React.FC = () => {
 
   const fetchCaptains = async () => {
     try {
-      const res = await fetch('http://localhost:5000/captains')
-      const data = await res.json()
-      if (data.success && Array.isArray(data.captains)) {
-        setCaptains(data.captains)
+      const data = await api.captains.getCaptains()
+      if (Array.isArray(data)) {
+        setCaptains(data)
         setError(null)
       } else {
         setError('🚫 لا توجد بيانات')
@@ -73,60 +73,45 @@ const Captains: React.FC = () => {
       alert('❌ كلمة المرور غير متطابقة')
       return
     }
-    const method = editId ? 'PUT' : 'POST'
-    const url = editId
-      ? `http://localhost:5000/captains/${editId}`
-      : `http://localhost:5000/captains`
 
     try {
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name,
-          email,
-          phone,
-          password,
-          vehicle_type: vehicleType,
-          vehicle_number: vehicleNumber,
-          status
-        })
-      })
-      const data = await res.json()
-      if (data.success) {
-        alert(data.message || '✅ تم الحفظ')
-        setIsModalOpen(false)
-        setEditId(null)
-        fetchCaptains()
-      } else {
-        alert(data.message || '❌ فشل الحفظ')
+      const payload = {
+        name,
+        email,
+        phone,
+        password,
+        vehicle_type: vehicleType,
+        vehicle_number: vehicleNumber,
+        status
       }
+
+      if (editId) {
+        await api.captains.updateCaptain(editId, payload)
+      } else {
+        await api.captains.addCaptain(payload)
+      }
+
+      alert('✅ تم الحفظ')
+      setIsModalOpen(false)
+      setEditId(null)
+      fetchCaptains()
     } catch (err) {
       console.error(err)
+      alert('❌ فشل الحفظ')
     }
   }
 
   const deleteCaptain = async (id: number) => {
     if (!window.confirm('هل أنت متأكد من حذف هذا الكابتن؟')) return
-    const res = await fetch(`http://localhost:5000/captains/${id}`, { method: 'DELETE' })
-    const data = await res.json()
-    if (data.success) {
-      alert('🗑 تم الحذف')
-      fetchCaptains()
-    }
+    await api.captains.deleteCaptain(id)
+    alert('🗑 تم الحذف')
+    fetchCaptains()
   }
 
   const updateCaptainStatus = async (id: number, newStatus: string) => {
-    const res = await fetch(`http://localhost:5000/captains/${id}/status`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: newStatus })
-    })
-    const data = await res.json()
-    if (data.success) {
-      alert('✅ تم تحديث الحالة')
-      fetchCaptains()
-    }
+    await api.captains.updateStatus(id, newStatus)
+    alert('✅ تم تحديث الحالة')
+    fetchCaptains()
   }
 
   const getStatusLabel = (status: string) => {
@@ -212,8 +197,7 @@ const Captains: React.FC = () => {
               <input value={name} onChange={(e) => setName(e.target.value)} placeholder="الاسم" className="border p-2 w-full" required />
               <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="البريد الإلكتروني" className="border p-2 w-full" />
               <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="رقم الهاتف" className="border p-2 w-full" required />
-              
-              {/* كلمة المرور */}
+
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
@@ -231,6 +215,7 @@ const Captains: React.FC = () => {
                   {showPassword ? '🙈' : '👁'}
                 </button>
               </div>
+
               <input
                 type="password"
                 value={confirmPassword}
@@ -242,6 +227,7 @@ const Captains: React.FC = () => {
 
               <input value={vehicleType} onChange={(e) => setVehicleType(e.target.value)} placeholder="نوع المركبة" className="border p-2 w-full" />
               <input value={vehicleNumber} onChange={(e) => setVehicleNumber(e.target.value)} placeholder="رقم المركبة" className="border p-2 w-full" />
+
               <select value={status} onChange={(e) => setStatus(e.target.value)} className="border p-2 w-full">
                 <option value="available">متاح</option>
                 <option value="busy">مشغول</option>
