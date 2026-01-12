@@ -10,6 +10,7 @@ interface Restaurant {
   image_url: string;
   categories?: string;
   category_ids?: string;
+  type_id?: number;
   created_at: string;
   latitude?: number;
   longitude?: number;
@@ -17,6 +18,11 @@ interface Restaurant {
 }
 
 interface Category {
+  id: number;
+  name: string;
+}
+
+interface TypeItem {
   id: number;
   name: string;
 }
@@ -43,7 +49,10 @@ const daysOfWeek = [
 const Restaurants: React.FC = () => {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [types, setTypes] = useState<TypeItem[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
+  const [selectedType, setSelectedType] = useState<number | "">("");
+
   const [storeSchedule, setStoreSchedule] = useState<ScheduleItem[]>(
     daysOfWeek.map((day) => ({ day, start: "", end: "", closed: false }))
   );
@@ -81,9 +90,16 @@ const Restaurants: React.FC = () => {
     setCategories(Array.isArray(data) ? data : data.categories || []);
   };
 
+  const fetchTypes = async () => {
+    const res = await api.get(`/types`);
+    const data = res.data;
+    setTypes(data.types || []);
+  };
+
   useEffect(() => {
     fetchRestaurants();
     fetchCategories();
+    fetchTypes();
   }, []);
 
   const toggleCategory = (id: number) => {
@@ -106,6 +122,7 @@ const Restaurants: React.FC = () => {
     data.append("name", formData.name);
     data.append("address", formData.address);
     data.append("phone", formData.phone);
+    data.append("type_id", String(selectedType));
     data.append("category_ids", JSON.stringify(selectedCategories));
     data.append("schedule", JSON.stringify(storeSchedule));
     if (latitude) data.append("latitude", latitude);
@@ -138,6 +155,7 @@ const Restaurants: React.FC = () => {
       : [];
 
     setSelectedCategories(categoryIds);
+    setSelectedType(r.type_id || "");
     setPreview(r.image_url || null);
     setFile(null);
 
@@ -159,15 +177,10 @@ const Restaurants: React.FC = () => {
     setShowModal(true);
   };
 
-  const handleDelete = async (id: number) => {
-    if (!window.confirm("تأكيد حذف المطعم؟")) return;
-    await api.delete(`/restaurants/${id}`);
-    fetchRestaurants();
-  };
-
   const resetForm = () => {
     setFormData({ id: 0, name: "", address: "", phone: "", image_url: "" });
     setSelectedCategories([]);
+    setSelectedType("");
     setLatitude("");
     setLongitude("");
     setStoreSchedule(daysOfWeek.map((day) => ({ day, start: "", end: "", closed: false })));
@@ -177,36 +190,9 @@ const Restaurants: React.FC = () => {
     setShowModal(false);
   };
 
-  const handleDragStart = (index: number) => {
-    setDragIndex(index);
-  };
-
-  const handleDrop = async (dropIndex: number) => {
-    if (dragIndex === null || dragIndex === dropIndex) return;
-
-    const updated = [...restaurants];
-    const [moved] = updated.splice(dragIndex, 1);
-    updated.splice(dropIndex, 0, moved);
-
-    setRestaurants(updated);
-    setDragIndex(null);
-
-    const order = updated.map((r, i) => ({
-      id: r.id,
-      sort_order: i + 1,
-    }));
-
-    try {
-      await api.post("/restaurants/reorder", { order });
-    } catch (err) {
-      console.error("فشل حفظ الترتيب", err);
-    }
-  };
-
   const filteredRestaurants = restaurants.filter((r) =>
     r.name.toLowerCase().includes(searchText.toLowerCase())
   );
-
     return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
