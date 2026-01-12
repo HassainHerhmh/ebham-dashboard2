@@ -1,12 +1,17 @@
 import axios from "axios";
 
-const API_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:5000";
+const RAW_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
+const API_URL = RAW_URL.endsWith("/api")
+  ? RAW_URL
+  : `${RAW_URL}/api`;
+
 
 const api = axios.create({
   baseURL: API_URL,
   headers: { "Content-Type": "application/json" },
 });
+
 
 api.interceptors.request.use((config) => {
   const userStr = localStorage.getItem("user");
