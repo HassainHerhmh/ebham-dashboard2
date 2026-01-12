@@ -306,24 +306,25 @@ export const deleteRestaurant = async (id: number) => {
 
 
 
-  // 🔥 أضف هذا القسم للكباتن
-  captains: {
-    getCaptains: async () => {
-      const res = await instance.get("/captains");
-      return res.data.captains || res.data;
+ /* =========================
+   CAPTAINS
+========================= */
+(api as any).captains = {
+  getCaptains: async () =>
+    (await api.get("/captains")).data,
 
-    addCaptain: (data: any) =>
-      instance.post("/captains", data),
+  addCaptain: async (data: any) =>
+    (await api.post("/captains", data)).data,
 
-    updateCaptain: (id: number, data: any) =>
-      instance.put(`/captains/${id}`, data),
+  updateCaptain: async (id: number, data: any) =>
+    (await api.put(`/captains/${id}`, data)).data,
 
-    deleteCaptain: (id: number) =>
-      instance.delete(`/captains/${id}`),
+  deleteCaptain: async (id: number) =>
+    (await api.delete(`/captains/${id}`)).data,
 
-    updateStatus: (id: number, status: string) =>
-      instance.put(`/captains/${id}/status`, { status }),
-  },
+  updateStatus: async (id: number, status: string) =>
+    (await api.put(`/captains/${id}/status`, { status })).data,
 };
+
 
 export default api;
