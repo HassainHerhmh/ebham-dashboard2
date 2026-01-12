@@ -193,7 +193,6 @@ const Restaurants: React.FC = () => {
   const filteredRestaurants = restaurants.filter((r) =>
     r.name.toLowerCase().includes(searchText.toLowerCase())
   );
-  );
     return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
