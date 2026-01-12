@@ -316,6 +316,21 @@ const Restaurants: React.FC = () => {
                 required
                 className="border rounded-lg px-3 py-2 w-full"
               />
+                  
+              {/* نوع المحل */}
+              <select
+                value={selectedType}
+                onChange={(e) => setSelectedType(Number(e.target.value))}
+                required
+                className="border rounded-lg px-3 py-2 w-full"
+              >
+                <option value="">اختر نوع المحل</option>
+                {types.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
 
               <input
                 type="text"
