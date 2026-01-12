@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import api from "../services/api";
 
 interface Branch {
   id: number;
@@ -18,23 +19,21 @@ const BranchesSettings: React.FC = () => {
   const [address, setAddress] = useState("");
   const [phone, setPhone] = useState("");
 
-  // جلب الفروع من السيرفر
-  const fetchBranches = () => {
-    fetch("http://localhost:5000/branches") // عدل الرابط حسب الإعداد
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) {
-          setBranches(data.branches);
-        }
-      })
-      .catch((err) => console.error("خطأ في جلب الفروع:", err));
+  /* ===== Load ===== */
+  const fetchBranches = async () => {
+    try {
+      const res = await api.get("/branches");
+      setBranches(res.data.branches || []);
+    } catch (err) {
+      console.error("خطأ في جلب الفروع:", err);
+    }
   };
 
   useEffect(() => {
     fetchBranches();
   }, []);
 
-  // فتح مودال الإضافة أو التعديل
+  /* ===== Open Modals ===== */
   const openAddModal = () => {
     setEditMode(false);
     setSelectedBranchId(null);
@@ -53,51 +52,47 @@ const BranchesSettings: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  // حفظ البيانات
-  const handleSave = () => {
+  /* ===== Save ===== */
+  const handleSave = async () => {
     if (!name.trim()) {
       alert("❌ يرجى إدخال اسم الفرع");
       return;
     }
 
     const branchData = { name, address, phone };
-    const url = editMode
-      ? `http://localhost:5000/branches/${selectedBranchId}`
-      : `http://localhost:5000/branches`;
-    const method = editMode ? "PUT" : "POST";
 
-    fetch(url, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(branchData),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) {
-          alert(data.message);
-          fetchBranches();
-          setIsModalOpen(false);
-        } else {
-          alert(data.message);
-        }
-      })
-      .catch((err) => console.error("خطأ:", err));
+    try {
+      if (editMode && selectedBranchId) {
+        const res = await api.put(
+          `/branches/${selectedBranchId}`,
+          branchData
+        );
+        alert(res.data.message || "تم التعديل");
+      } else {
+        const res = await api.post("/branches", branchData);
+        alert(res.data.message || "تمت الإضافة");
+      }
+
+      fetchBranches();
+      setIsModalOpen(false);
+    } catch (err) {
+      console.error("خطأ:", err);
+      alert("حدث خطأ أثناء الحفظ");
+    }
   };
 
-  // حذف فرع
-  const handleDelete = (id: number) => {
+  /* ===== Delete ===== */
+  const handleDelete = async (id: number) => {
     if (!window.confirm("هل أنت متأكد من الحذف؟")) return;
-    fetch(`http://localhost:5000/branches/${id}`, { method: "DELETE" })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) {
-          alert(data.message);
-          fetchBranches();
-        } else {
-          alert(data.message);
-        }
-      })
-      .catch((err) => console.error("خطأ في الحذف:", err));
+
+    try {
+      const res = await api.delete(`/branches/${id}`);
+      alert(res.data.message || "تم الحذف");
+      fetchBranches();
+    } catch (err) {
+      console.error("خطأ في الحذف:", err);
+      alert("فشل الحذف");
+    }
   };
 
   return (
@@ -143,16 +138,24 @@ const BranchesSettings: React.FC = () => {
               </td>
             </tr>
           ))}
+          {branches.length === 0 && (
+            <tr>
+              <td colSpan={4} className="p-4 text-center text-gray-500">
+                لا توجد فروع
+              </td>
+            </tr>
+          )}
         </tbody>
       </table>
 
-      {/* مودال إضافة/تعديل */}
+      {/* Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded shadow-lg w-96">
             <h3 className="text-lg font-bold mb-4">
               {editMode ? "✏️ تعديل الفرع" : "➕ إضافة فرع جديد"}
             </h3>
+
             <input
               type="text"
               placeholder="اسم الفرع"
@@ -160,6 +163,7 @@ const BranchesSettings: React.FC = () => {
               onChange={(e) => setName(e.target.value)}
               className="border border-gray-300 p-2 w-full mb-3"
             />
+
             <input
               type="text"
               placeholder="العنوان"
@@ -167,6 +171,7 @@ const BranchesSettings: React.FC = () => {
               onChange={(e) => setAddress(e.target.value)}
               className="border border-gray-300 p-2 w-full mb-3"
             />
+
             <input
               type="text"
               placeholder="الهاتف"
@@ -174,6 +179,7 @@ const BranchesSettings: React.FC = () => {
               onChange={(e) => setPhone(e.target.value)}
               className="border border-gray-300 p-2 w-full mb-4"
             />
+
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setIsModalOpen(false)}
