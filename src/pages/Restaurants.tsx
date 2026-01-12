@@ -139,7 +139,7 @@ const Restaurants: React.FC = () => {
       : [];
 
     setSelectedCategories(categoryIds);
-    setPreview(r.image_url ? `${API_URL}${r.image_url}` : null);
+   setPreview(r.image_url || null);
     setLatitude(r.latitude ? String(r.latitude) : "");
     setLongitude(r.longitude ? String(r.longitude) : "");
     setStoreSchedule(
@@ -282,13 +282,14 @@ const Restaurants: React.FC = () => {
                     )}
                   </td>
                   <td>
-                    {r.image_url && (
-                      <img
-                        src={`${API_URL}${r.image_url}`}
-                        alt={r.name}
-                        className="w-16 h-16 object-cover rounded"
-                      />
-                    )}
+                  {r.image_url && (
+  <img
+    src={r.image_url}
+    alt={r.name}
+    className="w-16 h-16 object-cover rounded"
+  />
+)}
+
                   </td>
                   <td className="flex gap-2 justify-center">
                     <button onClick={() => handleEdit(r)} className="text-blue-600">
