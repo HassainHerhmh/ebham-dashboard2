@@ -30,7 +30,6 @@ interface ScheduleItem {
   closed: boolean;
 }
 
-const API_URL = import.meta.env.VITE_API_URL;
 const daysOfWeek = [
   "السبت",
   "الأحد",
@@ -67,7 +66,6 @@ const Restaurants: React.FC = () => {
   const [longitude, setLongitude] = useState("");
 
   const [dragIndex, setDragIndex] = useState<number | null>(null);
-
   const [searchText, setSearchText] = useState("");
 
   const fetchRestaurants = async () => {
@@ -121,6 +119,7 @@ const Restaurants: React.FC = () => {
       await api.post(`/restaurants`, data);
       alert("✅ تم إضافة المطعم");
     }
+
     resetForm();
     fetchRestaurants();
   };
@@ -139,9 +138,12 @@ const Restaurants: React.FC = () => {
       : [];
 
     setSelectedCategories(categoryIds);
-   setPreview(r.image_url || null);
+    setPreview(r.image_url || null);
+    setFile(null);
+
     setLatitude(r.latitude ? String(r.latitude) : "");
     setLongitude(r.longitude ? String(r.longitude) : "");
+
     setStoreSchedule(
       r.schedule
         ? r.schedule.map((s) => ({
@@ -152,6 +154,7 @@ const Restaurants: React.FC = () => {
           }))
         : daysOfWeek.map((day) => ({ day, start: "", end: "", closed: false }))
     );
+
     setEditMode(true);
     setShowModal(true);
   };
@@ -203,7 +206,6 @@ const Restaurants: React.FC = () => {
   const filteredRestaurants = restaurants.filter((r) =>
     r.name.toLowerCase().includes(searchText.toLowerCase())
   );
-
 
     return (
     <div className="space-y-6">
