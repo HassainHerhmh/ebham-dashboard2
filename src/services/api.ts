@@ -326,5 +326,45 @@ export const deleteRestaurant = async (id: number) => {
     (await api.put(`/captains/${id}/status`, { status })).data,
 };
 
+/* =========================
+   PAYMENT METHODS
+========================= */
+(api as any).paymentMethods = {
+  // جلب جميع طرق الدفع (للإدارة)
+  getAll: async () =>
+    (await api.get("/payment-methods")).data.methods,
+
+  // جلب الطرق المفعّلة فقط (للطلبات)
+  getActive: async () =>
+    (await api.get("/payment-methods/active")).data.methods,
+
+  // إضافة طريقة دفع
+  add: async (data: any) =>
+    (await api.post("/payment-methods", data)).data,
+
+  // تعديل طريقة دفع
+  update: async (id: number, data: any) =>
+    (await api.put(`/payment-methods/${id}`, data)).data,
+
+  // حذف طريقة دفع
+  remove: async (id: number) =>
+    (await api.delete(`/payment-methods/${id}`)).data,
+
+  // تفعيل / تعطيل
+  toggle: async (id: number, is_active: boolean | number) =>
+    (await api.patch(`/payment-methods/${id}/toggle`, { is_active })).data,
+
+  // إعادة ترتيب
+  reorder: async (orders: { id: number; sort_order: number }[]) =>
+    (await api.post("/payment-methods/reorder", { orders })).data,
+
+  // جلب سجل التغييرات
+  getLogs: async (id: number, days?: number) =>
+    (
+      await api.get(`/payment-methods/${id}/logs`, {
+        params: days ? { days } : {},
+      })
+    ).data.logs,
+};
 
 export default api;
