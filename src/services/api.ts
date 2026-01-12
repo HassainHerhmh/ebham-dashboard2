@@ -311,7 +311,7 @@ export const deleteRestaurant = async (id: number) => {
 ========================= */
 (api as any).captains = {
   getCaptains: async () =>
-    (await api.get("/captains")).data,
+    (await api.get("/captains")).data.captains,
 
   addCaptain: async (data: any) =>
     (await api.post("/captains", data)).data,
