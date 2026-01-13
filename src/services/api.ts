@@ -25,10 +25,9 @@ api.interceptors.request.use((config) => {
 /* =========================
    USERS
 ========================= */
-getUsers: async (config?: any) =>
-  (await api.get("/users", config)).data,
-
-
+(api as any).users = {
+  getUsers: async (config?: any) =>
+    (await api.get("/users", config)).data,
 
   addUser: async (formData: FormData) =>
     (await api.post("/users", formData, {
