@@ -23,7 +23,8 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
     ? JSON.parse(localStorage.getItem("user")!)
     : null;
 
-  const isAdminGeneral = user?.is_admin_branch === true;
+  const isAdminGeneral = Boolean(user?.is_admin_branch);
+
 
   const handleLogout = () => {
     localStorage.removeItem("user");
