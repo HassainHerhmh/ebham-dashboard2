@@ -23,7 +23,6 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
     ? JSON.parse(localStorage.getItem("user")!)
     : null;
 
-  // الإدارة العامة فقط
   const isAdminBranch = !!user?.is_admin_branch;
 
   const handleLogout = () => {
