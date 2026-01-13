@@ -39,15 +39,24 @@ const Users: React.FC = () => {
   const [role, setRole] = useState("admin");
   const [branchId, setBranchId] = useState<number | "">("");
 
-  const fetchUsers = async () => {
-    setLoading(true);
-    try {
-      const res = await api.users.getUsers();
-      setUsers(res.users || res);
-    } finally {
-      setLoading(false);
+ const fetchUsers = async () => {
+  setLoading(true);
+  try {
+    const res = await api.users.getUsers();
+
+    // دعم كلا الشكلين بأمان
+    if (Array.isArray(res)) {
+      setUsers(res);
+    } else if (res?.users) {
+      setUsers(res.users);
+    } else {
+      setUsers([]);
     }
-  };
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const fetchBranches = async () => {
     if (!isAdminBranch) return;
