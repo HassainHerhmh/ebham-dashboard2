@@ -23,20 +23,17 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
     ? JSON.parse(localStorage.getItem("user")!)
     : null;
 
-  const isAdminBranch = !!user?.is_admin_branch;
-
   const handleLogout = () => {
     localStorage.removeItem("user");
     localStorage.removeItem("branch_id");
-    window.dispatchEvent(new Event("storage"));
+    window.dispatchEvent(new Event("branch-change"));
     navigate("/login", { replace: true });
   };
 
-  // جلب الفروع
   const fetchBranches = async () => {
     try {
-      // مستخدم فرع → يثبت على فرعه فقط
-      if (!isAdminBranch) {
+      // مستخدم فرع عادي → يثبت على فرعه فقط
+      if (!user?.is_admin_branch) {
         if (user?.branch_id) {
           setCurrentBranch(user.branch_id);
           localStorage.setItem("branch_id", String(user.branch_id));
@@ -46,7 +43,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
 
       // إدارة عامة → جلب كل الفروع
       const res = await api.get("/branches");
-      const list = res.data.branches || [];
+      const list: Branch[] = res.data.branches || [];
       setBranches(list);
 
       const saved = localStorage.getItem("branch_id");
@@ -68,7 +65,8 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   const handleChangeBranch = (id: number) => {
     setCurrentBranch(id);
     localStorage.setItem("branch_id", String(id));
-    window.location.reload();
+    // إشعار بقية الصفحات بتغير الفرع
+    window.dispatchEvent(new Event("branch-change"));
   };
 
   return (
@@ -78,8 +76,8 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
       </button>
 
       <div className="flex items-center gap-4">
-        {/* الفرع */}
-        {isAdminBranch ? (
+        {/* اختيار الفرع */}
+        {user?.is_admin_branch ? (
           branches.length > 0 && (
             <select
               value={currentBranch ?? ""}
@@ -113,7 +111,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
                 {user?.name || "مستخدم"}
               </p>
               <p className="text-xs text-gray-500">
-                {isAdminBranch ? "مدير النظام" : "موظف"}
+                {user?.is_admin_branch ? "مدير النظام" : "موظف"}
               </p>
             </div>
             <div className="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center">
