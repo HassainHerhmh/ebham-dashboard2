@@ -45,6 +45,11 @@ const fetchUsers = async () => {
   try {
     const selectedBranchId = localStorage.getItem("selected_branch_id");
 
+   const fetchUsers = async () => {
+  setLoading(true);
+  try {
+    const selectedBranchId = localStorage.getItem("selected_branch_id");
+
     const res = await api.users.getUsers({
       headers: selectedBranchId
         ? { "x-branch-id": selectedBranchId }
