@@ -42,25 +42,16 @@ const isAdminBranch = !!currentUser?.is_admin_branch;
 
 
 
-   const fetchUsers = async () => {
+const fetchUsers = async () => {
   setLoading(true);
   try {
-    const selectedBranchId = localStorage.getItem("selected_branch_id");
-
-   const res = await api.get("/users");
-
-
-    if (Array.isArray(res)) {
-      setUsers(res);
-    } else if (res?.users) {
-      setUsers(res.users);
-    } else {
-      setUsers([]);
-    }
+    const res = await api.users.getUsers();
+    setUsers(res.users || []);
   } finally {
     setLoading(false);
   }
 };
+
 
 
 
