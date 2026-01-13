@@ -23,6 +23,9 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
     ? JSON.parse(localStorage.getItem("user")!)
     : null;
 
+  // الإدارة العامة فقط
+  const isAdminBranch = !!user?.is_admin_branch;
+
   const handleLogout = () => {
     localStorage.removeItem("user");
     localStorage.removeItem("branch_id");
@@ -33,9 +36,9 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   // جلب الفروع
   const fetchBranches = async () => {
     try {
-      // مستخدم عادي → يثبت على فرعه فقط
-      if (user && user.role !== "admin") {
-        if (user.branch_id) {
+      // مستخدم فرع → يثبت على فرعه فقط
+      if (!isAdminBranch) {
+        if (user?.branch_id) {
           setCurrentBranch(user.branch_id);
           localStorage.setItem("branch_id", String(user.branch_id));
         }
@@ -77,7 +80,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
 
       <div className="flex items-center gap-4">
         {/* الفرع */}
-        {user?.role === "admin" ? (
+        {isAdminBranch ? (
           branches.length > 0 && (
             <select
               value={currentBranch ?? ""}
@@ -111,7 +114,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
                 {user?.name || "مستخدم"}
               </p>
               <p className="text-xs text-gray-500">
-                {user?.role === "admin" ? "مدير النظام" : "موظف"}
+                {isAdminBranch ? "مدير النظام" : "موظف"}
               </p>
             </div>
             <div className="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center">
