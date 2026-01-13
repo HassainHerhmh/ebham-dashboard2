@@ -17,14 +17,13 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const [branches, setBranches] = useState<Branch[]>([]);
-  const [currentBranch, setCurrentBranch] = useState<number | null>(null);
+  const [currentBranch, setCurrentBranch] = useState<string>("all");
 
   const user = localStorage.getItem("user")
     ? JSON.parse(localStorage.getItem("user")!)
     : null;
 
   const isAdminGeneral = Boolean(user?.is_admin_branch);
-
 
   const handleLogout = () => {
     localStorage.removeItem("user");
@@ -38,8 +37,9 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
       if (!isAdminGeneral) {
         // مستخدم فرع → يثبت على فرعه فقط
         if (user?.branch_id) {
-          setCurrentBranch(user.branch_id);
-          localStorage.setItem("branch_id", String(user.branch_id));
+          const id = String(user.branch_id);
+          setCurrentBranch(id);
+          localStorage.setItem("branch_id", id);
         }
         return;
       }
@@ -52,11 +52,11 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
       const saved = localStorage.getItem("branch_id");
 
       if (saved) {
-        setCurrentBranch(Number(saved));
-      } else if (user?.branch_id) {
-        // الافتراضي: فرع المستخدم (غالبًا الإدارة العامة)
-        setCurrentBranch(user.branch_id);
-        localStorage.setItem("branch_id", String(user.branch_id));
+        setCurrentBranch(saved);
+      } else {
+        // الافتراضي: الإدارة العامة (كل الفروع)
+        setCurrentBranch("all");
+        localStorage.setItem("branch_id", "all");
       }
     } catch (err) {
       console.error("خطأ في جلب الفروع:", err);
@@ -67,9 +67,10 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
     fetchBranches();
   }, []);
 
-  const handleChangeBranch = (id: number) => {
-    setCurrentBranch(id);
-    localStorage.setItem("branch_id", String(id));
+  const handleChangeBranch = (value: string) => {
+    setCurrentBranch(value);
+    localStorage.setItem("branch_id", value);
+    window.dispatchEvent(new Event("storage"));
     window.location.reload();
   };
 
@@ -82,19 +83,18 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
       <div className="flex items-center gap-4">
         {/* الفرع */}
         {isAdminGeneral ? (
-          branches.length > 0 && (
-            <select
-              value={currentBranch ?? ""}
-              onChange={(e) => handleChangeBranch(Number(e.target.value))}
-              className="border rounded px-3 py-1 text-sm bg-white"
-            >
-              {branches.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                </option>
-              ))}
-            </select>
-          )
+          <select
+            value={currentBranch}
+            onChange={(e) => handleChangeBranch(e.target.value)}
+            className="border rounded px-3 py-1 text-sm bg-white"
+          >
+            <option value="all">الإدارة العامة</option>
+            {branches.map((b) => (
+              <option key={b.id} value={String(b.id)}>
+                {b.name}
+              </option>
+            ))}
+          </select>
         ) : (
           user?.branch_name && (
             <div className="px-3 py-1 text-sm border rounded bg-gray-50 text-gray-700">
