@@ -6,12 +6,13 @@ import api from "../services/api";
 ========================= */
 interface Neighborhood {
   id: number;
-  name: string;              // ✅ كان neighborhood_name
+  name: string;
   delivery_fee: number;
-  city_name?: string;
+  branch_id: number;
+  branch_name?: string;
 }
 
-interface City {
+interface Branch {
   id: number;
   name: string;
 }
@@ -20,17 +21,23 @@ interface City {
    Component
 ========================= */
 const Neighborhoods: React.FC = () => {
+  const user = localStorage.getItem("user")
+    ? JSON.parse(localStorage.getItem("user")!)
+    : null;
+
+  const isAdminBranch = Boolean(user?.is_admin_branch);
+
   const [search, setSearch] = useState("");
   const [neighborhoods, setNeighborhoods] = useState<Neighborhood[]>([]);
-  const [cities, setCities] = useState<City[]>([]);
+  const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const [isModalOpen, setIsModalOpen] = useState(false); 
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
 
   const [name, setName] = useState("");
   const [fee, setFee] = useState<number>(0);
-  const [cityId, setCityId] = useState<number>(0);
+  const [branchId, setBranchId] = useState<number>(0);
 
   /* =========================
      Fetch Neighborhoods
@@ -38,9 +45,19 @@ const Neighborhoods: React.FC = () => {
   const fetchNeighborhoods = async (query: string) => {
     try {
       setLoading(true);
-      const res = await api.cities.searchNeighborhoods(query);
-      if (res?.success && Array.isArray(res.neighborhoods)) {
-        setNeighborhoods(res.neighborhoods);
+
+      const headers: any = {};
+      if (!isAdminBranch && user?.branch_id) {
+        headers["x-branch-id"] = user.branch_id;
+      }
+
+      const res = await api.get("/neighborhoods", {
+        params: { search: query },
+        headers,
+      });
+
+      if (res?.data?.success && Array.isArray(res.data.neighborhoods)) {
+        setNeighborhoods(res.data.neighborhoods);
       } else {
         setNeighborhoods([]);
       }
@@ -53,21 +70,22 @@ const Neighborhoods: React.FC = () => {
   };
 
   /* =========================
-     Fetch Cities
+     Fetch Branches (للإدارة العامة فقط)
   ========================= */
-  const fetchCities = async () => {
+  const fetchBranches = async () => {
+    if (!isAdminBranch) return;
     try {
-      const res = await api.cities.getCities();
-      if (res?.success && Array.isArray(res.cities)) {
-        setCities(res.cities);
+      const res = await api.get("/branches");
+      if (res?.data?.branches) {
+        setBranches(res.data.branches);
       }
     } catch (err) {
-      console.error("❌ خطأ جلب المدن:", err);
+      console.error("❌ خطأ جلب الفروع:", err);
     }
   };
 
   useEffect(() => {
-    fetchCities();
+    fetchBranches();
     fetchNeighborhoods("");
   }, []);
 
@@ -78,10 +96,7 @@ const Neighborhoods: React.FC = () => {
     setEditId(n.id);
     setName(n.name);
     setFee(n.delivery_fee);
-
-    const cityObj = cities.find((c) => c.name === n.city_name);
-    setCityId(cityObj?.id || 0);
-
+    setBranchId(n.branch_id);
     setIsModalOpen(true);
   };
 
@@ -92,17 +107,32 @@ const Neighborhoods: React.FC = () => {
     e.preventDefault();
 
     try {
+      const finalBranchId = isAdminBranch ? branchId : user.branch_id;
+
+      if (!finalBranchId) {
+        alert("يجب اختيار الفرع");
+        return;
+      }
+
       if (editId) {
-        await api.cities.updateNeighborhood(editId, cityId, name, fee);
+        await api.put(`/neighborhoods/${editId}`, {
+          branch_id: finalBranchId,
+          name,
+          delivery_fee: fee,
+        });
       } else {
-        await api.cities.addNeighborhood(cityId, name, fee);
+        await api.post("/neighborhoods", {
+          branch_id: finalBranchId,
+          name,
+          delivery_fee: fee,
+        });
       }
 
       setIsModalOpen(false);
       setEditId(null);
       setName("");
       setFee(0);
-      setCityId(0);
+      setBranchId(0);
 
       fetchNeighborhoods(search);
     } catch (err) {
@@ -117,7 +147,7 @@ const Neighborhoods: React.FC = () => {
     if (!window.confirm("⚠️ هل أنت متأكد من حذف الحي؟")) return;
 
     try {
-      await api.cities.deleteNeighborhood(id);
+      await api.delete(`/neighborhoods/${id}`);
       fetchNeighborhoods(search);
     } catch (err) {
       console.error("❌ خطأ حذف الحي:", err);
@@ -137,7 +167,7 @@ const Neighborhoods: React.FC = () => {
             setEditId(null);
             setName("");
             setFee(0);
-            setCityId(0);
+            setBranchId(0);
             setIsModalOpen(true);
           }}
         >
@@ -164,7 +194,7 @@ const Neighborhoods: React.FC = () => {
               <th>#</th>
               <th>اسم الحي</th>
               <th>سعر التوصيل</th>
-              <th>المدينة</th>
+              <th>الفرع</th>
               <th>إجراءات</th>
             </tr>
           </thead>
@@ -174,7 +204,7 @@ const Neighborhoods: React.FC = () => {
                 <td>{idx + 1}</td>
                 <td>{n.name}</td>
                 <td>{n.delivery_fee}</td>
-                <td>{n.city_name || "-"}</td>
+                <td>{n.branch_name || "-"}</td>
                 <td>
                   <button
                     onClick={() => startEdit(n)}
@@ -213,19 +243,21 @@ const Neighborhoods: React.FC = () => {
             </h2>
 
             <form onSubmit={saveNeighborhood} className="space-y-4">
-              <select
-                value={cityId}
-                onChange={(e) => setCityId(Number(e.target.value))}
-                className="w-full border rounded px-3 py-2"
-                required
-              >
-                <option value={0}>-- اختر مدينة --</option>
-                {cities.map((city) => (
-                  <option key={city.id} value={city.id}>
-                    {city.name}
-                  </option>
-                ))}
-              </select>
+              {isAdminBranch && (
+                <select
+                  value={branchId}
+                  onChange={(e) => setBranchId(Number(e.target.value))}
+                  className="w-full border rounded px-3 py-2"
+                  required
+                >
+                  <option value={0}>-- اختر الفرع --</option>
+                  {branches.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.name}
+                    </option>
+                  ))}
+                </select>
+              )}
 
               <input
                 value={name}
@@ -268,4 +300,3 @@ const Neighborhoods: React.FC = () => {
 };
 
 export default Neighborhoods;
- 
