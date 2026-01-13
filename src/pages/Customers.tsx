@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import api from "../services/api";
 
 declare global {
@@ -15,8 +15,6 @@ interface Branch {
 interface City {
   id: number;
   name: string;
-  delivery_fee: number;
-  neighborhoods: { id: number; name: string }[];
 }
 
 interface Customer {
@@ -35,12 +33,7 @@ interface Address {
   customer_name: string;
   province: number;
   district: number;
-  location_type?: string;
   address?: string;
-  gps_link?: string;
-  latitude?: string;
-  longitude?: string;
-  branch_id?: number;
   branch_name?: string;
 }
 
@@ -70,11 +63,13 @@ const Customers: React.FC = () => {
   const [searchCustomer, setSearchCustomer] = useState("");
   const [searchAddress, setSearchAddress] = useState("");
 
-  const [isAddOpen, setIsAddOpen] = useState(false);
-  const [isEditOpen, setIsEditOpen] = useState(false);
   const [isAddressesOpen, setIsAddressesOpen] = useState(false);
+  const [isAddAddressOpen, setIsAddAddressOpen] = useState(false);
 
-  const mapAddRef = useRef<HTMLDivElement | null>(null);
+  const [selectedCustomer, setSelectedCustomer] = useState("");
+  const [province, setProvince] = useState("");
+  const [district, setDistrict] = useState("");
+  const [detailAddress, setDetailAddress] = useState("");
 
   const fetchBranches = async () => {
     if (!isAdmin) return;
@@ -89,14 +84,12 @@ const Customers: React.FC = () => {
 
   const fetchCustomers = async () => {
     setLoading(true);
-
     const res = await api.get("/customers", {
       headers:
         isAdmin && selectedBranch !== "all"
           ? { "x-branch-id": selectedBranch }
           : {},
     });
-
     if (res.data.success) setCustomers(res.data.customers);
     setLoading(false);
   };
@@ -108,7 +101,6 @@ const Customers: React.FC = () => {
           ? { "x-branch-id": selectedBranch }
           : {},
     });
-
     if (res.data.success) setAddresses(res.data.addresses);
   };
 
@@ -152,10 +144,7 @@ const Customers: React.FC = () => {
       </div>
 
       <div className="flex justify-between">
-        <button
-          onClick={() => setIsAddOpen(true)}
-          className="bg-green-600 text-white px-4 py-2 rounded"
-        >
+        <button className="bg-green-600 text-white px-4 py-2 rounded">
           ➕ إضافة عميل
         </button>
 
@@ -178,34 +167,34 @@ const Customers: React.FC = () => {
       />
 
       <div className="bg-white rounded shadow overflow-auto">
-        <table className="w-full text-center">
-          <thead className="bg-gray-100">
-            <tr>
-              <th>#</th>
-              <th>الاسم</th>
-              <th>الجوال</th>
-              <th>البريد</th>
-              {isAdmin && <th>الفرع</th>}
-              <th>التاريخ</th>
-              <th>إجراءات</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredCustomers.map((c) => (
-              <tr key={c.id} className="border-b">
-                <td>{c.id}</td>
-                <td>{c.name}</td>
-                <td>{c.phone}</td>
-                <td>{c.email || "-"}</td>
-                {isAdmin && <td>{c.branch_name || "-"}</td>}
-                <td>{c.created_at?.slice(0, 10)}</td>
-                <td className="flex gap-2 justify-center">
-                  <button className="text-blue-600">تعديل</button>
-                </td>
+        {loading ? (
+          <div className="p-6 text-center">جاري التحميل...</div>
+        ) : (
+          <table className="w-full text-center">
+            <thead className="bg-gray-100">
+              <tr>
+                <th>#</th>
+                <th>الاسم</th>
+                <th>الجوال</th>
+                <th>البريد</th>
+                {isAdmin && <th>الفرع</th>}
+                <th>التاريخ</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {filteredCustomers.map((c) => (
+                <tr key={c.id} className="border-b">
+                  <td>{c.id}</td>
+                  <td>{c.name}</td>
+                  <td>{c.phone}</td>
+                  <td>{c.email || "-"}</td>
+                  {isAdmin && <td>{c.branch_name || "-"}</td>}
+                  <td>{c.created_at?.slice(0, 10)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
 
       {isAddressesOpen && (
@@ -218,7 +207,15 @@ const Customers: React.FC = () => {
               ✖
             </button>
 
-            <h2 className="text-xl font-bold mb-3">📍 إدارة العناوين</h2>
+            <div className="flex justify-between items-center mb-3">
+              <h2 className="text-xl font-bold">📍 إدارة العناوين</h2>
+              <button
+                onClick={() => setIsAddAddressOpen(true)}
+                className="bg-green-600 text-white px-3 py-1 rounded"
+              >
+                ➕ إضافة عنوان
+              </button>
+            </div>
 
             <input
               className="border p-2 rounded w-full mb-3"
@@ -249,6 +246,96 @@ const Customers: React.FC = () => {
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {isAddAddressOpen && (
+        <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
+          <div className="bg-white p-6 rounded w-full max-w-md space-y-3">
+            <h3 className="text-lg font-bold">➕ إضافة عنوان</h3>
+
+            <select
+              className="border p-2 w-full"
+              value={selectedCustomer}
+              onChange={(e) => setSelectedCustomer(e.target.value)}
+            >
+              <option value="">اختر عميل</option>
+              {customers.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+
+            <select
+              className="border p-2 w-full"
+              value={province}
+              onChange={async (e) => {
+                setProvince(e.target.value);
+                const res = await api.neighborhoods.getByCity(
+                  Number(e.target.value)
+                );
+                if (res.success) setNeighborhoods(res.neighborhoods);
+              }}
+            >
+              <option value="">اختر المدينة</option>
+              {cities.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+
+            <select
+              className="border p-2 w-full"
+              value={district}
+              onChange={(e) => setDistrict(e.target.value)}
+            >
+              <option value="">اختر الحي</option>
+              {neighborhoods.map((n) => (
+                <option key={n.id} value={n.id}>
+                  {n.name}
+                </option>
+              ))}
+            </select>
+
+            <input
+              className="border p-2 w-full"
+              placeholder="العنوان التفصيلي"
+              value={detailAddress}
+              onChange={(e) => setDetailAddress(e.target.value)}
+            />
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => setIsAddAddressOpen(false)}
+                className="bg-gray-400 text-white px-4 py-2 rounded w-full"
+              >
+                إلغاء
+              </button>
+              <button
+                onClick={async () => {
+                  if (!selectedCustomer || !province || !district)
+                    return alert("البيانات مطلوبة");
+
+                  const res = await api.customers.addAddress({
+                    customer_id: Number(selectedCustomer),
+                    province: Number(province),
+                    district: Number(district),
+                    address: detailAddress,
+                  });
+
+                  if (res.success) {
+                    setIsAddAddressOpen(false);
+                    fetchAddresses();
+                  }
+                }}
+                className="bg-green-600 text-white px-4 py-2 rounded w-full"
+              >
+                حفظ
+              </button>
+            </div>
           </div>
         </div>
       )}
