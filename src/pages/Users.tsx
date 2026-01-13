@@ -42,17 +42,7 @@ const Users: React.FC = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const headers: any = {};
-
-      // الإدارة العامة لا ترسل فرع افتراضيًا
-      if (isAdminBranch) {
-        const selectedBranch = localStorage.getItem("branch_id");
-        if (selectedBranch && selectedBranch !== "all") {
-          headers["x-branch-id"] = selectedBranch;
-        }
-      }
-
-      const res = await api.get("/users", { headers });
+      const res = await api.get("/users");
       setUsers(res.data.users || []);
     } finally {
       setLoading(false);
