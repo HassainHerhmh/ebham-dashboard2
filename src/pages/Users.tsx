@@ -23,9 +23,7 @@ const Users: React.FC = () => {
     ? JSON.parse(localStorage.getItem("user")!)
     : null;
 
-const isAdminBranch = Boolean(currentUser?.is_admin_branch);
-
-
+  const isAdminBranch = Boolean(currentUser?.is_admin_branch);
 
   const [users, setUsers] = useState<User[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
@@ -34,27 +32,27 @@ const isAdminBranch = Boolean(currentUser?.is_admin_branch);
   const [editingUser, setEditingUser] = useState<User | null>(null);
 
   const [name, setName] = useState("");
-  const [identifier, setIdentifier] = useState(""); // بريد أو جوال
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [image, setImage] = useState<File | null>(null);
   const [role, setRole] = useState("admin");
   const [branchId, setBranchId] = useState<number | "">("");
 
+  const fetchUsers = async () => {
+    setLoading(true);
+    try {
+      const branchId = localStorage.getItem("branch_id");
 
+      const res = await api.get("/users", {
+        headers: branchId ? { "x-branch-id": branchId } : {},
+      });
 
-const fetchUsers = async () => {
-  setLoading(true);
-  try {
-    const res = await api.users.getUsers();
-    setUsers(res.users || []);
-  } finally {
-    setLoading(false);
-  }
-};
-
-
-
+      setUsers(res.data.users || []);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchBranches = async () => {
     if (!isAdminBranch) return;
@@ -106,7 +104,6 @@ const fetchUsers = async () => {
     const formData = new FormData();
     formData.append("name", name);
 
-    // نحدد هل هو بريد أو جوال
     if (identifier.includes("@")) {
       formData.append("email", identifier);
     } else {
@@ -283,10 +280,16 @@ const fetchUsers = async () => {
                 </select>
               )}
 
-              <input type="file" onChange={(e) => setImage(e.target.files?.[0] || null)} />
+              <input
+                type="file"
+                onChange={(e) => setImage(e.target.files?.[0] || null)}
+              />
 
               <div className="flex justify-end gap-2">
-                <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded">
+                <button
+                  type="submit"
+                  className="bg-green-600 text-white px-4 py-2 rounded"
+                >
                   حفظ
                 </button>
                 <button
