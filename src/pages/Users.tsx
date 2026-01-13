@@ -40,12 +40,17 @@ const isAdminBranch = !!currentUser?.is_admin_branch;
   const [role, setRole] = useState("admin");
   const [branchId, setBranchId] = useState<number | "">("");
 
- const fetchUsers = async () => {
+const fetchUsers = async () => {
   setLoading(true);
   try {
-    const res = await api.users.getUsers();
+    const selectedBranchId = localStorage.getItem("selected_branch_id");
 
-    // دعم كلا الشكلين بأمان
+    const res = await api.users.getUsers({
+      headers: selectedBranchId
+        ? { "x-branch-id": selectedBranchId }
+        : {},
+    });
+
     if (Array.isArray(res)) {
       setUsers(res);
     } else if (res?.users) {
@@ -57,6 +62,7 @@ const isAdminBranch = !!currentUser?.is_admin_branch;
     setLoading(false);
   }
 };
+
 
 
   const fetchBranches = async () => {
