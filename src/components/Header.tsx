@@ -19,6 +19,10 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   const [branches, setBranches] = useState<Branch[]>([]);
   const [currentBranch, setCurrentBranch] = useState<number | null>(null);
 
+  const user = localStorage.getItem("user")
+    ? JSON.parse(localStorage.getItem("user")!)
+    : null;
+
   const handleLogout = () => {
     localStorage.removeItem("user");
     localStorage.removeItem("branch_id");
@@ -26,13 +30,19 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
     navigate("/login", { replace: true });
   };
 
-  const user = localStorage.getItem("user")
-    ? JSON.parse(localStorage.getItem("user")!)
-    : null;
-
-  // جلب الفروع
+  // جلب الفروع (فقط للإدارة العامة)
   const fetchBranches = async () => {
     try {
+      // إذا ليس إدارة عامة → نثبت فرعه فقط
+      if (!user?.is_admin_branch) {
+        if (user?.branch_id) {
+          setCurrentBranch(user.branch_id);
+          localStorage.setItem("branch_id", String(user.branch_id));
+        }
+        return;
+      }
+
+      // إدارة عامة → جلب كل الفروع
       const res = await api.get("/branches");
       const list = res.data.branches || [];
       setBranches(list);
@@ -56,7 +66,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   const handleChangeBranch = (id: number) => {
     setCurrentBranch(id);
     localStorage.setItem("branch_id", String(id));
-    window.location.reload(); // لإعادة تحميل البيانات حسب الفرع
+    window.location.reload();
   };
 
   return (
@@ -66,19 +76,29 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
       </button>
 
       <div className="flex items-center gap-4">
-        {/* اختيار الفرع */}
-        {branches.length > 0 && (
-          <select
-            value={currentBranch ?? ""}
-            onChange={(e) => handleChangeBranch(Number(e.target.value))}
-            className="border rounded px-3 py-1 text-sm bg-white"
-          >
-            {branches.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.name}
-              </option>
-            ))}
-          </select>
+        {/* الفرع */}
+        {user?.is_admin_branch ? (
+          // إدارة عامة: اختيار فرع
+          branches.length > 0 && (
+            <select
+              value={currentBranch ?? ""}
+              onChange={(e) => handleChangeBranch(Number(e.target.value))}
+              className="border rounded px-3 py-1 text-sm bg-white"
+            >
+              {branches.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
+                </option>
+              ))}
+            </select>
+          )
+        ) : (
+          // مستخدم عادي: عرض اسم الفرع فقط
+          user?.branch_name && (
+            <div className="px-3 py-1 text-sm border rounded bg-gray-50 text-gray-700">
+              {user.branch_name}
+            </div>
+          )
         )}
 
         <Bell size={20} className="text-gray-600" />
