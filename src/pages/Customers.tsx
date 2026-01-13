@@ -58,7 +58,7 @@ const Customers: React.FC = () => {
   const isAdmin = Boolean(currentUser?.is_admin_branch);
 
   const [branches, setBranches] = useState<Branch[]>([]);
-  const [selectedBranch, setSelectedBranch] = useState<string>("");
+  const [selectedBranch, setSelectedBranch] = useState<string>("all");
 
   const [cities, setCities] = useState<City[]>([]);
   const [neighborhoods, setNeighborhoods] = useState<Neighborhood[]>([]);
@@ -73,26 +73,6 @@ const Customers: React.FC = () => {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isAddressesOpen, setIsAddressesOpen] = useState(false);
-
-  const [newName, setNewName] = useState("");
-  const [newPhone, setNewPhone] = useState("");
-  const [newEmail, setNewEmail] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-
-  const [editCustomer, setEditCustomer] = useState<Customer | null>(null);
-  const [editName, setEditName] = useState("");
-  const [editPhone, setEditPhone] = useState("");
-  const [editEmail, setEditEmail] = useState("");
-
-  const [selectedCustomer, setSelectedCustomer] = useState("");
-  const [province, setProvince] = useState("");
-  const [district, setDistrict] = useState("");
-  const [locationType, setLocationType] = useState("");
-  const [detailAddress, setDetailAddress] = useState("");
-  const [gpsLink, setGpsLink] = useState("");
-  const [latitude, setLatitude] = useState("");
-  const [longitude, setLongitude] = useState("");
 
   const mapAddRef = useRef<HTMLDivElement | null>(null);
 
@@ -112,7 +92,7 @@ const Customers: React.FC = () => {
 
     const res = await api.get("/customers", {
       headers:
-        isAdmin && selectedBranch
+        isAdmin && selectedBranch !== "all"
           ? { "x-branch-id": selectedBranch }
           : {},
     });
@@ -124,7 +104,7 @@ const Customers: React.FC = () => {
   const fetchAddresses = async () => {
     const res = await api.get("/customer-addresses", {
       headers:
-        isAdmin && selectedBranch
+        isAdmin && selectedBranch !== "all"
           ? { "x-branch-id": selectedBranch }
           : {},
     });
@@ -146,12 +126,8 @@ const Customers: React.FC = () => {
 
   const filteredAddresses = addresses.filter(
     (a) =>
-      a.customer_name
-        .toLowerCase()
-        .includes(searchAddress.toLowerCase()) ||
-      (a.address || "")
-        .toLowerCase()
-        .includes(searchAddress.toLowerCase())
+      a.customer_name.toLowerCase().includes(searchAddress.toLowerCase()) ||
+      (a.address || "").toLowerCase().includes(searchAddress.toLowerCase())
   );
 
   return (
@@ -165,9 +141,9 @@ const Customers: React.FC = () => {
             value={selectedBranch}
             onChange={(e) => setSelectedBranch(e.target.value)}
           >
-            <option value="">كل الفروع</option>
+            <option value="all">الإدارة العامة</option>
             {branches.map((b) => (
-              <option key={b.id} value={b.id}>
+              <option key={b.id} value={String(b.id)}>
                 {b.name}
               </option>
             ))}
@@ -224,18 +200,7 @@ const Customers: React.FC = () => {
                 {isAdmin && <td>{c.branch_name || "-"}</td>}
                 <td>{c.created_at?.slice(0, 10)}</td>
                 <td className="flex gap-2 justify-center">
-                  <button
-                    onClick={() => {
-                      setEditCustomer(c);
-                      setEditName(c.name);
-                      setEditPhone(c.phone);
-                      setEditEmail(c.email || "");
-                      setIsEditOpen(true);
-                    }}
-                    className="text-blue-600"
-                  >
-                    تعديل
-                  </button>
+                  <button className="text-blue-600">تعديل</button>
                 </td>
               </tr>
             ))}
@@ -278,7 +243,7 @@ const Customers: React.FC = () => {
                     <td>{a.customer_name}</td>
                     <td>{a.province}</td>
                     <td>{a.district}</td>
-                    {isAdmin && <td>{a.branch_name}</td>}
+                    {isAdmin && <td>{a.branch_name || "-"}</td>}
                     <td>{a.address}</td>
                   </tr>
                 ))}
