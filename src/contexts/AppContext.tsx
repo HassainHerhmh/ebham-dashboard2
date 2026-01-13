@@ -29,7 +29,7 @@ interface AppState {
   loading: boolean;
   error: string | null;
   notifications: Notification[];
-  user: { name: string; role: string } | null;
+  user: any | null;
   realTimeUpdates: boolean;
 }
 
@@ -58,14 +58,15 @@ type Action =
   | { type: "SET_ERROR"; payload: string | null }
   | { type: "ADD_NOTIFICATION"; payload: Notification }
   | { type: "HIDE_NOTIFICATION"; payload: string }
-  | { type: "TOGGLE_REAL_TIME_UPDATES" };
+  | { type: "TOGGLE_REAL_TIME_UPDATES" }
+  | { type: "SET_USER"; payload: any | null };
 
 const initialState: AppState = {
   stats: null,
   loading: false,
   error: null,
   notifications: [],
-  user: { name: "أحمد محمد", role: "مدير النظام" },
+  user: null,
   realTimeUpdates: true,
 };
 
@@ -73,12 +74,19 @@ function appReducer(state: AppState, action: Action): AppState {
   switch (action.type) {
     case "SET_STATS":
       return { ...state, stats: action.payload, loading: false, error: null };
+
     case "SET_LOADING":
       return { ...state, loading: action.payload };
+
     case "SET_ERROR":
       return { ...state, error: action.payload, loading: false };
+
     case "ADD_NOTIFICATION":
-      return { ...state, notifications: [...state.notifications, action.payload] };
+      return {
+        ...state,
+        notifications: [...state.notifications, action.payload],
+      };
+
     case "HIDE_NOTIFICATION":
       return {
         ...state,
@@ -86,8 +94,13 @@ function appReducer(state: AppState, action: Action): AppState {
           n.id === action.payload ? { ...n, isVisible: false } : n
         ),
       };
+
     case "TOGGLE_REAL_TIME_UPDATES":
       return { ...state, realTimeUpdates: !state.realTimeUpdates };
+
+    case "SET_USER":
+      return { ...state, user: action.payload };
+
     default:
       return state;
   }
@@ -101,7 +114,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       try {
         const api = await import("../services/api");
 
-        // ✅ تحقق إن وُجد قسم admin.getStatistics فعلاً
         const hasGetStats = Boolean(
           (api.default as any)?.admin?.getStatistics
         );
@@ -114,7 +126,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           }
         }
 
-        // البيانات المبدئية الافتراضية عند غياب API
         const mockStats: Stats = {
           totalOrders: 0,
           activeCustomers: 0,
@@ -123,10 +134,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           averageDeliveryTime: 28,
           dailyTarget: 200,
         };
+
         dispatch({ type: "SET_STATS", payload: mockStats });
       } catch (error) {
         console.error("Error loading stats:", error);
-        dispatch({ type: "SET_ERROR", payload: "فشل في تحميل الإحصائيات" });
+
         const mockStats: Stats = {
           totalOrders: 0,
           activeCustomers: 0,
@@ -135,6 +147,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           averageDeliveryTime: 28,
           dailyTarget: 200,
         };
+
         dispatch({ type: "SET_STATS", payload: mockStats });
       }
     },
@@ -158,7 +171,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         timestamp: new Date(),
         isVisible: true,
       };
+
       dispatch({ type: "ADD_NOTIFICATION", payload: notification });
+
       setTimeout(() => {
         dispatch({ type: "HIDE_NOTIFICATION", payload: notification.id });
       }, 5000);
@@ -174,6 +189,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   useEffect(() => {
+    // تحميل المستخدم الحقيقي من localStorage
+    const userStr = localStorage.getItem("user");
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        dispatch({ type: "SET_USER", payload: user });
+      } catch {
+        dispatch({ type: "SET_USER", payload: null });
+      }
+    }
+
     actions.loadStats();
   }, []);
 
