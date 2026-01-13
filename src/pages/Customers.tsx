@@ -1,12 +1,6 @@
 import React, { useState, useEffect } from "react";
 import api from "../services/api";
 
-declare global {
-  interface Window {
-    google: any;
-  }
-}
-
 interface Branch {
   id: number;
   name: string;
@@ -17,13 +11,16 @@ interface City {
   name: string;
 }
 
+interface Neighborhood {
+  id: number;
+  name: string;
+  city_id: number;
+}
+
 interface Customer {
   id: number;
   name: string;
   phone: string;
-  email?: string;
-  created_at?: string;
-  branch_id?: number;
   branch_name?: string;
 }
 
@@ -34,13 +31,10 @@ interface Address {
   province: number;
   district: number;
   address?: string;
+  latitude?: string;
+  longitude?: string;
+  gps_link?: string;
   branch_name?: string;
-}
-
-interface Neighborhood {
-  id: number;
-  name: string;
-  city_id: number;
 }
 
 const Customers: React.FC = () => {
@@ -55,13 +49,8 @@ const Customers: React.FC = () => {
 
   const [cities, setCities] = useState<City[]>([]);
   const [neighborhoods, setNeighborhoods] = useState<Neighborhood[]>([]);
-
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [addresses, setAddresses] = useState<Address[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const [searchCustomer, setSearchCustomer] = useState("");
-  const [searchAddress, setSearchAddress] = useState("");
 
   const [isAddressesOpen, setIsAddressesOpen] = useState(false);
   const [isAddAddressOpen, setIsAddAddressOpen] = useState(false);
@@ -70,6 +59,9 @@ const Customers: React.FC = () => {
   const [province, setProvince] = useState("");
   const [district, setDistrict] = useState("");
   const [detailAddress, setDetailAddress] = useState("");
+  const [latitude, setLatitude] = useState("");
+  const [longitude, setLongitude] = useState("");
+  const [gpsLink, setGpsLink] = useState("");
 
   const fetchBranches = async () => {
     if (!isAdmin) return;
@@ -78,12 +70,11 @@ const Customers: React.FC = () => {
   };
 
   const fetchCities = async () => {
-    const data = await api.cities.getCities();
-    if (data.success) setCities(data.cities);
+    const res = await api.cities.getCities();
+    if (res.success) setCities(res.cities);
   };
 
   const fetchCustomers = async () => {
-    setLoading(true);
     const res = await api.get("/customers", {
       headers:
         isAdmin && selectedBranch !== "all"
@@ -91,7 +82,6 @@ const Customers: React.FC = () => {
           : {},
     });
     if (res.data.success) setCustomers(res.data.customers);
-    setLoading(false);
   };
 
   const fetchAddresses = async () => {
@@ -110,17 +100,38 @@ const Customers: React.FC = () => {
     fetchCustomers();
   }, [selectedBranch]);
 
-  const filteredCustomers = customers.filter(
-    (c) =>
-      c.name.toLowerCase().includes(searchCustomer.toLowerCase()) ||
-      c.phone.includes(searchCustomer)
-  );
+  const handleAddAddress = async () => {
+    if (!selectedCustomer || !province || !district)
+      return alert("❌ البيانات مطلوبة");
 
-  const filteredAddresses = addresses.filter(
-    (a) =>
-      a.customer_name.toLowerCase().includes(searchAddress.toLowerCase()) ||
-      (a.address || "").toLowerCase().includes(searchAddress.toLowerCase())
-  );
+    const data = await api.customers.addAddress({
+      customer_id: Number(selectedCustomer),
+      province: Number(province),
+      district: Number(district),
+      address: detailAddress,
+      latitude,
+      longitude,
+      gps_link: gpsLink,
+    });
+
+    if (data.success) {
+      setIsAddAddressOpen(false (false));
+      setSelectedCustomer("");
+      setProvince("");
+      setDistrict("");
+      setDetailAddress("");
+      setLatitude("");
+      setLongitude("");
+      setGpsLink("");
+      fetchAddresses();
+    }
+  };
+
+  useEffect(() => {
+    if (latitude && longitude) {
+      setGpsLink(`https://www.google.com/maps?q=${latitude},${longitude}`);
+    }
+  }, [latitude, longitude]);
 
   return (
     <div className="p-6 space-y-6" dir="rtl">
@@ -143,59 +154,15 @@ const Customers: React.FC = () => {
         )}
       </div>
 
-      <div className="flex justify-between">
-        <button className="bg-green-600 text-white px-4 py-2 rounded">
-          ➕ إضافة عميل
-        </button>
-
-        <button
-          onClick={() => {
-            fetchAddresses();
-            setIsAddressesOpen(true);
-          }}
-          className="bg-blue-600 text-white px-4 py-2 rounded"
-        >
-          📍 إدارة العناوين
-        </button>
-      </div>
-
-      <input
-        className="border p-2 rounded w-full"
-        placeholder="بحث عن عميل"
-        value={searchCustomer}
-        onChange={(e) => setSearchCustomer(e.target.value)}
-      />
-
-      <div className="bg-white rounded shadow overflow-auto">
-        {loading ? (
-          <div className="p-6 text-center">جاري التحميل...</div>
-        ) : (
-          <table className="w-full text-center">
-            <thead className="bg-gray-100">
-              <tr>
-                <th>#</th>
-                <th>الاسم</th>
-                <th>الجوال</th>
-                <th>البريد</th>
-                {isAdmin && <th>الفرع</th>}
-                <th>التاريخ</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredCustomers.map((c) => (
-                <tr key={c.id} className="border-b">
-                  <td>{c.id}</td>
-                  <td>{c.name}</td>
-                  <td>{c.phone}</td>
-                  <td>{c.email || "-"}</td>
-                  {isAdmin && <td>{c.branch_name || "-"}</td>}
-                  <td>{c.created_at?.slice(0, 10)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+      <button
+        onClick={() => {
+          fetchAddresses();
+          setIsAddressesOpen(true);
+        }}
+        className="bg-blue-600 text-white px-4 py-2 rounded"
+      >
+        📍 إدارة العناوين
+      </button>
 
       {isAddressesOpen && (
         <div className="fixed inset-0 bg-black/40 z-50">
@@ -217,31 +184,49 @@ const Customers: React.FC = () => {
               </button>
             </div>
 
-            <input
-              className="border p-2 rounded w-full mb-3"
-              placeholder="🔍 بحث في العناوين"
-              value={searchAddress}
-              onChange={(e) => setSearchAddress(e.target.value)}
-            />
-
             <table className="w-full text-sm border">
               <thead className="bg-gray-100">
                 <tr>
                   <th>العميل</th>
-                  <th>المدينة</th>
-                  <th>الحي</th>
+                  <th>Latitude</th>
+                  <th>Longitude</th>
+                  <th>GPS</th>
                   {isAdmin && <th>الفرع</th>}
-                  <th>العنوان</th>
+                  <th>حذف</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredAddresses.map((a) => (
+                {addresses.map((a) => (
                   <tr key={a.id} className="border-t">
                     <td>{a.customer_name}</td>
-                    <td>{a.province}</td>
-                    <td>{a.district}</td>
+                    <td>{a.latitude}</td>
+                    <td>{a.longitude}</td>
+                    <td>
+                      {a.gps_link ? (
+                        <a
+                          href={a.gps_link}
+                          target="_blank"
+                          className="text-blue-600 underline"
+                        >
+                          GPS
+                        </a>
+                      ) : (
+                        "-"
+                      )}
+                    </td>
                     {isAdmin && <td>{a.branch_name || "-"}</td>}
-                    <td>{a.address}</td>
+                    <td>
+                      <button
+                        onClick={async () => {
+                          if (!window.confirm("حذف العنوان؟")) return;
+                          await api.delete(`/customer-addresses/${a.id}`);
+                          fetchAddresses();
+                        }}
+                        className="text-red-600"
+                      >
+                        🗑
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -251,12 +236,12 @@ const Customers: React.FC = () => {
       )}
 
       {isAddAddressOpen && (
-        <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
-          <div className="bg-white p-6 rounded w-full max-w-md space-y-3">
-            <h3 className="text-lg font-bold">➕ إضافة عنوان</h3>
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
+          <div className="bg-white w-full max-w-lg p-6 rounded">
+            <h3 className="text-lg font-bold mb-3">➕ إضافة عنوان</h3>
 
             <select
-              className="border p-2 w-full"
+              className="border p-2 w-full mb-2"
               value={selectedCustomer}
               onChange={(e) => setSelectedCustomer(e.target.value)}
             >
@@ -269,13 +254,13 @@ const Customers: React.FC = () => {
             </select>
 
             <select
-              className="border p-2 w-full"
+              className="border p-2 w-full mb-2"
               value={province}
               onChange={async (e) => {
-                setProvince(e.target.value);
-                const res = await api.neighborhoods.getByCity(
-                  Number(e.target.value)
-                );
+                const cityId = e.target.value;
+                setProvince(cityId);
+                setDistrict("");
+                const res = await api.neighborhoods.getByCity(Number(cityId));
                 if (res.success) setNeighborhoods(res.neighborhoods);
               }}
             >
@@ -288,7 +273,7 @@ const Customers: React.FC = () => {
             </select>
 
             <select
-              className="border p-2 w-full"
+              className="border p-2 w-full mb-2"
               value={district}
               onChange={(e) => setDistrict(e.target.value)}
             >
@@ -301,39 +286,56 @@ const Customers: React.FC = () => {
             </select>
 
             <input
-              className="border p-2 w-full"
+              className="border p-2 w-full mb-2"
               placeholder="العنوان التفصيلي"
               value={detailAddress}
               onChange={(e) => setDetailAddress(e.target.value)}
             />
 
+            <div className="flex gap-2 mb-2">
+              <input
+                className="border p-2 w-full"
+                placeholder="Latitude"
+                value={latitude}
+                onChange={(e) => setLatitude(e.target.value)}
+              />
+              <input
+                className="border p-2 w-full"
+                placeholder="Longitude"
+                value={longitude}
+                onChange={(e) => setLongitude(e.target.value)}
+              />
+            </div>
+
+            <input
+              className="border p-2 w-full mb-3"
+              placeholder="GPS Link"
+              value={gpsLink}
+              readOnly
+            />
+
+            <iframe
+              title="map"
+              className="w-full h-48 border mb-3"
+              src={
+                latitude && longitude
+                  ? `https://www.openstreetmap.org/export/embed.html?bbox=${longitude},${latitude},${longitude},${latitude}&layer=mapnik`
+                  : "https://www.openstreetmap.org/export/embed.html"
+              }
+            />
+
             <div className="flex gap-2">
+              <button
+                onClick={handleAddAddress}
+                className="bg-green-600 text-white px-4 py-2 rounded w-full"
+              >
+                حفظ
+              </button>
               <button
                 onClick={() => setIsAddAddressOpen(false)}
                 className="bg-gray-400 text-white px-4 py-2 rounded w-full"
               >
                 إلغاء
-              </button>
-              <button
-                onClick={async () => {
-                  if (!selectedCustomer || !province || !district)
-                    return alert("البيانات مطلوبة");
-
-                  const res = await api.customers.addAddress({
-                    customer_id: Number(selectedCustomer),
-                    province: Number(province),
-                    district: Number(district),
-                    address: detailAddress,
-                  });
-
-                  if (res.success) {
-                    setIsAddAddressOpen(false);
-                    fetchAddresses();
-                  }
-                }}
-                className="bg-green-600 text-white px-4 py-2 rounded w-full"
-              >
-                حفظ
               </button>
             </div>
           </div>
