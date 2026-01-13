@@ -42,12 +42,17 @@ const Users: React.FC = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const branchId = localStorage.getItem("branch_id");
+      const headers: any = {};
 
-      const res = await api.get("/users", {
-        headers: branchId ? { "x-branch-id": branchId } : {},
-      });
+      // الإدارة العامة لا ترسل فرع افتراضيًا
+      if (isAdminBranch) {
+        const selectedBranch = localStorage.getItem("branch_id");
+        if (selectedBranch && selectedBranch !== "all") {
+          headers["x-branch-id"] = selectedBranch;
+        }
+      }
 
+      const res = await api.get("/users", { headers });
       setUsers(res.data.users || []);
     } finally {
       setLoading(false);
@@ -190,13 +195,41 @@ const Users: React.FC = () => {
                   <td className="p-3">{u.role}</td>
                   <td className="p-3">{u.branch_name || "-"}</td>
                   <td className="p-3">
-                    {u.status === "active" ? "نشط" : "معطل"}
+                    <span
+                      className={
+                        u.status === "active"
+                          ? "text-green-600 font-semibold"
+                          : "text-red-600 font-semibold"
+                      }
+                    >
+                      {u.status === "active" ? "نشط" : "معطل"}
+                    </span>
                   </td>
                   <td className="p-3 flex gap-2">
-                    <button onClick={() => openEditModal(u)}>تعديل</button>
-                    <button onClick={() => resetUserPassword(u.id)}>كلمة مرور</button>
-                    <button onClick={() => disableUser(u.id)}>تعطيل</button>
-                    <button onClick={() => deleteUser(u.id)}>حذف</button>
+                    <button
+                      onClick={() => openEditModal(u)}
+                      className="text-gray-600 hover:underline"
+                    >
+                      تعديل
+                    </button>
+                    <button
+                      onClick={() => resetUserPassword(u.id)}
+                      className="text-purple-600 hover:underline"
+                    >
+                      كلمة المرور
+                    </button>
+                    <button
+                      onClick={() => disableUser(u.id)}
+                      className="text-blue-600 hover:underline"
+                    >
+                      تعطيل
+                    </button>
+                    <button
+                      onClick={() => deleteUser(u.id)}
+                      className="text-red-600 hover:underline"
+                    >
+                      حذف
+                    </button>
                   </td>
                 </tr>
               ))}
