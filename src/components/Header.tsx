@@ -30,12 +30,12 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
     navigate("/login", { replace: true });
   };
 
-  // جلب الفروع (فقط للإدارة العامة)
+  // جلب الفروع
   const fetchBranches = async () => {
     try {
-      // إذا ليس إدارة عامة → نثبت فرعه فقط
-      if (!user?.is_admin_branch) {
-        if (user?.branch_id) {
+      // مستخدم عادي → يثبت على فرعه فقط
+      if (user && user.role !== "admin") {
+        if (user.branch_id) {
           setCurrentBranch(user.branch_id);
           localStorage.setItem("branch_id", String(user.branch_id));
         }
@@ -77,8 +77,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
 
       <div className="flex items-center gap-4">
         {/* الفرع */}
-        {user?.is_admin_branch ? (
-          // إدارة عامة: اختيار فرع
+        {user?.role === "admin" ? (
           branches.length > 0 && (
             <select
               value={currentBranch ?? ""}
@@ -93,7 +92,6 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
             </select>
           )
         ) : (
-          // مستخدم عادي: عرض اسم الفرع فقط
           user?.branch_name && (
             <div className="px-3 py-1 text-sm border rounded bg-gray-50 text-gray-700">
               {user.branch_name}
