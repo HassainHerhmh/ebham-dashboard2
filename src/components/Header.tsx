@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Menu, Bell, User, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import api from "../services/api";
@@ -23,17 +23,19 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
     ? JSON.parse(localStorage.getItem("user")!)
     : null;
 
+  const isAdminGeneral = user?.is_admin_branch === true;
+
   const handleLogout = () => {
     localStorage.removeItem("user");
     localStorage.removeItem("branch_id");
-    window.dispatchEvent(new Event("branch-change"));
+    window.dispatchEvent(new Event("storage"));
     navigate("/login", { replace: true });
   };
 
   const fetchBranches = async () => {
     try {
-      // مستخدم فرع عادي → يثبت على فرعه فقط
-      if (!user?.is_admin_branch) {
+      if (!isAdminGeneral) {
+        // مستخدم فرع → يثبت على فرعه فقط
         if (user?.branch_id) {
           setCurrentBranch(user.branch_id);
           localStorage.setItem("branch_id", String(user.branch_id));
@@ -43,15 +45,17 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
 
       // إدارة عامة → جلب كل الفروع
       const res = await api.get("/branches");
-      const list: Branch[] = res.data.branches || [];
+      const list = res.data.branches || [];
       setBranches(list);
 
       const saved = localStorage.getItem("branch_id");
+
       if (saved) {
         setCurrentBranch(Number(saved));
-      } else if (list.length > 0) {
-        setCurrentBranch(list[0].id);
-        localStorage.setItem("branch_id", String(list[0].id));
+      } else if (user?.branch_id) {
+        // الافتراضي: فرع المستخدم (غالبًا الإدارة العامة)
+        setCurrentBranch(user.branch_id);
+        localStorage.setItem("branch_id", String(user.branch_id));
       }
     } catch (err) {
       console.error("خطأ في جلب الفروع:", err);
@@ -65,8 +69,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   const handleChangeBranch = (id: number) => {
     setCurrentBranch(id);
     localStorage.setItem("branch_id", String(id));
-    // إشعار بقية الصفحات بتغير الفرع
-    window.dispatchEvent(new Event("branch-change"));
+    window.location.reload();
   };
 
   return (
@@ -76,8 +79,8 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
       </button>
 
       <div className="flex items-center gap-4">
-        {/* اختيار الفرع */}
-        {user?.is_admin_branch ? (
+        {/* الفرع */}
+        {isAdminGeneral ? (
           branches.length > 0 && (
             <select
               value={currentBranch ?? ""}
@@ -111,7 +114,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
                 {user?.name || "مستخدم"}
               </p>
               <p className="text-xs text-gray-500">
-                {user?.is_admin_branch ? "مدير النظام" : "موظف"}
+                {isAdminGeneral ? "مدير النظام" : "موظف"}
               </p>
             </div>
             <div className="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center">
