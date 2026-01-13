@@ -40,10 +40,7 @@ const isAdminBranch = !!currentUser?.is_admin_branch;
   const [role, setRole] = useState("admin");
   const [branchId, setBranchId] = useState<number | "">("");
 
-const fetchUsers = async () => {
-  setLoading(true);
-  try {
-    const selectedBranchId = localStorage.getItem("selected_branch_id");
+
 
    const fetchUsers = async () => {
   setLoading(true);
