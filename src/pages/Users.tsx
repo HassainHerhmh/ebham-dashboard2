@@ -47,11 +47,8 @@ const isAdminBranch = !!currentUser?.is_admin_branch;
   try {
     const selectedBranchId = localStorage.getItem("selected_branch_id");
 
-    const res = await api.users.getUsers({
-      headers: selectedBranchId
-        ? { "x-branch-id": selectedBranchId }
-        : {},
-    });
+   const res = await api.get("/users");
+
 
     if (Array.isArray(res)) {
       setUsers(res);
