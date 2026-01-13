@@ -14,6 +14,7 @@ interface Captain {
   rating?: number | string | null
   deliveries_count?: number | string | null
   created_at: string
+  branch_name?: string | null
 }
 
 const Captains: React.FC = () => {
@@ -36,16 +37,27 @@ const Captains: React.FC = () => {
 
   const fetchCaptains = async () => {
     try {
-      const data = await api.captains.getCaptains()
-      if (Array.isArray(data)) {
-        setCaptains(data)
+      setLoading(true)
+
+      const headers: any = {}
+      const branchId = localStorage.getItem("branch_id")
+      if (branchId) {
+        headers["x-branch-id"] = branchId
+      }
+
+      const res = await api.get("/captains", { headers })
+      const data = res.data
+
+      if (data.success && Array.isArray(data.captains)) {
+        setCaptains(data.captains)
         setError(null)
       } else {
         setError('🚫 لا توجد بيانات')
       }
+
       setLoading(false)
     } catch (err: any) {
-      setError(err.message)
+      setError(err.message || "خطأ في الجلب")
       setLoading(false)
     }
   }
@@ -114,16 +126,6 @@ const Captains: React.FC = () => {
     fetchCaptains()
   }
 
-  const getStatusLabel = (status: string) => {
-    const labels: Record<string, string> = {
-      available: 'متاح',
-      busy: 'مشغول',
-      offline: 'غير متصل',
-      inactive: 'غير نشط'
-    }
-    return labels[status] || 'غير محدد'
-  }
-
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -150,6 +152,7 @@ const Captains: React.FC = () => {
                 <th className="p-3">#</th>
                 <th className="p-3">الاسم</th>
                 <th className="p-3">الهاتف</th>
+                <th className="p-3">الفرع</th>
                 <th className="p-3">نوع المركبة</th>
                 <th className="p-3">رقم المركبة</th>
                 <th className="p-3">الحالة</th>
@@ -158,10 +161,11 @@ const Captains: React.FC = () => {
             </thead>
             <tbody>
               {captains.map((c) => (
-                <tr key={c.id}>
+                <tr key={c.id} className="border-t">
                   <td className="p-3">#{c.id}</td>
                   <td className="p-3">{c.name}</td>
                   <td className="p-3">{c.phone}</td>
+                  <td className="p-3">{c.branch_name || '-'}</td>
                   <td className="p-3">{c.vehicle_type}</td>
                   <td className="p-3">{c.vehicle_number || '-'}</td>
                   <td className="p-3">
