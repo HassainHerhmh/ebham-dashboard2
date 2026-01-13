@@ -26,10 +26,12 @@ const Login: React.FC = () => {
         return;
       }
 
-      // حفظ المستخدم + التوكن
-      localStorage.setItem("user", JSON.stringify(res.data.user));
-      if (res.data.token) {
-        localStorage.setItem("token", res.data.token);
+      const user = res.data.user;
+
+      // حفظ المستخدم + التوكن بالشكل الصحيح
+      localStorage.setItem("user", JSON.stringify(user));
+      if (user?.token) {
+        localStorage.setItem("token", user.token);
       }
 
       navigate("/", { replace: true });
@@ -43,7 +45,6 @@ const Login: React.FC = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-gray-100 px-4">
       <div className="w-full max-w-md">
-        {/* ===== العنوان ===== */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-extrabold text-gray-800">
             لوحة تحكم شركة <span className="text-blue-600">إبهام</span>
@@ -53,7 +54,6 @@ const Login: React.FC = () => {
           </p>
         </div>
 
-        {/* ===== كرت تسجيل الدخول ===== */}
         <form
           onSubmit={handleSubmit}
           className="bg-white rounded-2xl shadow-xl p-8"
