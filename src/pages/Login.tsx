@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../services/api";
@@ -17,22 +16,25 @@ const Login: React.FC = () => {
     setLoading(true);
 
     try {
-     const res = await api.post("/auth/login", {
-  identifier,
-  password,
-});
+      const res = await api.post("/auth/login", {
+        identifier,
+        password,
+      });
 
       if (!res.data?.success) {
         setError(res.data?.message || "فشل تسجيل الدخول");
         return;
       }
 
+      // حفظ المستخدم + التوكن
       localStorage.setItem("user", JSON.stringify(res.data.user));
+      if (res.data.token) {
+        localStorage.setItem("token", res.data.token);
+      }
+
       navigate("/", { replace: true });
     } catch (err: any) {
-      setError(
-        err?.response?.data?.message || "فشل الاتصال بالسيرفر"
-      );
+      setError(err?.response?.data?.message || "فشل الاتصال بالسيرفر");
     } finally {
       setLoading(false);
     }
@@ -41,7 +43,6 @@ const Login: React.FC = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-gray-100 px-4">
       <div className="w-full max-w-md">
-
         {/* ===== العنوان ===== */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-extrabold text-gray-800">
