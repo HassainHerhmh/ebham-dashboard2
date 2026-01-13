@@ -23,7 +23,8 @@ const Users: React.FC = () => {
     ? JSON.parse(localStorage.getItem("user")!)
     : null;
 
-const isAdminBranch = !!currentUser?.is_admin_branch;
+const isAdminBranch = Boolean(currentUser?.is_admin_branch);
+
 
 
   const [users, setUsers] = useState<User[]>([]);
