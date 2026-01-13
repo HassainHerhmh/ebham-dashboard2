@@ -7,6 +7,7 @@ interface Branch {
   address?: string;
   phone?: string;
   created_at?: string;
+  neighborhoods_count?: number; // ⬅️ جديد
 }
 
 const BranchesSettings: React.FC = () => {
@@ -113,6 +114,7 @@ const BranchesSettings: React.FC = () => {
             <th className="border p-2">الاسم</th>
             <th className="border p-2">العنوان</th>
             <th className="border p-2">الهاتف</th>
+            <th className="border p-2">عدد الأحياء</th> {/* ⬅️ جديد */}
             <th className="border p-2">الإجراءات</th>
           </tr>
         </thead>
@@ -122,6 +124,9 @@ const BranchesSettings: React.FC = () => {
               <td className="border p-2">{branch.name}</td>
               <td className="border p-2">{branch.address || "-"}</td>
               <td className="border p-2">{branch.phone || "-"}</td>
+              <td className="border p-2 text-center">
+                {branch.neighborhoods_count ?? 0}
+              </td>
               <td className="border p-2 text-center">
                 <button
                   onClick={() => openEditModal(branch)}
@@ -140,7 +145,7 @@ const BranchesSettings: React.FC = () => {
           ))}
           {branches.length === 0 && (
             <tr>
-              <td colSpan={4} className="p-4 text-center text-gray-500">
+              <td colSpan={5} className="p-4 text-center text-gray-500">
                 لا توجد فروع
               </td>
             </tr>
