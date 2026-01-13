@@ -39,31 +39,33 @@ const Users: React.FC = () => {
   const [role, setRole] = useState("admin");
   const [branchId, setBranchId] = useState<number | "">("");
 
-const fetchUsers = async () => {
-  setLoading(true);
-  try {
-    const headers: any = {};
+  const fetchUsers = async () => {
+    setLoading(true);
+    try {
+      const headers: any = {};
 
-    if (isAdminBranch) {
-      // الإدارة العامة
-      const selectedBranch = localStorage.getItem("branch_id");
-      if (selectedBranch && selectedBranch !== "all") {
-        headers["x-branch-id"] = selectedBranch;
-      }
-    } else {
-      // مستخدم فرع عادي → اربطه دائمًا بفرعه
-      if (currentUser?.branch_id) {
+      // مستخدم فرع عادي → اربطه بفرعه فقط
+      if (!isAdminBranch && currentUser?.branch_id) {
         headers["x-branch-id"] = currentUser.branch_id;
       }
+      // الإدارة العامة لا ترسل أي فرع → السيرفر يرجّع الكل
+
+      const res = await api.get("/users", { headers });
+      setUsers(res.data.users || []);
+    } finally {
+      setLoading(false);
     }
+  };
 
-    const res = await api.get("/users", { headers });
-    setUsers(res.data.users || []);
-  } finally {
-    setLoading(false);
-  }
-};
-
+  const fetchBranches = async () => {
+    if (!isAdminBranch) return;
+    try {
+      const res = await api.get("/branches");
+      setBranches(res.data.branches || []);
+    } catch (e) {
+      console.error("فشل جلب الفروع", e);
+    }
+  };
 
   useEffect(() => {
     fetchUsers();
