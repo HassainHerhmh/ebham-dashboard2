@@ -23,7 +23,7 @@ const Users: React.FC = () => {
     ? JSON.parse(localStorage.getItem("user")!)
     : null;
 
-  const isAdminBranch = !!currentUser?.branch_is_admin;
+  const isAdminBranch = !!currentUser?.is_admin_branch || currentUser?.role === "admin";
 
   const [users, setUsers] = useState<User[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
@@ -32,7 +32,7 @@ const Users: React.FC = () => {
   const [editingUser, setEditingUser] = useState<User | null>(null);
 
   const [name, setName] = useState("");
-  const [username, setUsername] = useState("");
+  const [identifier, setIdentifier] = useState(""); // بريد أو جوال
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [image, setImage] = useState<File | null>(null);
@@ -42,8 +42,8 @@ const Users: React.FC = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const data = await api.users.getUsers();
-      setUsers(data);
+      const res = await api.users.getUsers();
+      setUsers(res.users || res);
     } finally {
       setLoading(false);
     }
@@ -51,8 +51,12 @@ const Users: React.FC = () => {
 
   const fetchBranches = async () => {
     if (!isAdminBranch) return;
-    const res = await api.branches.getAll();
-    setBranches(res || []);
+    try {
+      const res = await api.get("/branches");
+      setBranches(res.data.branches || []);
+    } catch (e) {
+      console.error("فشل جلب الفروع", e);
+    }
   };
 
   useEffect(() => {
@@ -63,7 +67,7 @@ const Users: React.FC = () => {
   const openAddModal = () => {
     setEditingUser(null);
     setName("");
-    setUsername("");
+    setIdentifier("");
     setPassword("");
     setConfirmPassword("");
     setImage(null);
@@ -75,7 +79,7 @@ const Users: React.FC = () => {
   const openEditModal = (u: User) => {
     setEditingUser(u);
     setName(u.name);
-    setUsername(u.email || u.phone || "");
+    setIdentifier(u.email || u.phone || "");
     setRole(u.role);
     setBranchId(u.branch_id || "");
     setPassword("");
@@ -94,14 +98,24 @@ const Users: React.FC = () => {
 
     const formData = new FormData();
     formData.append("name", name);
-    formData.append("email", username);
+
+    // نحدد هل هو بريد أو جوال
+    if (identifier.includes("@")) {
+      formData.append("email", identifier);
+    } else {
+      formData.append("phone", identifier);
+    }
+
     formData.append("role", role);
 
-    if (password) formData.append("password", password);
+    if (!editingUser && password) {
+      formData.append("password", password);
+    }
+
     if (image) formData.append("image", image);
 
-    if (isAdminBranch) {
-      formData.append("branch_id", branchId ? String(branchId) : "");
+    if (isAdminBranch && branchId) {
+      formData.append("branch_id", String(branchId));
     }
 
     if (editingUser) {
@@ -132,7 +146,7 @@ const Users: React.FC = () => {
     if (!window.confirm("إنشاء كلمة مرور جديدة؟")) return;
     const res = await api.users.resetPassword(id);
     if (res.success) {
-      navigator.clipboard.writeText(res.new_password);
+      await navigator.clipboard.writeText(res.new_password);
       alert(`كلمة المرور الجديدة: ${res.new_password}\nتم نسخها`);
     }
   };
@@ -195,17 +209,48 @@ const Users: React.FC = () => {
             </h2>
 
             <form onSubmit={handleSaveUser} className="space-y-3">
-              <input className="border p-2 w-full" placeholder="الاسم" value={name} onChange={(e) => setName(e.target.value)} required />
-              <input className="border p-2 w-full" placeholder="البريد أو الجوال" value={username} onChange={(e) => setUsername(e.target.value)} required />
+              <input
+                className="border p-2 w-full"
+                placeholder="الاسم"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+
+              <input
+                className="border p-2 w-full"
+                placeholder="البريد أو رقم الجوال"
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
+                required
+              />
 
               {!editingUser && (
                 <>
-                  <input type="password" className="border p-2 w-full" placeholder="كلمة المرور" value={password} onChange={(e) => setPassword(e.target.value)} required />
-                  <input type="password" className="border p-2 w-full" placeholder="تأكيد كلمة المرور" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
+                  <input
+                    type="password"
+                    className="border p-2 w-full"
+                    placeholder="كلمة المرور"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                  <input
+                    type="password"
+                    className="border p-2 w-full"
+                    placeholder="تأكيد كلمة المرور"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                  />
                 </>
               )}
 
-              <select className="border p-2 w-full" value={role} onChange={(e) => setRole(e.target.value)}>
+              <select
+                className="border p-2 w-full"
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+              >
                 <option value="admin">أدمن</option>
                 <option value="service">موظف خدمة</option>
                 <option value="accountant">محاسب</option>
@@ -215,10 +260,18 @@ const Users: React.FC = () => {
               </select>
 
               {isAdminBranch && (
-                <select className="border p-2 w-full" value={branchId} onChange={(e) => setBranchId(Number(e.target.value))}>
+                <select
+                  className="border p-2 w-full"
+                  value={branchId}
+                  onChange={(e) =>
+                    setBranchId(e.target.value ? Number(e.target.value) : "")
+                  }
+                >
                   <option value="">اختر الفرع</option>
                   {branches.map((b) => (
-                    <option key={b.id} value={b.id}>{b.name}</option>
+                    <option key={b.id} value={b.id}>
+                      {b.name}
+                    </option>
                   ))}
                 </select>
               )}
@@ -226,8 +279,16 @@ const Users: React.FC = () => {
               <input type="file" onChange={(e) => setImage(e.target.files?.[0] || null)} />
 
               <div className="flex justify-end gap-2">
-                <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded">حفظ</button>
-                <button type="button" onClick={() => setIsModalOpen(false)} className="bg-gray-400 text-white px-4 py-2 rounded">إلغاء</button>
+                <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded">
+                  حفظ
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="bg-gray-400 text-white px-4 py-2 rounded"
+                >
+                  إلغاء
+                </button>
               </div>
             </form>
           </div>
