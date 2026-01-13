@@ -44,11 +44,13 @@ const Users: React.FC = () => {
     try {
       const headers: any = {};
 
-      // مستخدم فرع عادي → اربطه بفرعه فقط
-      if (!isAdminBranch && currentUser?.branch_id) {
-        headers["x-branch-id"] = currentUser.branch_id;
+      // الإدارة العامة لا ترسل فرع افتراضيًا
+      if (isAdminBranch) {
+        const selectedBranch = localStorage.getItem("branch_id");
+        if (selectedBranch && selectedBranch !== "all") {
+          headers["x-branch-id"] = selectedBranch;
+        }
       }
-      // الإدارة العامة لا ترسل أي فرع → السيرفر يرجّع الكل
 
       const res = await api.get("/users", { headers });
       setUsers(res.data.users || []);
