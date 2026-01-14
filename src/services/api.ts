@@ -550,7 +550,7 @@ export const accountsApi = {
     const res = await api.delete(`/currencies/${id}`);
     return res.data;
   },
-};
+
  // ===== Bank Groups =====
   bankGroups: {
     getAll: (search = "") =>
