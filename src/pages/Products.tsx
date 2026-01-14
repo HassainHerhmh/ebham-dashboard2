@@ -7,8 +7,8 @@ interface Product {
   price: number;
   image_url?: string;
   notes?: string;
-  category_ids?: string; // "1,2,3"
-  categories?: string;   // "عشاء, فطور"
+  category_ids?: string;
+  categories?: string;
   unit_id?: number;
   unit_name?: string;
   restaurant_id?: number;
@@ -20,6 +20,12 @@ interface Category { id: number; name: string }
 interface Unit { id: number; name: string }
 
 const Products: React.FC = () => {
+  const user = localStorage.getItem("user")
+    ? JSON.parse(localStorage.getItem("user")!)
+    : null;
+
+  const isAdminBranch = Boolean(user?.is_admin_branch);
+
   const [products, setProducts] = useState<Product[]>([]);
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -34,7 +40,6 @@ const Products: React.FC = () => {
   const [categoryIds, setCategoryIds] = useState<string[]>([]);
   const [unitId, setUnitId] = useState("");
 
-
   const [image, setImage] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -47,13 +52,35 @@ const Products: React.FC = () => {
   /* ================= FETCH ================= */
 
   const fetchProducts = async () => {
-    const res = await api.get("/products");
+    const headers: any = {};
+    const selected = localStorage.getItem("branch_id");
+
+    if (isAdminBranch) {
+      if (selected && selected !== "all") {
+        headers["x-branch-id"] = selected;
+      }
+    } else if (user?.branch_id) {
+      headers["x-branch-id"] = user.branch_id;
+    }
+
+    const res = await api.get("/products", { headers });
     const data = res.data;
     setProducts(Array.isArray(data) ? data : data.products || []);
   };
 
   const fetchRestaurants = async () => {
-    const res = await api.get("/restaurants");
+    const headers: any = {};
+    const selected = localStorage.getItem("branch_id");
+
+    if (isAdminBranch) {
+      if (selected && selected !== "all") {
+        headers["x-branch-id"] = selected;
+      }
+    } else if (user?.branch_id) {
+      headers["x-branch-id"] = user.branch_id;
+    }
+
+    const res = await api.get("/restaurants", { headers });
     const data = res.data;
     setRestaurants(Array.isArray(data) ? data : data.restaurants || []);
   };
@@ -145,8 +172,7 @@ const Products: React.FC = () => {
     const ids = p.category_ids
       ? String(p.category_ids).split(",").map((x) => x.trim())
       : [];
-    setCategoryIds(p.category_ids ? String(p.category_ids).split(",") : []);
-
+    setCategoryIds(ids);
 
     setPreview(p.image_url || null);
     setShowForm(true);
@@ -247,7 +273,6 @@ const Products: React.FC = () => {
         </tbody>
       </table>
 
-      {/* مودال الإضافة / التعديل */}
       {showForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
           <form
@@ -265,30 +290,26 @@ const Products: React.FC = () => {
               ))}
             </select>
 
-           <div className="border p-3 rounded-lg max-h-40 overflow-y-auto">
-  <h4 className="font-semibold mb-2">الفئات</h4>
-  {categories.map((c) => (
-    <label
-      key={c.id}
-      className="flex items-center gap-2 mb-1 cursor-pointer"
-    >
-      <input
-        type="checkbox"
-        checked={categoryIds.includes(String(c.id))}
-        onChange={() => {
-          const id = String(c.id);
-          setCategoryIds((prev) =>
-            prev.includes(id)
-              ? prev.filter((x) => x !== id)
-              : [...prev, id]
-          );
-        }}
-      />
-      <span>{c.name}</span>
-    </label>
-  ))}
-</div>
-
+            <div className="border p-3 rounded-lg max-h-40 overflow-y-auto">
+              <h4 className="font-semibold mb-2">الفئات</h4>
+              {categories.map((c) => (
+                <label key={c.id} className="flex items-center gap-2 mb-1 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={categoryIds.includes(String(c.id))}
+                    onChange={() => {
+                      const id = String(c.id);
+                      setCategoryIds((prev) =>
+                        prev.includes(id)
+                          ? prev.filter((x) => x !== id)
+                          : [...prev, id]
+                      );
+                    }}
+                  />
+                  <span>{c.name}</span>
+                </label>
+              ))}
+            </div>
 
             <select value={unitId} onChange={(e) => setUnitId(e.target.value)} className="border w-full px-3 py-2">
               <option value="">اختر الوحدة</option>
