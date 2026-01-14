@@ -55,7 +55,7 @@ const daysOfWeek = [
 
 const Restaurants: React.FC = () => {
   const user = JSON.parse(localStorage.getItem("user") || "{}");
-  const isAdminBranch = !!user?.is_admin_branch;
+  const isAdminBranch = user?.is_admin_branch === true;
 
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -88,6 +88,19 @@ const Restaurants: React.FC = () => {
   const [longitude, setLongitude] = useState("");
   const [searchText, setSearchText] = useState("");
 
+  // يراقب تغيير الفرع من الهيدر
+  const [activeBranch, setActiveBranch] = useState<string | null>(
+    localStorage.getItem("selectedBranchId")
+  );
+
+  useEffect(() => {
+    const onStorage = () => {
+      setActiveBranch(localStorage.getItem("selectedBranchId"));
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
   const fetchRestaurants = async () => {
     const res = await api.get(`/restaurants`);
     const data = res.data;
@@ -115,6 +128,9 @@ const Restaurants: React.FC = () => {
 
   useEffect(() => {
     fetchRestaurants();
+  }, [activeBranch]);
+
+  useEffect(() => {
     fetchCategories();
     fetchTypes();
     fetchBranches();
@@ -269,11 +285,7 @@ const Restaurants: React.FC = () => {
                   <td>{r.categories || "-"}</td>
                   <td>
                     {r.image_url && (
-                      <img
-                        src={r.image_url}
-                        alt={r.name}
-                        className="w-16 h-16 object-cover rounded"
-                      />
+                      <img src={r.image_url} alt={r.name} className="w-16 h-16 object-cover rounded" />
                     )}
                   </td>
                   <td className="flex gap-2 justify-center">
@@ -295,9 +307,7 @@ const Restaurants: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-lg overflow-y-auto max-h-screen">
             <div className="flex justify-between mb-4">
-              <h2 className="text-xl font-bold">
-                {editMode ? "تعديل" : "إضافة"}
-              </h2>
+              <h2 className="text-xl font-bold">{editMode ? "تعديل" : "إضافة"}</h2>
               <button onClick={resetForm}>
                 <X />
               </button>
