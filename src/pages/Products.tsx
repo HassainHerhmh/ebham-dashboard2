@@ -44,14 +44,13 @@ const Products: React.FC = () => {
   const [preview, setPreview] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
 
-  // فلاتر
   const [searchName, setSearchName] = useState("");
   const [searchRestaurant, setSearchRestaurant] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
 
   /* ================= FETCH ================= */
 
-  const fetchProducts = async () => {
+  const buildHeaders = () => {
     const headers: any = {};
     const selected = localStorage.getItem("branch_id");
 
@@ -63,24 +62,21 @@ const Products: React.FC = () => {
       headers["x-branch-id"] = user.branch_id;
     }
 
-    const res = await api.get("/products", { headers });
+    return headers;
+  };
+
+  const fetchProducts = async () => {
+    const res = await api.get("/products", {
+      headers: buildHeaders(),
+    });
     const data = res.data;
     setProducts(Array.isArray(data) ? data : data.products || []);
   };
 
   const fetchRestaurants = async () => {
-    const headers: any = {};
-    const selected = localStorage.getItem("branch_id");
-
-    if (isAdminBranch) {
-      if (selected && selected !== "all") {
-        headers["x-branch-id"] = selected;
-      }
-    } else if (user?.branch_id) {
-      headers["x-branch-id"] = user.branch_id;
-    }
-
-    const res = await api.get("/restaurants", { headers });
+    const res = await api.get("/restaurants", {
+      headers: buildHeaders(),
+    });
     const data = res.data;
     setRestaurants(Array.isArray(data) ? data : data.restaurants || []);
   };
@@ -142,7 +138,6 @@ const Products: React.FC = () => {
       : await api.post("/products", formData);
 
     if (res.data?.success) {
-      alert(editingId ? "تم تعديل المنتج" : "تم إضافة المنتج");
       resetForm();
       setShowForm(false);
       fetchProducts();
@@ -181,9 +176,7 @@ const Products: React.FC = () => {
   /* ================= FILTER ================= */
 
   const filteredProducts = products.filter((p) => {
-    const matchName = p.name
-      .toLowerCase()
-      .includes(searchName.toLowerCase());
+    const matchName = p.name.toLowerCase().includes(searchName.toLowerCase());
 
     const matchRestaurant = (p.restaurant_name || "")
       .toLowerCase()
@@ -211,7 +204,6 @@ const Products: React.FC = () => {
         </button>
       </div>
 
-      {/* فلاتر */}
       <div className="flex gap-3">
         <input
           placeholder="بحث بالاسم"
