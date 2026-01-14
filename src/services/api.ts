@@ -371,4 +371,57 @@ export const deleteRestaurant = async (id: number) => {
     ).data.logs,
 };
 
+/* ===============================
+   🟢 جلب الأحياء
+================================ */
+export const getNeighborhoods = async (search = "") => {
+  const headers: any = {};
+  const user = localStorage.getItem("user")
+    ? JSON.parse(localStorage.getItem("user")!)
+    : null;
+
+  const isAdminBranch = Boolean(user?.is_admin_branch);
+  const selected = localStorage.getItem("branch_id");
+
+  if (isAdminBranch) {
+    // لا نرسل فرع الإدارة نفسه
+    if (selected && Number(selected) !== Number(user?.branch_id)) {
+      headers["x-branch-id"] = selected;
+    }
+  } else if (user?.branch_id) {
+    headers["x-branch-id"] = user.branch_id;
+  }
+
+  const res = await api.get("/neighborhoods", {
+    params: { search },
+    headers,
+  });
+
+  return res.data;
+};
+
+/* ===============================
+   ✅ إضافة حي
+================================ */
+export const createNeighborhood = async (data: NeighborhoodPayload) => {
+  const res = await api.post("/neighborhoods", data);
+  return res.data;
+};
+
+/* ===============================
+   ✏️ تعديل حي
+================================ */
+export const updateNeighborhood = async (id: number, data: NeighborhoodPayload) => {
+  const res = await api.put(`/neighborhoods/${id}`, data);
+  return res.data;
+};
+
+/* ===============================
+   🗑️ حذف حي
+================================ */
+export const deleteNeighborhood = async (id: number) => {
+  const res = await api.delete(`/neighborhoods/${id}`);
+  return res.data;
+};
+
 export default api;
