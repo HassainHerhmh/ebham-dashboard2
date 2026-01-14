@@ -40,10 +40,23 @@ const Currencies = () => {
      Load
   ========================= */
   const loadCurrencies = async () => {
-    setLoading(true);
-    const res = await api.currencies.getAll();
-    setCurrencies(res || []);
-    setLoading(false);
+    try {
+      setLoading(true);
+      const res = await api.currencies.getAll();
+
+      const list = Array.isArray(res)
+        ? res
+        : Array.isArray(res?.currencies)
+        ? res.currencies
+        : [];
+
+      setCurrencies(list);
+    } catch (err) {
+      console.error("Load currencies error:", err);
+      setCurrencies([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -84,17 +97,15 @@ const Currencies = () => {
       return;
     }
 
-const payload = {
-  name_ar: form.name_ar,
-  code: form.code,
-  symbol: form.symbol,
-  exchange_rate: Number(form.exchange_rate),
-  min_rate: form.min_rate ? Number(form.min_rate) : null,
-  max_rate: form.max_rate ? Number(form.max_rate) : null,
- is_local: Boolean(form.is_local),
-
-};
-
+    const payload = {
+      name_ar: form.name_ar,
+      code: form.code,
+      symbol: form.symbol,
+      exchange_rate: Number(form.exchange_rate),
+      min_rate: form.min_rate ? Number(form.min_rate) : null,
+      max_rate: form.max_rate ? Number(form.max_rate) : null,
+      is_local: Boolean(form.is_local),
+    };
 
     try {
       if (editId) {
@@ -226,6 +237,14 @@ const payload = {
                   </td>
                 </tr>
               ))}
+
+            {!loading && filtered.length === 0 && (
+              <tr>
+                <td colSpan={11} className="p-4 text-center text-gray-500">
+                  لا توجد بيانات
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
