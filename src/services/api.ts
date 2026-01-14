@@ -504,4 +504,53 @@ export const accountsApi = {
     (await api.delete(`/account-groups/${id}`)).data,
 };
 
+/* =========================
+   CURRENCIES
+========================= */
+(api as any).currencies = {
+  // جلب العملات (حسب الفرع من الهيدر)
+  getAll: async () => {
+    const res = await api.get("/currencies");
+    return res.data;
+  },
+
+  // إضافة عملة
+  create: async (data: {
+    name_ar: string;
+    code: string;
+    symbol?: string;
+    exchange_rate: number;
+    min_rate?: number | null;
+    max_rate?: number | null;
+    is_local: boolean;
+  }) => {
+    const res = await api.post("/currencies", data);
+    return res.data;
+  },
+
+  // تعديل عملة
+  update: async (
+    id: number,
+    data: {
+      name_ar: string;
+      code?: string;
+      symbol?: string;
+      exchange_rate: number;
+      min_rate?: number | null;
+      max_rate?: number | null;
+      is_local: boolean;
+    }
+  ) => {
+    const res = await api.put(`/currencies/${id}`, data);
+    return res.data;
+  },
+
+  // حذف (تعطيل)
+  delete: async (id: number) => {
+    const res = await api.delete(`/currencies/${id}`);
+    return res.data;
+  },
+};
+
+
 export default api;
