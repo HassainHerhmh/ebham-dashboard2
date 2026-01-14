@@ -213,125 +213,129 @@ const Restaurants: React.FC = () => {
     r.name.toLowerCase().includes(searchText.toLowerCase())
   );
 
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Store className="w-7 h-7" /> المطاعم / المحلات
-        </h1>
-        <button
-          onClick={() => setShowModal(true)}
-          className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
-        >
-          <Plus className="w-5 h-5" /> إضافة جديد
-        </button>
-      </div>
-
-      {/* اختيار الفرع للإدارة */}
-      <select
-        value={selectedBranch}
-        onChange={(e) => setSelectedBranch(Number(e.target.value) || "")}
-        className="border rounded-lg px-3 py-2 w-full max-w-md"
+return (
+  <div className="space-y-6">
+    <div className="flex justify-between items-center">
+      <h1 className="text-2xl font-bold flex items-center gap-2">
+        <Store className="w-7 h-7" /> المطاعم / المحلات
+      </h1>
+      <button
+        onClick={() => setShowModal(true)}
+        className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
       >
-        <option value="">كل الفروع</option>
-        {branches.map((b) => (
-          <option key={b.id} value={b.id}>
-            {b.name}
-          </option>
-        ))}
-      </select>
+        <Plus className="w-5 h-5" /> إضافة جديد
+      </button>
+    </div>
 
-      {/* البحث */}
-      <input
-        type="text"
-        placeholder="بحث باسم المطعم..."
-        value={searchText}
-        onChange={(e) => setSearchText(e.target.value)}
-        className="border rounded-lg px-3 py-2 w-full max-w-md"
-      />
+    {/* اختيار الفرع */}
+    <select
+      value={selectedBranch}
+      onChange={(e) => setSelectedBranch(Number(e.target.value) || "")}
+      className="border rounded-lg px-3 py-2 w-full max-w-md"
+    >
+      <option value="">كل الفروع</option>
+      {branches.map((b) => (
+        <option key={b.id} value={b.id}>
+          {b.name}
+        </option>
+      ))}
+    </select>
 
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-        {loading ? (
-          <div className="p-6 text-center">⏳ جاري التحميل...</div>
-        ) : (
-          <table className="w-full text-center">
-            <thead className="bg-gray-50">
-              <tr>
-                <th>#</th>
-                <th>الاسم</th>
-                <th>الفرع</th>
-                <th>العنوان</th>
-                <th>الهاتف</th>
-                <th>الفئات</th>
-                <th>الصورة</th>
-                <th>الإجراءات</th>
+    <input
+      type="text"
+      placeholder="بحث باسم المطعم..."
+      value={searchText}
+      onChange={(e) => setSearchText(e.target.value)}
+      className="border rounded-lg px-3 py-2 w-full max-w-md"
+    />
+
+    <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+      {loading ? (
+        <div className="p-6 text-center">⏳ جاري التحميل...</div>
+      ) : (
+        <table className="w-full text-center">
+          <thead className="bg-gray-50">
+            <tr>
+              <th>#</th>
+              <th>الاسم</th>
+              <th>الفرع</th>
+              <th>العنوان</th>
+              <th>الهاتف</th>
+              <th>الفئات</th>
+              <th>الصورة</th>
+              <th>الإجراءات</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredRestaurants.map((r, index) => (
+              <tr key={r.id}>
+                <td>#{index + 1}</td>
+                <td>{r.name}</td>
+                <td>{r.branch_name || "-"}</td>
+                <td>{r.address}</td>
+                <td>{r.phone}</td>
+                <td>{r.categories || "-"}</td>
+                <td>
+                  {r.image_url && (
+                    <img
+                      src={r.image_url}
+                      alt={r.name}
+                      className="w-16 h-16 object-cover rounded"
+                    />
+                  )}
+                </td>
+                <td className="flex gap-2 justify-center">
+                  <button onClick={() => handleEdit(r)} className="text-blue-600">
+                    <Edit3 />
+                  </button>
+                  <button className="text-red-600">
+                    <Trash2 />
+                  </button>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {filteredRestaurants.map((r, index) => (
-                <tr key={r.id}>
-                  <td>#{index + 1}</td>
-                  <td>{r.name}</td>
-                  <td>{r.branch_name || "-"}</td>
-                  <td>{r.address}</td>
-                  <td>{r.phone}</td>
-                  <td>{r.categories || "-"}</td>
-                  <td>
-                    {r.image_url && (
-                      <img src={r.image_url} alt={r.name} className="w-16 h-16 object-cover rounded" />
-                    )}
-                  </td>
-                  <td className="flex gap-2 justify-center">
-                    <button onClick={() => handleEdit(r)} className="text-blue-600">
-                      <Edit3 />
-                    </button>
-                    <button className="text-red-600">
-                      <Trash2 />
-                    </button>
-                  </td>
-                </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+
+    {showModal && (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
+        <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-lg overflow-y-auto max-h-screen">
+          <div className="flex justify-between mb-4">
+            <h2 className="text-xl font-bold">
+              {editMode ? "تعديل" : "إضافة"}
+            </h2>
+            <button onClick={resetForm}>
+              <X />
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-3">
+            {/* الفرع */}
+            <select
+              value={selectedBranch}
+              onChange={(e) => setSelectedBranch(Number(e.target.value))}
+              className="border rounded-lg px-3 py-2 w-full"
+            >
+              <option value="">اختر الفرع</option>
+              {branches.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
+                </option>
               ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+            </select>
 
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-lg overflow-y-auto max-h-screen">
-            <div className="flex justify-between mb-4">
-              <h2 className="text-xl font-bold">{editMode ? "تعديل" : "إضافة"}</h2>
-              <button onClick={resetForm}>
-                <X />
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-3">
-              {/* الفرع */}
-              <select
-                value={selectedBranch}
-                onChange={(e) => setSelectedBranch(Number(e.target.value))}
-                className="border rounded-lg px-3 py-2 w-full"
-              >
-                <option value="">اختر الفرع</option>
-                {branches.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name}
-                  </option>
-                ))}
-              </select>
-
-            <form onSubmit={handleSubmit} className="space-y-3">
-              <input
-                type="text"
-                placeholder="اسم المطعم"
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-                required
-                className="border rounded-lg px-3 py-2 w-full"
-              />
+            <input
+              type="text"
+              placeholder="اسم المطعم"
+              value={formData.name}
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.target.value })
+              }
+              required
+              className="border rounded-lg px-3 py-2 w-full"
+            />
                   
               {/* نوع المحل */}
               <select
