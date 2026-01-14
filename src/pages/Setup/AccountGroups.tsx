@@ -30,19 +30,15 @@ const AccountGroups: React.FC = () => {
   /* =========================
      Load Data
   ========================= */
-  const loadGroups = async () => {
-    try {
-      const res = await api.get("/account-groups", {
-        params: { search },
-      });
-      const data = res.data;
-      if (data.success) setGroups(data.groups || []);
-      else setGroups([]);
-    } catch (err) {
-      console.error("Load groups error:", err);
-      setGroups([]);
-    }
-  };
+ const loadGroups = async () => {
+  try {
+    const data = await api.accountGroups.getAll(search);
+    if (data.success) setGroups(data.groups);
+  } catch (err) {
+    console.error("Load groups error:", err);
+  }
+};
+;
 
   useEffect(() => {
     loadGroups();
@@ -55,7 +51,7 @@ const AccountGroups: React.FC = () => {
     if (!form.name_ar || !form.code) return;
 
     try {
-      await api.post("/account-groups", form);
+      await api.post("api/account-groups", form);
       setShowModal(false);
       setForm({ name_ar: "", name_en: "", code: "" });
       loadGroups();
