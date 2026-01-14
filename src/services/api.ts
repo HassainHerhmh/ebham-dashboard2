@@ -469,5 +469,39 @@ export const accountsApi = {
 (api as any).accounts = accountsApi;
 
 
+/* =========================
+   ACCOUNT GROUPS
+========================= */
+(api as any).accountGroups = {
+  getAll: async (search = "") =>
+    (
+      await api.get("/account-groups", {
+        params: { search },
+      })
+    ).data,
+
+  getOne: async (id: number) =>
+    (await api.get(`/account-groups/${id}`)).data,
+
+  create: async (data: {
+    name_ar: string;
+    name_en?: string;
+    code: string;
+  }) =>
+    (await api.post("/account-groups", data)).data,
+
+  update: async (
+    id: number,
+    data: {
+      name_ar: string;
+      name_en?: string;
+      code: string;
+    }
+  ) =>
+    (await api.put(`/account-groups/${id}`, data)).data,
+
+  delete: async (id: number) =>
+    (await api.delete(`/account-groups/${id}`)).data,
+};
 
 export default api;
