@@ -227,19 +227,6 @@ return (
       </button>
     </div>
 
-    {/* اختيار الفرع */}
-    <select
-      value={selectedBranch}
-      onChange={(e) => setSelectedBranch(Number(e.target.value) || "")}
-      className="border rounded-lg px-3 py-2 w-full max-w-md"
-    >
-      <option value="">كل الفروع</option>
-      {branches.map((b) => (
-        <option key={b.id} value={b.id}>
-          {b.name}
-        </option>
-      ))}
-    </select>
 
     <input
       type="text"
