@@ -100,6 +100,17 @@ const Products: React.FC = () => {
     fetchUnits();
   }, []);
 
+  // 👇 الاستماع لتغيير الفرع من الهيدر
+  useEffect(() => {
+    const handler = () => {
+      fetchProducts();
+      fetchRestaurants();
+    };
+
+    window.addEventListener("storage", handler);
+    return () => window.removeEventListener("storage", handler);
+  }, []);
+
   /* ================= RESET ================= */
 
   const resetForm = () => {
