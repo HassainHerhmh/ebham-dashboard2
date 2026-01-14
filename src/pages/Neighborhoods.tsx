@@ -33,19 +33,20 @@ const Neighborhoods: React.FC = () => {
   const [fee, setFee] = useState<number>(0);
   const [branchId, setBranchId] = useState<number>(0);
 
+  const getHeaderBranch = () => {
+    const saved = localStorage.getItem("branch_id");
+    return saved ? Number(saved) : null;
+  };
+
   const fetchNeighborhoods = async (query: string) => {
     try {
       setLoading(true);
 
       const headers: any = {};
-      const selected = localStorage.getItem("branch_id");
+      const headerBranch = getHeaderBranch();
 
-      if (isAdminBranch) {
-        if (selected && selected !== "all") {
-          headers["x-branch-id"] = selected;
-        }
-      } else if (user?.branch_id) {
-        headers["x-branch-id"] = user.branch_id;
+      if (headerBranch) {
+        headers["x-branch-id"] = headerBranch;
       }
 
       const res = await api.get("/neighborhoods", {
@@ -86,9 +87,10 @@ const Neighborhoods: React.FC = () => {
     setName("");
     setFee(0);
 
+    const headerBranch = getHeaderBranch();
+
     if (isAdminBranch) {
-      const selected = localStorage.getItem("branch_id");
-      setBranchId(selected ? Number(selected) : 0);
+      setBranchId(headerBranch || 0);
     } else {
       setBranchId(user?.branch_id || 0);
     }
@@ -107,14 +109,25 @@ const Neighborhoods: React.FC = () => {
   const saveNeighborhood = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    const finalBranchId = isAdminBranch
+      ? branchId
+      : user?.branch_id;
+
+    if (!finalBranchId) {
+      alert("يجب تحديد الفرع");
+      return;
+    }
+
     try {
       if (editId) {
         await api.put(`/neighborhoods/${editId}`, {
+          branch_id: finalBranchId,
           name,
           delivery_fee: fee,
         });
       } else {
         await api.post("/neighborhoods", {
+          branch_id: finalBranchId,
           name,
           delivery_fee: fee,
         });
@@ -134,8 +147,8 @@ const Neighborhoods: React.FC = () => {
   };
 
   return (
-    <div>
-      <div className="flex justify-between mb-4">
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">إدارة الأحياء</h1>
         <button
           onClick={openAdd}
@@ -152,7 +165,7 @@ const Neighborhoods: React.FC = () => {
           fetchNeighborhoods(e.target.value);
         }}
         placeholder="اكتب اسم الحي..."
-        className="border px-3 py-2 rounded w-1/2 mb-4"
+        className="border px-3 py-2 rounded w-full max-w-md"
       />
 
       {loading ? (
@@ -216,12 +229,19 @@ const Neighborhoods: React.FC = () => {
                   onChange={(e) => setBranchId(Number(e.target.value))}
                   className="border p-2 w-full"
                 >
+                  <option value={0}>اختر الفرع</option>
                   {branches.map((b) => (
                     <option key={b.id} value={b.id}>
                       {b.name}
                     </option>
                   ))}
                 </select>
+              )}
+
+              {!isAdminBranch && (
+                <div className="border p-2 w-full bg-gray-50 text-gray-700">
+                  {user?.branch_name}
+                </div>
               )}
 
               <input
@@ -231,6 +251,7 @@ const Neighborhoods: React.FC = () => {
                 placeholder="اسم الحي"
                 required
               />
+
               <input
                 type="number"
                 value={fee}
