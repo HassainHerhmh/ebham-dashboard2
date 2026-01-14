@@ -33,20 +33,20 @@ const Neighborhoods: React.FC = () => {
   const [fee, setFee] = useState<number>(0);
   const [branchId, setBranchId] = useState<number>(0);
 
-  const getHeaderBranch = () => {
-    const saved = localStorage.getItem("branch_id");
-    return saved ? Number(saved) : null;
-  };
-
   const fetchNeighborhoods = async (query: string) => {
     try {
       setLoading(true);
 
       const headers: any = {};
-      const headerBranch = getHeaderBranch();
+      const selected = localStorage.getItem("branch_id");
 
-      if (headerBranch) {
-        headers["x-branch-id"] = headerBranch;
+      if (isAdminBranch) {
+        // الإدارة العامة: لا نرسل فرع الإدارة نفسه
+        if (selected && Number(selected) !== Number(user?.branch_id)) {
+          headers["x-branch-id"] = selected;
+        }
+      } else if (user?.branch_id) {
+        headers["x-branch-id"] = user.branch_id;
       }
 
       const res = await api.get("/neighborhoods", {
@@ -87,10 +87,13 @@ const Neighborhoods: React.FC = () => {
     setName("");
     setFee(0);
 
-    const headerBranch = getHeaderBranch();
-
     if (isAdminBranch) {
-      setBranchId(headerBranch || 0);
+      const selected = localStorage.getItem("branch_id");
+      if (selected && Number(selected) !== Number(user?.branch_id)) {
+        setBranchId(Number(selected));
+      } else {
+        setBranchId(0);
+      }
     } else {
       setBranchId(user?.branch_id || 0);
     }
@@ -114,7 +117,7 @@ const Neighborhoods: React.FC = () => {
       : user?.branch_id;
 
     if (!finalBranchId) {
-      alert("يجب تحديد الفرع");
+      alert("يجب اختيار فرع صحيح");
       return;
     }
 
@@ -147,13 +150,10 @@ const Neighborhoods: React.FC = () => {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
+    <div>
+      <div className="flex justify-between mb-4">
         <h1 className="text-2xl font-bold">إدارة الأحياء</h1>
-        <button
-          onClick={openAdd}
-          className="bg-green-600 text-white px-4 py-2 rounded"
-        >
+        <button onClick={openAdd} className="bg-green-600 text-white px-4 py-2 rounded">
           إضافة حي
         </button>
       </div>
@@ -165,7 +165,7 @@ const Neighborhoods: React.FC = () => {
           fetchNeighborhoods(e.target.value);
         }}
         placeholder="اكتب اسم الحي..."
-        className="border px-3 py-2 rounded w-full max-w-md"
+        className="border px-3 py-2 rounded w-1/2 mb-4"
       />
 
       {loading ? (
@@ -189,26 +189,14 @@ const Neighborhoods: React.FC = () => {
                 <td>{n.delivery_fee}</td>
                 <td>{n.branch_name || "-"}</td>
                 <td>
-                  <button
-                    onClick={() => startEdit(n)}
-                    className="text-blue-600 mx-1"
-                  >
-                    تعديل
-                  </button>
-                  <button
-                    onClick={() => deleteNeighborhood(n.id)}
-                    className="text-red-600 mx-1"
-                  >
-                    حذف
-                  </button>
+                  <button onClick={() => startEdit(n)} className="text-blue-600 mx-1">تعديل</button>
+                  <button onClick={() => deleteNeighborhood(n.id)} className="text-red-600 mx-1">حذف</button>
                 </td>
               </tr>
             ))}
             {!neighborhoods.length && (
               <tr>
-                <td colSpan={5} className="text-center py-4">
-                  لا توجد بيانات
-                </td>
+                <td colSpan={5} className="text-center py-4">لا توجد بيانات</td>
               </tr>
             )}
           </tbody>
@@ -231,17 +219,9 @@ const Neighborhoods: React.FC = () => {
                 >
                   <option value={0}>اختر الفرع</option>
                   {branches.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.name}
-                    </option>
+                    <option key={b.id} value={b.id}>{b.name}</option>
                   ))}
                 </select>
-              )}
-
-              {!isAdminBranch && (
-                <div className="border p-2 w-full bg-gray-50 text-gray-700">
-                  {user?.branch_name}
-                </div>
               )}
 
               <input
@@ -262,17 +242,10 @@ const Neighborhoods: React.FC = () => {
               />
 
               <div className="flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="bg-gray-300 px-4 py-2 rounded"
-                >
+                <button type="button" onClick={() => setIsModalOpen(false)} className="bg-gray-300 px-4 py-2 rounded">
                   إلغاء
                 </button>
-                <button
-                  type="submit"
-                  className="bg-green-600 text-white px-4 py-2 rounded"
-                >
+                <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded">
                   حفظ
                 </button>
               </div>
