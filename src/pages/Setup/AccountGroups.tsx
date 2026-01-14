@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import api from "../../services/api";
 
 /* =========================
    Types
@@ -31,13 +32,15 @@ const AccountGroups: React.FC = () => {
   ========================= */
   const loadGroups = async () => {
     try {
-      const res = await fetch(
-        `http://localhost:5000/account-groups?search=${search}`
-      );
-      const data = await res.json();
-      if (data.success) setGroups(data.groups);
+      const res = await api.get("/account-groups", {
+        params: { search },
+      });
+      const data = res.data;
+      if (data.success) setGroups(data.groups || []);
+      else setGroups([]);
     } catch (err) {
       console.error("Load groups error:", err);
+      setGroups([]);
     }
   };
 
@@ -51,15 +54,14 @@ const AccountGroups: React.FC = () => {
   const addGroup = async () => {
     if (!form.name_ar || !form.code) return;
 
-    await fetch("http://localhost:5000/account-groups", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
-
-    setShowModal(false);
-    setForm({ name_ar: "", name_en: "", code: "" });
-    loadGroups();
+    try {
+      await api.post("/account-groups", form);
+      setShowModal(false);
+      setForm({ name_ar: "", name_en: "", code: "" });
+      loadGroups();
+    } catch (err) {
+      console.error("Add group error:", err);
+    }
   };
 
   /* =========================
