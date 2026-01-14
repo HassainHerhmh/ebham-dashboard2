@@ -15,6 +15,8 @@ interface Restaurant {
   latitude?: number;
   longitude?: number;
   schedule?: ScheduleItem[];
+  branch_id?: number;
+  branch_name?: string;
 }
 
 interface Category {
@@ -23,6 +25,11 @@ interface Category {
 }
 
 interface TypeItem {
+  id: number;
+  name: string;
+}
+
+interface Branch {
   id: number;
   name: string;
 }
@@ -50,8 +57,11 @@ const Restaurants: React.FC = () => {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [types, setTypes] = useState<TypeItem[]>([]);
+  const [branches, setBranches] = useState<Branch[]>([]);
+
   const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
   const [selectedType, setSelectedType] = useState<number | "">("");
+  const [selectedBranch, setSelectedBranch] = useState<number | "">("");
 
   const [storeSchedule, setStoreSchedule] = useState<ScheduleItem[]>(
     daysOfWeek.map((day) => ({ day, start: "", end: "", closed: false }))
@@ -73,12 +83,12 @@ const Restaurants: React.FC = () => {
 
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
-
-  const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [searchText, setSearchText] = useState("");
 
   const fetchRestaurants = async () => {
-    const res = await api.get(`/restaurants`);
+    const res = await api.get(`/restaurants`, {
+      headers: selectedBranch ? { "x-branch-id": selectedBranch } : {},
+    });
     const data = res.data;
     setRestaurants(Array.isArray(data) ? data : data.restaurants || []);
     setLoading(false);
@@ -96,11 +106,17 @@ const Restaurants: React.FC = () => {
     setTypes(data.types || []);
   };
 
+  const fetchBranches = async () => {
+    const res = await api.get(`/branches`);
+    setBranches(res.data.branches || []);
+  };
+
   useEffect(() => {
     fetchRestaurants();
     fetchCategories();
     fetchTypes();
-  }, []);
+    fetchBranches();
+  }, [selectedBranch]);
 
   const toggleCategory = (id: number) => {
     setSelectedCategories((prev) =>
@@ -129,11 +145,13 @@ const Restaurants: React.FC = () => {
     if (longitude) data.append("longitude", longitude);
     if (file) data.append("image", file);
 
+    const headers = selectedBranch ? { "x-branch-id": selectedBranch } : {};
+
     if (editMode) {
-      await api.put(`/restaurants/${formData.id}`, data);
+      await api.put(`/restaurants/${formData.id}`, data, { headers });
       alert("✅ تم تعديل المطعم");
     } else {
-      await api.post(`/restaurants`, data);
+      await api.post(`/restaurants`, data, { headers });
       alert("✅ تم إضافة المطعم");
     }
 
@@ -156,6 +174,7 @@ const Restaurants: React.FC = () => {
 
     setSelectedCategories(categoryIds);
     setSelectedType(r.type_id || "");
+    setSelectedBranch(r.branch_id || "");
     setPreview(r.image_url || null);
     setFile(null);
 
@@ -193,7 +212,8 @@ const Restaurants: React.FC = () => {
   const filteredRestaurants = restaurants.filter((r) =>
     r.name.toLowerCase().includes(searchText.toLowerCase())
   );
-    return (
+
+  return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold flex items-center gap-2">
@@ -207,7 +227,21 @@ const Restaurants: React.FC = () => {
         </button>
       </div>
 
-      {/* مربع البحث */}
+      {/* اختيار الفرع للإدارة */}
+      <select
+        value={selectedBranch}
+        onChange={(e) => setSelectedBranch(Number(e.target.value) || "")}
+        className="border rounded-lg px-3 py-2 w-full max-w-md"
+      >
+        <option value="">كل الفروع</option>
+        {branches.map((b) => (
+          <option key={b.id} value={b.id}>
+            {b.name}
+          </option>
+        ))}
+      </select>
+
+      {/* البحث */}
       <input
         type="text"
         placeholder="بحث باسم المطعم..."
@@ -223,67 +257,35 @@ const Restaurants: React.FC = () => {
           <table className="w-full text-center">
             <thead className="bg-gray-50">
               <tr>
-                <th></th>
                 <th>#</th>
                 <th>الاسم</th>
+                <th>الفرع</th>
                 <th>العنوان</th>
                 <th>الهاتف</th>
                 <th>الفئات</th>
-                <th>الموقع</th>
                 <th>الصورة</th>
                 <th>الإجراءات</th>
               </tr>
             </thead>
             <tbody>
               {filteredRestaurants.map((r, index) => (
-                <tr
-                  key={r.id}
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={() => handleDrop(index)}
-                >
-                  <td
-                    draggable
-                    onDragStart={() => handleDragStart(index)}
-                    className="cursor-grab text-gray-400 select-none"
-                    title="اسحب للترتيب"
-                  >
-                    ⋮⋮
-                  </td>
-
+                <tr key={r.id}>
                   <td>#{index + 1}</td>
                   <td>{r.name}</td>
+                  <td>{r.branch_name || "-"}</td>
                   <td>{r.address}</td>
                   <td>{r.phone}</td>
                   <td>{r.categories || "-"}</td>
                   <td>
-                    {r.latitude && r.longitude ? (
-                      <a
-                        href={`https://www.google.com/maps?q=${r.latitude},${r.longitude}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 underline"
-                      >
-                        عرض الموقع
-                      </a>
-                    ) : (
-                      "-"
+                    {r.image_url && (
+                      <img src={r.image_url} alt={r.name} className="w-16 h-16 object-cover rounded" />
                     )}
-                  </td>
-                  <td>
-                  {r.image_url && (
-  <img
-    src={r.image_url}
-    alt={r.name}
-    className="w-16 h-16 object-cover rounded"
-  />
-)}
-
                   </td>
                   <td className="flex gap-2 justify-center">
                     <button onClick={() => handleEdit(r)} className="text-blue-600">
                       <Edit3 />
                     </button>
-                    <button onClick={() => handleDelete(r.id)} className="text-red-600">
+                    <button className="text-red-600">
                       <Trash2 />
                     </button>
                   </td>
@@ -303,6 +305,21 @@ const Restaurants: React.FC = () => {
                 <X />
               </button>
             </div>
+
+            <form onSubmit={handleSubmit} className="space-y-3">
+              {/* الفرع */}
+              <select
+                value={selectedBranch}
+                onChange={(e) => setSelectedBranch(Number(e.target.value))}
+                className="border rounded-lg px-3 py-2 w-full"
+              >
+                <option value="">اختر الفرع</option>
+                {branches.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name}
+                  </option>
+                ))}
+              </select>
 
             <form onSubmit={handleSubmit} className="space-y-3">
               <input
