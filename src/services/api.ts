@@ -551,6 +551,33 @@ export const accountsApi = {
     return res.data;
   },
 };
+ // ===== Bank Groups =====
+  bankGroups: {
+    getAll: (search = "") =>
+      api
+        .get(`/bank-groups`, { params: { search } })
+        .then((r) => r.data),
 
+    getOne: (id: number) =>
+      api.get(`/bank-groups/${id}`).then((r) => r.data),
+
+    create: (payload: {
+      name_ar: string;
+      name_en?: string | null;
+      code: string;
+    }) => api.post(`/bank-groups`, payload).then((r) => r.data),
+
+    update: (
+      id: number,
+      payload: {
+        name_ar: string;
+        name_en?: string | null;
+        code: string;
+      }
+    ) => api.put(`/bank-groups/${id}`, payload).then((r) => r.data),
+
+    delete: (id: number) =>
+      api.delete(`/bank-groups/${id}`).then((r) => r.data),
+  },
 
 export default api;
