@@ -88,7 +88,7 @@ const Neighborhoods: React.FC = () => {
 
     if (isAdminBranch) {
       const selected = localStorage.getItem("branch_id");
-      setBranchId(selected && selected !== "all" ? Number(selected) : 0);
+      setBranchId(selected ? Number(selected) : 0);
     } else {
       setBranchId(user?.branch_id || 0);
     }
@@ -107,25 +107,14 @@ const Neighborhoods: React.FC = () => {
   const saveNeighborhood = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const finalBranchId = isAdminBranch
-      ? branchId || 0
-      : user?.branch_id;
-
-    if (!finalBranchId) {
-      alert("يجب اختيار الفرع");
-      return;
-    }
-
     try {
       if (editId) {
         await api.put(`/neighborhoods/${editId}`, {
-          branch_id: finalBranchId,
           name,
           delivery_fee: fee,
         });
       } else {
         await api.post("/neighborhoods", {
-          branch_id: finalBranchId,
           name,
           delivery_fee: fee,
         });
@@ -148,7 +137,10 @@ const Neighborhoods: React.FC = () => {
     <div>
       <div className="flex justify-between mb-4">
         <h1 className="text-2xl font-bold">إدارة الأحياء</h1>
-        <button onClick={openAdd} className="bg-green-600 text-white px-4 py-2 rounded">
+        <button
+          onClick={openAdd}
+          className="bg-green-600 text-white px-4 py-2 rounded"
+        >
           إضافة حي
         </button>
       </div>
@@ -184,14 +176,26 @@ const Neighborhoods: React.FC = () => {
                 <td>{n.delivery_fee}</td>
                 <td>{n.branch_name || "-"}</td>
                 <td>
-                  <button onClick={() => startEdit(n)} className="text-blue-600 mx-1">تعديل</button>
-                  <button onClick={() => deleteNeighborhood(n.id)} className="text-red-600 mx-1">حذف</button>
+                  <button
+                    onClick={() => startEdit(n)}
+                    className="text-blue-600 mx-1"
+                  >
+                    تعديل
+                  </button>
+                  <button
+                    onClick={() => deleteNeighborhood(n.id)}
+                    className="text-red-600 mx-1"
+                  >
+                    حذف
+                  </button>
                 </td>
               </tr>
             ))}
             {!neighborhoods.length && (
               <tr>
-                <td colSpan={5} className="text-center py-4">لا توجد بيانات</td>
+                <td colSpan={5} className="text-center py-4">
+                  لا توجد بيانات
+                </td>
               </tr>
             )}
           </tbody>
@@ -212,19 +216,44 @@ const Neighborhoods: React.FC = () => {
                   onChange={(e) => setBranchId(Number(e.target.value))}
                   className="border p-2 w-full"
                 >
-                  <option value={0}>اختر الفرع</option>
                   {branches.map((b) => (
-                    <option key={b.id} value={b.id}>{b.name}</option>
+                    <option key={b.id} value={b.id}>
+                      {b.name}
+                    </option>
                   ))}
                 </select>
               )}
 
-              <input value={name} onChange={(e) => setName(e.target.value)} className="border p-2 w-full" placeholder="اسم الحي" required />
-              <input type="number" value={fee} onChange={(e) => setFee(Number(e.target.value))} className="border p-2 w-full" placeholder="سعر التوصيل" required />
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="border p-2 w-full"
+                placeholder="اسم الحي"
+                required
+              />
+              <input
+                type="number"
+                value={fee}
+                onChange={(e) => setFee(Number(e.target.value))}
+                className="border p-2 w-full"
+                placeholder="سعر التوصيل"
+                required
+              />
 
               <div className="flex justify-end gap-2">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="bg-gray-300 px-4 py-2 rounded">إلغاء</button>
-                <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded">حفظ</button>
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="bg-gray-300 px-4 py-2 rounded"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="submit"
+                  className="bg-green-600 text-white px-4 py-2 rounded"
+                >
+                  حفظ
+                </button>
               </div>
             </form>
           </div>
