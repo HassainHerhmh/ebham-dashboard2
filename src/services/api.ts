@@ -508,13 +508,11 @@ export const accountsApi = {
    CURRENCIES
 ========================= */
 (api as any).currencies = {
-  // جلب العملات (حسب الفرع من الهيدر)
   getAll: async () => {
     const res = await api.get("/currencies");
     return res.data;
   },
 
-  // إضافة عملة
   create: async (data: {
     name_ar: string;
     code: string;
@@ -528,7 +526,6 @@ export const accountsApi = {
     return res.data;
   },
 
-  // تعديل عملة
   update: async (
     id: number,
     data: {
@@ -545,39 +542,43 @@ export const accountsApi = {
     return res.data;
   },
 
-  // حذف (تعطيل)
   delete: async (id: number) => {
     const res = await api.delete(`/currencies/${id}`);
     return res.data;
   },
+};
 
- // ===== Bank Groups =====
-  bankGroups: {
-    getAll: (search = "") =>
-      api
-        .get(`/bank-groups`, { params: { search } })
-        .then((r) => r.data),
+/* =========================
+   BANK GROUPS
+========================= */
+(api as any).bankGroups = {
+  getAll: (search = "") =>
+    api.get(`/bank-groups`, { params: { search } }).then((r) => r.data),
 
-    getOne: (id: number) =>
-      api.get(`/bank-groups/${id}`).then((r) => r.data),
+  getOne: (id: number) =>
+    api.get(`/bank-groups/${id}`).then((r) => r.data),
 
-    create: (payload: {
+  create: (payload: {
+    name_ar: string;
+    name_en?: string | null;
+    code: string;
+  }) =>
+    api.post(`/bank-groups`, payload).then((r) => r.data),
+
+  update: (
+    id: number,
+    payload: {
       name_ar: string;
       name_en?: string | null;
       code: string;
-    }) => api.post(`/bank-groups`, payload).then((r) => r.data),
+    }
+  ) =>
+    api.put(`/bank-groups/${id}`, payload).then((r) => r.data),
 
-    update: (
-      id: number,
-      payload: {
-        name_ar: string;
-        name_en?: string | null;
-        code: string;
-      }
-    ) => api.put(`/bank-groups/${id}`, payload).then((r) => r.data),
+  delete: (id: number) =>
+    api.delete(`/bank-groups/${id}`).then((r) => r.data),
+};
 
-    delete: (id: number) =>
-      api.delete(`/bank-groups/${id}`).then((r) => r.data),
-  },
+
 
 export default api;
