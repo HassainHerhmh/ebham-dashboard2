@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import api from "../../services/api";
 
 /* =========================
    Types
@@ -9,6 +10,7 @@ type BankGroup = {
   name_en: string;
   code: string;
   user_name?: string;
+  branch?: string;
 };
 
 /* =========================
@@ -31,11 +33,8 @@ const BankGroups: React.FC = () => {
   ========================= */
   const loadGroups = async () => {
     try {
-      const res = await fetch(
-        `http://localhost:5000/bank-groups?search=${search}`
-      );
-      const data = await res.json();
-      if (data.success) setGroups(data.groups);
+      const res = await api.get(`/bank-groups?search=${search}`);
+      if (res.data.success) setGroups(res.data.groups);
     } catch (err) {
       console.error("Load bank groups error:", err);
     }
@@ -62,23 +61,20 @@ const BankGroups: React.FC = () => {
       return;
     }
 
-    if (editId) {
-      await fetch(`http://localhost:5000/bank-groups/${editId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-    } else {
-      await fetch("http://localhost:5000/bank-groups", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-    }
+    try {
+      if (editId) {
+        await api.put(`/bank-groups/${editId}`, form);
+      } else {
+        await api.post("/bank-groups", form);
+      }
 
-    setShowModal(false);
-    resetForm();
-    loadGroups();
+      setShowModal(false);
+      resetForm();
+      loadGroups();
+    } catch (err) {
+      console.error("Save bank group error:", err);
+      alert("حصل خطأ أثناء الحفظ");
+    }
   };
 
   /* =========================
@@ -100,18 +96,17 @@ const BankGroups: React.FC = () => {
   const handleDelete = async (id: number) => {
     if (!confirm("هل أنت متأكد من الحذف؟")) return;
 
-    await fetch(`http://localhost:5000/bank-groups/${id}`, {
-      method: "DELETE",
-    });
-
-    loadGroups();
+    try {
+      await api.delete(`/bank-groups/${id}`);
+      loadGroups();
+    } catch (err) {
+      console.error("Delete bank group error:", err);
+      alert("فشل الحذف");
+    }
   };
 
   return (
     <div className="space-y-4">
-      {/* =========================
-          CSS الطباعة (داخل الملف)
-      ========================= */}
       <style>{`
         @media print {
           body * {
@@ -146,10 +141,8 @@ const BankGroups: React.FC = () => {
         }
       `}</style>
 
-      {/* العنوان */}
       <h1 className="text-2xl font-bold">مجموعة البنوك</h1>
 
-      {/* الأدوات */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <input
           type="text"
@@ -186,9 +179,6 @@ const BankGroups: React.FC = () => {
         </div>
       </div>
 
-      {/* =========================
-          TABLE (مطابق للحسابات)
-      ========================= */}
       <div
         id="print-area"
         className="overflow-x-auto rounded-lg bg-white shadow"
@@ -214,10 +204,10 @@ const BankGroups: React.FC = () => {
                 <td className="border px-3 py-2">{g.name_ar}</td>
                 <td className="border px-3 py-2">{g.name_en || "-"}</td>
                 <td className="border px-3 py-2 text-center">{g.code}</td>
+                <td className="border px-3 py-2">{g.user_name || "-"}</td>
                 <td className="border px-3 py-2">
-                  {g.user_name || "-"}
+                  {g.branch || "—"}
                 </td>
-                <td className="border px-3 py-2">المركز الرئيسي</td>
                 <td className="border px-3 py-2 text-center">
                   <div className="flex justify-center gap-2">
                     <button
@@ -251,9 +241,6 @@ const BankGroups: React.FC = () => {
         </table>
       </div>
 
-      {/* =========================
-          MODAL (Add / Edit)
-      ========================= */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="w-full max-w-md rounded-xl bg-[#eef4ee] p-6">
