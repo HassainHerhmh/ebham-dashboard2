@@ -50,6 +50,7 @@ const Neighborhoods: React.FC = () => {
 
       if (isAdminBranch) {
         const selected = localStorage.getItem("branch_id");
+        // فقط إذا كان فرعًا فعليًا أرسل الهيدر
         if (selected && selected !== "all") {
           headers["x-branch-id"] = selected;
         }
@@ -113,12 +114,20 @@ const Neighborhoods: React.FC = () => {
     e.preventDefault();
 
     try {
-      const finalBranchId = isAdminBranch
-        ? branchId || Number(localStorage.getItem("branch_id"))
-        : user.branch_id;
+      let finalBranchId: number | null = null;
+
+      if (isAdminBranch) {
+        if (!branchId) {
+          alert("يجب اختيار الفرع");
+          return;
+        }
+        finalBranchId = branchId;
+      } else {
+        finalBranchId = user?.branch_id || null;
+      }
 
       if (!finalBranchId) {
-        alert("يجب اختيار الفرع");
+        alert("تعذر تحديد الفرع");
         return;
       }
 
@@ -175,14 +184,7 @@ const Neighborhoods: React.FC = () => {
             setEditId(null);
             setName("");
             setFee(0);
-
-            if (isAdminBranch) {
-              const selected = localStorage.getItem("branch_id");
-              setBranchId(selected ? Number(selected) : 0);
-            } else {
-              setBranchId(user?.branch_id || 0);
-            }
-
+            setBranchId(0);
             setIsModalOpen(true);
           }}
         >
