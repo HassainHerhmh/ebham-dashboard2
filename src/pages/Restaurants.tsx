@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Store, Plus, X, Trash2, Edit3 } from "lucide-react";
 import api from "../services/api";
 
@@ -55,7 +55,7 @@ const daysOfWeek = [
 
 const Restaurants: React.FC = () => {
   const user = JSON.parse(localStorage.getItem("user") || "{}");
-  const isAdminBranch = user?.is_admin_branch === true;
+  const isAdminGeneral = user?.is_admin_branch === true;
 
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -88,15 +88,12 @@ const Restaurants: React.FC = () => {
   const [longitude, setLongitude] = useState("");
   const [searchText, setSearchText] = useState("");
 
-  // يراقب تغيير الفرع من الهيدر
   const [activeBranch, setActiveBranch] = useState<string | null>(
-    localStorage.getItem("selectedBranchId")
+    localStorage.getItem("branch_id")
   );
 
   useEffect(() => {
-    const onStorage = () => {
-      setActiveBranch(localStorage.getItem("selectedBranchId"));
-    };
+    const onStorage = () => setActiveBranch(localStorage.getItem("branch_id"));
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
   }, []);
@@ -121,7 +118,7 @@ const Restaurants: React.FC = () => {
   };
 
   const fetchBranches = async () => {
-    if (!isAdminBranch) return;
+    if (!isAdminGeneral) return;
     const res = await api.get(`/branches`);
     setBranches(res.data.branches || []);
   };
@@ -164,9 +161,7 @@ const Restaurants: React.FC = () => {
     if (file) data.append("image", file);
 
     const headers =
-      isAdminBranch && selectedBranch
-        ? { "x-branch-id": selectedBranch }
-        : {};
+      isAdminGeneral && selectedBranch ? { "x-branch-id": selectedBranch } : {};
 
     if (editMode) {
       await api.put(`/restaurants/${formData.id}`, data, { headers });
@@ -308,13 +303,11 @@ const Restaurants: React.FC = () => {
           <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-lg overflow-y-auto max-h-screen">
             <div className="flex justify-between mb-4">
               <h2 className="text-xl font-bold">{editMode ? "تعديل" : "إضافة"}</h2>
-              <button onClick={resetForm}>
-                <X />
-              </button>
+              <button onClick={resetForm}><X /></button>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-3">
-              {isAdminBranch ? (
+              {isAdminGeneral ? (
                 <select
                   value={selectedBranch}
                   onChange={(e) => setSelectedBranch(Number(e.target.value))}
@@ -323,9 +316,7 @@ const Restaurants: React.FC = () => {
                 >
                   <option value="">اختر الفرع</option>
                   {branches.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.name}
-                    </option>
+                    <option key={b.id} value={b.id}>{b.name}</option>
                   ))}
                 </select>
               ) : (
