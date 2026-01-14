@@ -30,15 +30,14 @@ const AccountGroups: React.FC = () => {
   /* =========================
      Load Data
   ========================= */
- const loadGroups = async () => {
-  try {
-    const data = await api.accountGroups.getAll(search);
-    if (data.success) setGroups(data.groups);
-  } catch (err) {
-    console.error("Load groups error:", err);
-  }
-};
-;
+  const loadGroups = async () => {
+    try {
+      const data = await api.accountGroups.getAll(search);
+      if (data.success) setGroups(data.groups);
+    } catch (err) {
+      console.error("Load groups error:", err);
+    }
+  };
 
   useEffect(() => {
     loadGroups();
@@ -51,7 +50,8 @@ const AccountGroups: React.FC = () => {
     if (!form.name_ar || !form.code) return;
 
     try {
-      await api.post("api/account-groups", form);
+      await api.accountGroups.create(form);
+
       setShowModal(false);
       setForm({ name_ar: "", name_en: "", code: "" });
       loadGroups();
@@ -69,9 +69,6 @@ const AccountGroups: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      {/* =========================
-          Print CSS (INLINE)
-      ========================= */}
       <style>
         {`
         @media print {
@@ -114,10 +111,8 @@ const AccountGroups: React.FC = () => {
       `}
       </style>
 
-      {/* العنوان */}
       <h1 className="text-2xl font-bold">مجموعة الحسابات</h1>
 
-      {/* الأدوات */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <input
           type="text"
@@ -151,9 +146,6 @@ const AccountGroups: React.FC = () => {
         </div>
       </div>
 
-      {/* =========================
-          TABLE (PRINT AREA)
-      ========================= */}
       <div id="print-area">
         <div className="overflow-x-auto rounded-lg bg-white shadow">
           <table className="w-full border-collapse text-sm">
@@ -176,9 +168,7 @@ const AccountGroups: React.FC = () => {
                   <td className="border px-3 py-2">{g.name_ar}</td>
                   <td className="border px-3 py-2">{g.name_en || "-"}</td>
                   <td className="border px-3 py-2 text-center">{g.code}</td>
-                  <td className="border px-3 py-2">
-                    {g.user_name || "—"}
-                  </td>
+                  <td className="border px-3 py-2">{g.user_name || "—"}</td>
                   <td className="border px-3 py-2">
                     {g.branch || "المركز الرئيسي"}
                   </td>
@@ -203,9 +193,6 @@ const AccountGroups: React.FC = () => {
         </div>
       </div>
 
-      {/* =========================
-          ADD MODAL
-      ========================= */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="w-full max-w-md rounded-xl bg-[#eef4ee] p-6">
