@@ -54,6 +54,9 @@ const daysOfWeek = [
 ];
 
 const Restaurants: React.FC = () => {
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const isAdminBranch = !!user?.is_admin_branch;
+
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [types, setTypes] = useState<TypeItem[]>([]);
@@ -86,9 +89,7 @@ const Restaurants: React.FC = () => {
   const [searchText, setSearchText] = useState("");
 
   const fetchRestaurants = async () => {
-    const res = await api.get(`/restaurants`, {
-      headers: selectedBranch ? { "x-branch-id": selectedBranch } : {},
-    });
+    const res = await api.get(`/restaurants`);
     const data = res.data;
     setRestaurants(Array.isArray(data) ? data : data.restaurants || []);
     setLoading(false);
@@ -107,6 +108,7 @@ const Restaurants: React.FC = () => {
   };
 
   const fetchBranches = async () => {
+    if (!isAdminBranch) return;
     const res = await api.get(`/branches`);
     setBranches(res.data.branches || []);
   };
@@ -116,7 +118,7 @@ const Restaurants: React.FC = () => {
     fetchCategories();
     fetchTypes();
     fetchBranches();
-  }, [selectedBranch]);
+  }, []);
 
   const toggleCategory = (id: number) => {
     setSelectedCategories((prev) =>
@@ -145,7 +147,10 @@ const Restaurants: React.FC = () => {
     if (longitude) data.append("longitude", longitude);
     if (file) data.append("image", file);
 
-    const headers = selectedBranch ? { "x-branch-id": selectedBranch } : {};
+    const headers =
+      isAdminBranch && selectedBranch
+        ? { "x-branch-id": selectedBranch }
+        : {};
 
     if (editMode) {
       await api.put(`/restaurants/${formData.id}`, data, { headers });
@@ -200,6 +205,7 @@ const Restaurants: React.FC = () => {
     setFormData({ id: 0, name: "", address: "", phone: "", image_url: "" });
     setSelectedCategories([]);
     setSelectedType("");
+    setSelectedBranch("");
     setLatitude("");
     setLongitude("");
     setStoreSchedule(daysOfWeek.map((day) => ({ day, start: "", end: "", closed: false })));
@@ -213,118 +219,125 @@ const Restaurants: React.FC = () => {
     r.name.toLowerCase().includes(searchText.toLowerCase())
   );
 
-return (
-  <div className="space-y-6">
-    <div className="flex justify-between items-center">
-      <h1 className="text-2xl font-bold flex items-center gap-2">
-        <Store className="w-7 h-7" /> المطاعم / المحلات
-      </h1>
-      <button
-        onClick={() => setShowModal(true)}
-        className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
-      >
-        <Plus className="w-5 h-5" /> إضافة جديد
-      </button>
-    </div>
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold flex items-center gap-2">
+          <Store className="w-7 h-7" /> المطاعم / المحلات
+        </h1>
+        <button
+          onClick={() => setShowModal(true)}
+          className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
+        >
+          <Plus className="w-5 h-5" /> إضافة جديد
+        </button>
+      </div>
 
+      <input
+        type="text"
+        placeholder="بحث باسم المطعم..."
+        value={searchText}
+        onChange={(e) => setSearchText(e.target.value)}
+        className="border rounded-lg px-3 py-2 w-full max-w-md"
+      />
 
-    <input
-      type="text"
-      placeholder="بحث باسم المطعم..."
-      value={searchText}
-      onChange={(e) => setSearchText(e.target.value)}
-      className="border rounded-lg px-3 py-2 w-full max-w-md"
-    />
-
-    <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-      {loading ? (
-        <div className="p-6 text-center">⏳ جاري التحميل...</div>
-      ) : (
-        <table className="w-full text-center">
-          <thead className="bg-gray-50">
-            <tr>
-              <th>#</th>
-              <th>الاسم</th>
-              <th>الفرع</th>
-              <th>العنوان</th>
-              <th>الهاتف</th>
-              <th>الفئات</th>
-              <th>الصورة</th>
-              <th>الإجراءات</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredRestaurants.map((r, index) => (
-              <tr key={r.id}>
-                <td>#{index + 1}</td>
-                <td>{r.name}</td>
-                <td>{r.branch_name || "-"}</td>
-                <td>{r.address}</td>
-                <td>{r.phone}</td>
-                <td>{r.categories || "-"}</td>
-                <td>
-                  {r.image_url && (
-                    <img
-                      src={r.image_url}
-                      alt={r.name}
-                      className="w-16 h-16 object-cover rounded"
-                    />
-                  )}
-                </td>
-                <td className="flex gap-2 justify-center">
-                  <button onClick={() => handleEdit(r)} className="text-blue-600">
-                    <Edit3 />
-                  </button>
-                  <button className="text-red-600">
-                    <Trash2 />
-                  </button>
-                </td>
+      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+        {loading ? (
+          <div className="p-6 text-center">⏳ جاري التحميل...</div>
+        ) : (
+          <table className="w-full text-center">
+            <thead className="bg-gray-50">
+              <tr>
+                <th>#</th>
+                <th>الاسم</th>
+                <th>الفرع</th>
+                <th>العنوان</th>
+                <th>الهاتف</th>
+                <th>الفئات</th>
+                <th>الصورة</th>
+                <th>الإجراءات</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </div>
-
-    {showModal && (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
-        <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-lg overflow-y-auto max-h-screen">
-          <div className="flex justify-between mb-4">
-            <h2 className="text-xl font-bold">
-              {editMode ? "تعديل" : "إضافة"}
-            </h2>
-            <button onClick={resetForm}>
-              <X />
-            </button>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-3">
-            {/* الفرع */}
-            <select
-              value={selectedBranch}
-              onChange={(e) => setSelectedBranch(Number(e.target.value))}
-              className="border rounded-lg px-3 py-2 w-full"
-            >
-              <option value="">اختر الفرع</option>
-              {branches.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                </option>
+            </thead>
+            <tbody>
+              {filteredRestaurants.map((r, index) => (
+                <tr key={r.id}>
+                  <td>#{index + 1}</td>
+                  <td>{r.name}</td>
+                  <td>{r.branch_name || "-"}</td>
+                  <td>{r.address}</td>
+                  <td>{r.phone}</td>
+                  <td>{r.categories || "-"}</td>
+                  <td>
+                    {r.image_url && (
+                      <img
+                        src={r.image_url}
+                        alt={r.name}
+                        className="w-16 h-16 object-cover rounded"
+                      />
+                    )}
+                  </td>
+                  <td className="flex gap-2 justify-center">
+                    <button onClick={() => handleEdit(r)} className="text-blue-600">
+                      <Edit3 />
+                    </button>
+                    <button className="text-red-600">
+                      <Trash2 />
+                    </button>
+                  </td>
+                </tr>
               ))}
-            </select>
+            </tbody>
+          </table>
+        )}
+      </div>
 
-            <input
-              type="text"
-              placeholder="اسم المطعم"
-              value={formData.name}
-              onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
-              }
-              required
-              className="border rounded-lg px-3 py-2 w-full"
-            />
-                  
-              {/* نوع المحل */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-lg overflow-y-auto max-h-screen">
+            <div className="flex justify-between mb-4">
+              <h2 className="text-xl font-bold">
+                {editMode ? "تعديل" : "إضافة"}
+              </h2>
+              <button onClick={resetForm}>
+                <X />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-3">
+              {isAdminBranch ? (
+                <select
+                  value={selectedBranch}
+                  onChange={(e) => setSelectedBranch(Number(e.target.value))}
+                  className="border rounded-lg px-3 py-2 w-full"
+                  required
+                >
+                  <option value="">اختر الفرع</option>
+                  {branches.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.name}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  type="text"
+                  value={user.branch_name || ""}
+                  disabled
+                  className="border rounded-lg px-3 py-2 w-full bg-gray-100"
+                />
+              )}
+
+              <input
+                type="text"
+                placeholder="اسم المطعم"
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
+                required
+                className="border rounded-lg px-3 py-2 w-full"
+              />
+
               <select
                 value={selectedType}
                 onChange={(e) => setSelectedType(Number(e.target.value))}
