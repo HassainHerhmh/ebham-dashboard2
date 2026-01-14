@@ -425,37 +425,9 @@ export const deleteNeighborhood = async (id: number) => {
 };
 
 /* =========================
-   Types
-========================= */
-export interface Account {
-  id: number;
-  code: string;
-  name_ar: string;
-  name_en: string | null;
-  parent_id: number | null;
-  parent_name?: string;
-  account_level?: "رئيسي" | "فرعي";
-  financial_statement?: string;
-
-  created_at?: string;
-  created_by?: string;
-  branch_name?: string;
-  group_name?: string;
-
-  children?: Account[];
-}
-
-interface AccountsResponse {
-  success: boolean;
-  tree: Account[];
-  list: Account[];
-}
-
-/* =========================
    API – Accounts
 ========================= */
 export const accountsApi = {
-  // جلب الشجرة + القائمة
   getAccounts: async (): Promise<{ tree: Account[]; list: Account[] }> => {
     const res = await api.get<AccountsResponse>("/accounts");
     return {
@@ -464,7 +436,6 @@ export const accountsApi = {
     };
   },
 
-  // إضافة حساب
   createAccount: async (data: {
     name_ar: string;
     name_en?: string;
@@ -475,7 +446,6 @@ export const accountsApi = {
     return res.data;
   },
 
-  // تحديث حساب
   updateAccount: async (
     id: number,
     data: {
@@ -489,11 +459,15 @@ export const accountsApi = {
     return res.data;
   },
 
-  // حذف حساب (إن احتجته لاحقًا)
   deleteAccount: async (id: number) => {
     const res = await api.delete(`/accounts/${id}`);
     return res.data;
   },
 };
+
+// 🔴 هذا السطر كان ناقص
+(api as any).accounts = accountsApi;
+
+
 
 export default api;
