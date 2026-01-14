@@ -6,21 +6,25 @@ const API_URL = RAW_URL.endsWith("/api")
   ? RAW_URL
   : `${RAW_URL}/api`;
 
-
 const api = axios.create({
   baseURL: API_URL,
   headers: { "Content-Type": "application/json" },
 });
-
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+
+  // 🔹 ربط الفرع المختار من الهيدر
+  const branchId = localStorage.getItem("branch_id");
+  if (branchId) {
+    config.headers["x-branch-id"] = branchId;
+  }
+
   return config;
 });
-
 
 /* =========================
    USERS
