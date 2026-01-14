@@ -47,7 +47,13 @@ const Neighborhoods: React.FC = () => {
       setLoading(true);
 
       const headers: any = {};
-      if (!isAdminBranch && user?.branch_id) {
+
+      if (isAdminBranch) {
+        const selected = localStorage.getItem("branch_id");
+        if (selected && selected !== "all") {
+          headers["x-branch-id"] = selected;
+        }
+      } else if (user?.branch_id) {
         headers["x-branch-id"] = user.branch_id;
       }
 
@@ -107,7 +113,9 @@ const Neighborhoods: React.FC = () => {
     e.preventDefault();
 
     try {
-      const finalBranchId = isAdminBranch ? branchId : user.branch_id;
+      const finalBranchId = isAdminBranch
+        ? branchId || Number(localStorage.getItem("branch_id"))
+        : user.branch_id;
 
       if (!finalBranchId) {
         alert("يجب اختيار الفرع");
@@ -167,7 +175,14 @@ const Neighborhoods: React.FC = () => {
             setEditId(null);
             setName("");
             setFee(0);
-            setBranchId(0);
+
+            if (isAdminBranch) {
+              const selected = localStorage.getItem("branch_id");
+              setBranchId(selected ? Number(selected) : 0);
+            } else {
+              setBranchId(user?.branch_id || 0);
+            }
+
             setIsModalOpen(true);
           }}
         >
@@ -232,9 +247,6 @@ const Neighborhoods: React.FC = () => {
         </table>
       )}
 
-      {/* =========================
-          Modal
-      ========================= */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
           <div className="bg-white w-full max-w-lg p-6 rounded-lg">
