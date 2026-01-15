@@ -41,6 +41,7 @@ import CashBoxGroups from "./pages/Setup/CashBoxGroups";
 import ReceiptTypes from "./pages/Setup/ReceiptTypes";
 import PaymentTypes from "./pages/Setup/PaymentTypes";
 import JournalTypes from "./pages/Setup/JournalTypes";
+import AccountStatement from "./pages/Reports/AccountStatement";
 
 // العمليات
 import Operations from "./pages/Operations";
