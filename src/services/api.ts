@@ -825,5 +825,29 @@ export const accountsApi = {
     (await api.delete(`/payment-vouchers/${id}`)).data,
 };
 
+// =========================
+// Journal Entries API
+// =========================
+
+// جلب القيود اليومية
+export const getJournalEntries = () => {
+  return api.get("/journal-entries");
+};
+
+// إضافة قيد (سطر واحد: مدين أو دائن)
+export const createJournalEntry = (data: {
+  journal_type_id: number;
+  reference_type: string;
+  reference_id?: number | null;
+  journal_date: string;
+  currency_id: number;
+  account_id: number;
+  debit: number;
+  credit: number;
+  notes?: string | null;
+  cost_center_id?: number | null;
+}) => {
+  return api.post("/journal-entries", data);
+};
 
 export default api;
