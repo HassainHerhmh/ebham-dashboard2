@@ -111,7 +111,8 @@ const AccountStatement: React.FC = () => {
         : null;
     }
 
-    const res = await api.post("/reports/account-statement", payload);
+    const res = await (api as any).reports.accountStatement(payload);
+
 
     if (res.data?.success) {
       setOpening(res.data.opening_balance || 0);
