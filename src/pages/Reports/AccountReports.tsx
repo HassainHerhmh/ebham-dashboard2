@@ -29,6 +29,15 @@ type PeriodType = "day" | "from_start" | "month" | "range";
 type ReportMode = "summary" | "detailed";
 type AccountMode = "all" | "single";
 
+type SummaryType =
+  | "local"
+  | "with_move"
+  | "currency"
+  | "currency_move"
+  | "final";
+
+type DetailedType = "full" | "no_opening";
+
 const AccountStatement: React.FC = () => {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [mainAccounts, setMainAccounts] = useState<Account[]>([]);
@@ -48,6 +57,10 @@ const AccountStatement: React.FC = () => {
   const [toDate, setToDate] = useState(today);
 
   const [reportMode, setReportMode] = useState<ReportMode>("detailed");
+
+  const [summaryType, setSummaryType] = useState<SummaryType>("local");
+  const [detailedType, setDetailedType] =
+    useState<DetailedType>("full");
 
   useEffect(() => {
     loadLookups();
@@ -94,6 +107,8 @@ const AccountStatement: React.FC = () => {
       from_date,
       to_date,
       report_mode: reportMode,
+      summary_type: reportMode === "summary" ? summaryType : null,
+      detailed_type: reportMode === "detailed" ? detailedType : null,
     };
 
     if (accountMode === "single") {
@@ -122,6 +137,8 @@ const AccountStatement: React.FC = () => {
     setFromDate(today);
     setToDate(today);
     setReportMode("detailed");
+    setSummaryType("local");
+    setDetailedType("full");
     setRows([]);
     setOpening(0);
   };
@@ -131,7 +148,6 @@ const AccountStatement: React.FC = () => {
       <h2 className="text-xl font-bold">كشف الحساب</h2>
 
       <div className="bg-[#e9efe6] p-4 rounded-lg grid grid-cols-6 gap-3">
-        {/* نوع الاختيار */}
         <select
           className="input"
           value={accountMode}
@@ -189,9 +205,7 @@ const AccountStatement: React.FC = () => {
           <option value="range">خلال فترة</option>
         </select>
 
-        {(periodType === "day" ||
-          periodType === "from_start" ||
-          periodType === "month") && (
+        {(periodType !== "range") && (
           <input
             type="date"
             className="input"
@@ -230,20 +244,41 @@ const AccountStatement: React.FC = () => {
           ))}
         </select>
 
+        {reportMode === "summary" && (
+          <select
+            className="input col-span-2"
+            value={summaryType}
+            onChange={(e) => setSummaryType(e.target.value as any)}
+          >
+            <option value="local">إجمالي عملة محلية</option>
+            <option value="with_move">الأرصدة مع الحركة</option>
+            <option value="currency">الأرصدة بالعملة والمقابل</option>
+            <option value="currency_move">
+              الأرصدة بالعملة والمقابل مع الحركة
+            </option>
+            <option value="final">أرصدة نهائية</option>
+          </select>
+        )}
+
+        {reportMode === "detailed" && (
+          <select
+            className="input col-span-2"
+            value={detailedType}
+            onChange={(e) => setDetailedType(e.target.value as any)}
+          >
+            <option value="full">كشف كامل</option>
+            <option value="no_opening">كشف بدون رصيد سابق</option>
+          </select>
+        )}
+
         <div className="flex gap-2 col-span-2">
-          <button onClick={run} className="btn-green">
-            عرض
-          </button>
-          <button onClick={reset} className="btn-gray">
-            إعادة
-          </button>
+          <button onClick={run} className="btn-green">عرض</button>
+          <button onClick={reset} className="btn-gray">إعادة</button>
         </div>
       </div>
 
       <div className="bg-white rounded shadow overflow-x-auto">
-        <div className="p-3 font-semibold">
-          الرصيد الافتتاحي: {opening}
-        </div>
+        <div className="p-3 font-semibold">الرصيد الافتتاحي: {opening}</div>
 
         <table className="w-full text-sm text-center border">
           <thead className="bg-green-600 text-white">
