@@ -12,6 +12,7 @@ type CashBox = {
   cashbox_group_name: string;
   account_name: string;
   user_name: string | null;
+  branch_name: string | null;
 };
 
 type CashBoxGroup = {
@@ -207,6 +208,7 @@ const CashBoxes: React.FC = () => {
               <th className="border px-3 py-2">الرقم</th>
               <th className="border px-3 py-2">مجموعة الصناديق</th>
               <th className="border px-3 py-2">الحساب المحاسبي</th>
+              <th className="border px-3 py-2">الفرع</th>
               <th className="border px-3 py-2">الإجراءات</th>
             </tr>
           </thead>
@@ -218,6 +220,9 @@ const CashBoxes: React.FC = () => {
                 <td className="border px-3 py-2">{c.code}</td>
                 <td className="border px-3 py-2">{c.cashbox_group_name}</td>
                 <td className="border px-3 py-2">{c.account_name}</td>
+                <td className="border px-3 py-2">
+                  {c.branch_name || "—"}
+                </td>
                 <td className="border px-3 py-2 space-x-2">
                   <button onClick={() => openEdit(c)}>✏️</button>
                   <button onClick={() => deleteCashBox(c.id)}>🗑️</button>
@@ -227,7 +232,7 @@ const CashBoxes: React.FC = () => {
 
             {!cashBoxes.length && (
               <tr>
-                <td colSpan={6} className="py-6 text-gray-500">
+                <td colSpan={7} className="py-6 text-gray-500">
                   لا توجد بيانات
                 </td>
               </tr>
