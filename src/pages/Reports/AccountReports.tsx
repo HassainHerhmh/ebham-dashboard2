@@ -29,9 +29,6 @@ type PeriodType = "day" | "from_start" | "month" | "range";
 type ReportMode = "summary" | "detailed";
 type AccountMode = "all" | "single";
 
-type DetailedStyle = "with_opening" | "without_opening";
-type SummaryStyle = "with_moves" | "final_only" | "with_currency_pair";
-
 const AccountStatement: React.FC = () => {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [mainAccounts, setMainAccounts] = useState<Account[]>([]);
@@ -51,10 +48,11 @@ const AccountStatement: React.FC = () => {
   const [toDate, setToDate] = useState(today);
 
   const [reportMode, setReportMode] = useState<ReportMode>("detailed");
-  const [detailedStyle, setDetailedStyle] =
-    useState<DetailedStyle>("with_opening");
-  const [summaryStyle, setSummaryStyle] =
-    useState<SummaryStyle>("with_moves");
+
+  // خيارات الإجمالي (5)
+  const [summaryType, setSummaryType] = useState("local");
+  // خيارات التحليلي (2)
+  const [detailedType, setDetailedType] = useState("full");
 
   useEffect(() => {
     loadLookups();
@@ -101,8 +99,8 @@ const AccountStatement: React.FC = () => {
       from_date,
       to_date,
       report_mode: reportMode,
-      detailed_style: detailedStyle,
-      summary_style: summaryStyle,
+      summary_type: reportMode === "summary" ? summaryType : null,
+      detailed_type: reportMode === "detailed" ? detailedType : null,
     };
 
     if (accountMode === "single") {
@@ -131,8 +129,8 @@ const AccountStatement: React.FC = () => {
     setFromDate(today);
     setToDate(today);
     setReportMode("detailed");
-    setDetailedStyle("with_opening");
-    setSummaryStyle("with_moves");
+    setSummaryType("local");
+    setDetailedType("full");
     setRows([]);
     setOpening(0);
   };
@@ -250,55 +248,28 @@ const AccountStatement: React.FC = () => {
         </div>
       </div>
 
-      {/* خيارات إضافية حسب نوع التقرير */}
-      <div className="bg-[#f2f5f0] p-4 rounded-lg flex gap-8">
-        {reportMode === "detailed" && (
+      {/* خيارات التقرير */}
+      <div className="bg-[#eef3ec] p-3 rounded-lg space-y-2">
+        {reportMode === "summary" && (
           <>
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                checked={detailedStyle === "with_opening"}
-                onChange={() => setDetailedStyle("with_opening")}
-              />
-              الرصيد بعد كل عملية
-            </label>
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                checked={detailedStyle === "without_opening"}
-                onChange={() => setDetailedStyle("without_opening")}
-              />
-              أرصدة بعد كل عملية بدون افتتاحي
-            </label>
+            <div className="font-semibold">نوع التقرير الإجمالي</div>
+            <div className="flex flex-wrap gap-6">
+              <label><input type="radio" checked={summaryType==="local"} onChange={()=>setSummaryType("local")} /> إجمالي عملة محلية</label>
+              <label><input type="radio" checked={summaryType==="with_move"} onChange={()=>setSummaryType("with_move")} /> الأرصدة مع الحركة</label>
+              <label><input type="radio" checked={summaryType==="with_pair"} onChange={()=>setSummaryType("with_pair")} /> الأرصدة بالعملة والمقابل</label>
+              <label><input type="radio" checked={summaryType==="with_pair_move"} onChange={()=>setSummaryType("with_pair_move")} /> الأرصدة بالعملة والمقابل مع الحركة</label>
+              <label><input type="radio" checked={summaryType==="final"} onChange={()=>setSummaryType("final")} /> أرصدة نهائية</label>
+            </div>
           </>
         )}
 
-        {reportMode === "summary" && (
+        {reportMode === "detailed" && (
           <>
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                checked={summaryStyle === "with_moves"}
-                onChange={() => setSummaryStyle("with_moves")}
-              />
-              الأرصدة مع الحركة
-            </label>
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                checked={summaryStyle === "final_only"}
-                onChange={() => setSummaryStyle("final_only")}
-              />
-              أرصدة نهائية
-            </label>
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                checked={summaryStyle === "with_currency_pair"}
-                onChange={() => setSummaryStyle("with_currency_pair")}
-              />
-              الأرصدة بالعملة والمقابل
-            </label>
+            <div className="font-semibold">نوع التقرير التحليلي</div>
+            <div className="flex gap-6">
+              <label><input type="radio" checked={detailedType==="full"} onChange={()=>setDetailedType("full")} /> كشف كامل</label>
+              <label><input type="radio" checked={detailedType==="no_open"} onChange={()=>setDetailedType("no_open")} /> كشف بدون رصيد سابق</label>
+            </div>
           </>
         )}
       </div>
