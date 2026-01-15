@@ -849,5 +849,26 @@ export const createJournalEntry = (data: {
 }) => {
   return api.post("/journal-entries", data);
 };
+/* =========================
+   REPORTS – ACCOUNT STATEMENT
+========================= */
+(api as any).reports = {
+  // كشف الحساب
+  accountStatement: async (payload: {
+    account_id?: number | null;
+    main_account_id?: number | null;
+    currency_id?: number | null;
+    from_date?: string | null;
+    to_date?: string | null;
+    report_mode: "detailed" | "summary";
+    summary_type?: string;   // حسب خياراتك (إجمالي محلي، مع الحركة... إلخ)
+    detailed_type?: string;  // كشف كامل / بدون رصيد سابق
+  }) => {
+    const res = await api.post("/reports/account-statement", payload);
+    return res.data;
+  },
+
+  // مستقبلاً يمكن إضافة تقارير أخرى هنا
+};
 
 export default api;
