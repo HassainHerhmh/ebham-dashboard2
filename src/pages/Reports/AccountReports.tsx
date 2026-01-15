@@ -57,19 +57,23 @@ const AccountStatement: React.FC = () => {
   useEffect(() => {
     loadLookups();
   }, []);
+  
+const loadLookups = async () => {
+  const [a, c] = await Promise.all([
+    api.get("/accounts/sub-for-ceiling"),
+    api.get("/currencies"),
+  ]);
 
-  const loadLookups = async () => {
-    const [a, c] = await Promise.all([
-      api.get("/accounts/sub-for-ceiling"),
-      api.get("/currencies"),
-    ]);
+  const accs = a.data?.list || a.data || [];
 
-    const accs = a.data?.list || a.data || [];
-    setAccounts(accs);
-    setMainAccounts(accs.filter((x: any) => !x.parent_id));
+  // جميع الحسابات الفرعية (لـ "حساب واحد")
+  setAccounts(accs.filter((x: any) => x.parent_id));
 
-    setCurrencies(c.data?.currencies || c.data?.list || c.data || []);
-  };
+  // الحسابات الرئيسية فقط (لـ "كل الحسابات")
+  setMainAccounts(accs.filter((x: any) => !x.parent_id));
+
+  setCurrencies(c.data?.currencies || c.data?.list || c.data || []);
+};
 
   const buildDates = () => {
     if (periodType === "day") {
