@@ -32,6 +32,7 @@ const Accounting = () => {
 
   const isSetup = location.pathname.includes("/accounts/setup");
   const isOperations = location.pathname.includes("/accounts/operations");
+  const isReports = location.pathname.includes("/accounts/reports");
 
   return (
     <div className="space-y-6" dir="rtl">
@@ -61,21 +62,21 @@ const Accounting = () => {
           العمليات
         </Link>
 
-    <Link
-  to="/accounts/reports/account-statement"
-  className={
-    location.pathname.includes("/accounts/reports")
-      ? "text-green-700 border-b-2 border-green-700 pb-1"
-      : "text-gray-400"
-  }
->
-  التقارير
-</Link>
+        <Link
+          to="/accounts/reports/account-statement"
+          className={
+            isReports
+              ? "text-green-700 border-b-2 border-green-700 pb-1"
+              : "text-gray-400"
+          }
+        >
+          التقارير
+        </Link>
 
         <span className="text-gray-400">إدارة الترحيلات</span>
       </div>
 
-      {/* ✅ شريط التهيئة – يظهر فقط في setup */}
+      {/* شريط التهيئة – يظهر فقط في setup */}
       {isSetup && (
         <div className="bg-white rounded shadow px-4 py-3 flex flex-wrap gap-4">
           {setupTabs.map((tab) => {
