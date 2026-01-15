@@ -66,11 +66,10 @@ const loadLookups = async () => {
 
   const accs = a.data?.list || a.data || [];
 
-  // جميع الحسابات الفرعية (لـ "حساب واحد")
-  setAccounts(accs.filter((x: any) => x.parent_id));
+  setAccounts(accs);
 
-  // الحسابات الرئيسية فقط (لـ "كل الحسابات")
-  setMainAccounts(accs.filter((x: any) => !x.parent_id));
+  // الحسابات الرئيسية فقط
+  setMainAccounts(accs.filter((x: any) => x.account_level === "رئيسي"));
 
   setCurrencies(c.data?.currencies || c.data?.list || c.data || []);
 };
@@ -153,9 +152,8 @@ const loadLookups = async () => {
           <option value="single">حساب واحد</option>
           <option value="all">كل الحسابات</option>
         </select>
-
-      {accountMode === "single" ? (
-  /* حساب واحد = الحسابات الفرعية فقط */
+        
+{accountMode === "single" ? (
   <select
     className="input"
     value={accountId}
@@ -163,7 +161,7 @@ const loadLookups = async () => {
   >
     <option value="">اختر حساب فرعي</option>
     {accounts
-      .filter(a => a.parent_id) // الفرعية فقط
+      .filter((a) => a.account_level === "فرعي")
       .map((a) => (
         <option key={a.id} value={a.id}>
           {a.name_ar}
@@ -171,7 +169,6 @@ const loadLookups = async () => {
       ))}
   </select>
 ) : (
-  /* كل الحسابات = الحسابات الرئيسية فقط */
   <select
     className="input"
     value={mainAccountId}
@@ -185,6 +182,7 @@ const loadLookups = async () => {
     ))}
   </select>
 )}
+
 
 
         <select
