@@ -579,6 +579,19 @@ export const accountsApi = {
     api.delete(`/bank-groups/${id}`).then((r) => r.data),
 };
 
+/* =========================
+   BANKS
+========================= */
+(api as any).banks = {
+  getBanks: async (params?: { search?: string }) =>
+    (await api.get("/banks", { params })).data,
+
+  addBank: async (data: any) =>
+    (await api.post("/banks", data)).data,
+
+  deleteBank: async (id: number) =>
+    (await api.delete(`/banks/${id}`)).data,
+};
 
 
 export default api;
