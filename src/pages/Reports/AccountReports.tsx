@@ -1,36 +1,53 @@
 import React, { useEffect, useState } from "react";
 import api from "../../services/api";
 
-type Account = { id: number; name_ar: string; };
-type Currency = { id: number; name_ar: string; code: string; };
+type Account = {
+  id: number;
+  name_ar: string;
+  parent_id?: number | null;
+};
+
+type Currency = {
+  id: number;
+  name_ar: string;
+  code: string;
+};
 
 type Row = {
   id: number;
   journal_date: string;
-  account_code: string;
   account_name: string;
   debit: number;
   credit: number;
   notes: string;
-  currency_name: string;
-  user_name: string;
-  branch_name: string;
   balance: number;
 };
 
 const today = new Date().toLocaleDateString("en-CA");
 
+type PeriodType = "day" | "from_start" | "month" | "range";
+type ReportMode = "summary" | "detailed";
+type AccountMode = "all" | "single";
+
 const AccountStatement: React.FC = () => {
   const [accounts, setAccounts] = useState<Account[]>([]);
+  const [mainAccounts, setMainAccounts] = useState<Account[]>([]);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [rows, setRows] = useState<Row[]>([]);
   const [opening, setOpening] = useState(0);
 
+  const [accountMode, setAccountMode] = useState<AccountMode>("single");
   const [accountId, setAccountId] = useState("");
+  const [mainAccountId, setMainAccountId] = useState("");
+
   const [currencyId, setCurrencyId] = useState("");
+
+  const [periodType, setPeriodType] = useState<PeriodType>("day");
+  const [date, setDate] = useState(today);
   const [fromDate, setFromDate] = useState(today);
   const [toDate, setToDate] = useState(today);
-  const [side, setSide] = useState<"all" | "debit" | "credit">("all");
+
+  const [reportMode, setReportMode] = useState<ReportMode>("detailed");
 
   useEffect(() => {
     loadLookups();
@@ -42,20 +59,52 @@ const AccountStatement: React.FC = () => {
       api.get("/currencies"),
     ]);
 
-    setAccounts(a.data?.list || a.data || []);
-    setCurrencies(
-      c.data?.currencies || c.data?.list || c.data || []
-    );
+    const accs = a.data?.list || a.data || [];
+    setAccounts(accs);
+    setMainAccounts(accs.filter((x: any) => !x.parent_id));
+
+    setCurrencies(c.data?.currencies || c.data?.list || c.data || []);
+  };
+
+  const buildDates = () => {
+    if (periodType === "day") {
+      return { from_date: date, to_date: date };
+    }
+    if (periodType === "from_start") {
+      return { from_date: null, to_date: date };
+    }
+    if (periodType === "month") {
+      const d = new Date(date);
+      const first = new Date(d.getFullYear(), d.getMonth(), 1)
+        .toISOString()
+        .slice(0, 10);
+      const last = new Date(d.getFullYear(), d.getMonth() + 1, 0)
+        .toISOString()
+        .slice(0, 10);
+      return { from_date: first, to_date: last };
+    }
+    return { from_date: fromDate, to_date: toDate };
   };
 
   const run = async () => {
-    const res = await api.post("/reports/account-statement", {
-      account_id: accountId ? Number(accountId) : null,
+    const { from_date, to_date } = buildDates();
+
+    const payload: any = {
       currency_id: currencyId ? Number(currencyId) : null,
-      from_date: fromDate,
-      to_date: toDate,
-      side,
-    });
+      from_date,
+      to_date,
+      report_mode: reportMode,
+    };
+
+    if (accountMode === "single") {
+      payload.account_id = accountId ? Number(accountId) : null;
+    } else {
+      payload.main_account_id = mainAccountId
+        ? Number(mainAccountId)
+        : null;
+    }
+
+    const res = await api.post("/reports/account-statement", payload);
 
     if (res.data?.success) {
       setOpening(res.data.opening_balance || 0);
@@ -64,11 +113,15 @@ const AccountStatement: React.FC = () => {
   };
 
   const reset = () => {
+    setAccountMode("single");
     setAccountId("");
+    setMainAccountId("");
     setCurrencyId("");
+    setPeriodType("day");
+    setDate(today);
     setFromDate(today);
     setToDate(today);
-    setSide("all");
+    setReportMode("detailed");
     setRows([]);
     setOpening(0);
   };
@@ -78,33 +131,120 @@ const AccountStatement: React.FC = () => {
       <h2 className="text-xl font-bold">كشف الحساب</h2>
 
       <div className="bg-[#e9efe6] p-4 rounded-lg grid grid-cols-6 gap-3">
-        <select className="input" value={accountId} onChange={(e) => setAccountId(e.target.value)}>
-          <option value="">كل الحسابات</option>
-          {accounts.map(a => <option key={a.id} value={a.id}>{a.name_ar}</option>)}
+        {/* نوع الاختيار */}
+        <select
+          className="input"
+          value={accountMode}
+          onChange={(e) => setAccountMode(e.target.value as any)}
+        >
+          <option value="single">حساب واحد</option>
+          <option value="all">كل الحسابات</option>
         </select>
 
-        <select className="input" value={currencyId} onChange={(e) => setCurrencyId(e.target.value)}>
+        {accountMode === "single" ? (
+          <select
+            className="input"
+            value={accountId}
+            onChange={(e) => setAccountId(e.target.value)}
+          >
+            <option value="">اختر الحساب</option>
+            {accounts.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.name_ar}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <select
+            className="input"
+            value={mainAccountId}
+            onChange={(e) => setMainAccountId(e.target.value)}
+          >
+            <option value="">اختر حساب رئيسي</option>
+            {mainAccounts.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.name_ar}
+              </option>
+            ))}
+          </select>
+        )}
+
+        <select
+          className="input"
+          value={reportMode}
+          onChange={(e) => setReportMode(e.target.value as any)}
+        >
+          <option value="detailed">تحليلي</option>
+          <option value="summary">إجمالي</option>
+        </select>
+
+        <select
+          className="input"
+          value={periodType}
+          onChange={(e) => setPeriodType(e.target.value as any)}
+        >
+          <option value="day">خلال يوم</option>
+          <option value="from_start">من البداية إلى تاريخ</option>
+          <option value="month">خلال شهر</option>
+          <option value="range">خلال فترة</option>
+        </select>
+
+        {(periodType === "day" ||
+          periodType === "from_start" ||
+          periodType === "month") && (
+          <input
+            type="date"
+            className="input"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+          />
+        )}
+
+        {periodType === "range" && (
+          <>
+            <input
+              type="date"
+              className="input"
+              value={fromDate}
+              onChange={(e) => setFromDate(e.target.value)}
+            />
+            <input
+              type="date"
+              className="input"
+              value={toDate}
+              onChange={(e) => setToDate(e.target.value)}
+            />
+          </>
+        )}
+
+        <select
+          className="input"
+          value={currencyId}
+          onChange={(e) => setCurrencyId(e.target.value)}
+        >
           <option value="">كل العملات</option>
-          {currencies.map(c => <option key={c.id} value={c.id}>{c.name_ar} ({c.code})</option>)}
+          {currencies.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name_ar} ({c.code})
+            </option>
+          ))}
         </select>
 
-        <input type="date" className="input" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
-        <input type="date" className="input" value={toDate} onChange={(e) => setToDate(e.target.value)} />
-
-        <select className="input" value={side} onChange={(e) => setSide(e.target.value as any)}>
-          <option value="all">مدين + دائن</option>
-          <option value="debit">مدين فقط</option>
-          <option value="credit">دائن فقط</option>
-        </select>
-
-        <div className="flex gap-2">
-          <button onClick={run} className="btn-green">عرض</button>
-          <button onClick={reset} className="btn-gray">إعادة</button>
+        <div className="flex gap-2 col-span-2">
+          <button onClick={run} className="btn-green">
+            عرض
+          </button>
+          <button onClick={reset} className="btn-gray">
+            إعادة
+          </button>
         </div>
       </div>
 
       <div className="bg-white rounded shadow overflow-x-auto">
-        <div className="p-3 font-semibold">الرصيد الافتتاحي: {opening}</div>
+        <div className="p-3 font-semibold">
+          الرصيد الافتتاحي: {opening}
+        </div>
+
         <table className="w-full text-sm text-center border">
           <thead className="bg-green-600 text-white">
             <tr>
@@ -117,17 +257,23 @@ const AccountStatement: React.FC = () => {
             </tr>
           </thead>
           <tbody>
-            {rows.length ? rows.map(r => (
-              <tr key={r.id}>
-                <td className="border px-2 py-1">{r.journal_date}</td>
-                <td className="border px-2 py-1">{r.account_name}</td>
-                <td className="border px-2 py-1">{r.debit || ""}</td>
-                <td className="border px-2 py-1">{r.credit || ""}</td>
-                <td className="border px-2 py-1">{r.balance}</td>
-                <td className="border px-2 py-1">{r.notes}</td>
+            {rows.length ? (
+              rows.map((r) => (
+                <tr key={r.id}>
+                  <td className="border px-2 py-1">{r.journal_date}</td>
+                  <td className="border px-2 py-1">{r.account_name}</td>
+                  <td className="border px-2 py-1">{r.debit || ""}</td>
+                  <td className="border px-2 py-1">{r.credit || ""}</td>
+                  <td className="border px-2 py-1">{r.balance}</td>
+                  <td className="border px-2 py-1">{r.notes}</td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={6} className="py-6 text-gray-400 border">
+                  لا توجد بيانات
+                </td>
               </tr>
-            )) : (
-              <tr><td colSpan={6} className="py-6 text-gray-400 border">لا توجد بيانات</td></tr>
             )}
           </tbody>
         </table>
