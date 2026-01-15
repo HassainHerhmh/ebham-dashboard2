@@ -61,7 +61,17 @@ const Accounting = () => {
           العمليات
         </Link>
 
-        <span className="text-gray-400">التقارير</span>
+    <Link
+  to="/accounts/reports/account-statement"
+  className={
+    location.pathname.includes("/accounts/reports")
+      ? "text-green-700 border-b-2 border-green-700 pb-1"
+      : "text-gray-400"
+  }
+>
+  التقارير
+</Link>
+
         <span className="text-gray-400">إدارة الترحيلات</span>
       </div>
 
