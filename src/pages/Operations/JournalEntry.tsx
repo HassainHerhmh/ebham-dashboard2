@@ -81,16 +81,17 @@ const JournalEntry: React.FC = () => {
     setAccounts(Array.isArray(data) ? data : []);
   };
 
-  const fetchCurrencies = async () => {
-    const res = await api.get("/currencies");
-    const data =
-      res.data?.currencies ||
-      res.data?.list ||
-      res.data?.data ||
-      res.data ||
-      [];
-    setCurrencies(Array.isArray(data) ? data : []);
-  };
+ const fetchCurrencies = async () => {
+  const res = await api.get("/currencies");
+  const data =
+    res.data?.currencies ||
+    res.data?.list ||
+    res.data?.data ||
+    (Array.isArray(res.data) ? res.data : []);
+
+  setCurrencies(Array.isArray(data) ? data : []);
+};
+
 
   const loadRows = async () => {
     const res = await api.get("/journal-entries");
@@ -179,46 +180,59 @@ const JournalEntry: React.FC = () => {
     resetForm();
   };
 
-  const AccountInput = ({ value, setValue, setId, placeholder }: any) => {
-    const [open, setOpen] = useState(false);
+const AccountInput = ({ value, setValue, setId, placeholder }: any) => {
+  const [open, setOpen] = useState(false);
 
-    const list = value
-      ? accounts.filter(a => a.name_ar.includes(value))
-      : accounts;
+  const list =
+    value.trim() === ""
+      ? accounts
+      : accounts.filter(a =>
+          a.name_ar.toLowerCase().includes(value.toLowerCase())
+        );
 
-    return (
-      <div className="relative w-full">
-        <input
-          className="input w-full"
-          placeholder={placeholder}
-          value={value}
-          onFocus={() => setOpen(true)}
-          onChange={(e) => {
-            setValue(e.target.value);
-            setOpen(true);
-          }}
-        />
+  return (
+    <div className="relative w-full">
+      <input
+        className="input w-full"
+        placeholder={placeholder}
+        value={value}
+        onFocus={() => setOpen(true)}
+        onChange={(e) => {
+          setValue(e.target.value);
+          setOpen(true);
+        }}
+      />
 
-        {open && (
-          <div className="absolute z-50 bg-white border rounded-lg mt-1 w-full max-h-40 overflow-y-auto">
-            {list.map(a => (
-              <div
-                key={a.id}
-                className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
-                onMouseDown={() => {
-                  setValue(a.name_ar);
-                  setId(String(a.id));
-                  setOpen(false);
-                }}
-              >
-                {a.name_ar}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    );
-  };
+      {open && (
+        <div
+          className="absolute z-50 bg-white border rounded-lg mt-1 w-full max-h-48 overflow-y-auto"
+          onMouseDown={(e) => e.preventDefault()}
+        >
+          {list.map(a => (
+            <div
+              key={a.id}
+              className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+              onClick={() => {
+                setValue(a.name_ar);
+                setId(String(a.id));
+                setOpen(false);
+              }}
+            >
+              {a.name_ar}
+            </div>
+          ))}
+
+          {list.length === 0 && (
+            <div className="px-3 py-2 text-gray-400">
+              لا توجد نتائج
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 
   const getCode = (id: string) =>
     accounts.find(a => a.id === Number(id))?.code || "";
