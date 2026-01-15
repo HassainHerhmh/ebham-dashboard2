@@ -731,5 +731,34 @@ export const accountsApi = {
     (await api.delete(`/receipt-types/${id}`)).data,
 };
 
+/* =========================
+   JOURNAL TYPES
+========================= */
+(api as any).journalTypes = {
+  getAll: async (search = "") =>
+    (await api.get("/journal-types", { params: { search } })).data,
+
+  create: async (data: {
+    code: number;
+    name_ar: string;
+    name_en?: string | null;
+    sort_order: number;
+  }) =>
+    (await api.post("/journal-types", data)).data,
+
+  update: async (
+    id: number,
+    data: {
+      name_ar: string;
+      name_en?: string | null;
+      sort_order: number;
+    }
+  ) =>
+    (await api.put(`/journal-types/${id}`, data)).data,
+
+  delete: async (id: number) =>
+    (await api.delete(`/journal-types/${id}`)).data,
+};
+
 
 export default api;
