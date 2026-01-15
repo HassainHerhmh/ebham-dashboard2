@@ -1,10 +1,6 @@
 import React, { useEffect, useState } from "react";
 import api from "../../services/api";
 
-/* =========================
-   Journal Entry
-========================= */
-
 type Account = {
   id: number;
   code?: string;
@@ -35,10 +31,11 @@ const JournalEntry: React.FC = () => {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [rows, setRows] = useState<Row[]>([]);
+  const [filtered, setFiltered] = useState<Row[]>([]);
 
   const [showModal, setShowModal] = useState(false);
-  const [selectedId, setSelectedId] = useState<number | null>(null);
   const [isEdit, setIsEdit] = useState(false);
+  const [selectedRow, setSelectedRow] = useState<Row | null>(null);
 
   const [date, setDate] = useState(today);
   const [amount, setAmount] = useState("");
@@ -59,6 +56,22 @@ const JournalEntry: React.FC = () => {
     loadRows();
   }, []);
 
+  useEffect(() => {
+    const q = search.trim();
+    if (!q) {
+      setFiltered(rows);
+    } else {
+      setFiltered(
+        rows.filter(
+          r =>
+            r.from_account.includes(q) ||
+            r.to_account.includes(q) ||
+            (r.notes || "").includes(q)
+        )
+      );
+    }
+  }, [search, rows]);
+
   const fetchAccounts = async () => {
     const res = await api.get("/accounts/sub-for-ceiling");
     const data = res.data?.list || res.data || [];
@@ -78,7 +91,10 @@ const JournalEntry: React.FC = () => {
 
   const loadRows = async () => {
     const res = await api.get("/journal-entries");
-    if (res.data?.success) setRows(res.data.list || []);
+    if (res.data?.success) {
+      setRows(res.data.list || []);
+      setFiltered(res.data.list || []);
+    }
   };
 
   const resetForm = () => {
@@ -91,12 +107,40 @@ const JournalEntry: React.FC = () => {
     setToAccountName("");
     setNotes("");
     setIsEdit(false);
-    setSelectedId(null);
+    setSelectedRow(null);
   };
 
   const openAdd = () => {
     resetForm();
     setShowModal(true);
+  };
+
+  const openEdit = () => {
+    if (!selectedRow) {
+      alert("حدد قيدًا أولاً");
+      return;
+    }
+
+    setIsEdit(true);
+    setShowModal(true);
+
+    setDate(selectedRow.journal_date.slice(0, 10));
+    setAmount(String(selectedRow.amount));
+    setNotes(selectedRow.notes || "");
+    setFromAccountName(selectedRow.from_account);
+    setToAccountName(selectedRow.to_account);
+  };
+
+  const remove = async () => {
+    if (!selectedRow) {
+      alert("حدد قيدًا أولاً");
+      return;
+    }
+
+    if (!window.confirm("هل أنت متأكد من حذف القيد؟")) return;
+
+    // عندك لاحقًا API للحذف
+    alert("مكان حذف من السيرفر");
   };
 
   const saveEntry = async () => {
@@ -134,17 +178,12 @@ const JournalEntry: React.FC = () => {
     resetForm();
   };
 
-  const AccountInput = ({
-    value,
-    setValue,
-    setId,
-    placeholder,
-  }: any) => {
+  const AccountInput = ({ value, setValue, setId, placeholder }: any) => {
     const [open, setOpen] = useState(false);
 
-    const filtered = accounts.filter(a =>
-      a.name_ar.includes(value)
-    );
+    const list = value
+      ? accounts.filter(a => a.name_ar.includes(value))
+      : accounts;
 
     return (
       <div className="relative w-full">
@@ -161,7 +200,7 @@ const JournalEntry: React.FC = () => {
 
         {open && (
           <div className="absolute z-50 bg-white border rounded-lg mt-1 w-full max-h-40 overflow-y-auto">
-            {filtered.map(a => (
+            {list.map(a => (
               <div
                 key={a.id}
                 className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
@@ -174,11 +213,6 @@ const JournalEntry: React.FC = () => {
                 {a.name_ar}
               </div>
             ))}
-            {!filtered.length && (
-              <div className="px-3 py-2 text-gray-400">
-                لا توجد نتائج
-              </div>
-            )}
           </div>
         )}
       </div>
@@ -193,6 +227,8 @@ const JournalEntry: React.FC = () => {
       <div className="flex justify-between items-center bg-[#e9efe6] p-4 rounded-lg">
         <div className="flex gap-2">
           <button onClick={openAdd} className="btn-green">➕ إضافة</button>
+          <button onClick={openEdit} className="btn-gray">✏️ تعديل</button>
+          <button onClick={remove} className="btn-red">🗑️ حذف</button>
           <button onClick={loadRows} className="btn-gray">🔄 تحديث</button>
         </div>
 
@@ -204,10 +240,57 @@ const JournalEntry: React.FC = () => {
         />
       </div>
 
+      <div className="bg-white rounded shadow overflow-x-auto">
+        <table className="w-full text-sm text-center border">
+          <thead className="bg-green-600 text-white">
+            <tr>
+              <th className="border px-2 py-1">التاريخ</th>
+              <th className="border px-2 py-1">المبلغ</th>
+              <th className="border px-2 py-1">العملة</th>
+              <th className="border px-2 py-1">من حساب</th>
+              <th className="border px-2 py-1">إلى حساب</th>
+              <th className="border px-2 py-1">ملاحظات</th>
+              <th className="border px-2 py-1">المستخدم</th>
+              <th className="border px-2 py-1">الفرع</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.length ? (
+              filtered.map(r => (
+                <tr
+                  key={r.id}
+                  onClick={() => setSelectedRow(r)}
+                  className={`cursor-pointer ${
+                    selectedRow?.id === r.id ? "bg-green-100" : ""
+                  }`}
+                >
+                  <td className="border px-2 py-1">{r.journal_date}</td>
+                  <td className="border px-2 py-1">{r.amount}</td>
+                  <td className="border px-2 py-1">{r.currency_name}</td>
+                  <td className="border px-2 py-1">{r.from_account}</td>
+                  <td className="border px-2 py-1">{r.to_account}</td>
+                  <td className="border px-2 py-1">{r.notes}</td>
+                  <td className="border px-2 py-1">{r.user_name}</td>
+                  <td className="border px-2 py-1">{r.branch_name}</td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={8} className="py-6 text-gray-400 border">
+                  لا توجد بيانات
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
       {showModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white w-[720px] rounded-xl p-6 space-y-4">
-            <h3 className="text-lg font-bold text-center">إضافة قيد يومي</h3>
+            <h3 className="text-lg font-bold text-center">
+              {isEdit ? "تعديل قيد يومي" : "إضافة قيد يومي"}
+            </h3>
 
             <div className="grid grid-cols-3 gap-4">
               <input type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} />
@@ -222,42 +305,16 @@ const JournalEntry: React.FC = () => {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <AccountInput
-                  value={fromAccountName}
-                  setValue={setFromAccountName}
-                  setId={setFromAccount}
-                  placeholder="الحساب المدين"
-                />
-                <input
-                  disabled
-                  className="input mt-1 bg-gray-100"
-                  placeholder="كود الحساب"
-                  value={getCode(fromAccount)}
-                />
+                <AccountInput value={fromAccountName} setValue={setFromAccountName} setId={setFromAccount} placeholder="الحساب المدين" />
+                <input disabled className="input mt-1 bg-gray-100" placeholder="كود الحساب" value={getCode(fromAccount)} />
               </div>
-
               <div>
-                <AccountInput
-                  value={toAccountName}
-                  setValue={setToAccountName}
-                  setId={setToAccount}
-                  placeholder="الحساب الدائن"
-                />
-                <input
-                  disabled
-                  className="input mt-1 bg-gray-100"
-                  placeholder="كود الحساب"
-                  value={getCode(toAccount)}
-                />
+                <AccountInput value={toAccountName} setValue={setToAccountName} setId={setToAccount} placeholder="الحساب الدائن" />
+                <input disabled className="input mt-1 bg-gray-100" placeholder="كود الحساب" value={getCode(toAccount)} />
               </div>
             </div>
 
-            <textarea
-              className="input"
-              placeholder="ملاحظات"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-            />
+            <textarea className="input" placeholder="ملاحظات" value={notes} onChange={(e) => setNotes(e.target.value)} />
 
             <div className="flex justify-between">
               <button
@@ -281,6 +338,7 @@ const JournalEntry: React.FC = () => {
         .input { padding:10px; border-radius:8px; border:1px solid #ccc; }
         .btn-green { background:#14532d; color:#fff; padding:8px 16px; border-radius:8px; }
         .btn-gray { background:#e5e7eb; padding:8px 16px; border-radius:8px; }
+        .btn-red { background:#dc2626; color:#fff; padding:8px 16px; border-radius:8px; }
       `}</style>
     </div>
   );
