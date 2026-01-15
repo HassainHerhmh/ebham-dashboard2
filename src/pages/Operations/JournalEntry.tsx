@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from "react";
 import api from "../../services/api";
 
+/* =========================
+   Journal Entry
+========================= */
+
 type Account = {
   id: number;
   code?: string;
@@ -31,11 +35,10 @@ const JournalEntry: React.FC = () => {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [rows, setRows] = useState<Row[]>([]);
-  const [filtered, setFiltered] = useState<Row[]>([]);
 
   const [showModal, setShowModal] = useState(false);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
   const [isEdit, setIsEdit] = useState(false);
-  const [selectedRow, setSelectedRow] = useState<Row | null>(null);
 
   const [date, setDate] = useState(today);
   const [amount, setAmount] = useState("");
@@ -56,22 +59,6 @@ const JournalEntry: React.FC = () => {
     loadRows();
   }, []);
 
-  useEffect(() => {
-    const q = search.trim();
-    if (!q) {
-      setFiltered(rows);
-    } else {
-      setFiltered(
-        rows.filter(
-          r =>
-            r.from_account.includes(q) ||
-            r.to_account.includes(q) ||
-            (r.notes || "").includes(q)
-        )
-      );
-    }
-  }, [search, rows]);
-
   const fetchAccounts = async () => {
     const res = await api.get("/accounts/sub-for-ceiling");
     const data = res.data?.list || res.data || [];
@@ -91,10 +78,7 @@ const JournalEntry: React.FC = () => {
 
   const loadRows = async () => {
     const res = await api.get("/journal-entries");
-    if (res.data?.success) {
-      setRows(res.data.list || []);
-      setFiltered(res.data.list || []);
-    }
+    if (res.data?.success) setRows(res.data.list || []);
   };
 
   const resetForm = () => {
@@ -107,40 +91,12 @@ const JournalEntry: React.FC = () => {
     setToAccountName("");
     setNotes("");
     setIsEdit(false);
-    setSelectedRow(null);
+    setSelectedId(null);
   };
 
   const openAdd = () => {
     resetForm();
     setShowModal(true);
-  };
-
-  const openEdit = () => {
-    if (!selectedRow) {
-      alert("حدد قيدًا أولاً");
-      return;
-    }
-
-    setIsEdit(true);
-    setShowModal(true);
-
-    setDate(selectedRow.journal_date.slice(0, 10));
-    setAmount(String(selectedRow.amount));
-    setNotes(selectedRow.notes || "");
-    setFromAccountName(selectedRow.from_account);
-    setToAccountName(selectedRow.to_account);
-  };
-
-  const remove = async () => {
-    if (!selectedRow) {
-      alert("حدد قيدًا أولاً");
-      return;
-    }
-
-    if (!window.confirm("هل أنت متأكد من حذف القيد؟")) return;
-
-    // عندك لاحقًا API للحذف
-    alert("مكان حذف من السيرفر");
   };
 
   const saveEntry = async () => {
@@ -178,14 +134,18 @@ const JournalEntry: React.FC = () => {
     resetForm();
   };
 
-  const AccountInput = ({ value, setValue, setId, placeholder }: any) => {
+  const AccountInput = ({
+    value,
+    setValue,
+    setId,
+    placeholder,
+  }: any) => {
     const [open, setOpen] = useState(false);
 
-    const list = value
-      ? accounts.filter(a => a.name_ar.includes(value))
-      : accounts;
-
-    return (
+    const filtered = accounts.filter(a =>
+      a.name_ar.includes(value)
+    );
+return (
       <div className="relative w-full">
         <input
           className="input w-full"
