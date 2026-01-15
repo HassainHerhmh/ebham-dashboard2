@@ -7,7 +7,7 @@ import Header from "./components/Header";
 import Login from "./pages/Login";
 import Unauthorized from "./pages/Unauthorized";
 
-// الصفحات
+// الصفحات العامة
 import Dashboard from "./pages/Dashboard";
 import Orders from "./pages/Orders";
 import Types from "./pages/Types";
@@ -41,13 +41,16 @@ import CashBoxGroups from "./pages/Setup/CashBoxGroups";
 import ReceiptTypes from "./pages/Setup/ReceiptTypes";
 import PaymentTypes from "./pages/Setup/PaymentTypes";
 import JournalTypes from "./pages/Setup/JournalTypes";
-import AccountStatement from "./pages/Reports/AccountStatement";
 
 // العمليات
 import Operations from "./pages/Operations";
 import ReceiptVoucher from "./pages/Operations/ReceiptVoucher";
 import PaymentVoucher from "./pages/Operations/PaymentVoucher";
 import JournalEntry from "./pages/Operations/JournalEntry";
+
+// تقارير الحسابات
+import AccountReports from "./pages/Accounts/Reports/AccountReports";
+import AccountStatement from "./pages/Accounts/Reports/AccountStatement";
 
 // الإعدادات
 import Settings from "./pages/Settings";
@@ -87,6 +90,7 @@ const App: React.FC = () => {
                         </ProtectedRoute>
                       }
                     />
+
                     <Route path="/orders" element={<ProtectedRoute section="orders"><Orders /></ProtectedRoute>} />
                     <Route path="/types" element={<ProtectedRoute section="types"><Types /></ProtectedRoute>} />
                     <Route path="/customers" element={<ProtectedRoute section="customers"><Customers /></ProtectedRoute>} />
@@ -106,6 +110,7 @@ const App: React.FC = () => {
                       path="/accounts"
                       element={<ProtectedRoute section="accounts"><Accounting /></ProtectedRoute>}
                     >
+                      {/* التهيئة */}
                       <Route path="setup/accounts" element={<Accounts />} />
                       <Route path="setup/currencies" element={<Currencies />} />
                       <Route path="setup/account-groups" element={<AccountGroups />} />
@@ -118,15 +123,17 @@ const App: React.FC = () => {
                       <Route path="setup/payment-types" element={<PaymentTypes />} />
                       <Route path="setup/journal-types" element={<JournalTypes />} />
 
+                      {/* العمليات */}
                       <Route path="operations" element={<Operations />}>
                         <Route path="receipt-voucher" element={<ReceiptVoucher />} />
                         <Route path="payment-voucher" element={<PaymentVoucher />} />
                         <Route path="journal-entry" element={<JournalEntry />} />
                       </Route>
-                        <Route path="reports" element={<Reports />}>
+
+                      {/* تقارير الحسابات */}
+                      <Route path="reports" element={<AccountReports />}>
                         <Route path="account-statement" element={<AccountStatement />} />
-                       </Route>
-                      
+                      </Route>
                     </Route>
 
                     {/* الوكلاء */}
