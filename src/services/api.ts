@@ -702,6 +702,34 @@ export const accountsApi = {
   delete: async (id: number) =>
     (await api.delete(`/payment-types/${id}`)).data,
 };
+/* =========================
+   RECEIPT TYPES
+========================= */
+(api as any).receiptTypes = {
+  getAll: async (search = "") =>
+    (await api.get("/receipt-types", { params: { search } })).data,
+
+  create: async (data: {
+    code: number;
+    name_ar: string;
+    name_en?: string | null;
+    sort_order: number;
+  }) =>
+    (await api.post("/receipt-types", data)).data,
+
+  update: async (
+    id: number,
+    data: {
+      name_ar: string;
+      name_en?: string | null;
+      sort_order: number;
+    }
+  ) =>
+    (await api.put(`/receipt-types/${id}`, data)).data,
+
+  delete: async (id: number) =>
+    (await api.delete(`/receipt-types/${id}`)).data,
+};
 
 
 export default api;
