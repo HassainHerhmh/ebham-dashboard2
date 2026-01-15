@@ -808,5 +808,22 @@ export const accountsApi = {
     (await api.delete(`/receipt-vouchers/${id}`)).data,
 };
 
+/* =========================
+   PAYMENT VOUCHERS
+========================= */
+(api as any).paymentVouchers = {
+  getAll: async () =>
+    (await api.get("/payment-vouchers")).data,
+
+  create: async (data: any) =>
+    (await api.post("/payment-vouchers", data)).data,
+
+  update: async (id: number, data: any) =>
+    (await api.put(`/payment-vouchers/${id}`, data)).data,
+
+  remove: async (id: number) =>
+    (await api.delete(`/payment-vouchers/${id}`)).data,
+};
+
 
 export default api;
