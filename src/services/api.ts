@@ -594,7 +594,7 @@ export const accountsApi = {
 };
 
 /*===========================
-مجموعة البنوك
+مجموعة الصناديق
 =========================*/
 (api as any).cashboxGroups = {
   getAll: (search = "") =>
