@@ -61,9 +61,7 @@ const formatLocalDateTime = (dateString: string) => {
   });
 };
 
-
 const today = new Date().toLocaleDateString("en-CA");
-
 
 const PaymentVoucher: React.FC = () => {
   /* =========================
@@ -76,137 +74,122 @@ const PaymentVoucher: React.FC = () => {
   const [search, setSearch] = useState("");
   const [date, setDate] = useState(today);
   const [allDates, setAllDates] = useState(false);
-  
+
   const [list, setList] = useState<Voucher[]>([]);
- 
 
   /* ===== بيانات من السيرفر ===== */
   const [cashBoxes, setCashBoxes] = useState<CashBox[]>([]);
   const [bankAccounts, setBankAccounts] = useState<Bank[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
-const [currencies, setCurrencies] = useState<Currency[]>([]);
+  const [currencies, setCurrencies] = useState<Currency[]>([]);
 
   /* =========================
      Load Lookups
   ========================= */
-useEffect(() => {
-  fetchCashBoxes();
-  fetchBanks();
-  fetchAccounts();
-  fetchCurrencies();
-  loadVouchers(); // ✅ سطر واحد فقط
-}, []);
-
-useEffect(() => {
-  if (cashBoxes.length || bankAccounts.length) {
+  useEffect(() => {
+    fetchCashBoxes();
+    fetchBanks();
+    fetchAccounts(); // 🔹 حسابات فرعية فقط
+    fetchCurrencies();
     loadVouchers();
-  }
-}, [cashBoxes, bankAccounts]);
+  }, []);
 
+  useEffect(() => {
+    if (cashBoxes.length || bankAccounts.length) {
+      loadVouchers();
+    }
+  }, [cashBoxes, bankAccounts]);
 
- const fetchCashBoxes = async () => {
-  const res = await api.get("/cash-boxes");
-
-  // دعم كل الأشكال الممكنة
-  const data =
-    res.data?.list ||
-    res.data?.cashBoxes ||
-    res.data?.data ||
-    res.data ||
-    [];
-
-  setCashBoxes(Array.isArray(data) ? data : []);
-};
-
+  const fetchCashBoxes = async () => {
+    const res = await api.get("/cash-boxes");
+    const data =
+      res.data?.list ||
+      res.data?.cashBoxes ||
+      res.data?.data ||
+      res.data ||
+      [];
+    setCashBoxes(Array.isArray(data) ? data : []);
+  };
 
   const fetchBanks = async () => {
     const res = await api.get("/banks");
     if (res.data.success) setBankAccounts(res.data.banks);
   };
 
- const fetchAccounts = async () => {
-  const res = await api.get("/accounts");
+  // 🔹 هنا التعديل: جلب الحسابات الفرعية فقط
+  const fetchAccounts = async () => {
+    const res = await api.get("/accounts/sub-for-ceiling");
 
-  const data =
-    res.data?.accounts ||
-    res.data?.list ||
-    res.data?.data ||
-    res.data ||
-    [];
+    const data =
+      res.data?.list ||
+      res.data?.accounts ||
+      res.data?.data ||
+      res.data ||
+      [];
 
-  setAccounts(Array.isArray(data) ? data : []);
-};
+    setAccounts(Array.isArray(data) ? data : []);
+  };
 
- const fetchCurrencies = async () => {
-  const res = await api.get("/currencies");
+  const fetchCurrencies = async () => {
+    const res = await api.get("/currencies");
+    const data =
+      res.data?.currencies ||
+      res.data?.list ||
+      res.data?.data ||
+      res.data ||
+      [];
+    setCurrencies(Array.isArray(data) ? data : []);
+  };
 
-  const data =
-    res.data?.currencies ||
-    res.data?.list || 
-    res.data?.data ||
-    res.data ||
-    [];
+  /* =========================
+     Load Vouchers From Server
+  ========================= */
+  const loadVouchers = async () => {
+    const res = await api.get("/payment-vouchers");
 
-  setCurrencies(Array.isArray(data) ? data : []);
-};
-
-/* =========================
-   Load Vouchers From Server
-========================= */
-const loadVouchers = async () => {
-  const res = await api.get("/payment-vouchers");
-
-
-
-  if (res.data.success) {
-    setList(
-      res.data.list.map((v: any) => {
-        const cashBoxName =
-          v.cash_box_account_id
-            ? cashBoxes.find(c => c.id === v.cash_box_account_id)?.name_ar || ""
+    if (res.data.success) {
+      setList(
+        res.data.list.map((v: any) => {
+          const cashBoxName = v.cash_box_account_id
+            ? cashBoxes.find((c) => c.id === v.cash_box_account_id)?.name_ar || ""
             : "";
 
-        const bankAccountName =
-          v.bank_account_id
-            ? bankAccounts.find(b => b.id === v.bank_account_id)?.name_ar || ""
+          const bankAccountName = v.bank_account_id
+            ? bankAccounts.find((b) => b.id === v.bank_account_id)?.name_ar || ""
             : "";
 
-        return {
-          id: v.id,
-          voucherNo: v.voucher_no,
-          date: v.voucher_date.split("T")[0],
-          paymentType: v.payment_type,
-
-          // ✅ أسماء للعرض
-          cashBox: cashBoxName, 
-          bankAccount: bankAccountName,
-
-          transferNo: v.transfer_no,
-          currency: v.currency_name,
-          amount: String(v.amount),
-          account: v.account_name,
-
-          analyticAccount: v.analytic_account_id,
-          costCenter: v.cost_center_id,
-          notes: v.notes,
-          handling: v.handling,
-          createdAt: v.created_at,
-          user: v.created_by || "—",
-          branch: v.branch_id || "—",
-        };
-      })
-    );
-  }
-};
+          return {
+            id: v.id,
+            voucherNo: v.voucher_no,
+            date: v.voucher_date.split("T")[0],
+            paymentType: v.payment_type,
+            cashBox: cashBoxName,
+            bankAccount: bankAccountName,
+            transferNo: v.transfer_no,
+            currency: v.currency_name,
+            amount: String(v.amount),
+            account: v.account_name,
+            analyticAccount: v.analytic_account_id,
+            costCenter: v.cost_center_id,
+            notes: v.notes,
+            handling: v.handling,
+            createdAt: v.created_at,
+            user: v.created_by || "—",
+            branch: v.branch_id || "—",
+          };
+        })
+      );
+    }
+  };
 
   const [form, setForm] = useState({
     voucherNo: String(list.length + 1),
-    date: today, // today = YYYY-MM-DD
+    date: today,
     paymentType: "" as "cash" | "bank" | "",
     cashBox: "",
     bankAccount: "",
     transferNo: "",
-     currency_id: "", // ✅
+    currency_id: "",
     currency: "ريال يمني",
     amount: "",
     account: "",
@@ -217,198 +200,123 @@ const loadVouchers = async () => {
   });
 
   /* =========================
-     Add Voucher (UI Only)
+     Add Voucher
   ========================= */
- const addVoucher = async () => {
-  try {
-    const payload = {
-      voucher_no: form.voucherNo,
-      voucher_date: form.date,
-      payment_type: form.paymentType,
+  const addVoucher = async () => {
+    try {
+      const payload = {
+        voucher_no: form.voucherNo,
+        voucher_date: form.date,
+        payment_type: form.paymentType,
 
-      cash_box_account_id:
-        form.paymentType === "cash" ? Number(form.cashBox) : null,
+        cash_box_account_id:
+          form.paymentType === "cash" ? Number(form.cashBox) : null,
 
-      bank_account_id:
-        form.paymentType === "bank" ? Number(form.bankAccount) : null,
+        bank_account_id:
+          form.paymentType === "bank" ? Number(form.bankAccount) : null,
 
-      transfer_no: form.transferNo || null,
-      currency_id: Number(form.currency_id),
-      amount: Number(form.amount),
-      account_id: Number(form.account),
+        transfer_no: form.transferNo || null,
+        currency_id: Number(form.currency_id),
+        amount: Number(form.amount),
+        account_id: Number(form.account),
 
-      analytic_account_id: form.analyticAccount || null,
-      cost_center_id: form.costCenter || null,
-      journal_type_id: 1,
-      notes: form.notes || null,
-      handling: form.handling || 0,
-      created_by: 1,
-      branch_id: 1,
-    };
+        analytic_account_id: form.analyticAccount || null,
+        cost_center_id: form.costCenter || null,
+        journal_type_id: 1,
+        notes: form.notes || null,
+        handling: form.handling || null, // 🆕 نصي
+        created_by: 1,
+        branch_id: 1,
+      };
 
-    const res = await api.post("/payment-vouchers", payload);
+      const res = await api.post("/payment-vouchers", payload);
 
+      if (!res.data.success) {
+        alert("فشل حفظ السند");
+        return;
+      }
 
-    if (!res.data.success) {
-      alert("فشل حفظ السند");
-      return;
+      await loadVouchers();
+      setShowModal(false);
+      setSelectedId(null);
+
+      setForm({
+        ...form,
+        paymentType: "",
+        cashBox: "",
+        bankAccount: "",
+        transferNo: "",
+        currency_id: "",
+        amount: "",
+        account: "",
+        analyticAccount: "",
+        costCenter: "",
+        handling: "",
+        notes: "",
+      });
+    } catch (err: any) {
+      alert(err.response?.data?.message || "خطأ في حفظ سند الصرف");
     }
-
-    // 🔄 أعد التحميل من السيرفر
-    await loadVouchers();
-
-    setShowModal(false);
-    setSelectedId(null);
-
-    setForm({
-      ...form,
-      paymentType: "",
-      cashBox: "",
-      bankAccount: "",
-      transferNo: "",
-      currency_id: "",
-      amount: "",
-      account: "",
-      analyticAccount: "",
-      costCenter: "",
-      handling: "",
-      notes: "",
-    });
-  } catch (err: any) {
-    console.error(err);
-    alert(err.response?.data?.message || "خطأ في حفظ سند الصرف");
-  }
-};
-
+  };
 
   /* =========================
-     Delete
+     Update
   ========================= */
-  const remove = async () => {
-  if (!selectedId) {
-    alert("حدد سند أولاً");
-    return;
-  }
-
-  const confirmDelete = window.confirm("هل أنت متأكد من حذف السند؟");
-  if (!confirmDelete) return;
-
-  try {
-    const res = await api.delete(`/payment-vouchers/${selectedId}`);
-
-    if (!res.data.success) {
-      alert("فشل حذف السند");
-      return;
-    }
-
-    // 🔄 إعادة تحميل البيانات من السيرفر
-    await loadVouchers();
-
-    setSelectedId(null);
-  } catch (err: any) {
-    console.error(err);
-    alert(err.response?.data?.message || "خطأ في حذف السند");
-  }
-};
-
-  /*=======================
-  تعديل 
-  =======================*/
   const updateVoucher = async () => {
-  if (!selectedId) return;
+    if (!selectedId) return;
 
-  try {
-    const payload = {
-      voucher_date: form.date,
-      payment_type: form.paymentType,
+    try {
+      const payload = {
+        voucher_date: form.date,
+        payment_type: form.paymentType,
 
-      cash_box_account_id:
-        form.paymentType === "cash" ? Number(form.cashBox) : null,
+        cash_box_account_id:
+          form.paymentType === "cash" ? Number(form.cashBox) : null,
 
-      bank_account_id:
-        form.paymentType === "bank" ? Number(form.bankAccount) : null,
+        bank_account_id:
+          form.paymentType === "bank" ? Number(form.bankAccount) : null,
 
-      transfer_no: form.transferNo || null,
-      currency_id: Number(form.currency_id),
-      amount: Number(form.amount),
-      account_id: Number(form.account),
+        transfer_no: form.transferNo || null,
+        currency_id: Number(form.currency_id),
+        amount: Number(form.amount),
+        account_id: Number(form.account),
 
-      analytic_account_id: form.analyticAccount || null,
-      cost_center_id: form.costCenter || null,
-      handling: Number(form.handling) || 0,
-      notes: form.notes || null,
-    };
+        analytic_account_id: form.analyticAccount || null,
+        cost_center_id: form.costCenter || null,
+        handling: form.handling || null, // 🆕 نصي
+        notes: form.notes || null,
+      };
 
-    const res = await api.put(
-      `/payment-vouchers/${selectedId}`,
-      payload
-    );
+      const res = await api.put(`/payment-vouchers/${selectedId}`, payload);
 
-    if (!res.data.success) {
-      alert("❌ فشل تعديل السند");
-      return;
+      if (!res.data.success) {
+        alert("❌ فشل تعديل السند");
+        return;
+      }
+
+      await loadVouchers();
+      setShowModal(false);
+      setSelectedId(null);
+    } catch (err: any) {
+      alert(err.response?.data?.message || "❌ خطأ في تعديل سند الصرف");
     }
-
-    await loadVouchers();
-
-    setShowModal(false);
-    setSelectedId(null);
-  } catch (err: any) {
-    console.error(err);
-    alert(err.response?.data?.message || "❌ خطأ في تعديل سند الصرف");
-  }
-};
-
-/*================================
-=================================*/
-const openEdit = () => {
-  if (!selectedId) return;
-
-  const v = list.find(x => x.id === selectedId);
-  if (!v) return;
-
-  setForm({
-    voucherNo: v.voucherNo,
-    date: v.date,
-    paymentType: v.paymentType,
-    cashBox: v.cashBox ? String(
-      cashBoxes.find(c => c.name_ar === v.cashBox)?.id || ""
-    ) : "",
-    bankAccount: v.bankAccount ? String(
-      bankAccounts.find(b => b.name_ar === v.bankAccount)?.id || ""
-    ) : "",
-    transferNo: v.transferNo || "",
-    currency_id: currencies.find(c => c.name_ar === v.currency)?.id?.toString() || "",
-    currency: v.currency,
-    amount: v.amount,
-    account: accounts.find(a => a.name_ar === v.account)?.id?.toString() || "",
-    analyticAccount: v.analyticAccount || "",
-    costCenter: v.costCenter || "",
-    handling: v.handling || "",
-    notes: v.notes || "",
-  });
-
-  setShowModal(true);
-};
-
+  };
 
   /* =========================
      Filter
   ========================= */
- const filtered = list.filter((x) => {
-  const matchSearch =
-    String(x.voucherNo || "").includes(search) ||
-    String(x.account || "").includes(search) ||
-    String(x.notes || "").includes(search) ||
-    String(x.transferNo || "").includes(search) ||
-    String(x.amount || "").includes(search);
+  const filtered = list.filter((x) => {
+    const matchSearch =
+      String(x.voucherNo || "").includes(search) ||
+      String(x.account || "").includes(search) ||
+      String(x.notes || "").includes(search) ||
+      String(x.transferNo || "").includes(search) ||
+      String(x.amount || "").includes(search);
 
-  const matchDate =
-    allDates || (x.date && x.date.slice(0, 10) === date);
+    const matchDate = allDates || (x.date && x.date.slice(0, 10) === date);
 
-  return matchSearch && matchDate;
-});
-
+    return matchSearch && matchDate;
+  });
 
 
   return (
