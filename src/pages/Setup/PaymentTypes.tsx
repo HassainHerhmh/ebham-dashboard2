@@ -10,6 +10,7 @@ type PaymentType = {
   name_ar: string;
   name_en: string | null;
   sort_order: number;
+  branch_name?: string; // 🆕 اسم الفرع
 };
 
 const PaymentTypes: React.FC = () => {
@@ -118,7 +119,6 @@ const PaymentTypes: React.FC = () => {
 
       {/* ===== Tools ===== */}
       <div className="flex justify-between items-center">
-        {/* الأزرار يسار */}
         <div className="flex gap-2">
           <button
             onClick={() => {
@@ -151,7 +151,6 @@ const PaymentTypes: React.FC = () => {
           </button>
         </div>
 
-        {/* البحث يمين */}
         <input
           placeholder="بحث"
           value={search}
@@ -169,6 +168,7 @@ const PaymentTypes: React.FC = () => {
               <th className="border px-3 py-2">الاسم</th>
               <th className="border px-3 py-2">الاسم الأجنبي</th>
               <th className="border px-3 py-2">الترتيب</th>
+              <th className="border px-3 py-2">الفرع</th> {/* 🆕 */}
               <th className="border px-3 py-2">الإجراءات</th>
             </tr>
           </thead>
@@ -182,6 +182,9 @@ const PaymentTypes: React.FC = () => {
                 <td className="border px-3 py-2">{r.name_ar}</td>
                 <td className="border px-3 py-2">{r.name_en || "-"}</td>
                 <td className="border px-3 py-2">{r.sort_order}</td>
+                <td className="border px-3 py-2">
+                  {r.branch_name || "-"}
+                </td>
                 <td className="border px-3 py-2 space-x-2">
                   <button onClick={() => openEdit(r)}>✏️</button>
                   <button
@@ -196,7 +199,7 @@ const PaymentTypes: React.FC = () => {
 
             {!rows.length && (
               <tr>
-                <td colSpan={5} className="py-6 text-gray-500">
+                <td colSpan={6} className="py-6 text-gray-500">
                   لا توجد بيانات
                 </td>
               </tr>
