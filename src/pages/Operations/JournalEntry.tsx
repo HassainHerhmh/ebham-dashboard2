@@ -148,15 +148,17 @@ const JournalEntry: React.FC = () => {
       return;
     }
 
-    const base = {
-      journal_type_id: 1,
-      reference_type: "manual",
-      reference_id: null,
-      journal_date: date,
-      currency_id: Number(currencyId),
-      notes: notes || "قيد يومي",
-      cost_center_id: null,
-    };
+const ref = Date.now(); // رقم فريد لكل قيد يومي
+
+const base = {
+  journal_type_id: 1,
+  reference_type: "manual",
+  reference_id: ref,      // بدل null
+  journal_date: date,
+  currency_id: Number(currencyId),
+  notes: notes || "قيد يومي",
+  cost_center_id: null,
+};
 
     await api.post("/journal-entries", {
       ...base,
