@@ -149,23 +149,38 @@ const AccountStatement: React.FC = () => {
           <option value="single">حساب واحد</option>
           <option value="all">كل الحسابات</option>
         </select>
+        
+{accountMode === "single" ? (
+  <select
+    className="input"
+    value={accountId}
+    onChange={(e) => setAccountId(e.target.value)}
+  >
+    <option value="">اختر حساب فرعي</option>
+    {accounts
+      .filter((a) => a.account_level === "فرعي")
+      .map((a) => (
+        <option key={a.id} value={a.id}>
+          {a.name_ar}
+        </option>
+      ))}
+  </select>
+) : (
+  <select
+    className="input"
+    value={mainAccountId}
+    onChange={(e) => setMainAccountId(e.target.value)}
+  >
+    <option value="">اختر حساب رئيسي</option>
+    {mainAccounts.map((a) => (
+      <option key={a.id} value={a.id}>
+        {a.name_ar}
+      </option>
+    ))}
+  </select>
+)}
 
-        {accountMode === "single" && (
-          <select
-            className="input"
-            value={accountId}
-            onChange={(e) => setAccountId(e.target.value)}
-          >
-            <option value="">اختر حساب فرعي</option>
-            {accounts
-              .filter((a) => a.account_level === "فرعي")
-              .map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.name_ar}
-                </option>
-              ))}
-          </select>
-        )}
+
 
         <select
           className="input"
@@ -236,6 +251,32 @@ const AccountStatement: React.FC = () => {
             إعادة
           </button>
         </div>
+      </div>
+
+      {/* خيارات التقرير */}
+      <div className="bg-[#eef3ec] p-3 rounded-lg space-y-2">
+        {reportMode === "summary" && (
+          <>
+            <div className="font-semibold">نوع التقرير الإجمالي</div>
+            <div className="flex flex-wrap gap-6">
+              <label><input type="radio" checked={summaryType==="local"} onChange={()=>setSummaryType("local")} /> إجمالي عملة محلية</label>
+              <label><input type="radio" checked={summaryType==="with_move"} onChange={()=>setSummaryType("with_move")} /> الأرصدة مع الحركة</label>
+              <label><input type="radio" checked={summaryType==="with_pair"} onChange={()=>setSummaryType("with_pair")} /> الأرصدة بالعملة والمقابل</label>
+              <label><input type="radio" checked={summaryType==="with_pair_move"} onChange={()=>setSummaryType("with_pair_move")} /> الأرصدة بالعملة والمقابل مع الحركة</label>
+              <label><input type="radio" checked={summaryType==="final"} onChange={()=>setSummaryType("final")} /> أرصدة نهائية</label>
+            </div>
+          </>
+        )}
+
+        {reportMode === "detailed" && (
+          <>
+            <div className="font-semibold">نوع التقرير التحليلي</div>
+            <div className="flex gap-6">
+              <label><input type="radio" checked={detailedType==="full"} onChange={()=>setDetailedType("full")} /> كشف كامل</label>
+              <label><input type="radio" checked={detailedType==="no_open"} onChange={()=>setDetailedType("no_open")} /> كشف بدون رصيد سابق</label>
+            </div>
+          </>
+        )}
       </div>
 
       <div className="bg-white rounded shadow overflow-x-auto">
