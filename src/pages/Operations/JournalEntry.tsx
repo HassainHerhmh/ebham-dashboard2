@@ -147,18 +147,18 @@ const JournalEntry: React.FC = () => {
       alert("يرجى إدخال جميع البيانات");
       return;
     }
-
-const ref = Date.now(); // رقم فريد لكل قيد يومي
+const refId = Date.now(); // أو uuid()
 
 const base = {
   journal_type_id: 1,
   reference_type: "manual",
-  reference_id: ref,      // بدل null
+  reference_id: refId,          // 🔴 مهم جداً
   journal_date: date,
   currency_id: Number(currencyId),
   notes: notes || "قيد يومي",
   cost_center_id: null,
 };
+
 
     await api.post("/journal-entries", {
       ...base,
