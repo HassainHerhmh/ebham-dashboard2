@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import api from "../../services/api";
 
 /* =========================
@@ -7,7 +7,7 @@ import api from "../../services/api";
 
 type Account = {
   id: number;
-  code: string;
+  code?: string;
   name_ar: string;
 };
 
@@ -17,11 +17,28 @@ type Currency = {
   code: string;
 };
 
+type Row = {
+  id: number;
+  journal_date: string;
+  amount: number;
+  currency_name: string;
+  from_account: string;
+  to_account: string;
+  notes: string;
+  user_name: string;
+  branch_name: string;
+};
+
 const today = new Date().toLocaleDateString("en-CA");
 
 const JournalEntry: React.FC = () => {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
+  const [rows, setRows] = useState<Row[]>([]);
+
+  const [showModal, setShowModal] = useState(false);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [isEdit, setIsEdit] = useState(false);
 
   const [date, setDate] = useState(today);
   const [amount, setAmount] = useState("");
@@ -33,205 +50,263 @@ const JournalEntry: React.FC = () => {
   const [toAccount, setToAccount] = useState("");
   const [toAccountName, setToAccountName] = useState("");
 
-  const [showFromList, setShowFromList] = useState(false);
-  const [showToList, setShowToList] = useState(false);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     fetchAccounts();
     fetchCurrencies();
+    loadRows();
   }, []);
 
   const fetchAccounts = async () => {
-    // حسابات فرعية فقط (نفس منطق التسقيف)
     const res = await api.get("/accounts/sub-for-ceiling");
-    const data =
-      res.data?.list ||
-      res.data?.accounts ||
-      res.data?.data ||
-      res.data ||
-      [];
+    const data = res.data?.list || res.data || [];
     setAccounts(Array.isArray(data) ? data : []);
   };
 
   const fetchCurrencies = async () => {
     const res = await api.get("/currencies");
-    const data =
-      res.data?.currencies ||
-      res.data?.list ||
-      res.data?.data ||
-      res.data ||
-      [];
+    const data = res.data?.list || res.data || [];
     setCurrencies(Array.isArray(data) ? data : []);
   };
 
-  const getAccountCode = (id: string) => {
-    return accounts.find((a) => a.id === Number(id))?.code || "";
+  const loadRows = async () => {
+    const res = await api.get("/journal-entries");
+    if (res.data?.success) setRows(res.data.list || []);
   };
-
-  const filteredFrom = useMemo(() => {
-    const q = fromAccountName.toLowerCase();
-    return accounts.filter((a) =>
-      a.name_ar.toLowerCase().includes(q)
-    );
-  }, [fromAccountName, accounts]);
-
-  const filteredTo = useMemo(() => {
-    const q = toAccountName.toLowerCase();
-    return accounts.filter((a) =>
-      a.name_ar.toLowerCase().includes(q)
-    );
-  }, [toAccountName, accounts]);
 
   const resetForm = () => {
     setDate(today);
     setAmount("");
     setCurrencyId("");
-    setNotes("");
     setFromAccount("");
     setFromAccountName("");
     setToAccount("");
     setToAccountName("");
-    setShowFromList(false);
-    setShowToList(false);
+    setNotes("");
+    setIsEdit(false);
+    setSelectedId(null);
+  };
+
+  const openAdd = () => {
+    resetForm();
+    setShowModal(true);
+  };
+
+  const openEdit = () => {
+    if (!selectedId) {
+      alert("اختر قيد أولاً");
+      return;
+    }
+
+    const r = rows.find(x => x.id === selectedId);
+    if (!r) return;
+
+    setDate(r.journal_date);
+    setAmount(String(r.amount));
+    setNotes(r.notes);
+    setFromAccountName(r.from_account);
+    setToAccountName(r.to_account);
+
+    const fa = accounts.find(a => a.name_ar === r.from_account);
+    const ta = accounts.find(a => a.name_ar === r.to_account);
+
+    setFromAccount(fa ? String(fa.id) : "");
+    setToAccount(ta ? String(ta.id) : "");
+
+    setIsEdit(true);
+    setShowModal(true);
   };
 
   const saveEntry = async () => {
     if (!fromAccount || !toAccount || !amount || !currencyId) {
-      alert("يرجى إدخال جميع البيانات الأساسية");
+      alert("يرجى إدخال جميع البيانات");
       return;
     }
 
-    try {
-      const baseData = {
-        journal_type_id: 1,
-        reference_type: "manual",
-        reference_id: null,
-        journal_date: date,
-        currency_id: Number(currencyId),
-        notes: notes || "قيد يومي",
-        cost_center_id: null,
-      };
+    const base = {
+      journal_type_id: 1,
+      reference_type: "manual",
+      reference_id: null,
+      journal_date: date,
+      currency_id: Number(currencyId),
+      notes: notes || "قيد يومي",
+      cost_center_id: null,
+    };
 
-      await api.post("/journal-entries", {
-        ...baseData,
-        account_id: Number(fromAccount),
-        debit: Number(amount),
-        credit: 0,
-      });
-
-      await api.post("/journal-entries", {
-        ...baseData,
-        account_id: Number(toAccount),
-        debit: 0,
-        credit: Number(amount),
-      });
-
-      alert("تم حفظ القيد بنجاح");
-      resetForm();
-    } catch (err: any) {
-      alert(err.response?.data?.message || "خطأ في حفظ القيد");
+    if (isEdit && selectedId) {
+      await api.delete(`/journal-entries/${selectedId}`);
     }
+
+    await api.post("/journal-entries", {
+      ...base,
+      account_id: Number(fromAccount),
+      debit: Number(amount),
+      credit: 0,
+    });
+
+    await api.post("/journal-entries", {
+      ...base,
+      account_id: Number(toAccount),
+      debit: 0,
+      credit: Number(amount),
+    });
+
+    await loadRows();
+    setShowModal(false);
+    resetForm();
   };
 
+  const remove = async () => {
+    if (!selectedId) {
+      alert("اختر قيد أولاً");
+      return;
+    }
+
+    if (!window.confirm("هل أنت متأكد من الحذف؟")) return;
+
+    await api.delete(`/journal-entries/${selectedId}`);
+    await loadRows();
+    setSelectedId(null);
+  };
+
+  const filtered = rows.filter(r =>
+    r.from_account?.includes(search) ||
+    r.to_account?.includes(search) ||
+    r.notes?.includes(search)
+  );
+
+  const AccountInput = ({ value, setValue, setId, placeholder }: any) => (
+    <div className="relative w-full">
+      <input
+        className="input w-full"
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+      />
+      {value && (
+        <div className="absolute z-50 bg-white border rounded-lg mt-1 w-full max-h-40 overflow-y-auto">
+          {accounts
+            .filter(a => a.name_ar.includes(value))
+            .map(a => (
+              <div
+                key={a.id}
+                className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                onClick={() => {
+                  setValue(a.name_ar);
+                  setId(String(a.id));
+                }}
+              >
+                {a.name_ar}
+              </div>
+            ))}
+        </div>
+      )}
+    </div>
+  );
+
   return (
-    <div className="bg-white rounded-lg shadow p-6 space-y-6">
-      <h2 className="text-xl font-bold text-center">إضافة قيد يومي</h2>
-
-      <div className="grid grid-cols-3 gap-4">
-        <input type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} />
-        <select className="input" value={currencyId} onChange={(e) => setCurrencyId(e.target.value)}>
-          <option value="">-- العملة --</option>
-          {currencies.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name_ar} ({c.code})
-            </option>
-          ))}
-        </select>
-        <input type="number" placeholder="المبلغ" className="input" value={amount} onChange={(e) => setAmount(e.target.value)} />
-      </div>
-
-      <div className="grid grid-cols-2 gap-6">
-        {/* مدين */}
-        <div className="relative flex flex-col items-center gap-2">
-          <input
-            className="input w-full text-center text-lg"
-            placeholder="🔍 الحساب المدين"
-            value={fromAccountName}
-            onFocus={() => setShowFromList(true)}
-            onChange={(e) => {
-              setFromAccountName(e.target.value);
-              setFromAccount("");
-              setShowFromList(true);
-            }}
-          />
-          {showFromList && (
-            <div className="absolute top-full z-50 w-full bg-white border rounded-lg mt-1 max-h-48 overflow-y-auto shadow">
-              {filteredFrom.map((a) => (
-                <div
-                  key={a.id}
-                  className="px-3 py-2 cursor-pointer hover:bg-gray-100 text-right"
-                  onClick={() => {
-                    setFromAccountName(a.name_ar);
-                    setFromAccount(String(a.id));
-                    setShowFromList(false);
-                  }}
-                >
-                  {a.name_ar}
-                </div>
-              ))}
-            </div>
-          )}
-          <input disabled className="input bg-gray-100 text-center w-48" placeholder="رقم الحساب" value={getAccountCode(fromAccount)} />
+    <div className="space-y-4">
+      {/* Actions */}
+      <div className="flex justify-between items-center bg-[#e9efe6] p-4 rounded-lg">
+        <div className="flex gap-2">
+          <button onClick={openAdd} className="btn-green">➕ إضافة</button>
+          <button onClick={openEdit} className="btn-gray">✏️ تعديل</button>
+          <button onClick={remove} className="btn-red">🗑️ حذف</button>
+          <button onClick={loadRows} className="btn-gray">🔄 تحديث</button>
         </div>
 
-        {/* دائن */}
-        <div className="relative flex flex-col items-center gap-2">
-          <input
-            className="input w-full text-center text-lg"
-            placeholder="🔍 الحساب الدائن"
-            value={toAccountName}
-            onFocus={() => setShowToList(true)}
-            onChange={(e) => {
-              setToAccountName(e.target.value);
-              setToAccount("");
-              setShowToList(true);
-            }}
-          />
-          {showToList && (
-            <div className="absolute top-full z-50 w-full bg-white border rounded-lg mt-1 max-h-48 overflow-y-auto shadow">
-              {filteredTo.map((a) => (
-                <div
-                  key={a.id}
-                  className="px-3 py-2 cursor-pointer hover:bg-gray-100 text-right"
-                  onClick={() => {
-                    setToAccountName(a.name_ar);
-                    setToAccount(String(a.id));
-                    setShowToList(false);
-                  }}
+        <input
+          placeholder="🔍 بحث..."
+          className="input w-56"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
+
+      {/* Table */}
+      <div className="bg-white rounded shadow overflow-x-auto">
+        <table className="w-full text-sm text-center border">
+          <thead className="bg-green-600 text-white">
+            <tr>
+              <th className="border px-2 py-1">التاريخ</th>
+              <th className="border px-2 py-1">المبلغ</th>
+              <th className="border px-2 py-1">العملة</th>
+              <th className="border px-2 py-1">من حساب</th>
+              <th className="border px-2 py-1">إلى حساب</th>
+              <th className="border px-2 py-1">ملاحظات</th>
+              <th className="border px-2 py-1">المستخدم</th>
+              <th className="border px-2 py-1">الفرع</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.length ? (
+              filtered.map(r => (
+                <tr
+                  key={r.id}
+                  onClick={() => setSelectedId(r.id)}
+                  className={`cursor-pointer ${selectedId === r.id ? "bg-green-100" : ""}`}
                 >
-                  {a.name_ar}
-                </div>
-              ))}
+                  <td className="border px-2 py-1">{r.journal_date}</td>
+                  <td className="border px-2 py-1">{r.amount}</td>
+                  <td className="border px-2 py-1">{r.currency_name}</td>
+                  <td className="border px-2 py-1">{r.from_account}</td>
+                  <td className="border px-2 py-1">{r.to_account}</td>
+                  <td className="border px-2 py-1">{r.notes}</td>
+                  <td className="border px-2 py-1">{r.user_name}</td>
+                  <td className="border px-2 py-1">{r.branch_name}</td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={8} className="py-6 text-gray-400 border">
+                  لا توجد بيانات
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white w-[720px] rounded-xl p-6 space-y-4">
+            <h3 className="text-lg font-bold text-center">
+              {isEdit ? "تعديل قيد" : "إضافة قيد"}
+            </h3>
+
+            <div className="grid grid-cols-3 gap-4">
+              <input type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} />
+              <select className="input" value={currencyId} onChange={(e) => setCurrencyId(e.target.value)}>
+                <option value="">-- العملة --</option>
+                {currencies.map(c => (
+                  <option key={c.id} value={c.id}>{c.name_ar} ({c.code})</option>
+                ))}
+              </select>
+              <input className="input" placeholder="المبلغ" value={amount} onChange={(e) => setAmount(e.target.value)} />
             </div>
-          )}
-          <input disabled className="input bg-gray-100 text-center w-48" placeholder="رقم الحساب" value={getAccountCode(toAccount)} />
+
+            <div className="grid grid-cols-2 gap-4">
+              <AccountInput value={fromAccountName} setValue={setFromAccountName} setId={setFromAccount} placeholder="الحساب المدين" />
+              <AccountInput value={toAccountName} setValue={setToAccountName} setId={setToAccount} placeholder="الحساب الدائن" />
+            </div>
+
+            <textarea className="input" placeholder="ملاحظات" value={notes} onChange={(e) => setNotes(e.target.value)} />
+
+            <div className="flex justify-between">
+              <button onClick={() => { setShowModal(false); resetForm(); }} className="btn-gray">إلغاء</button>
+              <button onClick={saveEntry} className="btn-green">حفظ</button>
+            </div>
+          </div>
         </div>
-      </div>
-
-      <div className="flex justify-center">
-        <textarea className="notes-box" placeholder="ملاحظات" value={notes} onChange={(e) => setNotes(e.target.value)} />
-      </div>
-
-      <div className="flex justify-end gap-2 bg-[#e9efe6] p-4 rounded-lg">
-        <button onClick={saveEntry} className="btn-green">➕ إضافة</button>
-        <button onClick={resetForm} className="btn-gray">إلغاء</button>
-      </div>
+      )}
 
       <style>{`
-        .input { padding: 12px; border-radius: 10px; border: 1px solid #ccc; }
-        .btn-green { background: #2f4b75; color:#fff; padding:10px 20px; border-radius:10px; }
-        .btn-gray { background:#e5e7eb; padding:10px 20px; border-radius:10px; }
-        .notes-box { width:70%; height:120px; padding:12px; border-radius:12px; border:1px solid #ccc; resize:none; }
+        .input { padding:10px; border-radius:8px; border:1px solid #ccc; }
+        .btn-green { background:#14532d; color:#fff; padding:8px 16px; border-radius:8px; }
+        .btn-gray { background:#e5e7eb; padding:8px 16px; border-radius:8px; }
+        .btn-red { background:#dc2626; color:#fff; padding:8px 16px; border-radius:8px; }
       `}</style>
     </div>
   );
