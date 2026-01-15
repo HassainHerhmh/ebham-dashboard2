@@ -759,6 +759,38 @@ export const accountsApi = {
   delete: async (id: number) =>
     (await api.delete(`/journal-types/${id}`)).data,
 };
+/* =========================
+   ACCOUNT CEILINGS
+========================= */
+(api as any).accountCeilings = {
+  getAll: async () =>
+    (await api.get("/account-ceilings")).data,
+
+  create: async (data: {
+    scope: "account" | "group";
+    account_id?: number | null;
+    account_group_id?: number | null;
+    currency_id: number;
+    ceiling_amount: number;
+    account_nature: "debit" | "credit";
+    exceed_action: "block" | "allow" | "warn";
+  }) =>
+    (await api.post("/account-ceilings", data)).data,
+
+  update: async (
+    id: number,
+    data: {
+      currency_id: number;
+      ceiling_amount: number;
+      account_nature: "debit" | "credit";
+      exceed_action: "block" | "allow" | "warn";
+    }
+  ) =>
+    (await api.put(`/account-ceilings/${id}`, data)).data,
+
+  delete: async (id: number) =>
+    (await api.delete(`/account-ceilings/${id}`)).data,
+};
 
 
 export default api;
