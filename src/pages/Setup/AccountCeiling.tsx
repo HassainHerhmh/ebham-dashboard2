@@ -36,6 +36,7 @@ type Ceiling = {
   ceiling_amount: number;
   account_type: "debit" | "credit";
   limit_action: "block" | "allow" | "warn";
+  branch_name?: string; // 🆕 اسم الفرع
 };
 
 /* =========================
@@ -75,12 +76,10 @@ const AccountCeiling: React.FC = () => {
         api.get("/currencies"),
       ]);
 
-      // التسقيف
       const ceilings = extractList<Ceiling>(c1);
       setList(ceilings);
       setFiltered(ceilings);
 
-      // الحسابات
       setAccounts(
         extractList<Account>(c2).map((a) => ({
           id: Number(a.id),
@@ -89,10 +88,7 @@ const AccountCeiling: React.FC = () => {
         }))
       );
 
-      // ✅ الحل هنا: قراءة groups أو list
-      const rawGroups =
-        c3.data?.list || c3.data?.groups || [];
-
+      const rawGroups = c3.data?.list || c3.data?.groups || [];
       setGroups(
         rawGroups.map((g: any) => ({
           id: Number(g.id),
@@ -101,7 +97,6 @@ const AccountCeiling: React.FC = () => {
         }))
       );
 
-      // العملات
       setCurrencies(
         extractList<Currency>(c4).map((c) => ({
           id: Number(c.id),
@@ -129,7 +124,8 @@ const AccountCeiling: React.FC = () => {
         (x) =>
           x.account_name?.toLowerCase().includes(q) ||
           x.group_name?.toLowerCase().includes(q) ||
-          x.currency_name.toLowerCase().includes(q)
+          x.currency_name.toLowerCase().includes(q) ||
+          x.branch_name?.toLowerCase().includes(q)
       )
     );
   }, [search, list]);
@@ -187,9 +183,6 @@ const AccountCeiling: React.FC = () => {
     }
   };
 
-  /* =========================
-     Edit
-  ========================= */
   const edit = (c: Ceiling) => {
     setEditId(c.id);
     setForm({
@@ -198,9 +191,9 @@ const AccountCeiling: React.FC = () => {
       account_group_id: c.account_group_id
         ? String(c.account_group_id)
         : "",
-      currency_id: currencies.find(
-        (x) => x.name_ar === c.currency_name
-      )?.id.toString() || "",
+      currency_id:
+        currencies.find((x) => x.name_ar === c.currency_name)?.id.toString() ||
+        "",
       ceiling_amount: String(Math.trunc(c.ceiling_amount)),
       account_type: c.account_type,
       limit_action: c.limit_action,
@@ -208,20 +201,12 @@ const AccountCeiling: React.FC = () => {
     setShowModal(true);
   };
 
-  /* =========================
-     Delete
-  ========================= */
   const remove = async (id: number) => {
     if (!window.confirm("هل أنت متأكد من حذف التسقيف؟")) return;
-
-    try {
-      await api.delete(`/account-ceilings/${id}`);
-      const newList = list.filter((x) => x.id !== id);
-      setList(newList);
-      setFiltered(newList);
-    } catch (err: any) {
-      alert(err?.response?.data?.message || "خطأ أثناء الحذف");
-    }
+    await api.delete(`/account-ceilings/${id}`);
+    const newList = list.filter((x) => x.id !== id);
+    setList(newList);
+    setFiltered(newList);
   };
 
   return (
@@ -230,7 +215,6 @@ const AccountCeiling: React.FC = () => {
         تسقيف الحسابات
       </h2>
 
-      {/* Search + Add */}
       <div className="flex justify-between items-center">
         <input
           placeholder="🔍 بحث..."
@@ -250,7 +234,6 @@ const AccountCeiling: React.FC = () => {
         </button>
       </div>
 
-      {/* Table */}
       <div className="bg-white rounded shadow overflow-x-auto">
         <table className="w-full text-sm text-center border-collapse">
           <thead className="bg-green-600 text-white">
@@ -261,6 +244,7 @@ const AccountCeiling: React.FC = () => {
               <th className="border p-2">مبلغ السقف</th>
               <th className="border p-2">طبيعة الحساب</th>
               <th className="border p-2">الإجراء</th>
+              <th className="border p-2">الفرع</th>
               <th className="border p-2">الإجراءات</th>
             </tr>
           </thead>
@@ -284,6 +268,9 @@ const AccountCeiling: React.FC = () => {
                       ? "يسمح مع تنبيه"
                       : "يسمح"}
                   </td>
+                  <td className="border p-2">
+                    {c.branch_name || "-"}
+                  </td>
                   <td className="border p-2 space-x-2">
                     <button
                       onClick={() => edit(c)}
@@ -302,7 +289,7 @@ const AccountCeiling: React.FC = () => {
               ))
             ) : (
               <tr>
-                <td colSpan={7} className="py-6 text-gray-400">
+                <td colSpan={8} className="py-6 text-gray-400">
                   لا توجد بيانات
                 </td>
               </tr>
