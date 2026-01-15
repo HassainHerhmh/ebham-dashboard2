@@ -71,7 +71,7 @@ const AccountCeiling: React.FC = () => {
     try {
       const [c1, c2, c3, c4] = await Promise.all([
         api.get("/account-ceilings"),
-        api.get("/accounts"),
+        api.get("/accounts/sub-for-ceiling"), // 🔹 الحسابات الفرعية فقط
         api.get("/account-groups"),
         api.get("/currencies"),
       ]);
