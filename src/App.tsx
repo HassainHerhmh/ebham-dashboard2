@@ -122,6 +122,10 @@ const App: React.FC = () => {
                         <Route path="payment-voucher" element={<PaymentVoucher />} />
                         <Route path="journal-entry" element={<JournalEntry />} />
                       </Route>
+                        <Route path="reports" element={<Reports />}>
+                        <Route path="account-statement" element={<AccountStatement />} />
+                       </Route>
+                      
                     </Route>
 
                     {/* الوكلاء */}
