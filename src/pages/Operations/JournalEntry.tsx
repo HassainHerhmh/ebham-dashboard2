@@ -35,9 +35,10 @@ const JournalEntry: React.FC = () => {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [rows, setRows] = useState<Row[]>([]);
+  const [filtered, setFiltered] = useState<Row[]>([]);
 
   const [showModal, setShowModal] = useState(false);
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [selectedRow, setSelectedRow] = useState<Row | null>(null);
   const [isEdit, setIsEdit] = useState(false);
 
   const [date, setDate] = useState(today);
@@ -59,6 +60,21 @@ const JournalEntry: React.FC = () => {
     loadRows();
   }, []);
 
+  useEffect(() => {
+    const q = search.trim();
+    if (!q) setFiltered(rows);
+    else {
+      setFiltered(
+        rows.filter(
+          r =>
+            r.from_account.includes(q) ||
+            r.to_account.includes(q) ||
+            (r.notes || "").includes(q)
+        )
+      );
+    }
+  }, [search, rows]);
+
   const fetchAccounts = async () => {
     const res = await api.get("/accounts/sub-for-ceiling");
     const data = res.data?.list || res.data || [];
@@ -78,7 +94,10 @@ const JournalEntry: React.FC = () => {
 
   const loadRows = async () => {
     const res = await api.get("/journal-entries");
-    if (res.data?.success) setRows(res.data.list || []);
+    if (res.data?.success) {
+      setRows(res.data.list || []);
+      setFiltered(res.data.list || []);
+    }
   };
 
   const resetForm = () => {
@@ -91,12 +110,38 @@ const JournalEntry: React.FC = () => {
     setToAccountName("");
     setNotes("");
     setIsEdit(false);
-    setSelectedId(null);
+    setSelectedRow(null);
   };
 
   const openAdd = () => {
     resetForm();
     setShowModal(true);
+  };
+
+  const openEdit = () => {
+    if (!selectedRow) {
+      alert("حدد قيدًا أولاً");
+      return;
+    }
+    setIsEdit(true);
+    setShowModal(true);
+
+    setDate(selectedRow.journal_date.slice(0, 10));
+    setAmount(String(selectedRow.amount));
+    setNotes(selectedRow.notes || "");
+    setFromAccountName(selectedRow.from_account);
+    setToAccountName(selectedRow.to_account);
+  };
+
+  const remove = async () => {
+    if (!selectedRow) {
+      alert("حدد قيدًا أولاً");
+      return;
+    }
+    if (!window.confirm("هل أنت متأكد من حذف القيد؟")) return;
+
+    // مكان API الحذف لاحقاً
+    alert("سيتم ربط الحذف مع السيرفر لاحقاً");
   };
 
   const saveEntry = async () => {
@@ -134,18 +179,14 @@ const JournalEntry: React.FC = () => {
     resetForm();
   };
 
-  const AccountInput = ({
-    value,
-    setValue,
-    setId,
-    placeholder,
-  }: any) => {
+  const AccountInput = ({ value, setValue, setId, placeholder }: any) => {
     const [open, setOpen] = useState(false);
 
-    const filtered = accounts.filter(a =>
-      a.name_ar.includes(value)
-    );
-return (
+    const list = value
+      ? accounts.filter(a => a.name_ar.includes(value))
+      : accounts;
+
+    return (
       <div className="relative w-full">
         <input
           className="input w-full"
@@ -220,9 +261,7 @@ return (
                 <tr
                   key={r.id}
                   onClick={() => setSelectedRow(r)}
-                  className={`cursor-pointer ${
-                    selectedRow?.id === r.id ? "bg-green-100" : ""
-                  }`}
+                  className={`cursor-pointer ${selectedRow?.id === r.id ? "bg-green-100" : ""}`}
                 >
                   <td className="border px-2 py-1">{r.journal_date}</td>
                   <td className="border px-2 py-1">{r.amount}</td>
