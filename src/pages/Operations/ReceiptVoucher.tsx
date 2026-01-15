@@ -124,18 +124,20 @@ useEffect(() => {
     if (res.data.success) setBankAccounts(res.data.banks);
   };
 
- const fetchAccounts = async () => {
-  const res = await api.get("/accounts");
+   
+const fetchAccounts = async () => {
+  const res = await api.get("/accounts/sub-for-ceiling");
 
   const data =
-    res.data?.accounts ||
     res.data?.list ||
+    res.data?.accounts ||
     res.data?.data ||
     res.data ||
     [];
 
   setAccounts(Array.isArray(data) ? data : []);
 };
+
 
  const fetchCurrencies = async () => {
   const res = await api.get("/currencies");
