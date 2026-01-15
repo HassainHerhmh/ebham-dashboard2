@@ -593,5 +593,27 @@ export const accountsApi = {
     (await api.delete(`/banks/${id}`)).data,
 };
 
+/*===========================
+مجموعة البنوك
+=========================*/
+(api as any).cashboxGroups = {
+  getAll: (search = "") =>
+    api.get("/cashbox-groups", { params: { search } }).then((r) => r.data),
+
+  create: (data: {
+    name_ar: string;
+    name_en?: string | null;
+    code: number;
+  }) => api.post("/cashbox-groups", data).then((r) => r.data),
+
+  update: (
+    id: number,
+    data: { name_ar: string; name_en?: string | null }
+  ) => api.put(`/cashbox-groups/${id}`, data).then((r) => r.data),
+
+  delete: (id: number) =>
+    api.delete(`/cashbox-groups/${id}`).then((r) => r.data),
+};
+
 
 export default api;
