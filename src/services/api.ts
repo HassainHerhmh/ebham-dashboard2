@@ -673,4 +673,35 @@ export const accountsApi = {
     (await api.delete(`/cash-boxes/${id}`)).data,
 };
 
+
+/* =========================
+   PAYMENT TYPES
+========================= */
+(api as any).paymentTypes = {
+  getAll: async (search = "") =>
+    (await api.get("/payment-types", { params: { search } })).data,
+
+  create: async (data: {
+    code: number;
+    name_ar: string;
+    name_en?: string | null;
+    sort_order: number;
+  }) =>
+    (await api.post("/payment-types", data)).data,
+
+  update: async (
+    id: number,
+    data: {
+      name_ar: string;
+      name_en?: string | null;
+      sort_order: number;
+    }
+  ) =>
+    (await api.put(`/payment-types/${id}`, data)).data,
+
+  delete: async (id: number) =>
+    (await api.delete(`/payment-types/${id}`)).data,
+};
+
+
 export default api;
