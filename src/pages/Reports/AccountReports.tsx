@@ -154,33 +154,38 @@ const loadLookups = async () => {
           <option value="all">كل الحسابات</option>
         </select>
 
-        {accountMode === "single" ? (
-          <select
-            className="input"
-            value={accountId}
-            onChange={(e) => setAccountId(e.target.value)}
-          >
-            <option value="">اختر الحساب</option>
-            {accounts.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.name_ar}
-              </option>
-            ))}
-          </select>
-        ) : (
-          <select
-            className="input"
-            value={mainAccountId}
-            onChange={(e) => setMainAccountId(e.target.value)}
-          >
-            <option value="">اختر حساب رئيسي</option>
-            {mainAccounts.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.name_ar}
-              </option>
-            ))}
-          </select>
-        )}
+      {accountMode === "single" ? (
+  /* حساب واحد = الحسابات الفرعية فقط */
+  <select
+    className="input"
+    value={accountId}
+    onChange={(e) => setAccountId(e.target.value)}
+  >
+    <option value="">اختر حساب فرعي</option>
+    {accounts
+      .filter(a => a.parent_id) // الفرعية فقط
+      .map((a) => (
+        <option key={a.id} value={a.id}>
+          {a.name_ar}
+        </option>
+      ))}
+  </select>
+) : (
+  /* كل الحسابات = الحسابات الرئيسية فقط */
+  <select
+    className="input"
+    value={mainAccountId}
+    onChange={(e) => setMainAccountId(e.target.value)}
+  >
+    <option value="">اختر حساب رئيسي</option>
+    {mainAccounts.map((a) => (
+      <option key={a.id} value={a.id}>
+        {a.name_ar}
+      </option>
+    ))}
+  </select>
+)}
+
 
         <select
           className="input"
