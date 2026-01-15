@@ -64,9 +64,6 @@ const formatLocalDateTime = (dateString: string) => {
 const today = new Date().toLocaleDateString("en-CA");
 
 const PaymentVoucher: React.FC = () => {
-  /* =========================
-     State
-  ========================= */
   const [showModal, setShowModal] = useState(false);
   const [showExtra, setShowExtra] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -77,19 +74,15 @@ const PaymentVoucher: React.FC = () => {
 
   const [list, setList] = useState<Voucher[]>([]);
 
-  /* ===== بيانات من السيرفر ===== */
   const [cashBoxes, setCashBoxes] = useState<CashBox[]>([]);
   const [bankAccounts, setBankAccounts] = useState<Bank[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
 
-  /* =========================
-     Load Lookups
-  ========================= */
   useEffect(() => {
     fetchCashBoxes();
     fetchBanks();
-    fetchAccounts(); // 🔹 حسابات فرعية فقط
+    fetchAccounts(); // حسابات فرعية فقط
     fetchCurrencies();
     loadVouchers();
   }, []);
@@ -116,17 +109,15 @@ const PaymentVoucher: React.FC = () => {
     if (res.data.success) setBankAccounts(res.data.banks);
   };
 
-  // 🔹 هنا التعديل: جلب الحسابات الفرعية فقط
+  // 🔹 حسابات فرعية فقط
   const fetchAccounts = async () => {
     const res = await api.get("/accounts/sub-for-ceiling");
-
     const data =
       res.data?.list ||
       res.data?.accounts ||
       res.data?.data ||
       res.data ||
       [];
-
     setAccounts(Array.isArray(data) ? data : []);
   };
 
@@ -141,9 +132,6 @@ const PaymentVoucher: React.FC = () => {
     setCurrencies(Array.isArray(data) ? data : []);
   };
 
-  /* =========================
-     Load Vouchers From Server
-  ========================= */
   const loadVouchers = async () => {
     const res = await api.get("/payment-vouchers");
 
@@ -199,42 +187,31 @@ const PaymentVoucher: React.FC = () => {
     notes: "",
   });
 
-  /* =========================
-     Add Voucher
-  ========================= */
   const addVoucher = async () => {
     try {
       const payload = {
         voucher_no: form.voucherNo,
         voucher_date: form.date,
         payment_type: form.paymentType,
-
         cash_box_account_id:
           form.paymentType === "cash" ? Number(form.cashBox) : null,
-
         bank_account_id:
           form.paymentType === "bank" ? Number(form.bankAccount) : null,
-
         transfer_no: form.transferNo || null,
         currency_id: Number(form.currency_id),
         amount: Number(form.amount),
         account_id: Number(form.account),
-
         analytic_account_id: form.analyticAccount || null,
         cost_center_id: form.costCenter || null,
         journal_type_id: 1,
         notes: form.notes || null,
-        handling: form.handling || null, // 🆕 نصي
+        handling: form.handling || null, // نصي
         created_by: 1,
         branch_id: 1,
       };
 
       const res = await api.post("/payment-vouchers", payload);
-
-      if (!res.data.success) {
-        alert("فشل حفظ السند");
-        return;
-      }
+      if (!res.data.success) return alert("فشل حفظ السند");
 
       await loadVouchers();
       setShowModal(false);
@@ -259,9 +236,6 @@ const PaymentVoucher: React.FC = () => {
     }
   };
 
-  /* =========================
-     Update
-  ========================= */
   const updateVoucher = async () => {
     if (!selectedId) return;
 
@@ -269,42 +243,76 @@ const PaymentVoucher: React.FC = () => {
       const payload = {
         voucher_date: form.date,
         payment_type: form.paymentType,
-
         cash_box_account_id:
           form.paymentType === "cash" ? Number(form.cashBox) : null,
-
         bank_account_id:
           form.paymentType === "bank" ? Number(form.bankAccount) : null,
-
         transfer_no: form.transferNo || null,
         currency_id: Number(form.currency_id),
         amount: Number(form.amount),
         account_id: Number(form.account),
-
         analytic_account_id: form.analyticAccount || null,
         cost_center_id: form.costCenter || null,
-        handling: form.handling || null, // 🆕 نصي
+        handling: form.handling || null,
         notes: form.notes || null,
       };
 
       const res = await api.put(`/payment-vouchers/${selectedId}`, payload);
-
-      if (!res.data.success) {
-        alert("❌ فشل تعديل السند");
-        return;
-      }
+      if (!res.data.success) return alert("فشل التعديل");
 
       await loadVouchers();
       setShowModal(false);
       setSelectedId(null);
     } catch (err: any) {
-      alert(err.response?.data?.message || "❌ خطأ في تعديل سند الصرف");
+      alert(err.response?.data?.message || "خطأ في التعديل");
     }
   };
 
-  /* =========================
-     Filter
-  ========================= */
+  const remove = async () => {
+    if (!selectedId) return alert("حدد سند أولاً");
+    if (!window.confirm("هل أنت متأكد من حذف السند؟")) return;
+
+    try {
+      const res = await api.delete(`/payment-vouchers/${selectedId}`);
+      if (!res.data.success) return alert("فشل حذف السند");
+      await loadVouchers();
+      setSelectedId(null);
+    } catch (err: any) {
+      alert(err.response?.data?.message || "خطأ في حذف السند");
+    }
+  };
+
+  const openEdit = () => {
+    if (!selectedId) return;
+    const v = list.find((x) => x.id === selectedId);
+    if (!v) return;
+
+    setForm({
+      voucherNo: v.voucherNo,
+      date: v.date,
+      paymentType: v.paymentType,
+      cashBox: v.cashBox
+        ? String(cashBoxes.find((c) => c.name_ar === v.cashBox)?.id || "")
+        : "",
+      bankAccount: v.bankAccount
+        ? String(bankAccounts.find((b) => b.name_ar === v.bankAccount)?.id || "")
+        : "",
+      transferNo: v.transferNo || "",
+      currency_id:
+        currencies.find((c) => c.name_ar === v.currency)?.id?.toString() || "",
+      currency: v.currency,
+      amount: v.amount,
+      account:
+        accounts.find((a) => a.name_ar === v.account)?.id?.toString() || "",
+      analyticAccount: v.analyticAccount || "",
+      costCenter: v.costCenter || "",
+      handling: v.handling || "",
+      notes: v.notes || "",
+    });
+
+    setShowModal(true);
+  };
+
   const filtered = list.filter((x) => {
     const matchSearch =
       String(x.voucherNo || "").includes(search) ||
@@ -314,7 +322,6 @@ const PaymentVoucher: React.FC = () => {
       String(x.amount || "").includes(search);
 
     const matchDate = allDates || (x.date && x.date.slice(0, 10) === date);
-
     return matchSearch && matchDate;
   });
 
