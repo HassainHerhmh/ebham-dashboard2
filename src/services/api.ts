@@ -615,5 +615,62 @@ export const accountsApi = {
     api.delete(`/cashbox-groups/${id}`).then((r) => r.data),
 };
 
+/* =========================
+   CASH BOXES & GROUPS
+========================= */
+
+// الحسابات الرئيسية للصناديق
+(api as any).accounts = {
+  ...(api as any).accounts,
+
+  getMainForCashboxes: async () =>
+    (await api.get("/accounts/main-for-cashboxes")).data,
+};
+
+// مجموعات الصناديق
+(api as any).cashboxGroups = {
+  getAll: async (search = "") =>
+    (await api.get("/cashbox-groups", { params: { search } })).data,
+
+  create: async (data: {
+    name_ar: string;
+    name_en?: string | null;
+    code: number;
+  }) => (await api.post("/cashbox-groups", data)).data,
+
+  update: async (
+    id: number,
+    data: { name_ar: string; name_en?: string | null }
+  ) => (await api.put(`/cashbox-groups/${id}`, data)).data,
+
+  delete: async (id: number) =>
+    (await api.delete(`/cashbox-groups/${id}`)).data,
+};
+
+// الصناديق
+(api as any).cashBoxes = {
+  getAll: async (search = "") =>
+    (await api.get("/cash-boxes", { params: { search } })).data,
+
+  create: async (data: {
+    name_ar: string;
+    name_en?: string | null;
+    code: string;
+    cash_box_group_id: number;
+    parent_account_id: number;
+  }) => (await api.post("/cash-boxes", data)).data,
+
+  update: async (
+    id: number,
+    data: {
+      name_ar: string;
+      name_en?: string | null;
+      cash_box_group_id: number;
+    }
+  ) => (await api.put(`/cash-boxes/${id}`, data)).data,
+
+  delete: async (id: number) =>
+    (await api.delete(`/cash-boxes/${id}`)).data,
+};
 
 export default api;
