@@ -5,6 +5,7 @@ type Account = {
   id: number;
   name_ar: string;
   parent_id?: number | null;
+  account_level?: string;
 };
 
 type Currency = {
@@ -31,14 +32,12 @@ type AccountMode = "all" | "single";
 
 const AccountStatement: React.FC = () => {
   const [accounts, setAccounts] = useState<Account[]>([]);
-  const [mainAccounts, setMainAccounts] = useState<Account[]>([]);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [rows, setRows] = useState<Row[]>([]);
   const [opening, setOpening] = useState(0);
 
   const [accountMode, setAccountMode] = useState<AccountMode>("single");
   const [accountId, setAccountId] = useState("");
-  const [mainAccountId, setMainAccountId] = useState("");
 
   const [currencyId, setCurrencyId] = useState("");
 
@@ -49,30 +48,23 @@ const AccountStatement: React.FC = () => {
 
   const [reportMode, setReportMode] = useState<ReportMode>("detailed");
 
-  // خيارات الإجمالي (5)
   const [summaryType, setSummaryType] = useState("local");
-  // خيارات التحليلي (2)
   const [detailedType, setDetailedType] = useState("full");
 
   useEffect(() => {
     loadLookups();
   }, []);
-  
-const loadLookups = async () => {
-  const [a, c] = await Promise.all([
-    api.get("/accounts/sub-for-ceiling"),
-    api.get("/currencies"),
-  ]);
 
-  const accs = a.data?.list || a.data || [];
+  const loadLookups = async () => {
+    const [a, c] = await Promise.all([
+      api.get("/accounts/sub-for-ceiling"),
+      api.get("/currencies"),
+    ]);
 
-  setAccounts(accs);
-
-  // الحسابات الرئيسية فقط
-  setMainAccounts(accs.filter((x: any) => x.account_level === "رئيسي"));
-
-  setCurrencies(c.data?.currencies || c.data?.list || c.data || []);
-};
+    const accs = a.data?.list || a.data || [];
+    setAccounts(accs);
+    setCurrencies(c.data?.currencies || c.data?.list || c.data || []);
+  };
 
   const buildDates = () => {
     if (periodType === "day") {
@@ -107,26 +99,31 @@ const loadLookups = async () => {
     };
 
     if (accountMode === "single") {
+      // حساب واحد = فرعي
       payload.account_id = accountId ? Number(accountId) : null;
-    } else {
-      payload.main_account_id = mainAccountId
-        ? Number(mainAccountId)
-        : null;
     }
+    // كل الحسابات = رئيسي → لا نرسل أي حساب
 
-    const res = await (api as any).reports.accountStatement(payload);
+    try {
+      const res = await (api as any).reports.accountStatement(payload);
 
-
-    if (res.data?.success) {
-      setOpening(res.data.opening_balance || 0);
-      setRows(res.data.list || []);
+      if (res.data?.success) {
+        setOpening(res.data.opening_balance || 0);
+        setRows(res.data.list || []);
+      } else {
+        setOpening(0);
+        setRows([]);
+      }
+    } catch (e) {
+      console.error(e);
+      setOpening(0);
+      setRows([]);
     }
   };
 
   const reset = () => {
     setAccountMode("single");
     setAccountId("");
-    setMainAccountId("");
     setCurrencyId("");
     setPeriodType("day");
     setDate(today);
@@ -152,38 +149,23 @@ const loadLookups = async () => {
           <option value="single">حساب واحد</option>
           <option value="all">كل الحسابات</option>
         </select>
-        
-{accountMode === "single" ? (
-  <select
-    className="input"
-    value={accountId}
-    onChange={(e) => setAccountId(e.target.value)}
-  >
-    <option value="">اختر حساب فرعي</option>
-    {accounts
-      .filter((a) => a.account_level === "فرعي")
-      .map((a) => (
-        <option key={a.id} value={a.id}>
-          {a.name_ar}
-        </option>
-      ))}
-  </select>
-) : (
-  <select
-    className="input"
-    value={mainAccountId}
-    onChange={(e) => setMainAccountId(e.target.value)}
-  >
-    <option value="">اختر حساب رئيسي</option>
-    {mainAccounts.map((a) => (
-      <option key={a.id} value={a.id}>
-        {a.name_ar}
-      </option>
-    ))}
-  </select>
-)}
 
-
+        {accountMode === "single" && (
+          <select
+            className="input"
+            value={accountId}
+            onChange={(e) => setAccountId(e.target.value)}
+          >
+            <option value="">اختر حساب فرعي</option>
+            {accounts
+              .filter((a) => a.account_level === "فرعي")
+              .map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.name_ar}
+                </option>
+              ))}
+          </select>
+        )}
 
         <select
           className="input"
@@ -254,32 +236,6 @@ const loadLookups = async () => {
             إعادة
           </button>
         </div>
-      </div>
-
-      {/* خيارات التقرير */}
-      <div className="bg-[#eef3ec] p-3 rounded-lg space-y-2">
-        {reportMode === "summary" && (
-          <>
-            <div className="font-semibold">نوع التقرير الإجمالي</div>
-            <div className="flex flex-wrap gap-6">
-              <label><input type="radio" checked={summaryType==="local"} onChange={()=>setSummaryType("local")} /> إجمالي عملة محلية</label>
-              <label><input type="radio" checked={summaryType==="with_move"} onChange={()=>setSummaryType("with_move")} /> الأرصدة مع الحركة</label>
-              <label><input type="radio" checked={summaryType==="with_pair"} onChange={()=>setSummaryType("with_pair")} /> الأرصدة بالعملة والمقابل</label>
-              <label><input type="radio" checked={summaryType==="with_pair_move"} onChange={()=>setSummaryType("with_pair_move")} /> الأرصدة بالعملة والمقابل مع الحركة</label>
-              <label><input type="radio" checked={summaryType==="final"} onChange={()=>setSummaryType("final")} /> أرصدة نهائية</label>
-            </div>
-          </>
-        )}
-
-        {reportMode === "detailed" && (
-          <>
-            <div className="font-semibold">نوع التقرير التحليلي</div>
-            <div className="flex gap-6">
-              <label><input type="radio" checked={detailedType==="full"} onChange={()=>setDetailedType("full")} /> كشف كامل</label>
-              <label><input type="radio" checked={detailedType==="no_open"} onChange={()=>setDetailedType("no_open")} /> كشف بدون رصيد سابق</label>
-            </div>
-          </>
-        )}
       </div>
 
       <div className="bg-white rounded shadow overflow-x-auto">
