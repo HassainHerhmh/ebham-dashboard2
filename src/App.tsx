@@ -49,8 +49,8 @@ import PaymentVoucher from "./pages/Operations/PaymentVoucher";
 import JournalEntry from "./pages/Operations/JournalEntry";
 
 // تقارير الحسابات
-import AccountReports from "./pages/Accounts/Reports/AccountReports";
-import AccountStatement from "./pages/Accounts/Reports/AccountStatement";
+import AccountReports from "./pages/Reports/AccountReports";
+import AccountStatement from "./pages/Reports/AccountStatement";
 
 // الإعدادات
 import Settings from "./pages/Settings";
