@@ -10,6 +10,7 @@ type CashBoxGroup = {
   name_en: string | null;
   code: number;
   user_name: string | null;
+  branch_name: string | null;
 };
 
 const CashBoxGroups: React.FC = () => {
@@ -26,7 +27,7 @@ const CashBoxGroups: React.FC = () => {
   });
 
   /* =========================
-     Load Data (من السيرفر)
+     Load Data
   ========================= */
   const loadGroups = async () => {
     setLoading(true);
@@ -55,29 +56,26 @@ const CashBoxGroups: React.FC = () => {
       return;
     }
 
-    const user = JSON.parse(localStorage.getItem("user") || "{}");
-
     try {
       if (editId) {
-        // ✏️ تعديل
+        // تعديل
         await api.put(`/cashbox-groups/${editId}`, {
           name_ar: form.name_ar,
           name_en: form.name_en || null,
         });
       } else {
-        // ➕ إضافة
+        // إضافة
         await api.post("/cashbox-groups", {
           name_ar: form.name_ar,
           name_en: form.name_en || null,
           code: Number(form.code),
-          created_by: user.id || 1,
         });
       }
 
       setShowModal(false);
       setEditId(null);
       setForm({ name_ar: "", name_en: "", code: "" });
-      loadGroups(); // 🔄 تحديث من السيرفر
+      loadGroups();
     } catch (err: any) {
       alert(err.response?.data?.message || "حدث خطأ");
     }
@@ -91,7 +89,7 @@ const CashBoxGroups: React.FC = () => {
 
     try {
       await api.delete(`/cashbox-groups/${id}`);
-      loadGroups(); // 🔄 تحديث من السيرفر
+      loadGroups();
     } catch (err: any) {
       alert(err.response?.data?.message || "لا يمكن حذف هذه المجموعة");
     }
@@ -114,9 +112,8 @@ const CashBoxGroups: React.FC = () => {
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">مجموعة الصناديق</h1>
 
-      {/* ===== Tools ===== */}
+      {/* Tools */}
       <div className="flex justify-between items-center">
-        {/* الأزرار يسار */}
         <div className="flex gap-2">
           <button
             onClick={() => {
@@ -144,7 +141,6 @@ const CashBoxGroups: React.FC = () => {
           </button>
         </div>
 
-        {/* البحث يمين */}
         <input
           placeholder="بحث"
           value={search}
@@ -153,7 +149,7 @@ const CashBoxGroups: React.FC = () => {
         />
       </div>
 
-      {/* ===== Table ===== */}
+      {/* Table */}
       <div className="bg-white shadow rounded overflow-x-auto">
         <table className="w-full text-sm border-collapse text-center">
           <thead className="bg-green-600 text-white">
@@ -161,6 +157,7 @@ const CashBoxGroups: React.FC = () => {
               <th className="border px-3 py-2">الاسم</th>
               <th className="border px-3 py-2">الاسم الأجنبي</th>
               <th className="border px-3 py-2">الرقم</th>
+              <th className="border px-3 py-2">الفرع</th>
               <th className="border px-3 py-2">المستخدم</th>
               <th className="border px-3 py-2">الإجراءات</th>
             </tr>
@@ -174,12 +171,14 @@ const CashBoxGroups: React.FC = () => {
                 <td className="border px-3 py-2">{g.name_ar}</td>
                 <td className="border px-3 py-2">{g.name_en || "-"}</td>
                 <td className="border px-3 py-2">{g.code}</td>
-                <td className="border px-3 py-2">{g.user_name || "-"}</td>
+                <td className="border px-3 py-2">
+                  {g.branch_name || "—"}
+                </td>
+                <td className="border px-3 py-2">
+                  {g.user_name || "-"}
+                </td>
                 <td className="border px-3 py-2 space-x-2">
-                  {/* ✏️ زر التعديل */}
                   <button onClick={() => openEdit(g)}>✏️</button>
-
-                  {/* 🗑️ زر الحذف */}
                   <button
                     onClick={() => deleteGroup(g.id)}
                     className="text-red-600"
@@ -192,7 +191,7 @@ const CashBoxGroups: React.FC = () => {
 
             {!groups.length && !loading && (
               <tr>
-                <td colSpan={5} className="py-6 text-gray-500">
+                <td colSpan={6} className="py-6 text-gray-500">
                   لا توجد بيانات
                 </td>
               </tr>
@@ -201,7 +200,7 @@ const CashBoxGroups: React.FC = () => {
         </table>
       </div>
 
-      {/* ===== Modal ===== */}
+      {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-[#eef4ee] p-6 rounded w-[420px] space-y-3">
