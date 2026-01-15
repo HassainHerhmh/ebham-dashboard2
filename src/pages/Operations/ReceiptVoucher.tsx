@@ -191,8 +191,8 @@ const loadVouchers = async () => {
           notes: v.notes,
           handling: v.handling,
           createdAt: v.created_at,
-          user: v.created_by || "—",
-          branch: v.branch_id || "—",
+     user: v.user_name || "—",     // بدل الرقم
+  branch: v.branch_name || "—", // بدل الرقم
         };
       })
     );
