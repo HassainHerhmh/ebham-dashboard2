@@ -7,7 +7,7 @@ import api from "../../services/api";
 
 type Account = {
   id: number;
-  code: string;
+  code?: string;
   name_ar: string;
 };
 
@@ -17,16 +17,16 @@ type Currency = {
   code: string;
 };
 
-type EntryRow = {
+type Row = {
   id: number;
-  journal_date: string;
+  date: string;
   amount: number;
-  currency_name: string;
+  currency: string;
   from_account: string;
   to_account: string;
   notes: string;
-  user_name: string;
-  branch_name: string;
+  user: string;
+  branch: string;
 };
 
 const today = new Date().toLocaleDateString("en-CA");
@@ -34,45 +34,50 @@ const today = new Date().toLocaleDateString("en-CA");
 const JournalEntry: React.FC = () => {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
-  const [list, setList] = useState<EntryRow[]>([]);
+  const [rows, setRows] = useState<Row[]>([]);
 
   const [showModal, setShowModal] = useState(false);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
 
   const [date, setDate] = useState(today);
   const [amount, setAmount] = useState("");
   const [currencyId, setCurrencyId] = useState("");
   const [notes, setNotes] = useState("");
 
-  const [fromAccount, setFromAccount] = useState<Account | null>(null);
-  const [toAccount, setToAccount] = useState<Account | null>(null);
+  const [fromAccount, setFromAccount] = useState("");
+  const [fromAccountName, setFromAccountName] = useState("");
 
-  const [fromQuery, setFromQuery] = useState("");
-  const [toQuery, setToQuery] = useState("");
+  const [toAccount, setToAccount] = useState("");
+  const [toAccountName, setToAccountName] = useState("");
+
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     fetchAccounts();
     fetchCurrencies();
-    loadEntries();
+    loadRows();
   }, []);
 
   const fetchAccounts = async () => {
     const res = await api.get("/accounts/sub-for-ceiling");
-    setAccounts(res.data?.list || []);
+    const data = res.data?.list || res.data || [];
+    setAccounts(Array.isArray(data) ? data : []);
   };
 
   const fetchCurrencies = async () => {
     const res = await api.get("/currencies");
-    setCurrencies(res.data?.list || res.data?.currencies || []);
+    const data = res.data?.list || res.data || [];
+    setCurrencies(Array.isArray(data) ? data : []);
   };
 
-  const loadEntries = async () => {
+  const loadRows = async () => {
     const res = await api.get("/journal-entries");
-    if (res.data.success) setList(res.data.list);
+    if (res.data?.success) setRows(res.data.list || []);
   };
 
   const saveEntry = async () => {
     if (!fromAccount || !toAccount || !amount || !currencyId) {
-      alert("أكمل البيانات");
+      alert("يرجى إدخال جميع البيانات");
       return;
     }
 
@@ -88,137 +93,160 @@ const JournalEntry: React.FC = () => {
 
     await api.post("/journal-entries", {
       ...base,
-      account_id: fromAccount.id,
+      account_id: Number(fromAccount),
       debit: Number(amount),
       credit: 0,
     });
 
     await api.post("/journal-entries", {
       ...base,
-      account_id: toAccount.id,
+      account_id: Number(toAccount),
       debit: 0,
       credit: Number(amount),
     });
 
+    await loadRows();
     setShowModal(false);
-    setAmount("");
-    setCurrencyId("");
-    setNotes("");
-    setFromAccount(null);
-    setToAccount(null);
-    setFromQuery("");
-    setToQuery("");
-
-    loadEntries();
+    resetForm();
   };
 
-  const renderAccountPicker = (
-    query: string,
-    setQuery: any,
-    setAcc: any
-  ) => {
-    const filtered = accounts.filter(a =>
-      a.name_ar.toLowerCase().includes(query.toLowerCase())
-    );
+  const resetForm = () => {
+    setDate(today);
+    setAmount("");
+    setCurrencyId("");
+    setFromAccount("");
+    setFromAccountName("");
+    setToAccount("");
+    setToAccountName("");
+    setNotes("");
+  };
 
-    return (
-      <div className="relative w-full">
-        <input
-          className="input w-full"
-          placeholder="اكتب اسم الحساب..."
-          value={query}
-          onChange={e => setQuery(e.target.value)}
-        />
-        {query && (
-          <div className="absolute z-10 bg-white border w-full max-h-40 overflow-y-auto rounded shadow">
-            {filtered.slice(0, 50).map(a => (
+  const filtered = rows.filter(r =>
+    r.from_account.includes(search) ||
+    r.to_account.includes(search) ||
+    r.notes.includes(search)
+  );
+
+  const AccountInput = ({
+    value,
+    setValue,
+    setId,
+    placeholder,
+  }: any) => (
+    <div className="relative w-full">
+      <input
+        className="input w-full"
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+      />
+
+      {value && (
+        <div className="absolute z-50 bg-white border rounded-lg mt-1 w-full max-h-40 overflow-y-auto">
+          {accounts
+            .filter(a => a.name_ar.includes(value))
+            .slice(0, 20)
+            .map(a => (
               <div
                 key={a.id}
+                className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
                 onClick={() => {
-                  setAcc(a);
-                  setQuery(a.name_ar);
+                  setValue(a.name_ar);
+                  setId(String(a.id));
                 }}
-                className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-right"
               >
                 {a.name_ar}
               </div>
             ))}
-          </div>
-        )}
-      </div>
-    );
-  };
+        </div>
+      )}
+    </div>
+  );
 
   return (
-    <div className="bg-white rounded-lg shadow p-6 space-y-4">
-      <div className="flex justify-end">
-        <button onClick={() => setShowModal(true)} className="btn-green">
-          ➕ إضافة
-        </button>
+    <div className="space-y-4">
+      {/* Actions */}
+      <div className="flex justify-between items-center bg-[#e9efe6] p-4 rounded-lg">
+        <div className="flex gap-2">
+          <button onClick={() => setShowModal(true)} className="btn-green">➕ إضافة</button>
+          <button className="btn-gray">✏️ تعديل</button>
+          <button className="btn-red">🗑️ حذف</button>
+          <button onClick={loadRows} className="btn-gray">🔄 تحديث</button>
+        </div>
+
+        <input
+          placeholder="🔍 بحث..."
+          className="input w-56"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
       </div>
 
-      {/* ===== Table ===== */}
-      <table className="w-full text-sm text-center border">
-        <thead className="bg-[#2f4b75] text-white">
-          <tr>
-            <th>التاريخ</th>
-            <th>المبلغ</th>
-            <th>العملة</th>
-            <th>من حساب</th>
-            <th>إلى حساب</th>
-            <th>ملاحظات</th>
-            <th>المستخدم</th>
-            <th>الفرع</th>
-          </tr>
-        </thead>
-        <tbody>
-          {list.length === 0 && (
+      {/* Table */}
+      <div className="bg-white rounded shadow overflow-x-auto">
+        <table className="w-full text-sm text-center border">
+          <thead className="bg-green-600 text-white">
             <tr>
-              <td colSpan={8} className="py-6 text-gray-400">
-                لا توجد بيانات
-              </td>
+              <th className="border px-2 py-1">التاريخ</th>
+              <th className="border px-2 py-1">المبلغ</th>
+              <th className="border px-2 py-1">العملة</th>
+              <th className="border px-2 py-1">من حساب</th>
+              <th className="border px-2 py-1">إلى حساب</th>
+              <th className="border px-2 py-1">ملاحظات</th>
+              <th className="border px-2 py-1">المستخدم</th>
+              <th className="border px-2 py-1">الفرع</th>
             </tr>
-          )}
-          {list.map(r => (
-            <tr key={r.id}>
-              <td>{r.journal_date}</td>
-              <td>{r.amount}</td>
-              <td>{r.currency_name}</td>
-              <td>{r.from_account}</td>
-              <td>{r.to_account}</td>
-              <td>{r.notes}</td>
-              <td>{r.user_name}</td>
-              <td>{r.branch_name}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {filtered.length ? (
+              filtered.map(r => (
+                <tr key={r.id}>
+                  <td className="border px-2 py-1">{r.date}</td>
+                  <td className="border px-2 py-1">{r.amount}</td>
+                  <td className="border px-2 py-1">{r.currency}</td>
+                  <td className="border px-2 py-1">{r.from_account}</td>
+                  <td className="border px-2 py-1">{r.to_account}</td>
+                  <td className="border px-2 py-1">{r.notes}</td>
+                  <td className="border px-2 py-1">{r.user}</td>
+                  <td className="border px-2 py-1">{r.branch}</td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={8} className="py-6 text-gray-400 border">
+                  لا توجد بيانات
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
 
-      {/* ===== Modal ===== */}
+      {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
-          <div className="bg-white rounded-lg p-6 w-[600px] space-y-4">
-            <h2 className="text-lg font-bold text-center">إضافة قيد يومي</h2>
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white w-[720px] rounded-xl p-6 space-y-4">
+            <h3 className="text-lg font-bold text-center">إضافة قيد يومي</h3>
 
-            <div className="grid grid-cols-3 gap-3">
-              <input type="date" className="input" value={date} onChange={e => setDate(e.target.value)} />
-              <select className="input" value={currencyId} onChange={e => setCurrencyId(e.target.value)}>
-                <option value="">العملة</option>
+            <div className="grid grid-cols-3 gap-4">
+              <input type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} />
+              <select className="input" value={currencyId} onChange={(e) => setCurrencyId(e.target.value)}>
+                <option value="">-- العملة --</option>
                 {currencies.map(c => (
-                  <option key={c.id} value={c.id}>{c.name_ar}</option>
+                  <option key={c.id} value={c.id}>{c.name_ar} ({c.code})</option>
                 ))}
               </select>
-              <input className="input" placeholder="المبلغ" value={amount} onChange={e => setAmount(e.target.value)} />
+              <input className="input" placeholder="المبلغ" value={amount} onChange={(e) => setAmount(e.target.value)} />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              {renderAccountPicker(fromQuery, setFromQuery, setFromAccount)}
-              {renderAccountPicker(toQuery, setToQuery, setToAccount)}
+              <AccountInput value={fromAccountName} setValue={setFromAccountName} setId={setFromAccount} placeholder="الحساب المدين" />
+              <AccountInput value={toAccountName} setValue={setToAccountName} setId={setToAccount} placeholder="الحساب الدائن" />
             </div>
 
-            <textarea className="notes-box" placeholder="ملاحظات" value={notes} onChange={e => setNotes(e.target.value)} />
+            <textarea className="input" placeholder="ملاحظات" value={notes} onChange={(e) => setNotes(e.target.value)} />
 
-            <div className="flex justify-end gap-2">
+            <div className="flex justify-between">
               <button onClick={() => setShowModal(false)} className="btn-gray">إلغاء</button>
               <button onClick={saveEntry} className="btn-green">حفظ</button>
             </div>
@@ -227,10 +255,10 @@ const JournalEntry: React.FC = () => {
       )}
 
       <style>{`
-        .input{padding:10px;border-radius:8px;border:1px solid #ccc}
-        .btn-green{background:#2f4b75;color:#fff;padding:10px 20px;border-radius:10px}
-        .btn-gray{background:#e5e7eb;padding:10px 20px;border-radius:10px}
-        .notes-box{width:100%;height:90px;padding:10px;border-radius:10px;border:1px solid #ccc}
+        .input { padding:10px; border-radius:8px; border:1px solid #ccc; }
+        .btn-green { background:#14532d; color:#fff; padding:8px 16px; border-radius:8px; }
+        .btn-gray { background:#e5e7eb; padding:8px 16px; border-radius:8px; }
+        .btn-red { background:#dc2626; color:#fff; padding:8px 16px; border-radius:8px; }
       `}</style>
     </div>
   );
