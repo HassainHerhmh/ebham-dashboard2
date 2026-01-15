@@ -791,6 +791,22 @@ export const accountsApi = {
   delete: async (id: number) =>
     (await api.delete(`/account-ceilings/${id}`)).data,
 };
+/* =========================
+   RECEIPT VOUCHERS
+========================= */
+(api as any).receiptVouchers = {
+  getAll: async () =>
+    (await api.get("/receipt-vouchers")).data,
+
+  create: async (data: any) =>
+    (await api.post("/receipt-vouchers", data)).data,
+
+  update: async (id: number, data: any) =>
+    (await api.put(`/receipt-vouchers/${id}`, data)).data,
+
+  remove: async (id: number) =>
+    (await api.delete(`/receipt-vouchers/${id}`)).data,
+};
 
 
 export default api;
