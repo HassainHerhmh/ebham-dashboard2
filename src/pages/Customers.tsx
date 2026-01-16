@@ -1,21 +1,10 @@
+// Customers.tsx
 import React, { useState, useEffect, useRef } from "react";
 import api from "../services/api";
-
-declare global {
-  interface Window {
-    google: any;
-  }
-}
 
 interface Branch {
   id: number;
   name: string;
-}
-
-interface City {
-  id: number;
-  name: string;
-  delivery_fee: number;
 }
 
 interface Customer {
@@ -32,8 +21,7 @@ interface Address {
   id: number;
   customer_id: number;
   customer_name: string;
-  province: number;
-  district: number;
+  district: string;
   location_type?: string;
   address?: string;
   gps_link?: string;
@@ -46,7 +34,6 @@ interface Address {
 interface Neighborhood {
   id: number;
   name: string;
-  city_id: number;
 }
 
 const Customers: React.FC = () => {
@@ -57,20 +44,10 @@ const Customers: React.FC = () => {
   const isAdmin = Boolean(currentUser?.is_admin_branch);
 
   const [branches, setBranches] = useState<Branch[]>([]);
-  const [selectedBranch, setSelectedBranch] = useState<string>("all");
-
-  const [cities, setCities] = useState<City[]>([]);
-  const [neighborhoods, setNeighborhoods] = useState<Neighborhood[]>([]);
-
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [addresses, setAddresses] = useState<Address[]>([]);
-  const [loading, setLoading] = useState(true);
-
   const [searchCustomer, setSearchCustomer] = useState("");
   const [searchAddress, setSearchAddress] = useState("");
-
-  const [isAddOpen, setIsAddOpen] = useState(false);
-  const [isEditOpen, setIsEditOpen] = useState(false);
   const [isAddressesOpen, setIsAddressesOpen] = useState(false);
   const [isAddAddressOpen, setIsAddAddressOpen] = useState(false);
 
@@ -80,41 +57,20 @@ const Customers: React.FC = () => {
     setBranches(res.data.branches || []);
   };
 
-  const fetchCities = async () => {
-    const data = await api.cities.getCities();
-    if (data.success) setCities(data.cities);
-  };
-
   const fetchCustomers = async () => {
-    setLoading(true);
-
-    const res = await api.get("/customers", {
-      headers:
-        isAdmin && selectedBranch !== "all"
-          ? { "x-branch-id": selectedBranch }
-          : {},
-    });
-
+    const res = await api.get("/customers");
     if (res.data.success) setCustomers(res.data.customers);
-    setLoading(false);
   };
 
   const fetchAddresses = async () => {
-    const res = await api.get("/customer-addresses", {
-      headers:
-        isAdmin && selectedBranch !== "all"
-          ? { "x-branch-id": selectedBranch }
-          : {},
-    });
-
+    const res = await api.get("/customer-addresses");
     if (res.data.success) setAddresses(res.data.addresses);
   };
 
   useEffect(() => {
     fetchBranches();
-    fetchCities();
     fetchCustomers();
-  }, [selectedBranch]);
+  }, []);
 
   const filteredCustomers = customers.filter(
     (c) =>
@@ -130,33 +86,9 @@ const Customers: React.FC = () => {
 
   return (
     <div className="p-6 space-y-6" dir="rtl">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">📋 العملاء</h1>
-
-        {isAdmin && (
-          <select
-            className="border p-2 rounded"
-            value={selectedBranch}
-            onChange={(e) => setSelectedBranch(e.target.value)}
-          >
-            <option value="all">الإدارة العامة</option>
-            {branches.map((b) => (
-              <option key={b.id} value={String(b.id)}>
-                {b.name}
-              </option>
-            ))}
-          </select>
-        )}
-      </div>
+      <h1 className="text-2xl font-bold">📋 العملاء</h1>
 
       <div className="flex justify-between">
-        <button
-          onClick={() => setIsAddOpen(true)}
-          className="bg-green-600 text-white px-4 py-2 rounded"
-        >
-          ➕ إضافة عميل
-        </button>
-
         <button
           onClick={() => {
             fetchAddresses();
@@ -202,12 +134,9 @@ const Customers: React.FC = () => {
         </table>
       </div>
 
-      {/* هنا يبدأ مودال إدارة العناوين */}
       {isAddressesOpen && (
         <div className="fixed inset-0 bg-black/40 z-50">
           <div className="absolute inset-0 bg-white p-4 overflow-auto">
-
-            {/* زر الإغلاق الصغير */}
             <button
               onClick={() => setIsAddressesOpen(false)}
               className="fixed top-2 right-2 bg-red-600 text-white w-6 h-6 text-xs rounded-full"
@@ -236,10 +165,9 @@ const Customers: React.FC = () => {
               <thead className="bg-gray-100">
                 <tr>
                   <th>العميل</th>
-                  <th>المدينة</th>
                   <th>الحي</th>
                   {isAdmin && <th>الفرع</th>}
-                  <th>العنوان التفصيلي</th>
+                  <th>العنوان</th>
                   <th>Latitude</th>
                   <th>Longitude</th>
                   <th>GPS</th>
@@ -250,7 +178,6 @@ const Customers: React.FC = () => {
                 {filteredAddresses.map((a) => (
                   <tr key={a.id} className="border-t">
                     <td>{a.customer_name}</td>
-                    <td>{a.province}</td>
                     <td>{a.district}</td>
                     {isAdmin && <td>{a.branch_name || "-"}</td>}
                     <td>{a.address || "-"}</td>
@@ -281,11 +208,10 @@ const Customers: React.FC = () => {
         </div>
       )}
 
-      {/* مودال إضافة عنوان */}
       {isAddAddressOpen && (
         <AddAddressModal
           customers={customers}
-          cities={cities}
+          branches={branches}
           onClose={() => setIsAddAddressOpen(false)}
           onSaved={() => {
             setIsAddAddressOpen(false);
@@ -299,23 +225,21 @@ const Customers: React.FC = () => {
 
 export default Customers;
 
-/* ======================================================
-   مودال إضافة عنوان مع خريطة بسيطة بدون API
-====================================================== */
+/* مودال إضافة عنوان */
 
 const AddAddressModal = ({
   customers,
-  cities,
+  branches,
   onClose,
   onSaved,
 }: {
   customers: Customer[];
-  cities: City[];
+  branches: Branch[];
   onClose: () => void;
   onSaved: () => void;
 }) => {
   const [customerId, setCustomerId] = useState("");
-  const [cityId, setCityId] = useState("");
+  const [branchId, setBranchId] = useState("");
   const [district, setDistrict] = useState("");
   const [address, setAddress] = useState("");
   const [lat, setLat] = useState("");
@@ -328,7 +252,6 @@ const AddAddressModal = ({
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    // تحويل بسيط لقيم وهمية (بدون API)
     const fakeLat = (15 + y / 10).toFixed(6);
     const fakeLng = (45 + x / 10).toFixed(6);
 
@@ -340,28 +263,25 @@ const AddAddressModal = ({
     lat && lng ? `https://www.google.com/maps?q=${lat},${lng}` : "";
 
   const handleSave = async () => {
-    if (!customerId || !cityId || !address)
+    if (!customerId || !branchId || !address)
       return alert("❌ البيانات ناقصة");
 
     const res = await api.customers.addAddress({
       customer_id: Number(customerId),
-      province: Number(cityId),
-      district: district || null,
+      branch_id: Number(branchId),
+      district,
       address,
       latitude: lat,
       longitude: lng,
       gps_link: gpsLink,
     });
 
-    if (res.success) {
-      onSaved();
-    }
+    if (res.success) onSaved();
   };
 
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex justify-center items-center">
       <div className="bg-white w-full max-w-2xl p-4 rounded relative">
-
         <button
           onClick={onClose}
           className="absolute top-2 right-2 bg-red-600 text-white w-6 h-6 text-xs rounded-full"
@@ -387,13 +307,13 @@ const AddAddressModal = ({
 
           <select
             className="border p-2 w-full"
-            value={cityId}
-            onChange={(e) => setCityId(e.target.value)}
+            value={branchId}
+            onChange={(e) => setBranchId(e.target.value)}
           >
-            <option value="">اختر المدينة</option>
-            {cities.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
+            <option value="">اختر الفرع</option>
+            {branches.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name}
               </option>
             ))}
           </select>
