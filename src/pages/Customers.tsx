@@ -345,6 +345,17 @@ const AddAddressModal = ({ customers, branches, onClose, onSaved }: any) => {
             <option key={n.id} value={n.name}>{n.name}</option>
           ))}
         </select>
+          <select
+  className="border p-2 w-full"
+  value={locationType}
+  onChange={(e) => setLocationType(e.target.value)}
+>
+  <option value="">اختر نوع الموقع</option>
+  <option value="شقة">شقة</option>
+  <option value="منزل">منزل</option>
+  <option value="محل">محل</option>
+  <option value="مكتب">مكتب</option>
+</select>
 
         <input className="border p-2 w-full mb-2" placeholder="العنوان التفصيلي" value={address} onChange={(e) => setAddress(e.target.value)} />
 
