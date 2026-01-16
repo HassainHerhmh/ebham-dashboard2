@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import api from "../services/api";
 
 interface Branch {
@@ -14,24 +14,20 @@ interface Customer {
   created_at?: string;
   branch_id?: number;
   branch_name?: string;
+  is_active?: number;
 }
 
 interface Address {
   id: number;
   customer_id: number;
   customer_name: string;
-  district: string;
+  district_name?: string;
   address?: string;
   gps_link?: string;
   latitude?: string;
   longitude?: string;
   branch_id?: number;
   branch_name?: string;
-}
-
-interface Neighborhood {
-  id: number;
-  name: string;
 }
 
 const Customers: React.FC = () => {
@@ -88,6 +84,28 @@ const Customers: React.FC = () => {
       (a.address || "").toLowerCase().includes(searchAddress.toLowerCase())
   );
 
+  // ===== Actions =====
+  const openEditCustomer = (c: Customer) => {
+    console.log("edit", c); // اربطه بمودال التعديل لاحقًا
+  };
+
+  const handleDeleteCustomer = async (id: number) => {
+    if (!confirm("هل أنت متأكد من حذف العميل؟")) return;
+    await api.delete(`/customers/${id}`);
+    fetchCustomers();
+  };
+
+  const handleToggleCustomer = async (id: number) => {
+    await api.post(`/customers/${id}/toggle`);
+    fetchCustomers();
+  };
+
+  const handleResetPassword = async (id: number) => {
+    if (!confirm("إعادة تعيين كلمة المرور؟")) return;
+    const res = await api.post(`/customers/${id}/reset-password`);
+    alert(res.data?.password ? `كلمة المرور الجديدة: ${res.data.password}` : "تمت العملية");
+  };
+
   return (
     <div className="p-6 space-y-6" dir="rtl">
       <div className="flex justify-between items-center">
@@ -130,17 +148,46 @@ const Customers: React.FC = () => {
               <th>البريد</th>
               {isAdmin && <th>الفرع</th>}
               <th>التاريخ</th>
+              <th>الإجراءات</th>
             </tr>
           </thead>
           <tbody>
             {filteredCustomers.map((c) => (
               <tr key={c.id} className="border-b">
                 <td>{c.id}</td>
-                <td>{c.name}</td>
+                <td className={c.is_active === 0 ? "text-gray-400 line-through" : ""}>
+                  {c.name}
+                </td>
                 <td>{c.phone}</td>
                 <td>{c.email || "-"}</td>
                 {isAdmin && <td>{c.branch_name || "-"}</td>}
                 <td>{c.created_at?.slice(0, 10)}</td>
+                <td className="space-x-1 space-x-reverse">
+                  <button
+                    onClick={() => openEditCustomer(c)}
+                    className="bg-yellow-500 text-white px-2 py-1 rounded text-xs"
+                  >
+                    تعديل
+                  </button>
+                  <button
+                    onClick={() => handleDeleteCustomer(c.id)}
+                    className="bg-red-600 text-white px-2 py-1 rounded text-xs"
+                  >
+                    حذف
+                  </button>
+                  <button
+                    onClick={() => handleToggleCustomer(c.id)}
+                    className="bg-gray-700 text-white px-2 py-1 rounded text-xs"
+                  >
+                    تعطيل / تفعيل
+                  </button>
+                  <button
+                    onClick={() => handleResetPassword(c.id)}
+                    className="bg-blue-600 text-white px-2 py-1 rounded text-xs"
+                  >
+                    إعادة كلمة المرور
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -191,18 +238,14 @@ const Customers: React.FC = () => {
                 {filteredAddresses.map((a) => (
                   <tr key={a.id} className="border-t">
                     <td>{a.customer_name}</td>
-                   <td>{a.district_name || "-"}</td>
+                    <td>{a.district_name || "-"}</td>
                     {isAdmin && <td>{a.branch_name || "-"}</td>}
                     <td>{a.address || "-"}</td>
                     <td>{a.latitude || "-"}</td>
                     <td>{a.longitude || "-"}</td>
                     <td>
                       {a.gps_link ? (
-                        <a
-                          href={a.gps_link}
-                          target="_blank"
-                          className="text-blue-600 underline"
-                        >
+                        <a href={a.gps_link} target="_blank" className="text-blue-600 underline">
                           GPS
                         </a>
                       ) : (
@@ -221,6 +264,10 @@ const Customers: React.FC = () => {
         </div>
       )}
 
+      {isAddCustomerOpen && (
+        <AddCustomerModal onClose={() => setIsAddCustomerOpen(false)} onSaved={fetchCustomers} />
+      )}
+
       {isAddAddressOpen && (
         <AddAddressModal
           customers={customers}
@@ -232,15 +279,12 @@ const Customers: React.FC = () => {
           }}
         />
       )}
-
-      {isAddCustomerOpen && (
-        <AddCustomerModal onClose={() => setIsAddCustomerOpen(false)} onSaved={fetchCustomers} />
-      )}
     </div>
   );
 };
 
 export default Customers;
+
 
 /* ================= مودال إضافة عميل ================= */
 
