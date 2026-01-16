@@ -191,7 +191,7 @@ const Customers: React.FC = () => {
                 {filteredAddresses.map((a) => (
                   <tr key={a.id} className="border-t">
                     <td>{a.customer_name}</td>
-                    <td>{a.district}</td>
+                   <td>{a.district_name || "-"}</td>
                     {isAdmin && <td>{a.branch_name || "-"}</td>}
                     <td>{a.address || "-"}</td>
                     <td>{a.latitude || "-"}</td>
