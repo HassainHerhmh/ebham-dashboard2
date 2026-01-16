@@ -6,6 +6,11 @@ interface Branch {
   name: string;
   address?: string;
   phone?: string;
+
+  // بيانات اليوم الحالي من السيرفر
+  today_from?: string;
+  today_to?: string;
+  today_closed?: boolean;
 }
 
 interface UserInfo {
@@ -120,7 +125,7 @@ const BranchesSettings: React.FC = () => {
             <th className="border p-2">الاسم</th>
             <th className="border p-2">العنوان</th>
             <th className="border p-2">الهاتف</th>
-            <th className="border p-2">الإجراءات</th>
+            <th className="border p-2">الوقت / الإجراءات</th>
           </tr>
         </thead>
         <tbody>
@@ -129,16 +134,27 @@ const BranchesSettings: React.FC = () => {
               <td className="border p-2">{b.name}</td>
               <td className="border p-2">{b.address || "-"}</td>
               <td className="border p-2">{b.phone || "-"}</td>
-              <td className="border p-2 text-center space-x-1 space-x-reverse">
-                <button
-                  onClick={() => openTimeModal(b.id)}
-                  className="bg-purple-500 text-white px-2 py-1 rounded"
-                >
-                  ⏰ الوقت
-                </button>
 
+              <td className="border p-2 text-center">
+                {/* مربع الوقت الأزرق */}
+                <div
+                  onClick={() => openTimeModal(b.id)}
+                  className="cursor-pointer bg-blue-500 text-white rounded px-3 py-2 text-sm hover:bg-blue-600 transition mb-2"
+                >
+                  {b.today_closed ? (
+                    <span>🚫 مغلق اليوم</span>
+                  ) : b.today_from && b.today_to ? (
+                    <span>
+                      🕒 {b.today_from} – {b.today_to}
+                    </span>
+                  ) : (
+                    <span>⏰ غير محدد</span>
+                  )}
+                </div>
+
+                {/* أزرار الإدارة العامة فقط */}
                 {user?.is_admin_branch && (
-                  <>
+                  <div className="space-x-1 space-x-reverse">
                     <button
                       onClick={() => openEditModal(b)}
                       className="bg-green-500 text-white px-2 py-1 rounded"
@@ -151,7 +167,7 @@ const BranchesSettings: React.FC = () => {
                     >
                       حذف
                     </button>
-                  </>
+                  </div>
                 )}
               </td>
             </tr>
@@ -188,7 +204,10 @@ const BranchesSettings: React.FC = () => {
 
             <div className="flex justify-end gap-2">
               <button onClick={() => setIsModalOpen(false)}>إلغاء</button>
-              <button onClick={handleSave} className="bg-blue-500 text-white px-4 py-1 rounded">
+              <button
+                onClick={handleSave}
+                className="bg-blue-500 text-white px-4 py-1 rounded"
+              >
                 حفظ
               </button>
             </div>
@@ -196,7 +215,7 @@ const BranchesSettings: React.FC = () => {
         </div>
       )}
 
-      {/* هنا يجي Modal الوقت – نربطه بالـ branchId */}
+      {/* مودل الوقت */}
       {isTimeModalOpen && timeBranchId && (
         <YourWorkTimeModal
           branchId={timeBranchId}
