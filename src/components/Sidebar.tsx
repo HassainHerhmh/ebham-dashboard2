@@ -158,14 +158,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             </Link>
           )}
 
-          {/* إدارة المناطق */}
+          {/* اعدادات التوصيل  */}
           {(isAdmin || areasGroup.some(i => canShow(i.key))) && (
             <>
               <div
                 className="rounded px-4 py-2 cursor-pointer flex justify-between items-center hover:bg-blue-100"
                 onClick={() => setAreasOpen(!areasOpen)}
               >
-                <span className="font-semibold">إدارة المناطق</span>
+                <span className="font-semibold">اعدادات التوصيل</span>
                 {areasOpen ? <ChevronDown size={16} /> : <ChevronLeft size={16} />}
               </div>
 
@@ -184,14 +184,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             </>
           )}
 
-          {/* توصيل */}
+          {/* اتهيئة المحلات */}
           {(isAdmin || deliveryGroup.some(i => canShow(i.key))) && (
             <>
               <div
                 className="rounded px-4 py-2 cursor-pointer flex justify-between items-center hover:bg-blue-100"
                 onClick={() => setDeliveryOpen(!deliveryOpen)}
               >
-                <span className="font-semibold">توصيل</span>
+                <span className="font-semibold">تهيئة المحلات</span>
                 {deliveryOpen ? <ChevronDown size={16} /> : <ChevronLeft size={16} />}
               </div>
 
