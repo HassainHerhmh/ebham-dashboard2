@@ -7,7 +7,6 @@ interface Branch {
   address?: string;
   phone?: string;
 
-  // بيانات اليوم الحالي من السيرفر
   today_from?: string;
   today_to?: string;
   today_closed?: boolean;
@@ -35,8 +34,10 @@ const BranchesSettings: React.FC = () => {
 
   const fetchData = async () => {
     try {
-      const u = await api.get("/me");
-      setUser(u.data.user);
+      const stored = localStorage.getItem("user");
+      if (stored) {
+        setUser(JSON.parse(stored));
+      }
 
       const res = await api.get("/branches");
       setBranches(res.data.branches || []);
