@@ -20,7 +20,7 @@ import Categories from "./pages/Categories";
 import Units from "./pages/Units";
 import Products from "./pages/Products";
 import Users from "./pages/Users";
-import Cities from "./pages/Cities";
+import Cities from "./pages/DeliveryFeesSettings";
 import Neighborhoods from "./pages/Neighborhoods";
 
 // الوكلاء
@@ -141,12 +141,30 @@ const App: React.FC = () => {
                     <Route path="/agents/info" element={<ProtectedRoute section="agent_info"><AgentInfo /></ProtectedRoute>} />
                     <Route path="/agents/groups" element={<ProtectedRoute section="agent_groups"><AgentGroups /></ProtectedRoute>} />
 
-                    {/* الإعدادات */}
-                    <Route path="/settings/:tab" element={<ProtectedRoute section="settings"><Settings /></ProtectedRoute>} />
-                    <Route path="/settings" element={<Navigate to="/settings/stores" replace />} />
+                   {/* الإعدادات */}
+<Route
+  path="/settings/:tab"
+  element={
+    <ProtectedRoute section="settings">
+      <Settings />
+    </ProtectedRoute>
+  }
+/>
 
-                    <Route path="/unauthorized" element={<Unauthorized />} />
-                    <Route path="*" element={<Unauthorized />} />
+<Route
+  path="/settings/delivery-fees"
+  element={
+    <ProtectedRoute section="settings">
+      <DeliveryFeesSettings />
+    </ProtectedRoute>
+  }
+/>
+
+<Route path="/settings" element={<Navigate to="/settings/stores" replace />} />
+
+<Route path="/unauthorized" element={<Unauthorized />} />
+<Route path="*" element={<Unauthorized />} />
+
                   </Routes>
                 </main>
               </div>
