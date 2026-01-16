@@ -244,28 +244,116 @@ export default Customers;
 
 /* ================= مودال إضافة عميل ================= */
 
-const AddCustomerModal = ({ onClose, onSaved }: any) => {
+const AddCustomerModal = ({ branches, isAdmin, onClose, onSaved }: any) => {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [branchId, setBranchId] = useState("");
 
-  const save = async () => {
-    if (!name || !phone) return alert("البيانات ناقصة");
-    await api.post("/customers", { name, phone });
-    onSaved();
-    onClose();
+  const handleSave = async () => {
+    if (!name || !phone || !password || !confirmPassword)
+      return alert("البيانات ناقصة");
+
+    if (password !== confirmPassword)
+      return alert("كلمة المرور غير متطابقة");
+
+    const payload: any = {
+      name,
+      phone,
+      email: email || null,
+      password,
+    };
+
+    // فرع الإدارة فقط يرسل branch_id
+    if (isAdmin && branchId) {
+      payload.branch_id = Number(branchId);
+    }
+
+    const res = await api.post("/customers", payload);
+
+    if (res.data?.success) {
+      onSaved();
+      onClose();
+    }
   };
 
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
-      <div className="bg-white p-4 w-full max-w-md rounded">
+      <div className="bg-white p-4 w-full max-w-md rounded relative">
+        <button
+          onClick={onClose}
+          className="absolute top-2 right-2 bg-red-600 text-white w-6 h-6 text-xs rounded-full"
+        >
+          ✖
+        </button>
+
         <h3 className="font-bold mb-3">➕ إضافة عميل</h3>
-        <input className="border p-2 w-full mb-2" placeholder="الاسم" value={name} onChange={(e) => setName(e.target.value)} />
-        <input className="border p-2 w-full mb-3" placeholder="الجوال" value={phone} onChange={(e) => setPhone(e.target.value)} />
-        <button onClick={save} className="bg-green-600 text-white w-full py-2 rounded">حفظ</button>
+
+        <input
+          className="border p-2 w-full mb-2"
+          placeholder="الاسم"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+
+        <input
+          className="border p-2 w-full mb-2"
+          placeholder="رقم الجوال"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+        />
+
+        <input
+          className="border p-2 w-full mb-2"
+          placeholder="البريد الإلكتروني"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+
+        <input
+          type="password"
+          className="border p-2 w-full mb-2"
+          placeholder="كلمة المرور"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+
+        <input
+          type="password"
+          className="border p-2 w-full mb-2"
+          placeholder="تأكيد كلمة المرور"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+        />
+
+        {isAdmin && (
+          <select
+            className="border p-2 w-full mb-2"
+            value={branchId}
+            onChange={(e) => setBranchId(e.target.value)}
+          >
+            <option value="">اختر الفرع</option>
+            {branches.map((b: any) => (
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
+            ))}
+          </select>
+        )}
+
+        <button
+          onClick={handleSave}
+          className="bg-green-600 text-white w-full py-2 rounded"
+        >
+          حفظ
+        </button>
       </div>
     </div>
   );
 };
+
 
 /* ================= مودال إضافة عنوان ================= */
 
