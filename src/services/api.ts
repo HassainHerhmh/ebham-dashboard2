@@ -871,4 +871,15 @@ export const createJournalEntry = (data: {
   // مستقبلاً يمكن إضافة تقارير أخرى هنا
 };
 
+// ===============================
+// Delivery Fees (رسوم التوصيل)
+// ===============================
+
+export const getDeliverySettings = () =>
+  api.get("/delivery-settings");
+
+export const saveDeliverySettings = (data: any) =>
+  api.post("/delivery-settings", data);
+
+
 export default api;
