@@ -6,11 +6,17 @@ interface Branch {
   name: string;
   address?: string;
   phone?: string;
-  created_at?: string;
+}
+
+interface UserInfo {
+  branch_id: number;
+  is_admin_branch: boolean;
 }
 
 const BranchesSettings: React.FC = () => {
   const [branches, setBranches] = useState<Branch[]>([]);
+  const [user, setUser] = useState<UserInfo | null>(null);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [selectedBranchId, setSelectedBranchId] = useState<number | null>(null);
@@ -19,21 +25,25 @@ const BranchesSettings: React.FC = () => {
   const [address, setAddress] = useState("");
   const [phone, setPhone] = useState("");
 
-  /* ===== Load ===== */
-  const fetchBranches = async () => {
+  const [isTimeModalOpen, setIsTimeModalOpen] = useState(false);
+  const [timeBranchId, setTimeBranchId] = useState<number | null>(null);
+
+  const fetchData = async () => {
     try {
+      const u = await api.get("/me");
+      setUser(u.data.user);
+
       const res = await api.get("/branches");
       setBranches(res.data.branches || []);
     } catch (err) {
-      console.error("خطأ في جلب الفروع:", err);
+      console.error(err);
     }
   };
 
   useEffect(() => {
-    fetchBranches();
+    fetchData();
   }, []);
 
-  /* ===== Open Modals ===== */
   const openAddModal = () => {
     setEditMode(false);
     setSelectedBranchId(null);
@@ -52,62 +62,59 @@ const BranchesSettings: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  /* ===== Save ===== */
   const handleSave = async () => {
-    if (!name.trim()) {
-      alert("❌ يرجى إدخال اسم الفرع");
-      return;
-    }
+    if (!name.trim()) return alert("أدخل اسم الفرع");
 
-    const branchData = { name, address, phone };
+    const data = { name, address, phone };
 
     try {
       if (editMode && selectedBranchId) {
-        const res = await api.put(
-          `/branches/${selectedBranchId}`,
-          branchData
-        );
-        alert(res.data.message || "تم التعديل");
+        await api.put(`/branches/${selectedBranchId}`, data);
       } else {
-        const res = await api.post("/branches", branchData);
-        alert(res.data.message || "تمت الإضافة");
+        const res = await api.post("/branches", data);
+        const newId = res.data.id;
+        setIsModalOpen(false);
+
+        if (user?.is_admin_branch && newId) {
+          setTimeBranchId(newId);
+          setIsTimeModalOpen(true);
+        }
       }
 
-      fetchBranches();
+      fetchData();
       setIsModalOpen(false);
-    } catch (err) {
-      console.error("خطأ:", err);
-      alert("حدث خطأ أثناء الحفظ");
+    } catch {
+      alert("حدث خطأ");
     }
   };
 
-  /* ===== Delete ===== */
   const handleDelete = async (id: number) => {
-    if (!window.confirm("هل أنت متأكد من الحذف؟")) return;
+    if (!window.confirm("هل أنت متأكد؟")) return;
+    await api.delete(`/branches/${id}`);
+    fetchData();
+  };
 
-    try {
-      const res = await api.delete(`/branches/${id}`);
-      alert(res.data.message || "تم الحذف");
-      fetchBranches();
-    } catch (err) {
-      console.error("خطأ في الحذف:", err);
-      alert("فشل الحذف");
-    }
+  const openTimeModal = (id: number) => {
+    setTimeBranchId(id);
+    setIsTimeModalOpen(true);
   };
 
   return (
     <div className="p-4" style={{ direction: "rtl" }}>
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-bold">📍 إدارة الفروع</h2>
-        <button
-          onClick={openAddModal}
-          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-        >
-          ➕ إضافة فرع
-        </button>
+        <h2 className="text-2xl font-bold">📍 الفروع</h2>
+
+        {user?.is_admin_branch && (
+          <button
+            onClick={openAddModal}
+            className="bg-blue-500 text-white px-4 py-2 rounded"
+          >
+            ➕ إضافة فرع
+          </button>
+        )}
       </div>
 
-      <table className="w-full border border-gray-300">
+      <table className="w-full border">
         <thead>
           <tr className="bg-gray-100">
             <th className="border p-2">الاسم</th>
@@ -117,85 +124,84 @@ const BranchesSettings: React.FC = () => {
           </tr>
         </thead>
         <tbody>
-          {branches.map((branch) => (
-            <tr key={branch.id}>
-              <td className="border p-2">{branch.name}</td>
-              <td className="border p-2">{branch.address || "-"}</td>
-              <td className="border p-2">{branch.phone || "-"}</td>
-              <td className="border p-2 text-center">
+          {branches.map((b) => (
+            <tr key={b.id}>
+              <td className="border p-2">{b.name}</td>
+              <td className="border p-2">{b.address || "-"}</td>
+              <td className="border p-2">{b.phone || "-"}</td>
+              <td className="border p-2 text-center space-x-1 space-x-reverse">
                 <button
-                  onClick={() => openEditModal(branch)}
-                  className="bg-green-500 text-white px-3 py-1 rounded mr-2 hover:bg-green-600"
+                  onClick={() => openTimeModal(b.id)}
+                  className="bg-purple-500 text-white px-2 py-1 rounded"
                 >
-                  تعديل
+                  ⏰ الوقت
                 </button>
-                <button
-                  onClick={() => handleDelete(branch.id)}
-                  className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
-                >
-                  حذف
-                </button>
+
+                {user?.is_admin_branch && (
+                  <>
+                    <button
+                      onClick={() => openEditModal(b)}
+                      className="bg-green-500 text-white px-2 py-1 rounded"
+                    >
+                      تعديل
+                    </button>
+                    <button
+                      onClick={() => handleDelete(b.id)}
+                      className="bg-red-500 text-white px-2 py-1 rounded"
+                    >
+                      حذف
+                    </button>
+                  </>
+                )}
               </td>
             </tr>
           ))}
-          {branches.length === 0 && (
-            <tr>
-              <td colSpan={4} className="p-4 text-center text-gray-500">
-                لا توجد فروع
-              </td>
-            </tr>
-          )}
         </tbody>
       </table>
 
-      {/* Modal */}
+      {/* Modal الإضافة والتعديل */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded shadow-lg w-96">
-            <h3 className="text-lg font-bold mb-4">
-              {editMode ? "✏️ تعديل الفرع" : "➕ إضافة فرع جديد"}
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
+          <div className="bg-white p-6 rounded w-96">
+            <h3 className="font-bold mb-3">
+              {editMode ? "تعديل فرع" : "إضافة فرع"}
             </h3>
 
             <input
-              type="text"
+              className="border p-2 w-full mb-2"
               placeholder="اسم الفرع"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="border border-gray-300 p-2 w-full mb-3"
             />
-
             <input
-              type="text"
+              className="border p-2 w-full mb-2"
               placeholder="العنوان"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
-              className="border border-gray-300 p-2 w-full mb-3"
             />
-
             <input
-              type="text"
+              className="border p-2 w-full mb-3"
               placeholder="الهاتف"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              className="border border-gray-300 p-2 w-full mb-4"
             />
 
             <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
-              >
-                إلغاء
-              </button>
-              <button
-                onClick={handleSave}
-                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-              >
+              <button onClick={() => setIsModalOpen(false)}>إلغاء</button>
+              <button onClick={handleSave} className="bg-blue-500 text-white px-4 py-1 rounded">
                 حفظ
               </button>
             </div>
           </div>
         </div>
+      )}
+
+      {/* هنا يجي Modal الوقت – نربطه بالـ branchId */}
+      {isTimeModalOpen && timeBranchId && (
+        <YourWorkTimeModal
+          branchId={timeBranchId}
+          onClose={() => setIsTimeModalOpen(false)}
+        />
       )}
     </div>
   );
