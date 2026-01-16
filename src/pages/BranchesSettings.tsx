@@ -270,7 +270,7 @@ const BranchesSettings: React.FC = () => {
                   ) : b.today_from && b.today_to ? (
                     <span>🕒 {b.today_from} – {b.today_to}</span>
                   ) : (
-                    <span>⏰ غير محدد</span>
+                    <span>⏰ اوقات الدوام</span>
                   )}
                 </div>
 
