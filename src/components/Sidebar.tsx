@@ -40,7 +40,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   ========================= */
 
   const areasGroup: MenuItem[] = [
-    { key: "cities", label: "مدن التوصيل", path: "/cities" },
+    { key: "DeliveryFeesSettings",title: "رسوم التوصيل", path: "/settings/delivery-fees" },
     { key: "neighborhoods", label: "الأحياء", path: "/neighborhoods" },
   ];
 
