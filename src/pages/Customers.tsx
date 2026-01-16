@@ -10,6 +10,7 @@ interface Customer {
   id: number;
   name: string;
   phone: string;
+  phone_alt?: string;
   email?: string;
   created_at?: string;
   branch_id?: number;
@@ -49,6 +50,14 @@ const Customers: React.FC = () => {
   const [isAddressesOpen, setIsAddressesOpen] = useState(false);
   const [isAddAddressOpen, setIsAddAddressOpen] = useState(false);
 
+  // ===== Edit Modal States =====
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editCustomer, setEditCustomer] = useState<Customer | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editPhoneAlt, setEditPhoneAlt] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+
   const fetchBranches = async () => {
     if (!isAdmin) return;
     const res = await api.get("/branches");
@@ -86,7 +95,27 @@ const Customers: React.FC = () => {
 
   // ===== Actions =====
   const openEditCustomer = (c: Customer) => {
-    console.log("edit", c); // اربطه بمودال التعديل لاحقًا
+    setEditCustomer(c);
+    setEditName(c.name);
+    setEditPhone(c.phone);
+    setEditPhoneAlt(c.phone_alt || "");
+    setEditEmail(c.email || "");
+    setIsEditOpen(true);
+  };
+
+  const handleUpdateCustomer = async () => {
+    if (!editCustomer) return;
+
+    await api.put(`/customers/${editCustomer.id}`, {
+      name: editName,
+      phone: editPhone,
+      phone_alt: editPhoneAlt || null,
+      email: editEmail || null,
+    });
+
+    setIsEditOpen(false);
+    setEditCustomer(null);
+    fetchCustomers();
   };
 
   const handleDeleteCustomer = async (id: number) => {
@@ -145,6 +174,7 @@ const Customers: React.FC = () => {
               <th>#</th>
               <th>الاسم</th>
               <th>الجوال</th>
+              <th>جوال احتياطي</th>
               <th>البريد</th>
               {isAdmin && <th>الفرع</th>}
               <th>التاريخ</th>
@@ -159,6 +189,7 @@ const Customers: React.FC = () => {
                   {c.name}
                 </td>
                 <td>{c.phone}</td>
+                <td>{c.phone_alt || "-"}</td>
                 <td>{c.email || "-"}</td>
                 {isAdmin && <td>{c.branch_name || "-"}</td>}
                 <td>{c.created_at?.slice(0, 10)}</td>
@@ -265,7 +296,71 @@ const Customers: React.FC = () => {
       )}
 
       {isAddCustomerOpen && (
-        <AddCustomerModal onClose={() => setIsAddCustomerOpen(false)} onSaved={fetchCustomers} />
+        <AddCustomerModal
+          branches={branches}
+          isAdmin={isAdmin}
+          onClose={() => setIsAddCustomerOpen(false)}
+          onSaved={fetchCustomers}
+        />
+      )}
+
+      {/* ===== Edit Modal ===== */}
+      {isEditOpen && editCustomer && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
+          <div className="bg-white p-4 w-full max-w-md rounded relative">
+            <button
+              onClick={() => setIsEditOpen(false)}
+              className="absolute top-2 right-2 bg-red-600 text-white w-6 h-6 text-xs rounded-full"
+            >
+              ✖
+            </button>
+
+            <h3 className="font-bold mb-3">✏️ تعديل العميل</h3>
+
+            <input
+              className="border p-2 w-full mb-2"
+              placeholder="الاسم"
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+            />
+
+            <input
+              className="border p-2 w-full mb-2"
+              placeholder="رقم الجوال"
+              value={editPhone}
+              onChange={(e) => setEditPhone(e.target.value)}
+            />
+
+            <input
+              className="border p-2 w-full mb-2"
+              placeholder="رقم احتياطي (اختياري)"
+              value={editPhoneAlt}
+              onChange={(e) => setEditPhoneAlt(e.target.value)}
+            />
+
+            <input
+              className="border p-2 w-full mb-3"
+              placeholder="البريد الإلكتروني"
+              value={editEmail}
+              onChange={(e) => setEditEmail(e.target.value)}
+            />
+
+            <div className="flex justify-between">
+              <button
+                onClick={() => setIsEditOpen(false)}
+                className="px-3 py-1 rounded bg-gray-300"
+              >
+                إلغاء
+              </button>
+              <button
+                onClick={handleUpdateCustomer}
+                className="px-3 py-1 rounded bg-green-600 text-white"
+              >
+                حفظ
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {isAddAddressOpen && (
@@ -285,12 +380,12 @@ const Customers: React.FC = () => {
 
 export default Customers;
 
-
 /* ================= مودال إضافة عميل ================= */
 
 const AddCustomerModal = ({ branches, isAdmin, onClose, onSaved }: any) => {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [phoneAlt, setPhoneAlt] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -306,11 +401,11 @@ const AddCustomerModal = ({ branches, isAdmin, onClose, onSaved }: any) => {
     const payload: any = {
       name,
       phone,
+      phone_alt: phoneAlt || null,
       email: email || null,
       password,
     };
 
-    // فرع الإدارة فقط يرسل branch_id
     if (isAdmin && branchId) {
       payload.branch_id = Number(branchId);
     }
@@ -347,6 +442,13 @@ const AddCustomerModal = ({ branches, isAdmin, onClose, onSaved }: any) => {
           placeholder="رقم الجوال"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
+        />
+
+        <input
+          className="border p-2 w-full mb-2"
+          placeholder="رقم احتياطي (اختياري)"
+          value={phoneAlt}
+          onChange={(e) => setPhoneAlt(e.target.value)}
         />
 
         <input
