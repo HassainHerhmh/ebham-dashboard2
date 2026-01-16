@@ -269,24 +269,39 @@ const AddCustomerModal = ({ onClose, onSaved }: any) => {
 
 /* ================= مودال إضافة عنوان ================= */
 
-const AddAddressModal = ({ customers, branches, onClose, onSaved }: any) => {
+const AddAddressModal = ({
+  customers,
+  branches,
+  onClose,
+  onSaved,
+}: any) => {
+  const currentUser = localStorage.getItem("user")
+    ? JSON.parse(localStorage.getItem("user")!)
+    : null;
+
+  const isAdmin = Boolean(currentUser?.is_admin_branch);
+  const userBranchId = currentUser?.branch_id;
+
   const [customerId, setCustomerId] = useState("");
-  const [branchId, setBranchId] = useState("");
+  const [branchId, setBranchId] = useState(isAdmin ? "" : String(userBranchId || ""));
   const [neighborhoods, setNeighborhoods] = useState<Neighborhood[]>([]);
-  const [district, setDistrict] = useState("");
+  const [district, setDistrict] = useState(""); // اسم الحي
   const [address, setAddress] = useState("");
   const [lat, setLat] = useState("");
   const [lng, setLng] = useState("");
-   const [locationType, setLocationType] = useState("");
+  const [locationType, setLocationType] = useState("");
 
   const mapRef = useRef<HTMLDivElement | null>(null);
 
+  // جلب الأحياء حسب الفرع
   useEffect(() => {
-    if (!branchId) return setNeighborhoods([]);
-    api.get(`/neighborhoods/by-branch/${branchId}`).then((res) => {
+    const bid = isAdmin ? branchId : userBranchId;
+    if (!bid) return setNeighborhoods([]);
+
+    api.get(`/neighborhoods/by-branch/${bid}`).then((res) => {
       if (res.data.success) setNeighborhoods(res.data.neighborhoods);
     });
-  }, [branchId]);
+  }, [branchId, userBranchId]);
 
   const handleMapClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = (e.target as HTMLDivElement).getBoundingClientRect();
@@ -298,70 +313,108 @@ const AddAddressModal = ({ customers, branches, onClose, onSaved }: any) => {
 
   const gpsLink = lat && lng ? `https://www.google.com/maps?q=${lat},${lng}` : "";
 
- const handleSave = async () => {
-  if (!customerId || !district)
-    return alert("❌ البيانات ناقصة");
+  const handleSave = async () => {
+    if (!customerId || !district) return alert("❌ البيانات ناقصة");
 
-  const res = await api.customers.addAddress({
-    customer_id: Number(customerId),
-    district: Number(district),
-    location_type: locationType || null,
-    address,
-    latitude: lat,
-    longitude: lng,
-    gps_link: gpsLink,
-  });
+    const res = await api.customers.addAddress({
+      customer_id: Number(customerId),
+      district, // اسم الحي
+      location_type: locationType || null,
+      address,
+      latitude: lat,
+      longitude: lng,
+      gps_link: gpsLink,
+      // الفرع يُحدد في السيرفر تلقائيًا لمستخدم الفرع
+    });
 
-  if (res.success) {
-    onSaved();
-  }
-};
-
+    if (res.success) onSaved();
+  };
 
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
       <div className="bg-white w-full max-w-2xl p-4 rounded relative">
-        <button onClick={onClose} className="absolute top-2 right-2 bg-red-600 text-white w-6 h-6 text-xs rounded-full">✖</button>
+        <button
+          onClick={onClose}
+          className="absolute top-2 right-2 bg-red-600 text-white w-6 h-6 text-xs rounded-full"
+        >
+          ✖
+        </button>
 
         <h3 className="text-lg font-bold mb-3">➕ إضافة عنوان</h3>
 
-        <select className="border p-2 w-full mb-2" value={customerId} onChange={(e) => setCustomerId(e.target.value)}>
+        <select
+          className="border p-2 w-full mb-2"
+          value={customerId}
+          onChange={(e) => setCustomerId(e.target.value)}
+        >
           <option value="">اختر عميل</option>
           {customers.map((c: any) => (
-            <option key={c.id} value={c.id}>{c.name}</option>
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
           ))}
         </select>
 
-        <select className="border p-2 w-full mb-2" value={branchId} onChange={(e) => setBranchId(e.target.value)}>
-          <option value="">اختر الفرع</option>
-          {branches.map((b: any) => (
-            <option key={b.id} value={b.id}>{b.name}</option>
-          ))}
-        </select>
+        {isAdmin && (
+          <select
+            className="border p-2 w-full mb-2"
+            value={branchId}
+            onChange={(e) => setBranchId(e.target.value)}
+          >
+            <option value="">اختر الفرع</option>
+            {branches.map((b: any) => (
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
+            ))}
+          </select>
+        )}
 
-        <select className="border p-2 w-full mb-2" value={district} onChange={(e) => setDistrict(e.target.value)}>
+        <select
+          className="border p-2 w-full mb-2"
+          value={district}
+          onChange={(e) => setDistrict(e.target.value)}
+        >
           <option value="">اختر الحي</option>
           {neighborhoods.map((n) => (
-            <option key={n.id} value={n.name}>{n.name}</option>
+            <option key={n.id} value={n.name}>
+              {n.name}
+            </option>
           ))}
         </select>
-          <select
-  className="border p-2 w-full"
-  value={locationType}
-  onChange={(e) => setLocationType(e.target.value)}
->
-  <option value="">اختر نوع الموقع</option>
-  <option value="شقة">شقة</option>
-  <option value="منزل">منزل</option>
-  <option value="محل">محل</option>
-  <option value="مكتب">مكتب</option>
-</select>
 
-        <input className="border p-2 w-full mb-2" placeholder="العنوان التفصيلي" value={address} onChange={(e) => setAddress(e.target.value)} />
+        <select
+          className="border p-2 w-full mb-2"
+          value={locationType}
+          onChange={(e) => setLocationType(e.target.value)}
+        >
+          <option value="">اختر نوع الموقع</option>
+          <option value="شقة">شقة</option>
+          <option value="منزل">منزل</option>
+          <option value="محل">محل</option>
+          <option value="مكتب">مكتب</option>
+        </select>
+
+        <input
+          className="border p-2 w-full mb-2"
+          placeholder="العنوان التفصيلي"
+          value={address}
+          onChange={(e) => setAddress(e.target.value)}
+        />
 
         <div className="flex gap-2 mb-2">
-          <input className="border p-2 w-full" placeholder="Latitude" value={lat} onChange={(e) => setLat(e.target.value)} />
-          <input className="border p-2 w-full" placeholder="Longitude" value={lng} onChange={(e) => setLng(e.target.value)} />
+          <input
+            className="border p-2 w-full"
+            placeholder="Latitude"
+            value={lat}
+            onChange={(e) => setLat(e.target.value)}
+          />
+          <input
+            className="border p-2 w-full"
+            placeholder="Longitude"
+            value={lng}
+            onChange={(e) => setLng(e.target.value)}
+          />
         </div>
 
         <div
@@ -378,13 +431,12 @@ const AddAddressModal = ({ customers, branches, onClose, onSaved }: any) => {
           </a>
         )}
 
-     <button
-  onClick={handleSave}
-  className="bg-green-600 text-white w-full py-2 rounded mt-3"
->
-  حفظ العنوان
-</button>
-
+        <button
+          onClick={handleSave}
+          className="bg-green-600 text-white w-full py-2 rounded mt-3"
+        >
+          حفظ العنوان
+        </button>
       </div>
     </div>
   );
