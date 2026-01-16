@@ -1,124 +1,149 @@
 import React, { useEffect, useState } from "react";
 import api from "../services/api";
 
-type Method = "neighborhood" | "distance";
-
-interface Settings {
-  method: Method;
-  km_price_single: string;
-  km_price_multi: string;
-}
+type BranchRow = {
+  branch_id: number;
+  branch_name: string;
+  method: "distance" | "neighborhood";
+  km_price_single: number;
+  km_price_multi: number;
+};
 
 const DeliveryFeesSettings: React.FC = () => {
+  const [mode, setMode] = useState<"admin" | "branch">("branch");
   const [loading, setLoading] = useState(true);
-  const [settings, setSettings] = useState<Settings>({
-    method: "neighborhood",
-    km_price_single: "",
-    km_price_multi: "",
-  });
+
+  // فرع عادي
+  const [method, setMethod] = useState<"distance" | "neighborhood">("distance");
+  const [single, setSingle] = useState<number>(0);
+  const [multi, setMulti] = useState<number>(0);
+
+  // إدارة عامة
+  const [rows, setRows] = useState<BranchRow[]>([]);
 
   useEffect(() => {
-    api.get("/delivery-settings").then((res) => {
-      if (res.data) {
-        setSettings({
-          method: res.data.method || "neighborhood",
-          km_price_single: res.data.km_price_single || "",
-          km_price_multi: res.data.km_price_multi || "",
-        });
-      }
-      setLoading(false);
-    });
+    load();
   }, []);
 
-  const save = async () => {
-    await api.post("/delivery-settings", settings);
-    alert("تم حفظ الإعدادات");
+  const load = async () => {
+    setLoading(true);
+    const res = await api.get("/delivery-settings");
+    if (res.data.mode === "admin") {
+      setMode("admin");
+      setRows(res.data.rows);
+    } else {
+      setMode("branch");
+      const d = res.data.data;
+      if (d) {
+        setMethod(d.method);
+        setSingle(Number(d.km_price_single || 0));
+        setMulti(Number(d.km_price_multi || 0));
+      }
+    }
+    setLoading(false);
   };
 
-  if (loading) return <div className="p-4">جارٍ التحميل...</div>;
+  const save = async () => {
+    await api.post("/delivery-settings", {
+      method,
+      km_price_single: single,
+      km_price_multi: multi,
+    });
+    alert("تم الحفظ");
+  };
 
+  if (loading) return <div>جارِ التحميل...</div>;
+
+  // ================== الإدارة العامة ==================
+  if (mode === "admin") {
+    return (
+      <div className="bg-white rounded p-6 shadow">
+        <h2 className="text-xl font-bold mb-4">رسوم التوصيل - الفروع</h2>
+
+        <table className="w-full border">
+          <thead>
+            <tr className="bg-gray-100">
+              <th className="p-2 border">الفرع</th>
+              <th className="p-2 border">طريقة الحساب</th>
+              <th className="p-2 border">سعر 1 كم</th>
+              <th className="p-2 border">سعر كل كم إضافي</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.branch_id}>
+                <td className="p-2 border">{r.branch_name}</td>
+                <td className="p-2 border">
+                  {r.method === "distance" ? "حسب المسافة" : "حسب الحي"}
+                </td>
+                <td className="p-2 border">{r.km_price_single}</td>
+                <td className="p-2 border">{r.km_price_multi}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+
+  // ================== فرع عادي ==================
   return (
-    <div className="p-4 max-w-2xl mx-auto" style={{ direction: "rtl" }}>
-      <h2 className="text-2xl font-bold mb-6">🚚 رسوم التوصيل</h2>
+    <div className="bg-white rounded p-6 shadow max-w-2xl">
+      <h2 className="text-xl font-bold mb-4">رسوم التوصيل</h2>
 
-      <div className="bg-white border rounded p-4 mb-6">
-        <h3 className="font-bold mb-3">طريقة الحساب</h3>
-
-        <label className="flex items-center gap-2 mb-2 cursor-pointer">
+      <div className="mb-6">
+        <div className="font-semibold mb-2">طريقة الحساب</div>
+        <label className="block mb-2">
           <input
             type="radio"
-            name="method"
-            checked={settings.method === "neighborhood"}
-            onChange={() =>
-              setSettings({ ...settings, method: "neighborhood" })
-            }
-          />
-          <span>حسب الحي (من صفحة الأحياء)</span>
+            checked={method === "neighborhood"}
+            onChange={() => setMethod("neighborhood")}
+          />{" "}
+          حسب الحي (من صفحة الأحياء)
         </label>
 
-        <label className="flex items-center gap-2 cursor-pointer">
+        <label className="block">
           <input
             type="radio"
-            name="method"
-            checked={settings.method === "distance"}
-            onChange={() =>
-              setSettings({ ...settings, method: "distance" })
-            }
-          />
-          <span>حسب المسافة (بالكيلومتر)</span>
+            checked={method === "distance"}
+            onChange={() => setMethod("distance")}
+          />{" "}
+          حسب المسافة (بالكيلومتر)
         </label>
       </div>
 
-      {settings.method === "distance" && (
-        <div className="bg-white border rounded p-4 mb-6">
-          <h3 className="font-bold mb-4">إعدادات المسافة</h3>
-
-          <div className="mb-3">
-            <label className="block mb-1 text-sm">
-              الطلب من محل واحد – قيمة 1 كم
-            </label>
+      {method === "distance" && (
+        <div className="space-y-4">
+          <div>
+            <div className="mb-1">الطلب من محل واحد – قيمة 1 كم</div>
             <input
               type="number"
-              className="border p-2 w-full rounded"
-              placeholder="مثال: 300"
-              value={settings.km_price_single}
-              onChange={(e) =>
-                setSettings({
-                  ...settings,
-                  km_price_single: e.target.value,
-                })
-              }
+              className="border p-2 w-full"
+              value={single}
+              onChange={(e) => setSingle(Number(e.target.value))}
             />
           </div>
 
           <div>
-            <label className="block mb-1 text-sm">
+            <div className="mb-1">
               الطلب من أكثر من محل – كل 1 كم إضافي
-            </label>
+            </div>
             <input
               type="number"
-              className="border p-2 w-full rounded"
-              placeholder="مثال: 150"
-              value={settings.km_price_multi}
-              onChange={(e) =>
-                setSettings({
-                  ...settings,
-                  km_price_multi: e.target.value,
-                })
-              }
+              className="border p-2 w-full"
+              value={multi}
+              onChange={(e) => setMulti(Number(e.target.value))}
             />
           </div>
         </div>
       )}
 
-      <div className="text-left">
-        <button
-          onClick={save}
-          className="bg-blue-600 text-white px-6 py-2 rounded"
-        >
-          حفظ الإعدادات
-        </button>
-      </div>
+      <button
+        onClick={save}
+        className="mt-6 bg-blue-600 text-white px-4 py-2 rounded"
+      >
+        حفظ الإعدادات
+      </button>
     </div>
   );
 };
