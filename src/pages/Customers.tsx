@@ -378,9 +378,13 @@ const AddAddressModal = ({ customers, branches, onClose, onSaved }: any) => {
           </a>
         )}
 
-        <button onClick={save} className="bg-green-600 text-white w-full py-2 rounded mt-3">
-          حفظ العنوان
-        </button>
+     <button
+  onClick={handleSave}
+  className="bg-green-600 text-white w-full py-2 rounded mt-3"
+>
+  حفظ العنوان
+</button>
+
       </div>
     </div>
   );
