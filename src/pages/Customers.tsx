@@ -1,4 +1,3 @@
-// Customers.tsx
 import React, { useState, useEffect, useRef } from "react";
 import api from "../services/api";
 
@@ -22,7 +21,6 @@ interface Address {
   customer_id: number;
   customer_name: string;
   district: string;
-  location_type?: string;
   address?: string;
   gps_link?: string;
   latitude?: string;
@@ -46,8 +44,12 @@ const Customers: React.FC = () => {
   const [branches, setBranches] = useState<Branch[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [addresses, setAddresses] = useState<Address[]>([]);
+  const [loading, setLoading] = useState(true);
+
   const [searchCustomer, setSearchCustomer] = useState("");
   const [searchAddress, setSearchAddress] = useState("");
+
+  const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
   const [isAddressesOpen, setIsAddressesOpen] = useState(false);
   const [isAddAddressOpen, setIsAddAddressOpen] = useState(false);
 
@@ -58,8 +60,10 @@ const Customers: React.FC = () => {
   };
 
   const fetchCustomers = async () => {
+    setLoading(true);
     const res = await api.get("/customers");
     if (res.data.success) setCustomers(res.data.customers);
+    setLoading(false);
   };
 
   const fetchAddresses = async () => {
@@ -86,9 +90,18 @@ const Customers: React.FC = () => {
 
   return (
     <div className="p-6 space-y-6" dir="rtl">
-      <h1 className="text-2xl font-bold">📋 العملاء</h1>
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">📋 العملاء</h1>
+      </div>
 
       <div className="flex justify-between">
+        <button
+          onClick={() => setIsAddCustomerOpen(true)}
+          className="bg-green-600 text-white px-4 py-2 rounded"
+        >
+          ➕ إضافة عميل
+        </button>
+
         <button
           onClick={() => {
             fetchAddresses();
@@ -167,7 +180,7 @@ const Customers: React.FC = () => {
                   <th>العميل</th>
                   <th>الحي</th>
                   {isAdmin && <th>الفرع</th>}
-                  <th>العنوان</th>
+                  <th>العنوان التفصيلي</th>
                   <th>Latitude</th>
                   <th>Longitude</th>
                   <th>GPS</th>
@@ -219,27 +232,47 @@ const Customers: React.FC = () => {
           }}
         />
       )}
+
+      {isAddCustomerOpen && (
+        <AddCustomerModal onClose={() => setIsAddCustomerOpen(false)} onSaved={fetchCustomers} />
+      )}
     </div>
   );
 };
 
 export default Customers;
 
-/* مودال إضافة عنوان */
+/* ================= مودال إضافة عميل ================= */
 
-const AddAddressModal = ({
-  customers,
-  branches,
-  onClose,
-  onSaved,
-}: {
-  customers: Customer[];
-  branches: Branch[];
-  onClose: () => void;
-  onSaved: () => void;
-}) => {
+const AddCustomerModal = ({ onClose, onSaved }: any) => {
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+
+  const save = async () => {
+    if (!name || !phone) return alert("البيانات ناقصة");
+    await api.post("/customers", { name, phone });
+    onSaved();
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
+      <div className="bg-white p-4 w-full max-w-md rounded">
+        <h3 className="font-bold mb-3">➕ إضافة عميل</h3>
+        <input className="border p-2 w-full mb-2" placeholder="الاسم" value={name} onChange={(e) => setName(e.target.value)} />
+        <input className="border p-2 w-full mb-3" placeholder="الجوال" value={phone} onChange={(e) => setPhone(e.target.value)} />
+        <button onClick={save} className="bg-green-600 text-white w-full py-2 rounded">حفظ</button>
+      </div>
+    </div>
+  );
+};
+
+/* ================= مودال إضافة عنوان ================= */
+
+const AddAddressModal = ({ customers, branches, onClose, onSaved }: any) => {
   const [customerId, setCustomerId] = useState("");
   const [branchId, setBranchId] = useState("");
+  const [neighborhoods, setNeighborhoods] = useState<Neighborhood[]>([]);
   const [district, setDistrict] = useState("");
   const [address, setAddress] = useState("");
   const [lat, setLat] = useState("");
@@ -247,26 +280,26 @@ const AddAddressModal = ({
 
   const mapRef = useRef<HTMLDivElement | null>(null);
 
+  useEffect(() => {
+    if (!branchId) return setNeighborhoods([]);
+    api.get(`/neighborhoods/by-branch/${branchId}`).then((res) => {
+      if (res.data.success) setNeighborhoods(res.data.neighborhoods);
+    });
+  }, [branchId]);
+
   const handleMapClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = (e.target as HTMLDivElement).getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-
-    const fakeLat = (15 + y / 10).toFixed(6);
-    const fakeLng = (45 + x / 10).toFixed(6);
-
-    setLat(fakeLat);
-    setLng(fakeLng);
+    setLat((15 + y / 10).toFixed(6));
+    setLng((45 + x / 10).toFixed(6));
   };
 
-  const gpsLink =
-    lat && lng ? `https://www.google.com/maps?q=${lat},${lng}` : "";
+  const gpsLink = lat && lng ? `https://www.google.com/maps?q=${lat},${lng}` : "";
 
-  const handleSave = async () => {
-    if (!customerId || !branchId || !address)
-      return alert("❌ البيانات ناقصة");
-
-    const res = await api.customers.addAddress({
+  const save = async () => {
+    if (!customerId || !branchId || !district) return alert("البيانات ناقصة");
+    await api.customers.addAddress({
       customer_id: Number(customerId),
       branch_id: Number(branchId),
       district,
@@ -275,103 +308,61 @@ const AddAddressModal = ({
       longitude: lng,
       gps_link: gpsLink,
     });
-
-    if (res.success) onSaved();
+    onSaved();
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 z-50 flex justify-center items-center">
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
       <div className="bg-white w-full max-w-2xl p-4 rounded relative">
-        <button
-          onClick={onClose}
-          className="absolute top-2 right-2 bg-red-600 text-white w-6 h-6 text-xs rounded-full"
-        >
-          ✖
-        </button>
+        <button onClick={onClose} className="absolute top-2 right-2 bg-red-600 text-white w-6 h-6 text-xs rounded-full">✖</button>
 
         <h3 className="text-lg font-bold mb-3">➕ إضافة عنوان</h3>
 
-        <div className="space-y-2">
-          <select
-            className="border p-2 w-full"
-            value={customerId}
-            onChange={(e) => setCustomerId(e.target.value)}
-          >
-            <option value="">اختر عميل</option>
-            {customers.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+        <select className="border p-2 w-full mb-2" value={customerId} onChange={(e) => setCustomerId(e.target.value)}>
+          <option value="">اختر عميل</option>
+          {customers.map((c: any) => (
+            <option key={c.id} value={c.id}>{c.name}</option>
+          ))}
+        </select>
 
-          <select
-            className="border p-2 w-full"
-            value={branchId}
-            onChange={(e) => setBranchId(e.target.value)}
-          >
-            <option value="">اختر الفرع</option>
-            {branches.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.name}
-              </option>
-            ))}
-          </select>
+        <select className="border p-2 w-full mb-2" value={branchId} onChange={(e) => setBranchId(e.target.value)}>
+          <option value="">اختر الفرع</option>
+          {branches.map((b: any) => (
+            <option key={b.id} value={b.id}>{b.name}</option>
+          ))}
+        </select>
 
-          <input
-            className="border p-2 w-full"
-            placeholder="الحي"
-            value={district}
-            onChange={(e) => setDistrict(e.target.value)}
-          />
+        <select className="border p-2 w-full mb-2" value={district} onChange={(e) => setDistrict(e.target.value)}>
+          <option value="">اختر الحي</option>
+          {neighborhoods.map((n) => (
+            <option key={n.id} value={n.name}>{n.name}</option>
+          ))}
+        </select>
 
-          <input
-            className="border p-2 w-full"
-            placeholder="العنوان التفصيلي"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-          />
+        <input className="border p-2 w-full mb-2" placeholder="العنوان التفصيلي" value={address} onChange={(e) => setAddress(e.target.value)} />
 
-          <div className="flex gap-2">
-            <input
-              className="border p-2 w-full"
-              placeholder="Latitude"
-              value={lat}
-              onChange={(e) => setLat(e.target.value)}
-            />
-            <input
-              className="border p-2 w-full"
-              placeholder="Longitude"
-              value={lng}
-              onChange={(e) => setLng(e.target.value)}
-            />
-          </div>
-
-          <div
-            ref={mapRef}
-            onClick={handleMapClick}
-            className="w-full h-40 border rounded flex items-center justify-center text-gray-500 cursor-crosshair"
-          >
-            اضغط هنا لاختيار الموقع من الخريطة
-          </div>
-
-          {gpsLink && (
-            <a
-              href={gpsLink}
-              target="_blank"
-              className="text-blue-600 underline text-sm"
-            >
-              فتح الموقع على الخريطة
-            </a>
-          )}
-
-          <button
-            onClick={handleSave}
-            className="bg-green-600 text-white w-full py-2 rounded"
-          >
-            حفظ العنوان
-          </button>
+        <div className="flex gap-2 mb-2">
+          <input className="border p-2 w-full" placeholder="Latitude" value={lat} onChange={(e) => setLat(e.target.value)} />
+          <input className="border p-2 w-full" placeholder="Longitude" value={lng} onChange={(e) => setLng(e.target.value)} />
         </div>
+
+        <div
+          ref={mapRef}
+          onClick={handleMapClick}
+          className="w-full h-40 border rounded flex items-center justify-center text-gray-500 cursor-crosshair bg-gray-100 mb-2"
+        >
+          اضغط هنا لاختيار الموقع من الخريطة
+        </div>
+
+        {gpsLink && (
+          <a href={gpsLink} target="_blank" className="text-blue-600 underline text-sm">
+            فتح الموقع على الخريطة
+          </a>
+        )}
+
+        <button onClick={save} className="bg-green-600 text-white w-full py-2 rounded mt-3">
+          حفظ العنوان
+        </button>
       </div>
     </div>
   );
