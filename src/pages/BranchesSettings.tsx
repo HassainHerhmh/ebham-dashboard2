@@ -83,7 +83,7 @@ const WorkTimeModal = ({
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white rounded p-6 w-[700px] max-w-full">
+      <div className="bg-white rounded p-6  max-w-full">
         <h3 className="text-xl font-bold mb-4">⏰ وقت الدوام</h3>
 
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
