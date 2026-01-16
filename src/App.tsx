@@ -20,7 +20,7 @@ import Categories from "./pages/Categories";
 import Units from "./pages/Units";
 import Products from "./pages/Products";
 import Users from "./pages/Users";
-import Cities from "./pages/DeliveryFeesSettings";
+import DeliveryFeesSettings from "./pages/DeliveryFeesSettings";
 import Neighborhoods from "./pages/Neighborhoods";
 
 // الوكلاء
