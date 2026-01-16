@@ -17,6 +17,132 @@ interface UserInfo {
   is_admin_branch: boolean;
 }
 
+type DayItem = {
+  day: number;
+  name: string;
+  from: string;
+  to: string;
+  closed: boolean;
+};
+
+const daysInit: DayItem[] = [
+  { day: 0, name: "السبت", from: "", to: "", closed: false },
+  { day: 1, name: "الأحد", from: "", to: "", closed: false },
+  { day: 2, name: "الإثنين", from: "", to: "", closed: false },
+  { day: 3, name: "الثلاثاء", from: "", to: "", closed: false },
+  { day: 4, name: "الأربعاء", from: "", to: "", closed: false },
+  { day: 5, name: "الخميس", from: "", to: "", closed: false },
+  { day: 6, name: "الجمعة", from: "", to: "", closed: false },
+];
+
+const WorkTimeModal = ({
+  branchId,
+  onClose,
+}: {
+  branchId: number;
+  onClose: () => void;
+}) => {
+  const [days, setDays] = useState<DayItem[]>(daysInit);
+  const [notes, setNotes] = useState("");
+
+  useEffect(() => {
+    api.get(`/branch-work-times/${branchId}`).then((res) => {
+      if (res.data?.days?.length) {
+        const mapped = daysInit.map((d) => {
+          const found = res.data.days.find((x: any) => x.day === d.day);
+          return found
+            ? {
+                ...d,
+                from: found.from || "",
+                to: found.to || "",
+                closed: Boolean(found.closed),
+              }
+            : d;
+        });
+        setDays(mapped);
+      }
+      if (res.data?.notes) setNotes(res.data.notes);
+    });
+  }, [branchId]);
+
+  const updateDay = (i: number, key: keyof DayItem, value: any) => {
+    const copy = [...days];
+    copy[i] = { ...copy[i], [key]: value };
+    setDays(copy);
+  };
+
+  const hasClosed = days.some((d) => d.closed);
+
+  const save = async () => {
+    await api.post(`/branch-work-times/${branchId}`, {
+      days,
+      notes: hasClosed ? notes : "",
+    });
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+      <div className="bg-white rounded p-6 w-[700px] max-w-full">
+        <h3 className="text-xl font-bold mb-4">⏰ وقت الدوام</h3>
+
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
+          {days.map((d, i) => (
+            <div key={d.day} className="border rounded p-3">
+              <div className="font-bold mb-2">{d.name}</div>
+
+              <div className="flex gap-2 mb-2">
+                <input
+                  type="time"
+                  disabled={d.closed}
+                  value={d.from}
+                  onChange={(e) => updateDay(i, "from", e.target.value)}
+                  className="border p-1 w-full"
+                />
+                <input
+                  type="time"
+                  disabled={d.closed}
+                  value={d.to}
+                  onChange={(e) => updateDay(i, "to", e.target.value)}
+                  className="border p-1 w-full"
+                />
+              </div>
+
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={d.closed}
+                  onChange={(e) => updateDay(i, "closed", e.target.checked)}
+                />
+                مغلق
+              </label>
+            </div>
+          ))}
+        </div>
+
+        <textarea
+          placeholder="ملاحظات عند الإغلاق"
+          disabled={!hasClosed}
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          className={`border p-2 w-full mb-4 ${
+            !hasClosed ? "bg-gray-100" : ""
+          }`}
+        />
+
+        <div className="flex justify-end gap-2">
+          <button onClick={onClose} className="px-4 py-2 bg-gray-300 rounded">
+            إلغاء
+          </button>
+          <button onClick={save} className="px-4 py-2 bg-blue-500 text-white rounded">
+            حفظ
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const BranchesSettings: React.FC = () => {
   const [branches, setBranches] = useState<Branch[]>([]);
   const [user, setUser] = useState<UserInfo | null>(null);
@@ -35,9 +161,7 @@ const BranchesSettings: React.FC = () => {
   const fetchData = async () => {
     try {
       const stored = localStorage.getItem("user");
-      if (stored) {
-        setUser(JSON.parse(stored));
-      }
+      if (stored) setUser(JSON.parse(stored));
 
       const res = await api.get("/branches");
       setBranches(res.data.branches || []);
@@ -137,7 +261,6 @@ const BranchesSettings: React.FC = () => {
               <td className="border p-2">{b.phone || "-"}</td>
 
               <td className="border p-2 text-center">
-                {/* مربع الوقت الأزرق */}
                 <div
                   onClick={() => openTimeModal(b.id)}
                   className="cursor-pointer bg-blue-500 text-white rounded px-3 py-2 text-sm hover:bg-blue-600 transition mb-2"
@@ -145,15 +268,12 @@ const BranchesSettings: React.FC = () => {
                   {b.today_closed ? (
                     <span>🚫 مغلق اليوم</span>
                   ) : b.today_from && b.today_to ? (
-                    <span>
-                      🕒 {b.today_from} – {b.today_to}
-                    </span>
+                    <span>🕒 {b.today_from} – {b.today_to}</span>
                   ) : (
                     <span>⏰ غير محدد</span>
                   )}
                 </div>
 
-                {/* أزرار الإدارة العامة فقط */}
                 {user?.is_admin_branch && (
                   <div className="space-x-1 space-x-reverse">
                     <button
@@ -176,7 +296,6 @@ const BranchesSettings: React.FC = () => {
         </tbody>
       </table>
 
-      {/* Modal الإضافة والتعديل */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
           <div className="bg-white p-6 rounded w-96">
@@ -216,9 +335,8 @@ const BranchesSettings: React.FC = () => {
         </div>
       )}
 
-      {/* مودل الوقت */}
       {isTimeModalOpen && timeBranchId && (
-        <YourWorkTimeModal
+        <WorkTimeModal
           branchId={timeBranchId}
           onClose={() => setIsTimeModalOpen(false)}
         />
