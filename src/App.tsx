@@ -140,16 +140,7 @@ const App: React.FC = () => {
                     <Route path="/agents/info" element={<ProtectedRoute section="agent_info"><AgentInfo /></ProtectedRoute>} />
                     <Route path="/agents/groups" element={<ProtectedRoute section="agent_groups"><AgentGroups /></ProtectedRoute>} />
 
-                   {/* الإعدادات */}
-<Route
-  path="/settings/:tab"
-  element={
-    <ProtectedRoute section="settings">
-      <Settings />
-    </ProtectedRoute>
-  }
-/>
-
+                 {/* الإعدادات */}
 <Route
   path="/settings/delivery-fees"
   element={
@@ -159,10 +150,20 @@ const App: React.FC = () => {
   }
 />
 
+<Route
+  path="/settings/:tab"
+  element={
+    <ProtectedRoute section="settings">
+      <Settings />
+    </ProtectedRoute>
+  }
+/>
+
 <Route path="/settings" element={<Navigate to="/settings/stores" replace />} />
 
 <Route path="/unauthorized" element={<Unauthorized />} />
 <Route path="*" element={<Unauthorized />} />
+
 
                   </Routes>
                 </main>
