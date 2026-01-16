@@ -15,29 +15,26 @@ export interface User {
 }
 
 // ===============================
-// 🔐 Permission Checker
+// 🔐 Permission Checker (مؤقت)
 // ===============================
 
 export function hasPermission(
   user: User | null,
-  section: string,
-  action: PermissionAction = "view"
+  _section: string,
+  _action: PermissionAction = "view"
 ): boolean {
   if (!user) return false;
 
-  // 🟢 دعم role كنص أو كائن
   const role =
     typeof user.role === "string"
       ? user.role.toLowerCase()
       : user.role?.name?.toLowerCase?.();
 
-  // ✅ الأدمن له كل الصلاحيات
-  if (role && ["admin", "superadmin", "manager"].includes(role)) {
+  // 🟢 مؤقتًا: الأدمن له كل الصلاحيات
+  if (role === "admin") {
     return true;
   }
 
-  // 🟢 صلاحيات الأقسام
-  const permissions = user.permissions ?? {};
-
-  return permissions?.[section]?.[action] === true;
+  // لاحقًا سنعتمد على user.permissions
+  return false;
 }
