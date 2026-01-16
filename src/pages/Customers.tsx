@@ -277,6 +277,7 @@ const AddAddressModal = ({ customers, branches, onClose, onSaved }: any) => {
   const [address, setAddress] = useState("");
   const [lat, setLat] = useState("");
   const [lng, setLng] = useState("");
+   const [locationType, setLocationType] = useState("");
 
   const mapRef = useRef<HTMLDivElement | null>(null);
 
@@ -297,19 +298,25 @@ const AddAddressModal = ({ customers, branches, onClose, onSaved }: any) => {
 
   const gpsLink = lat && lng ? `https://www.google.com/maps?q=${lat},${lng}` : "";
 
-  const save = async () => {
-    if (!customerId || !branchId || !district) return alert("البيانات ناقصة");
-    await api.customers.addAddress({
-      customer_id: Number(customerId),
-      branch_id: Number(branchId),
-      district,
-      address,
-      latitude: lat,
-      longitude: lng,
-      gps_link: gpsLink,
-    });
+ const handleSave = async () => {
+  if (!customerId || !district)
+    return alert("❌ البيانات ناقصة");
+
+  const res = await api.customers.addAddress({
+    customer_id: Number(customerId),
+    district: Number(district),
+    location_type: locationType || null,
+    address,
+    latitude: lat,
+    longitude: lng,
+    gps_link: gpsLink,
+  });
+
+  if (res.success) {
     onSaved();
-  };
+  }
+};
+
 
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
