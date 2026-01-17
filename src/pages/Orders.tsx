@@ -506,10 +506,10 @@ const openProductsModal = async () => {
 <p>
   📍 العنوان:{" "}
   <strong>
-    {selectedOrderDetails.neighborhood_name || selectedOrderDetails.district
-      ? `${selectedOrderDetails.neighborhood_name || selectedOrderDetails.district} - `
+    {selectedOrderDetails.neighborhood_name
+      ? `${selectedOrderDetails.neighborhood_name} - `
       : ""}
-    {selectedOrderDetails.customer_address || selectedOrderDetails.address || "-"}
+    {selectedOrderDetails.customer_address || "-"}
   </strong>
 </p>
 
