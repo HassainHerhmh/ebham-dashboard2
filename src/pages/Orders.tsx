@@ -284,7 +284,30 @@ const openProductsModal = async () => {
     setCart([]);
     fetchOrders();
   };
-     
+
+
+  const selectCustomer = async (customerId: number) => {
+  const customer = customers.find((c) => c.id === customerId);
+  setSelectedCustomer(customer);
+  setAddresses([]);
+  setSelectedAddress(null);
+
+  if (!customer) return;
+
+  try {
+    const res = await api.get(`/customer-addresses?customer_id=${customer.id}`);
+
+    const list = Array.isArray(res.data?.addresses)
+      ? res.data.addresses
+      : [];
+
+    setAddresses(list);
+  } catch (err) {
+    console.error("خطأ في جلب عناوين العميل:", err);
+    setAddresses([]);
+  }
+};
+
   // ====================================
   //                JSX
   // ====================================
