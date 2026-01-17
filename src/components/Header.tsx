@@ -33,35 +33,39 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
     navigate("/login", { replace: true });
   };
 
-  const fetchBranches = async () => {
-    try {
-      if (!isAdminGeneral) {
-        // مستخدم فرع → يثبت على فرعه فقط
-        if (user?.branch_id) {
-          setCurrentBranch(user.branch_id);
-          localStorage.setItem("branch_id", String(user.branch_id));
-        }
-        return;
-      }
-
-      // إدارة عامة → جلب كل الفروع
-      const res = await api.get("/branches");
-      const list = res.data.branches || [];
-      setBranches(list);
-
-      const saved = localStorage.getItem("branch_id");
-
-      if (saved) {
-        setCurrentBranch(Number(saved));
-      } else if (user?.branch_id) {
-        // الافتراضي: فرع المستخدم (غالبًا الإدارة العامة)
+ const fetchBranches = async () => {
+  try {
+    if (!isAdminGeneral) {
+      if (user?.branch_id) {
         setCurrentBranch(user.branch_id);
         localStorage.setItem("branch_id", String(user.branch_id));
       }
-    } catch (err) {
-      console.error("خطأ في جلب الفروع:", err);
+      setBranches([]); // تأكيد أنها مصفوفة
+      return;
     }
-  };
+
+    const res = await api.get("/branches");
+
+    const list = Array.isArray(res.data?.branches)
+      ? res.data.branches
+      : [];
+
+    setBranches(list);
+
+    const saved = localStorage.getItem("branch_id");
+
+    if (saved) {
+      setCurrentBranch(Number(saved));
+    } else if (user?.branch_id) {
+      setCurrentBranch(user.branch_id);
+      localStorage.setItem("branch_id", String(user.branch_id));
+    }
+  } catch (err) {
+    console.error("خطأ في جلب الفروع:", err);
+    setBranches([]); // أمان إضافي
+  }
+};
+
 
   useEffect(() => {
     fetchBranches();
