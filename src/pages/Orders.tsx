@@ -46,6 +46,7 @@ interface OrderDetails {
 }
 
 const Orders: React.FC = () => {
+  // ========= الطلبات =========
   const [orders, setOrders] = useState<Order[]>([]);
   const [captains, setCaptains] = useState<Captain[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,9 +54,9 @@ const Orders: React.FC = () => {
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [isCaptainModalOpen, setIsCaptainModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
-  const [selectedOrderDetails, setSelectedOrderDetails] =
-    useState<OrderDetails | null>(null);
+  const [selectedOrderDetails, setSelectedOrderDetails] = useState<OrderDetails | null>(null);
 
+  // ========= إضافة طلب جديد =========
   const [showAddOrderModal, setShowAddOrderModal] = useState(false);
   const [customers, setCustomers] = useState<any[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
@@ -65,6 +66,7 @@ const Orders: React.FC = () => {
   const [restaurants, setRestaurants] = useState<any[]>([]);
   const [selectedRestaurant, setSelectedRestaurant] = useState<any>(null);
 
+  // المنتجات داخل إضافة الطلب
   const [showProductsModal, setShowProductsModal] = useState(false);
   const [restaurantCategories, setRestaurantCategories] = useState<any[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
@@ -73,105 +75,61 @@ const Orders: React.FC = () => {
 
   const printRef = useRef<HTMLDivElement>(null);
 
-  const fetchOrders = async () => {
-    setLoading(true);
-    try {
-      const res = await api.orders.getOrders({ limit: 50 });
-      const list = Array.isArray(res?.orders)
-        ? res.orders
-        : Array.isArray(res)
-        ? res
-        : [];
-      setOrders(list);
-    } catch {
-      setOrders([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // ====================================
+  //          الجلب والاستدعاءات
+  // ====================================
+const fetchOrders = async () => {
+  setLoading(true);
+  try {
+    const res = await api.orders.getOrders({ limit: 50 });
+    const list = Array.isArray(res.orders || res)
+      ? (res.orders || res)
+      : [];
+    setOrders(list);
+  } catch (error) {
+    console.error("❌ خطأ في جلب الطلبات:", error);
+    setOrders([]);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const fetchCaptains = async () => {
     setCaptainsLoading(true);
     try {
       const res = await api.captains.getAvailableCaptains();
-      const list = Array.isArray(res?.captains)
-        ? res.captains
-        : Array.isArray(res)
-        ? res
-        : [];
-      setCaptains(list);
-    } catch {
-      setCaptains([]);
+      setCaptains(res.captains || res);
+    } catch (error) {
+      console.error("❌ خطأ في جلب الكباتن:", error);
     } finally {
       setCaptainsLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchOrders();
+ useEffect(() => {
+  fetchOrders();
 
-    api.get("/customers").then((res) => {
-      setCustomers(Array.isArray(res.data?.customers) ? res.data.customers : []);
-    });
+  api.get("/customers").then((res) => {
+    const list = Array.isArray(res.data.customers)
+      ? res.data.customers
+      : [];
+    setCustomers(list);
+  });
 
-    api.get("/restaurants").then((res) => {
-      setRestaurants(
-        Array.isArray(res.data?.restaurants) ? res.data.restaurants : []
-      );
-    });
-  }, []);
+  api.get("/restaurants").then((res) => {
+    const list = Array.isArray(res.data.restaurants)
+      ? res.data.restaurants
+      : [];
+    setRestaurants(list);
+  });
+}, []);
+;
 
-  const selectCustomer = async (customerId: number) => {
-    const customer = customers.find((c) => c.id === customerId);
-    setSelectedCustomer(customer);
-    setAddresses([]);
-
-    if (customer) {
-      const res = await api.get(
-        `/customer-addresses?customer_id=${customer.id}`
-      );
-      setAddresses(
-        Array.isArray(res.data?.addresses) ? res.data.addresses : []
-      );
-    }
-  };
-
-  const selectRestaurant = async (restaurantId: number) => {
-    const rest = restaurants.find((r) => r.id === restaurantId);
-    setSelectedRestaurant(rest);
-
-    try {
-      const catRes = await api.get(`/restaurants/${restaurantId}/categories`);
-      const cats = Array.isArray(catRes.data?.categories)
-        ? catRes.data.categories
-        : [];
-      setRestaurantCategories(cats);
-      setSelectedCategory(cats.length ? cats[0].id : null);
-    } catch {
-      setRestaurantCategories([]);
-      setSelectedCategory(null);
-    }
-  };
-
-  const openProductsModal = async () => {
-    if (!selectedRestaurant) return alert("اختر مطعم أولا");
-
-    try {
-      const prodRes = await api.get(
-        `/restaurants/${selectedRestaurant.id}/products`
-      );
-      const prods = Array.isArray(prodRes.data?.products)
-        ? prodRes.data.products
-        : [];
-      setProducts(prods);
-      setShowProductsModal(true);
-    } catch {
-      setProducts([]);
-      setShowProductsModal(true);
-    }
-  };
-
-    const openCaptainModal = (orderId: number) => {
+  // ====================================
+  //      إدارة الطلبات الحالية
+  // ====================================
+  const openCaptainModal = (orderId: number) => {
     setSelectedOrderId(orderId);
     setIsCaptainModalOpen(true);
     fetchCaptains();
@@ -179,33 +137,131 @@ const Orders: React.FC = () => {
 
   const assignCaptain = async (captainId: number) => {
     if (!selectedOrderId) return;
-    await api.orders.assignCaptain(selectedOrderId, captainId);
-    setIsCaptainModalOpen(false);
-    setSelectedOrderId(null);
-    fetchOrders();
+    try {
+      await api.orders.assignCaptain(selectedOrderId, captainId);
+      alert("✅ تم تعيين الكابتن بنجاح");
+      setIsCaptainModalOpen(false);
+      setSelectedOrderId(null);
+      fetchOrders();
+    } catch (error) {
+      console.error("❌ خطأ في إسناد الكابتن:", error);
+    }
   };
 
   const updateOrderStatus = async (orderId: number, newStatus: string) => {
-    await api.orders.updateStatus(orderId, newStatus);
-    fetchOrders();
+    try {
+      await api.orders.updateStatus(orderId, newStatus);
+      alert("✅ تم تحديث حالة الطلب");
+      fetchOrders();
+    } catch (error) {
+      console.error("❌ خطأ في تحديث الحالة:", error);
+    }
   };
 
   const openDetailsModal = async (orderId: number) => {
-    const res = await api.orders.getOrderDetails(orderId);
-    const order = res?.order || res;
-    order.products = Array.isArray(order?.products) ? order.products : [];
-    setSelectedOrderDetails(order);
-    setIsDetailsModalOpen(true);
+    try {
+      const res = await api.orders.getOrderDetails(orderId);
+      setSelectedOrderDetails(res.order || res);
+      setIsDetailsModalOpen(true);
+    } catch (error) {
+      console.error("❌ خطأ في جلب تفاصيل الطلب:", error);
+    }
   };
+
+  const handlePrint = () => {
+    if (!printRef.current || !selectedOrderDetails) return;
+    const win = window.open("", "_blank", "width=800,height=600");
+    if (win) {
+      const htmlContent = `
+        <html>
+          <head>
+            <title>فاتورة الطلب</title>
+            <style>
+              body { font-family: sans-serif; padding: 20px; direction: rtl; }
+              table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+              th, td { border: 1px solid #999; padding: 6px; text-align: center; }
+              th { background: #eee; }
+              .box { border:1px solid #ccc; padding:8px; margin-top:10px; border-radius:8px; }
+            </style>
+          </head>
+          <body>
+            <h2 style="text-align:center;">🧾 فاتورة الطلب #${selectedOrderDetails.id}</h2>
+            ${printRef.current.innerHTML}
+            <div class="box">
+              <h3>🏪 المطعم</h3>
+              <p>الاسم: ${selectedOrderDetails.restaurant_name}</p>
+              <p>الهاتف: ${selectedOrderDetails.restaurant_phone}</p>
+            </div>
+            <div class="box">
+              <h3>👤 العميل</h3>
+              <p>الاسم: ${selectedOrderDetails.customer_name}</p>
+              <p>الهاتف: ${selectedOrderDetails.customer_phone}</p>
+              <p>العنوان: ${selectedOrderDetails.customer_address}</p>
+              <p>الإحداثيات: ${selectedOrderDetails.latitude}, ${selectedOrderDetails.longitude}</p>
+            </div>
+          </body>
+        </html>
+      `;
+      win.document.write(htmlContent);
+      win.document.close();
+      win.print();
+    }
+  };
+
+  const formatAmount = (amount: any): string => {
+    const num = Number(amount);
+    return isNaN(num) ? "-" : num.toFixed(2) + " ريال";
+  };
+
+  // ====================================
+  //          إضافة طلب جديد
+  // ====================================
+const selectRestaurant = async (restaurantId: number) => {
+  const rest = restaurants.find((r) => r.id === restaurantId);
+  setSelectedRestaurant(rest);
+
+  try {
+    const catRes = await api.get(`/restaurants/${restaurantId}/categories`);
+
+    const cats = Array.isArray(catRes.data?.categories)
+      ? catRes.data.categories
+      : [];
+
+    setRestaurantCategories(cats);
+    setSelectedCategory(cats.length ? cats[0].id : null);
+  } catch (err) {
+    console.error("خطأ في جلب الفئات:", err);
+    setRestaurantCategories([]);
+    setSelectedCategory(null);
+  }
+};
+
+const openProductsModal = async () => {
+  if (!selectedRestaurant) return alert("اختر مطعم أولا");
+
+  try {
+    const prodRes = await api.get(
+      `/restaurants/${selectedRestaurant.id}/products`
+    );
+
+    const prods = Array.isArray(prodRes.data?.products)
+      ? prodRes.data.products
+      : [];
+
+    setProducts(prods);
+    setShowProductsModal(true);
+  } catch (err) {
+    console.error("خطأ في جلب المنتجات:", err);
+    setProducts([]);
+    setShowProductsModal(true);
+  }
+};
+
 
   const addToCart = (product: any) => {
     const exists = cart.find((p) => p.id === product.id);
     if (exists) {
-      setCart(
-        cart.map((p) =>
-          p.id === product.id ? { ...p, quantity: p.quantity + 1 } : p
-        )
-      );
+      setCart(cart.map((p) => (p.id === product.id ? { ...p, quantity: p.quantity + 1 } : p)));
     } else {
       setCart([...cart, { ...product, quantity: 1 }]);
     }
@@ -215,7 +271,6 @@ const Orders: React.FC = () => {
     if (!selectedCustomer || !selectedAddress || !selectedRestaurant || cart.length === 0) {
       return alert("اكمل البيانات المطلوبة");
     }
-
     const payload = {
       customer_id: selectedCustomer.id,
       address_id: selectedAddress.id,
@@ -223,20 +278,19 @@ const Orders: React.FC = () => {
       restaurant_id: selectedRestaurant.id,
       products: cart.map((c) => ({ product_id: c.id, quantity: c.quantity })),
     };
-
     await api.post("/orders", payload);
+    alert("✅ تم إضافة الطلب");
     setShowAddOrderModal(false);
     setCart([]);
     fetchOrders();
   };
-
-  const formatAmount = (amount: any): string => {
-    const num = Number(amount);
-    return isNaN(num) ? "-" : num.toFixed(2) + " ريال";
-  };
-
+     
+  // ====================================
+  //                JSX
+  // ====================================
   return (
     <div className="space-y-6">
+      {/* ===== رأس الصفحة ===== */}
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">الطلبات</h1>
         <div className="flex gap-2">
@@ -248,13 +302,14 @@ const Orders: React.FC = () => {
           </button>
           <button
             onClick={fetchOrders}
-            className="bg-blue-600 text-white px-4 py-2 rounded"
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
           >
             🔄 تحديث
           </button>
         </div>
       </div>
 
+      {/* ===== جدول الطلبات ===== */}
       {loading ? (
         <div className="p-6 text-center">⏳ جاري التحميل...</div>
       ) : (
@@ -262,40 +317,54 @@ const Orders: React.FC = () => {
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
-                <th>#</th>
+                <th>رقم</th>
                 <th>العميل</th>
                 <th>المطعم</th>
                 <th>الكابتن</th>
                 <th>المبلغ</th>
                 <th>الحالة</th>
                 <th>تفاصيل</th>
-                <th>تعيين</th>
+                <th>تعيين كابتن</th>
               </tr>
             </thead>
             <tbody>
               {orders.map((o) => (
-                <tr key={o.id} className="border-b text-center">
-                  <td>{o.id}</td>
+                <tr key={o.id} className="border-b hover:bg-gray-50 text-center">
+                  <td>#{o.id}</td>
                   <td>{o.customer_name}</td>
                   <td>{o.restaurant_name}</td>
-                  <td>{o.captain_name || "-"}</td>
+                  <td>{o.captain_name || "لم يُعيّن"}</td>
                   <td>{formatAmount(o.total_amount)}</td>
                   <td>
                     <select
                       value={o.status}
                       onChange={(e) => updateOrderStatus(o.id, e.target.value)}
+                      className="border rounded px-2 py-1 text-sm"
                     >
                       <option value="pending">قيد الانتظار</option>
                       <option value="confirmed">مؤكد</option>
+                      <option value="preparing">قيد التحضير</option>
+                      <option value="ready">جاهز</option>
+                      <option value="delivering">قيد التوصيل</option>
                       <option value="completed">مكتمل</option>
                       <option value="cancelled">ملغي</option>
                     </select>
                   </td>
                   <td>
-                    <button onClick={() => openDetailsModal(o.id)}>عرض</button>
+                    <button
+                      onClick={() => openDetailsModal(o.id)}
+                      className="text-blue-600 hover:underline"
+                    >
+                      عرض
+                    </button>
                   </td>
                   <td>
-                    <button onClick={() => openCaptainModal(o.id)}>تعيين</button>
+                    <button
+                      onClick={() => openCaptainModal(o.id)}
+                      className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
+                    >
+                      تعيين
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -304,7 +373,6 @@ const Orders: React.FC = () => {
         </div>
       )}
 
-      
       {/* ===== مودال تعيين الكابتن ===== */}
       {isCaptainModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
