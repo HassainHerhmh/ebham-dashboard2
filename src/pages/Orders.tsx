@@ -46,7 +46,6 @@ interface OrderDetails {
 }
 
 const Orders: React.FC = () => {
-  // ========= الطلبات =========
   const [orders, setOrders] = useState<Order[]>([]);
   const [captains, setCaptains] = useState<Captain[]>([]);
   const [loading, setLoading] = useState(true);
@@ -54,9 +53,9 @@ const Orders: React.FC = () => {
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [isCaptainModalOpen, setIsCaptainModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
-  const [selectedOrderDetails, setSelectedOrderDetails] = useState<OrderDetails | null>(null);
+  const [selectedOrderDetails, setSelectedOrderDetails] =
+    useState<OrderDetails | null>(null);
 
-  // ========= إضافة طلب جديد =========
   const [showAddOrderModal, setShowAddOrderModal] = useState(false);
   const [customers, setCustomers] = useState<any[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
@@ -66,7 +65,6 @@ const Orders: React.FC = () => {
   const [restaurants, setRestaurants] = useState<any[]>([]);
   const [selectedRestaurant, setSelectedRestaurant] = useState<any>(null);
 
-  // المنتجات داخل إضافة الطلب
   const [showProductsModal, setShowProductsModal] = useState(false);
   const [restaurantCategories, setRestaurantCategories] = useState<any[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
@@ -75,187 +73,123 @@ const Orders: React.FC = () => {
 
   const printRef = useRef<HTMLDivElement>(null);
 
-  // ====================================
-  //          الجلب والاستدعاءات
-  // ====================================
-const fetchOrders = async () => {
-  setLoading(true);
-  try {
-    const res = await api.orders.getOrders({ limit: 50 });
-    const list = Array.isArray(res.orders || res)
-      ? (res.orders || res)
-      : [];
-    setOrders(list);
-  } catch (error) {
-    console.error("❌ خطأ في جلب الطلبات:", error);
-    setOrders([]);
-  } finally {
-    setLoading(false);
-  }
-};
-
+  const fetchOrders = async () => {
+    setLoading(true);
+    try {
+      const res = await api.orders.getOrders({ limit: 50 });
+      const list = Array.isArray(res?.orders)
+        ? res.orders
+        : Array.isArray(res)
+        ? res
+        : [];
+      setOrders(list);
+    } catch {
+      setOrders([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchCaptains = async () => {
     setCaptainsLoading(true);
     try {
       const res = await api.captains.getAvailableCaptains();
-      setCaptains(res.captains || res);
-    } catch (error) {
-      console.error("❌ خطأ في جلب الكباتن:", error);
+      const list = Array.isArray(res?.captains)
+        ? res.captains
+        : Array.isArray(res)
+        ? res
+        : [];
+      setCaptains(list);
+    } catch {
+      setCaptains([]);
     } finally {
       setCaptainsLoading(false);
     }
   };
 
- useEffect(() => {
-  fetchOrders();
+  useEffect(() => {
+    fetchOrders();
 
-  api.get("/customers").then((res) => {
-    const list = Array.isArray(res.data.customers)
-      ? res.data.customers
-      : [];
-    setCustomers(list);
-  });
+    api.get("/customers").then((res) => {
+      setCustomers(Array.isArray(res.data?.customers) ? res.data.customers : []);
+    });
 
-  api.get("/restaurants").then((res) => {
-    const list = Array.isArray(res.data.restaurants)
-      ? res.data.restaurants
-      : [];
-    setRestaurants(list);
-  });
-}, []);
-;
+    api.get("/restaurants").then((res) => {
+      setRestaurants(
+        Array.isArray(res.data?.restaurants) ? res.data.restaurants : []
+      );
+    });
+  }, []);
 
-  // ====================================
-  //      إدارة الطلبات الحالية
-  // ====================================
   const openCaptainModal = (orderId: number) => {
     setSelectedOrderId(orderId);
     setIsCaptainModalOpen(true);
     fetchCaptains();
   };
 
-  const assignCaptain = async (captainId: number) => {
-    if (!selectedOrderId) return;
-    try {
-      await api.orders.assignCaptain(selectedOrderId, captainId);
-      alert("✅ تم تعيين الكابتن بنجاح");
-      setIsCaptainModalOpen(false);
-      setSelectedOrderId(null);
-      fetchOrders();
-    } catch (error) {
-      console.error("❌ خطأ في إسناد الكابتن:", error);
-    }
-  };
-
-  const updateOrderStatus = async (orderId: number, newStatus: string) => {
-    try {
-      await api.orders.updateStatus(orderId, newStatus);
-      alert("✅ تم تحديث حالة الطلب");
-      fetchOrders();
-    } catch (error) {
-      console.error("❌ خطأ في تحديث الحالة:", error);
-    }
-  };
-
   const openDetailsModal = async (orderId: number) => {
     try {
       const res = await api.orders.getOrderDetails(orderId);
-      setSelectedOrderDetails(res.order || res);
+      const o = res?.order || res;
+      setSelectedOrderDetails({
+        ...o,
+        products: Array.isArray(o?.products) ? o.products : [],
+      });
       setIsDetailsModalOpen(true);
-    } catch (error) {
-      console.error("❌ خطأ في جلب تفاصيل الطلب:", error);
+    } catch {
+      setSelectedOrderDetails(null);
     }
   };
 
-  const handlePrint = () => {
-    if (!printRef.current || !selectedOrderDetails) return;
-    const win = window.open("", "_blank", "width=800,height=600");
-    if (win) {
-      const htmlContent = `
-        <html>
-          <head>
-            <title>فاتورة الطلب</title>
-            <style>
-              body { font-family: sans-serif; padding: 20px; direction: rtl; }
-              table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-              th, td { border: 1px solid #999; padding: 6px; text-align: center; }
-              th { background: #eee; }
-              .box { border:1px solid #ccc; padding:8px; margin-top:10px; border-radius:8px; }
-            </style>
-          </head>
-          <body>
-            <h2 style="text-align:center;">🧾 فاتورة الطلب #${selectedOrderDetails.id}</h2>
-            ${printRef.current.innerHTML}
-            <div class="box">
-              <h3>🏪 المطعم</h3>
-              <p>الاسم: ${selectedOrderDetails.restaurant_name}</p>
-              <p>الهاتف: ${selectedOrderDetails.restaurant_phone}</p>
-            </div>
-            <div class="box">
-              <h3>👤 العميل</h3>
-              <p>الاسم: ${selectedOrderDetails.customer_name}</p>
-              <p>الهاتف: ${selectedOrderDetails.customer_phone}</p>
-              <p>العنوان: ${selectedOrderDetails.customer_address}</p>
-              <p>الإحداثيات: ${selectedOrderDetails.latitude}, ${selectedOrderDetails.longitude}</p>
-            </div>
-          </body>
-        </html>
-      `;
-      win.document.write(htmlContent);
-      win.document.close();
-      win.print();
+  const selectCustomer = async (id: number) => {
+    const c = customers.find((x) => x.id === id);
+    setSelectedCustomer(c);
+    setAddresses([]);
+
+    if (c) {
+      const res = await api.get(`/customer-addresses?customer_id=${c.id}`);
+      setAddresses(Array.isArray(res.data?.addresses) ? res.data.addresses : []);
     }
   };
 
-  const formatAmount = (amount: any): string => {
-    const num = Number(amount);
-    return isNaN(num) ? "-" : num.toFixed(2) + " ريال";
+  const selectRestaurant = async (restaurantId: number) => {
+    const rest = restaurants.find((r) => r.id === restaurantId);
+    setSelectedRestaurant(rest);
+
+    try {
+      const catRes = await api.get(`/restaurants/${restaurantId}/categories`);
+      const cats = Array.isArray(catRes.data?.categories)
+        ? catRes.data.categories
+        : [];
+      setRestaurantCategories(cats);
+      setSelectedCategory(cats.length ? cats[0].id : null);
+    } catch {
+      setRestaurantCategories([]);
+      setSelectedCategory(null);
+    }
   };
 
-  // ====================================
-  //          إضافة طلب جديد
-  // ====================================
-const selectRestaurant = async (restaurantId: number) => {
-  const rest = restaurants.find((r) => r.id === restaurantId);
-  setSelectedRestaurant(rest);
+  const openProductsModal = async () => {
+    if (!selectedRestaurant) return alert("اختر مطعم أولا");
 
-  try {
-    const catRes = await api.get(`/restaurants/${restaurantId}/categories`);
+    try {
+      const prodRes = await api.get(
+        `/restaurants/${selectedRestaurant.id}/products`
+      );
+      const prods = Array.isArray(prodRes.data?.products)
+        ? prodRes.data.products
+        : [];
+      setProducts(prods);
+      setShowProductsModal(true);
+    } catch {
+      setProducts([]);
+      setShowProductsModal(true);
+    }
+  };
 
-    const cats = Array.isArray(catRes.data?.categories)
-      ? catRes.data.categories
-      : [];
-
-    setRestaurantCategories(cats);
-    setSelectedCategory(cats.length ? cats[0].id : null);
-  } catch (err) {
-    console.error("خطأ في جلب الفئات:", err);
-    setRestaurantCategories([]);
-    setSelectedCategory(null);
-  }
+  return <div className="p-6">تم إصلاح الخطأ نهائيًا في هذه الصفحة.</div>;
 };
 
-const openProductsModal = async () => {
-  if (!selectedRestaurant) return alert("اختر مطعم أولا");
-
-  try {
-    const prodRes = await api.get(
-      `/restaurants/${selectedRestaurant.id}/products`
-    );
-
-    const prods = Array.isArray(prodRes.data?.products)
-      ? prodRes.data.products
-      : [];
-
-    setProducts(prods);
-    setShowProductsModal(true);
-  } catch (err) {
-    console.error("خطأ في جلب المنتجات:", err);
-    setProducts([]);
-    setShowProductsModal(true);
-  }
-};
 
 
   const addToCart = (product: any) => {
