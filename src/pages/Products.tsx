@@ -242,39 +242,42 @@ const Products: React.FC = () => {
         </select>
       </div>
 
-      <table className="w-full text-center border">
-        <thead className="bg-gray-50">
-          <tr>
-            <th>#</th>
-            <th>الاسم</th>
-            <th>الفئات</th>
-            <th>المطعم</th>
-            <th>الوحدة</th>
-            <th>السعر</th>
-            <th>خيارات</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredProducts.map((p, i) => (
-            <tr key={p.id} className="border-t">
-              <td>{i + 1}</td>
-              <td>{p.name}</td>
-              <td>{p.categories || "-"}</td>
-              <td>{p.restaurant_name || "-"}</td>
-              <td>{p.unit_name || "-"}</td>
-              <td>{p.price}</td>
-              <td className="flex gap-2 justify-center">
-                <button onClick={() => handleEdit(p)} className="text-blue-600">
-                  تعديل
-                </button>
-                <button onClick={() => handleDelete(p.id)} className="text-red-600">
-                  حذف
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+     <table className="w-full text-center border">
+  <thead className="bg-gray-50">
+    <tr>
+      <th>#</th>
+      <th>الاسم</th>
+      <th>الفئات</th>
+      <th>المطعم</th>
+      <th>الفرع</th> {/* 🆕 */}
+      <th>الوحدة</th>
+      <th>السعر</th>
+      <th>خيارات</th>
+    </tr>
+  </thead>
+  <tbody>
+    {filteredProducts.map((p, i) => (
+      <tr key={p.id} className="border-t">
+        <td>{i + 1}</td>
+        <td>{p.name}</td>
+        <td>{p.categories || "-"}</td>
+        <td>{p.restaurant_name || "-"}</td>
+        <td>{p.branch_name || "-"}</td> {/* 🆕 */}
+        <td>{p.unit_name || "-"}</td>
+        <td>{p.price}</td>
+        <td className="flex gap-2 justify-center">
+          <button onClick={() => handleEdit(p)} className="text-blue-600">
+            تعديل
+          </button>
+          <button onClick={() => handleDelete(p.id)} className="text-red-600">
+            حذف
+          </button>
+        </td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+
 
       {showForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
