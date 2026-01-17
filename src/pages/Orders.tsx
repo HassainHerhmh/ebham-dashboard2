@@ -498,24 +498,34 @@ const openProductsModal = async () => {
                   <p>الاسم: {selectedOrderDetails.restaurant_name}</p>
                   <p>الهاتف: {selectedOrderDetails.restaurant_phone}</p>
                 </div>
+<div className="border p-3 rounded">
+  <h3 className="font-bold mb-1">👤 بيانات العميل</h3>
+  <p>الاسم: {selectedOrderDetails.customer_name}</p>
+  <p>الهاتف: {selectedOrderDetails.customer_phone}</p>
 
-                <div className="border p-3 rounded">
-                  <h3 className="font-bold mb-1">👤 بيانات العميل</h3>
-                  <p>الاسم: {selectedOrderDetails.customer_name}</p>
-                  <p>الهاتف: {selectedOrderDetails.customer_phone}</p>
-                  <p>📍 العنوان: {selectedOrderDetails.customer_address}</p>
-                  <p>
-                    🧭 الإحداثيات: {selectedOrderDetails.latitude}, {selectedOrderDetails.longitude}
-                  </p>
-                  <a
-                    href={`https://www.google.com/maps?q=${selectedOrderDetails.latitude},${selectedOrderDetails.longitude}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 underline"
-                  >
-                    عرض على الخريطة 🌍
-                  </a>
-                </div>
+  <p>
+    📍 العنوان:{" "}
+    <strong>
+      {(selectedOrderDetails.neighborhood_name || selectedOrderDetails.district || "-")}
+      {" - "}
+      {(selectedOrderDetails.customer_address || selectedOrderDetails.address || "-")}
+    </strong>
+  </p>
+
+  <p>
+    🧭 الإحداثيات: {selectedOrderDetails.latitude}, {selectedOrderDetails.longitude}
+  </p>
+
+  <a
+    href={`https://www.google.com/maps?q=${selectedOrderDetails.latitude},${selectedOrderDetails.longitude}`}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="text-blue-600 underline"
+  >
+    عرض على الخريطة 🌍
+  </a>
+</div>
+
               </div>
             </div>
             <div className="flex justify-end gap-3 p-4 border-t bg-gray-100">
