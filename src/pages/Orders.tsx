@@ -503,14 +503,16 @@ const openProductsModal = async () => {
   <p>الاسم: {selectedOrderDetails.customer_name}</p>
   <p>الهاتف: {selectedOrderDetails.customer_phone}</p>
 
-  <p>
-    📍 العنوان:{" "}
-    <strong>
-      {(selectedOrderDetails.neighborhood_name || selectedOrderDetails.district || "-")}
-      {" - "}
-      {(selectedOrderDetails.customer_address || selectedOrderDetails.address || "-")}
-    </strong>
-  </p>
+<p>
+  📍 العنوان:{" "}
+  <strong>
+    {selectedOrderDetails.neighborhood_name || selectedOrderDetails.district
+      ? `${selectedOrderDetails.neighborhood_name || selectedOrderDetails.district} - `
+      : ""}
+    {selectedOrderDetails.customer_address || selectedOrderDetails.address || "-"}
+  </strong>
+</p>
+
 
   <p>
     🧭 الإحداثيات: {selectedOrderDetails.latitude}, {selectedOrderDetails.longitude}
