@@ -199,30 +199,48 @@ const Orders: React.FC = () => {
   // ====================================
   //          إضافة طلب جديد
   // ====================================
-  const selectCustomer = async (customerId: number) => {
-    const customer = customers.find((c) => c.id === customerId);
-    setSelectedCustomer(customer);
-    setAddresses([]);
-    if (customer) {
-      const res = await api.get(`/customer-addresses?customer_id=${customer.id}`);
-      setAddresses(res.data.addresses);
-    }
-  };
+const selectRestaurant = async (restaurantId: number) => {
+  const rest = restaurants.find((r) => r.id === restaurantId);
+  setSelectedRestaurant(rest);
 
-  const selectRestaurant = async (restaurantId: number) => {
-    const rest = restaurants.find((r) => r.id === restaurantId);
-    setSelectedRestaurant(rest);
+  try {
     const catRes = await api.get(`/restaurants/${restaurantId}/categories`);
-    setRestaurantCategories(catRes.data.categories);
-    setSelectedCategory(catRes.data.categories[0]?.id || null);
-  };
 
-  const openProductsModal = async () => {
-    if (!selectedRestaurant) return alert("اختر مطعم أولا");
-    const prodRes = await api.get(`/restaurants/${selectedRestaurant.id}/products`);
-    setProducts(prodRes.data.products);
+    const cats = Array.isArray(catRes.data.categories)
+      ? catRes.data.categories
+      : [];
+
+    setRestaurantCategories(cats);
+    setSelectedCategory(cats[0]?.id || null);
+  } catch (err) {
+    console.error("خطأ في جلب الفئات:", err);
+    setRestaurantCategories([]);
+    setSelectedCategory(null);
+  }
+};
+
+
+ const openProductsModal = async () => {
+  if (!selectedRestaurant) return alert("اختر مطعم أولا");
+
+  try {
+    const prodRes = await api.get(
+      `/restaurants/${selectedRestaurant.id}/products`
+    );
+
+    const prods = Array.isArray(prodRes.data.products)
+      ? prodRes.data.products
+      : [];
+
+    setProducts(prods);
     setShowProductsModal(true);
-  };
+  } catch (err) {
+    console.error("خطأ في جلب المنتجات:", err);
+    setProducts([]);
+    setShowProductsModal(true);
+  }
+};
+
 
   const addToCart = (product: any) => {
     const exists = cart.find((p) => p.id === product.id);
