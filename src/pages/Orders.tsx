@@ -78,18 +78,22 @@ const Orders: React.FC = () => {
   // ====================================
   //          الجلب والاستدعاءات
   // ====================================
-  const fetchOrders = async () => {
-    setLoading(true);
-    try {
-      const res = await api.orders.getOrders({ limit: 50 });
-      setOrders(res.orders || res);
-    } catch (error) {
-      console.error("❌ خطأ في جلب الطلبات:", error);
-      setOrders([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+const fetchOrders = async () => {
+  setLoading(true);
+  try {
+    const res = await api.orders.getOrders({ limit: 50 });
+    const list = Array.isArray(res.orders || res)
+      ? (res.orders || res)
+      : [];
+    setOrders(list);
+  } catch (error) {
+    console.error("❌ خطأ في جلب الطلبات:", error);
+    setOrders([]);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const fetchCaptains = async () => {
     setCaptainsLoading(true);
@@ -103,11 +107,24 @@ const Orders: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    fetchOrders();
-    api.get("/customers").then((res) => setCustomers(res.data.customers));
-    api.get("/restaurants").then((res) => setRestaurants(res.data.restaurants));
-  }, []);
+ useEffect(() => {
+  fetchOrders();
+
+  api.get("/customers").then((res) => {
+    const list = Array.isArray(res.data.customers)
+      ? res.data.customers
+      : [];
+    setCustomers(list);
+  });
+
+  api.get("/restaurants").then((res) => {
+    const list = Array.isArray(res.data.restaurants)
+      ? res.data.restaurants
+      : [];
+    setRestaurants(list);
+  });
+}, []);
+;
 
   // ====================================
   //      إدارة الطلبات الحالية
