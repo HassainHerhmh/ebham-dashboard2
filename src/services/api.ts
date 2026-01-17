@@ -917,7 +917,7 @@ export const saveDeliverySettings = (data: any) =>
 
   // جلب الكباتن المتاحين للتعيين
   getAvailableCaptains: async () =>
-    (await api.get("/captains/available")).data,
+    (await api.get("/captains")).data,
 };
 
 
