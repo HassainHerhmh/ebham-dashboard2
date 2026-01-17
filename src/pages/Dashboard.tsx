@@ -18,17 +18,24 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 const Dashboard: React.FC = () => {
   const { state, actions } = useApp()
   
-  // استخدام البيانات المباشرة من السياق
   const stats = state.stats
   
-  // جلب البيانات الإضافية
-  const { data: recentOrders } = useApi(() => api.orders.getOrders({ limit: 10, sort: 'desc' }), [])
+  const { data: recentOrders } = useApi(
+    () => api.orders.getOrders({ limit: 10, sort: 'desc' }),
+    []
+  )
   const { data: salesData } = useApi(() => api.reports.getSalesReport(), [])
 
   React.useEffect(() => {
-    // تحميل الإحصائيات عند تحميل الصفحة
     actions.loadStats()
   }, [])
+
+  // 🔧 حل المشكلة هنا
+  const ordersList = Array.isArray(recentOrders?.orders)
+    ? recentOrders.orders
+    : Array.isArray(recentOrders)
+      ? recentOrders
+      : []
 
   const orderStatusData = [
     { name: 'مكتملة', value: 400, color: '#10b981' },
@@ -51,9 +58,7 @@ const Dashboard: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">لوحة التحكم</h1>
-        <div className="text-sm text-gray-500">
-          آخر تحديث: الآن
-        </div>
+        <div className="text-sm text-gray-500">آخر تحديث: الآن</div>
       </div>
 
       {/* Stats Cards */}
@@ -93,7 +98,6 @@ const Dashboard: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Sales Chart */}
         <div className="bg-white rounded-xl shadow-lg p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">المبيعات الأسبوعية</h2>
           <ResponsiveContainer width="100%" height={300}>
@@ -107,7 +111,6 @@ const Dashboard: React.FC = () => {
           </ResponsiveContainer>
         </div>
 
-        {/* Order Status Pie Chart */}
         <div className="bg-white rounded-xl shadow-lg p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">حالة الطلبات</h2>
           <ResponsiveContainer width="100%" height={300}>
@@ -132,7 +135,6 @@ const Dashboard: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Recent Orders */}
         <div className="lg:col-span-2 bg-white rounded-xl shadow-lg">
           <div className="px-6 py-4 border-b border-gray-200">
             <h2 className="text-lg font-semibold text-gray-900">الطلبات الأخيرة</h2>
@@ -150,7 +152,7 @@ const Dashboard: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {(recentOrders || []).slice(0, 4).map((order: any) => (
+                {ordersList.slice(0, 4).map((order: any) => (
                   <tr key={order.id} className="border-b border-gray-100 hover:bg-gray-50">
                     <td className="py-3 px-6 text-sm font-medium text-gray-900">#{order.id}</td>
                     <td className="py-3 px-6 text-sm text-gray-700">{order.customer}</td>
@@ -166,63 +168,6 @@ const Dashboard: React.FC = () => {
                 ))}
               </tbody>
             </table>
-          </div>
-        </div>
-
-        {/* Quick Stats */}
-        <div className="space-y-4">
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <h3 className="font-semibold text-gray-900 mb-4">إحصائيات سريعة</h3>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2 space-x-reverse">
-                  <TrendingUp size={16} className="text-green-500" />
-                  <span className="text-sm text-gray-600">متوسط وقت التوصيل</span>
-                </div>
-                <span className="text-sm font-medium">{stats?.averageDeliveryTime || 28} دقيقة</span>
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2 space-x-reverse">
-                  <Star size={16} className="text-yellow-500" />
-                  <span className="text-sm text-gray-600">تقييم الخدمة</span>
-                </div>
-                <span className="text-sm font-medium">4.8/5</span>
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2 space-x-reverse">
-                  <Clock size={16} className="text-blue-500" />
-                  <span className="text-sm text-gray-600">أوقات الذروة</span>
-                </div>
-                <span className="text-sm font-medium">12-2 م</span>
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2 space-x-reverse">
-                  <MapPin size={16} className="text-purple-500" />
-                  <span className="text-sm text-gray-600">المناطق النشطة</span>
-                </div>
-                <span className="text-sm font-medium">15 منطقة</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-gradient-to-r from-primary-500 to-secondary-500 rounded-xl shadow-lg p-6 text-white">
-            <h3 className="font-semibold mb-2">هدف اليوم</h3>
-            <p className="text-2xl font-bold">{stats?.dailyTarget || 200} طلب</p>
-            <div className="w-full bg-white/20 rounded-full h-2 mt-3">
-              <div 
-                className="bg-white h-2 rounded-full" 
-                style={{ 
-                  width: `${stats ? (stats.totalOrders / (stats.dailyTarget || 200)) * 100 : 0}%` 
-                }}
-              ></div>
-            </div>
-            <p className="text-xs mt-2 opacity-90">
-              {stats?.totalOrders || 0} من {stats?.dailyTarget || 200} طلب 
-              ({stats ? ((stats.totalOrders / (stats.dailyTarget || 200)) * 100).toFixed(1) : 0}%)
-            </p>
           </div>
         </div>
       </div>
