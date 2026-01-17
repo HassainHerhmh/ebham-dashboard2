@@ -880,6 +880,45 @@ export const getDeliverySettings = () =>
 
 export const saveDeliverySettings = (data: any) =>
   api.post("/delivery-settings", data);
+/* =========================
+   ORDERS
+========================= */
+(api as any).orders = {
+  // جلب الطلبات
+  getOrders: async (params?: any) =>
+    (await api.get("/orders", { params })).data,
+
+  // تفاصيل طلب واحد
+  getOrderDetails: async (id: number) =>
+    (await api.get(`/orders/${id}`)).data,
+
+  // تحديث حالة الطلب
+  updateStatus: async (id: number, status: string) =>
+    (await api.put(`/orders/${id}/status`, { status })).data,
+
+  // تعيين كابتن للطلب
+  assignCaptain: async (orderId: number, captainId: number) =>
+    (
+      await api.post(`/orders/${orderId}/assign`, {
+        captain_id: captainId,
+      })
+    ).data,
+
+  // إضافة طلب جديد
+  create: async (data: any) =>
+    (await api.post("/orders", data)).data,
+};
+
+/* =========================
+   CAPTAINS – AVAILABLE
+========================= */
+(api as any).captains = {
+  ...(api as any).captains,
+
+  // جلب الكباتن المتاحين للتعيين
+  getAvailableCaptains: async () =>
+    (await api.get("/captains/available")).data,
+};
 
 
 export default api;
