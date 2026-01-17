@@ -223,12 +223,12 @@ const selectRestaurant = async (restaurantId: number) => {
   try {
     const catRes = await api.get(`/restaurants/${restaurantId}/categories`);
 
-    const cats = Array.isArray(catRes.data.categories)
+    const cats = Array.isArray(catRes.data?.categories)
       ? catRes.data.categories
       : [];
 
     setRestaurantCategories(cats);
-    setSelectedCategory(cats[0]?.id || null);
+    setSelectedCategory(cats.length ? cats[0].id : null);
   } catch (err) {
     console.error("خطأ في جلب الفئات:", err);
     setRestaurantCategories([]);
@@ -236,8 +236,7 @@ const selectRestaurant = async (restaurantId: number) => {
   }
 };
 
-
- const openProductsModal = async () => {
+const openProductsModal = async () => {
   if (!selectedRestaurant) return alert("اختر مطعم أولا");
 
   try {
@@ -245,7 +244,7 @@ const selectRestaurant = async (restaurantId: number) => {
       `/restaurants/${selectedRestaurant.id}/products`
     );
 
-    const prods = Array.isArray(prodRes.data.products)
+    const prods = Array.isArray(prodRes.data?.products)
       ? prodRes.data.products
       : [];
 
