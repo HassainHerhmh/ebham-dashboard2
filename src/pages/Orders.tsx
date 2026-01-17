@@ -121,34 +121,18 @@ const Orders: React.FC = () => {
     });
   }, []);
 
-  const openCaptainModal = (orderId: number) => {
-    setSelectedOrderId(orderId);
-    setIsCaptainModalOpen(true);
-    fetchCaptains();
-  };
-
-  const openDetailsModal = async (orderId: number) => {
-    try {
-      const res = await api.orders.getOrderDetails(orderId);
-      const o = res?.order || res;
-      setSelectedOrderDetails({
-        ...o,
-        products: Array.isArray(o?.products) ? o.products : [],
-      });
-      setIsDetailsModalOpen(true);
-    } catch {
-      setSelectedOrderDetails(null);
-    }
-  };
-
-  const selectCustomer = async (id: number) => {
-    const c = customers.find((x) => x.id === id);
-    setSelectedCustomer(c);
+  const selectCustomer = async (customerId: number) => {
+    const customer = customers.find((c) => c.id === customerId);
+    setSelectedCustomer(customer);
     setAddresses([]);
 
-    if (c) {
-      const res = await api.get(`/customer-addresses?customer_id=${c.id}`);
-      setAddresses(Array.isArray(res.data?.addresses) ? res.data.addresses : []);
+    if (customer) {
+      const res = await api.get(
+        `/customer-addresses?customer_id=${customer.id}`
+      );
+      setAddresses(
+        Array.isArray(res.data?.addresses) ? res.data.addresses : []
+      );
     }
   };
 
@@ -187,15 +171,41 @@ const Orders: React.FC = () => {
     }
   };
 
-  return <div className="p-6">تم إصلاح الخطأ نهائيًا في هذه الصفحة.</div>;
-};
+    const openCaptainModal = (orderId: number) => {
+    setSelectedOrderId(orderId);
+    setIsCaptainModalOpen(true);
+    fetchCaptains();
+  };
 
+  const assignCaptain = async (captainId: number) => {
+    if (!selectedOrderId) return;
+    await api.orders.assignCaptain(selectedOrderId, captainId);
+    setIsCaptainModalOpen(false);
+    setSelectedOrderId(null);
+    fetchOrders();
+  };
 
+  const updateOrderStatus = async (orderId: number, newStatus: string) => {
+    await api.orders.updateStatus(orderId, newStatus);
+    fetchOrders();
+  };
+
+  const openDetailsModal = async (orderId: number) => {
+    const res = await api.orders.getOrderDetails(orderId);
+    const order = res?.order || res;
+    order.products = Array.isArray(order?.products) ? order.products : [];
+    setSelectedOrderDetails(order);
+    setIsDetailsModalOpen(true);
+  };
 
   const addToCart = (product: any) => {
     const exists = cart.find((p) => p.id === product.id);
     if (exists) {
-      setCart(cart.map((p) => (p.id === product.id ? { ...p, quantity: p.quantity + 1 } : p)));
+      setCart(
+        cart.map((p) =>
+          p.id === product.id ? { ...p, quantity: p.quantity + 1 } : p
+        )
+      );
     } else {
       setCart([...cart, { ...product, quantity: 1 }]);
     }
@@ -205,6 +215,7 @@ const Orders: React.FC = () => {
     if (!selectedCustomer || !selectedAddress || !selectedRestaurant || cart.length === 0) {
       return alert("اكمل البيانات المطلوبة");
     }
+
     const payload = {
       customer_id: selectedCustomer.id,
       address_id: selectedAddress.id,
@@ -212,19 +223,20 @@ const Orders: React.FC = () => {
       restaurant_id: selectedRestaurant.id,
       products: cart.map((c) => ({ product_id: c.id, quantity: c.quantity })),
     };
+
     await api.post("/orders", payload);
-    alert("✅ تم إضافة الطلب");
     setShowAddOrderModal(false);
     setCart([]);
     fetchOrders();
   };
-     
-  // ====================================
-  //                JSX
-  // ====================================
+
+  const formatAmount = (amount: any): string => {
+    const num = Number(amount);
+    return isNaN(num) ? "-" : num.toFixed(2) + " ريال";
+  };
+
   return (
     <div className="space-y-6">
-      {/* ===== رأس الصفحة ===== */}
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">الطلبات</h1>
         <div className="flex gap-2">
@@ -236,14 +248,13 @@ const Orders: React.FC = () => {
           </button>
           <button
             onClick={fetchOrders}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            className="bg-blue-600 text-white px-4 py-2 rounded"
           >
             🔄 تحديث
           </button>
         </div>
       </div>
 
-      {/* ===== جدول الطلبات ===== */}
       {loading ? (
         <div className="p-6 text-center">⏳ جاري التحميل...</div>
       ) : (
@@ -251,54 +262,40 @@ const Orders: React.FC = () => {
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
-                <th>رقم</th>
+                <th>#</th>
                 <th>العميل</th>
                 <th>المطعم</th>
                 <th>الكابتن</th>
                 <th>المبلغ</th>
                 <th>الحالة</th>
                 <th>تفاصيل</th>
-                <th>تعيين كابتن</th>
+                <th>تعيين</th>
               </tr>
             </thead>
             <tbody>
               {orders.map((o) => (
-                <tr key={o.id} className="border-b hover:bg-gray-50 text-center">
-                  <td>#{o.id}</td>
+                <tr key={o.id} className="border-b text-center">
+                  <td>{o.id}</td>
                   <td>{o.customer_name}</td>
                   <td>{o.restaurant_name}</td>
-                  <td>{o.captain_name || "لم يُعيّن"}</td>
+                  <td>{o.captain_name || "-"}</td>
                   <td>{formatAmount(o.total_amount)}</td>
                   <td>
                     <select
                       value={o.status}
                       onChange={(e) => updateOrderStatus(o.id, e.target.value)}
-                      className="border rounded px-2 py-1 text-sm"
                     >
                       <option value="pending">قيد الانتظار</option>
                       <option value="confirmed">مؤكد</option>
-                      <option value="preparing">قيد التحضير</option>
-                      <option value="ready">جاهز</option>
-                      <option value="delivering">قيد التوصيل</option>
                       <option value="completed">مكتمل</option>
                       <option value="cancelled">ملغي</option>
                     </select>
                   </td>
                   <td>
-                    <button
-                      onClick={() => openDetailsModal(o.id)}
-                      className="text-blue-600 hover:underline"
-                    >
-                      عرض
-                    </button>
+                    <button onClick={() => openDetailsModal(o.id)}>عرض</button>
                   </td>
                   <td>
-                    <button
-                      onClick={() => openCaptainModal(o.id)}
-                      className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
-                    >
-                      تعيين
-                    </button>
+                    <button onClick={() => openCaptainModal(o.id)}>تعيين</button>
                   </td>
                 </tr>
               ))}
@@ -307,6 +304,7 @@ const Orders: React.FC = () => {
         </div>
       )}
 
+      
       {/* ===== مودال تعيين الكابتن ===== */}
       {isCaptainModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
