@@ -551,26 +551,40 @@ const openProductsModal = async () => {
               ))}
             </select>
             {selectedCustomer && <div>📞 {selectedCustomer.phone}</div>}
-            <label>📍 اختر العنوان:</label>
-            <select
-              onChange={(e) =>
-                setSelectedAddress(addresses.find((a) => a.id == e.target.value))
-              }
-            >
-              <option value="">-- اختر --</option>
-              {addresses.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.address}
-                </option>
-              ))}
-            </select>
-            <input
-              type="text"
-              placeholder="🌍 رابط GPS"
-              value={gpsLink}
-              onChange={(e) => setGpsLink(e.target.value)}
-              className="border w-full p-2 mt-2 mb-2 rounded"
-            />
+        <label>📍 اختر العنوان:</label>
+<select
+  value={selectedAddress?.id || ""}
+  onChange={(e) => {
+    const addr = addresses.find((a) => a.id == e.target.value);
+    setSelectedAddress(addr || null);
+
+    // تعبئة رابط الـ GPS تلقائيًا
+    if (addr?.gps_link) {
+      setGpsLink(addr.gps_link);
+    } else if (addr?.latitude && addr?.longitude) {
+      setGpsLink(`https://www.google.com/maps?q=${addr.latitude},${addr.longitude}`);
+    } else {
+      setGpsLink("");
+    }
+  }}
+  className="border w-full p-2 mt-1 rounded"
+>
+  <option value="">-- اختر --</option>
+  {addresses.map((a) => (
+    <option key={a.id} value={a.id}>
+      {`${a.district_name || a.neighborhood_name || "بدون حي"} - ${a.address || ""}`}
+    </option>
+  ))}
+</select>
+
+           <input
+  type="text"
+  placeholder="🌍 رابط GPS"
+  value={gpsLink}
+  readOnly
+  className="border w-full p-2 mt-2 mb-2 rounded bg-gray-50"
+ />
+
             <label>🏪 اختر المطعم:</label>
             <select onChange={(e) => selectRestaurant(Number(e.target.value))}>
               <option value="">-- اختر --</option>
