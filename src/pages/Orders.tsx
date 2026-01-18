@@ -72,10 +72,14 @@ const Orders: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [products, setProducts] = useState<any[]>([]);
   const [cart, setCart] = useState<any[]>([]);
-   const [carts, setCarts] = useState<
-  { restaurant: any; items: any[] }[]
->([]);
-const [activeRestaurantId, setActiveRestaurantId] = useState<number | null>(null);
+type CartGroup = {
+  restaurant: any;
+  items: any[];
+};
+
+const [groups, setGroups] = useState<CartGroup[]>([]);
+const [currentRestaurantId, setCurrentRestaurantId] = useState<number | null>(null);
+
 
   const printRef = useRef<HTMLDivElement>(null);
   
@@ -217,7 +221,7 @@ const fetchOrders = async () => {
     return isNaN(num) ? "-" : num.toFixed(2) + " ريال";
   };
 
- // ====================================
+// ====================================
 //          إضافة طلب جديد (متعدد المطاعم)
 // ====================================
 
@@ -225,14 +229,7 @@ const selectRestaurant = async (restaurantId: number) => {
   const rest = restaurants.find((r) => r.id === restaurantId);
   if (!rest) return;
 
-  // لو المطعم موجود مسبقًا نجعله نشط فقط
-  const exists = carts.find((c) => c.restaurant.id === rest.id);
-  if (exists) {
-    setActiveRestaurantId(rest.id);
-  } else {
-    setCarts((prev) => [...prev, { restaurant: rest, items: [] }]);
-    setActiveRestaurantId(rest.id);
-  }
+  setCurrentRestaurant(rest);
 
   try {
     const catRes = await api.get(`/restaurants/${restaurantId}/categories`);
@@ -250,11 +247,11 @@ const selectRestaurant = async (restaurantId: number) => {
 };
 
 const openProductsModal = async () => {
-  if (!activeRestaurantId) return alert("اختر مطعم أولا");
+  if (!currentRestaurant) return alert("اختر مطعم أولا");
 
   try {
     const prodRes = await api.get(
-      `/restaurants/${activeRestaurantId}/products`
+      `/restaurants/${currentRestaurant.id}/products`
     );
 
     const prods = Array.isArray(prodRes.data?.products)
@@ -271,43 +268,86 @@ const openProductsModal = async () => {
 };
 
 const addToCart = (product: any) => {
-  if (!activeRestaurantId) return;
+  if (!currentRestaurant) return;
 
-  setCarts((prev) =>
-    prev.map((c) => {
-      if (c.restaurant.id !== activeRestaurantId) return c;
+  setGroups((prev) => {
+    const idx = prev.findIndex(
+      (g) => g.restaurant.id === currentRestaurant.id
+    );
 
-      const exists = c.items.find((p) => p.id === product.id);
+    // لو المطعم غير موجود نضيفه
+    if (idx === -1) {
+      return [
+        ...prev,
+        {
+          restaurant: currentRestaurant,
+          items: [{ ...product, quantity: 1 }],
+        },
+      ];
+    }
+
+    // لو موجود نضيف / نزيد المنتج
+    return prev.map((g) => {
+      if (g.restaurant.id !== currentRestaurant.id) return g;
+
+      const exists = g.items.find((p) => p.id === product.id);
       if (exists) {
         return {
-          ...c,
-          items: c.items.map((p) =>
-            p.id === product.id ? { ...p, quantity: p.quantity + 1 } : p
+          ...g,
+          items: g.items.map((p) =>
+            p.id === product.id
+              ? { ...p, quantity: p.quantity + 1 }
+              : p
           ),
         };
       }
 
       return {
-        ...c,
-        items: [...c.items, { ...product, quantity: 1 }],
+        ...g,
+        items: [...g.items, { ...product, quantity: 1 }],
+      };
+    });
+  });
+};
+
+const updateItemQty = (
+  restaurantId: number,
+  productId: number,
+  qty: number
+) => {
+  setGroups((prev) =>
+    prev.map((g) => {
+      if (g.restaurant.id !== restaurantId) return g;
+      return {
+        ...g,
+        items: g.items
+          .map((i) =>
+            i.id === productId ? { ...i, quantity: qty } : i
+          )
+          .filter((i) => i.quantity > 0),
       };
     })
   );
 };
 
+const removeRestaurantGroup = (restaurantId: number) => {
+  setGroups((prev) =>
+    prev.filter((g) => g.restaurant.id !== restaurantId)
+  );
+};
+
 const saveOrder = async () => {
-  if (!selectedCustomer || !selectedAddress || carts.length === 0) {
+  if (!selectedCustomer || !selectedAddress || groups.length === 0) {
     return alert("اكمل البيانات المطلوبة");
   }
 
-  // تجهيز المنتجات مع ربطها بالمطاعم
   const payload = {
     customer_id: selectedCustomer.id,
     address_id: selectedAddress.id,
     gps_link: gpsLink,
-    restaurants: carts.map((c) => ({
-      restaurant_id: c.restaurant.id,
-      products: c.items.map((i) => ({
+    restaurants: groups.map((g) => ({
+      restaurant_id: g.restaurant.id,
+      products: g.items.map((i) => ({
         product_id: i.id,
         quantity: i.quantity,
       })),
@@ -318,8 +358,8 @@ const saveOrder = async () => {
 
   alert("✅ تم إضافة الطلب");
   setShowAddOrderModal(false);
-  setCarts([]);
-  setActiveRestaurantId(null);
+  setGroups([]);
+  setCurrentRestaurant(null);
   fetchOrders();
 };
 
@@ -333,7 +373,6 @@ const selectCustomer = async (customerId: number) => {
 
   try {
     const res = await api.get(`/customer-addresses?customer_id=${customer.id}`);
-
     const list = Array.isArray(res.data?.addresses)
       ? res.data.addresses
       : [];
@@ -344,6 +383,7 @@ const selectCustomer = async (customerId: number) => {
     setAddresses([]);
   }
 };
+
 
 
   // ====================================
@@ -649,46 +689,85 @@ const selectCustomer = async (customerId: number) => {
         📦 تحديد المنتجات
       </button>
 
-      <h3 className="font-bold mt-4">🛒 السلال:</h3>
-      {carts.length === 0 && (
-        <div className="text-sm text-gray-500">لم يتم إضافة أي مطعم بعد</div>
-      )}
+    <h3 className="font-bold mt-4">🛒 السلال:</h3>
+{groups.length === 0 && (
+  <div className="text-sm text-gray-500">لم يتم إضافة أي مطعم بعد</div>
+)}
 
-      {carts.map((c) => (
-        <div key={c.restaurant.id} className="border rounded p-3 mt-3">
-          <div className="flex justify-between items-center">
-            <h4 className="font-semibold">🏪 {c.restaurant.name}</h4>
+{groups.map((g) => (
+  <div key={g.restaurant.id} className="border rounded p-3 mt-3">
+    <div className="flex justify-between items-center mb-2">
+      <h4 className="font-semibold">🏪 {g.restaurant.name}</h4>
+      <button
+        onClick={() => removeRestaurantGroup(g.restaurant.id)}
+        className="text-red-600 text-sm"
+      >
+        حذف المطعم ✖
+      </button>
+    </div>
+
+    {g.items.length === 0 ? (
+      <p className="text-sm text-gray-500">لا توجد منتجات</p>
+    ) : (
+      g.items.map((item) => (
+        <div
+          key={item.id}
+          className="flex justify-between items-center border-b py-1"
+        >
+          <span className="flex-1">{item.name}</span>
+
+          <div className="flex items-center gap-2">
             <button
-              onClick={() => setActiveRestaurantId(c.restaurant.id)}
-              className={`text-xs px-2 py-1 rounded ${
-                activeRestaurantId === c.restaurant.id
-                  ? "bg-green-600 text-white"
-                  : "bg-gray-200"
-              }`}
+              onClick={() =>
+                updateItemQty(
+                  g.restaurant.id,
+                  item.id,
+                  item.quantity - 1
+                )
+              }
+              className="px-2 py-1 bg-gray-200 rounded"
             >
-              نشط
+              ➖
+            </button>
+
+            <span className="min-w-[24px] text-center">
+              {item.quantity}
+            </span>
+
+            <button
+              onClick={() =>
+                updateItemQty(
+                  g.restaurant.id,
+                  item.id,
+                  item.quantity + 1
+                )
+              }
+              className="px-2 py-1 bg-gray-200 rounded"
+            >
+              ➕
+            </button>
+
+            <button
+              onClick={() =>
+                updateItemQty(g.restaurant.id, item.id, 0)
+              }
+              className="text-red-600 ml-2"
+            >
+              🗑
             </button>
           </div>
-
-          {c.items.length === 0 ? (
-            <p className="text-sm text-gray-500 mt-2">لا توجد منتجات</p>
-          ) : (
-            c.items.map((item) => (
-              <div key={item.id} className="flex justify-between border-b py-1 mt-2">
-                <span>{item.name}</span>
-                <span>{item.quantity} × {item.price} ريال</span>
-              </div>
-            ))
-          )}
         </div>
-      ))}
+      ))
+    )}
+  </div>
+))}
 
-      <button
-        onClick={() => setActiveRestaurantId(null)}
-        className="mt-3 bg-indigo-600 text-white px-3 py-2 rounded"
-      >
-        ➕ إضافة مطعم آخر
-      </button>
+<button
+  onClick={() => setCurrentRestaurant(null)}
+  className="mt-3 bg-indigo-600 text-white px-3 py-2 rounded"
+>
+  ➕ إضافة مطعم آخر
+</button>
 
       <div className="mt-4 flex justify-end gap-2">
         <button onClick={saveOrder} className="bg-green-600 text-white px-4 py-2 rounded">
