@@ -286,6 +286,22 @@ const handleSubmit = async (e: React.FormEvent) => {
                       <img src={r.image_url} alt={r.name} className="w-16 h-16 object-cover rounded" />
                     )}
                   </td>
+                  
+                                    <td>
+                          {r.map_url ? (
+                             <a
+                       href={r.map_url}
+                        target="_blank"
+                       rel="noopener noreferrer"
+                      className="text-blue-600 underline"
+                       >
+                      🌍 عرض
+                     </a>
+                       ) : (
+                         "-"
+                         )}
+                   </td>
+                  
                   <td className="flex gap-2 justify-center">
                     <button onClick={() => handleEdit(r)} className="text-blue-600">
                       <Edit3 />
@@ -294,20 +310,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                       <Trash2 />
                     </button>
                   </td>
-                  <td>
-  {r.map_url ? (
-    <a
-      href={r.map_url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="text-blue-600 underline"
-    >
-      🌍 عرض
-    </a>
-  ) : (
-    "-"
-  )}
-</td>
+
 
                 </tr>
               ))}
