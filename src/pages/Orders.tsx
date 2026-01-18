@@ -43,7 +43,9 @@ interface OrderDetails {
   latitude: string;
   longitude: string;
   delivery_fee: number | string | null;
+  extra_store_fee?: number | string | null; // ← أضف هذا السطر
 }
+
 
 const Orders: React.FC = () => {
   // ========= الطلبات =========
