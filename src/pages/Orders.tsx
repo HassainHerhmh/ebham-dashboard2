@@ -900,7 +900,7 @@ const selectCustomer = async (customerId: number) => {
   </div>
 )}
 
-    </div>
+
   );
 };
 
