@@ -78,7 +78,8 @@ type CartGroup = {
 };
 
 const [groups, setGroups] = useState<CartGroup[]>([]);
-const [currentRestaurantId, setCurrentRestaurantId] = useState<number | null>(null);
+const [currentRestaurant, setCurrentRestaurant] = useState<any>(null);
+
 
 
   const printRef = useRef<HTMLDivElement>(null);
@@ -633,10 +634,15 @@ const selectCustomer = async (customerId: number) => {
       <h2 className="text-lg font-bold mb-4">➕ إضافة طلب جديد</h2>
 
       <label>👤 اختر العميل:</label>
-      <select onChange={(e) => selectCustomer(Number(e.target.value))} className="border w-full p-2 rounded">
+      <select
+        onChange={(e) => selectCustomer(Number(e.target.value))}
+        className="border w-full p-2 rounded"
+      >
         <option value="">-- اختر --</option>
         {customers.map((c) => (
-          <option key={c.id} value={c.id}>{c.name}</option>
+          <option key={c.id} value={c.id}>
+            {c.name}
+          </option>
         ))}
       </select>
       {selectedCustomer && <div className="mt-1">📞 {selectedCustomer.phone}</div>}
@@ -677,103 +683,101 @@ const selectCustomer = async (customerId: number) => {
       >
         <option value="">-- اختر --</option>
         {restaurants.map((r) => (
-          <option key={r.id} value={r.id}>{r.name}</option>
+          <option key={r.id} value={r.id}>
+            {r.name}
+          </option>
         ))}
       </select>
 
       <button
         onClick={openProductsModal}
         className="bg-blue-600 text-white px-3 py-1 mt-3 rounded"
-        disabled={!activeRestaurantId}
+        disabled={!currentRestaurant}
       >
         📦 تحديد المنتجات
       </button>
 
-    <h3 className="font-bold mt-4">🛒 السلال:</h3>
-{groups.length === 0 && (
-  <div className="text-sm text-gray-500">لم يتم إضافة أي مطعم بعد</div>
-)}
+      <h3 className="font-bold mt-4">🛒 السلال:</h3>
+      {groups.length === 0 && (
+        <div className="text-sm text-gray-500">لم يتم إضافة أي مطعم بعد</div>
+      )}
 
-{groups.map((g) => (
-  <div key={g.restaurant.id} className="border rounded p-3 mt-3">
-    <div className="flex justify-between items-center mb-2">
-      <h4 className="font-semibold">🏪 {g.restaurant.name}</h4>
-      <button
-        onClick={() => removeRestaurantGroup(g.restaurant.id)}
-        className="text-red-600 text-sm"
-      >
-        حذف المطعم ✖
-      </button>
-    </div>
-
-    {g.items.length === 0 ? (
-      <p className="text-sm text-gray-500">لا توجد منتجات</p>
-    ) : (
-      g.items.map((item) => (
-        <div
-          key={item.id}
-          className="flex justify-between items-center border-b py-1"
-        >
-          <span className="flex-1">{item.name}</span>
-
-          <div className="flex items-center gap-2">
+      {groups.map((g) => (
+        <div key={g.restaurant.id} className="border rounded p-3 mt-3">
+          <div className="flex justify-between items-center mb-2">
+            <h4 className="font-semibold">🏪 {g.restaurant.name}</h4>
             <button
-              onClick={() =>
-                updateItemQty(
-                  g.restaurant.id,
-                  item.id,
-                  item.quantity - 1
-                )
-              }
-              className="px-2 py-1 bg-gray-200 rounded"
+              onClick={() => removeRestaurantGroup(g.restaurant.id)}
+              className="text-red-600 text-sm"
             >
-              ➖
-            </button>
-
-            <span className="min-w-[24px] text-center">
-              {item.quantity}
-            </span>
-
-            <button
-              onClick={() =>
-                updateItemQty(
-                  g.restaurant.id,
-                  item.id,
-                  item.quantity + 1
-                )
-              }
-              className="px-2 py-1 bg-gray-200 rounded"
-            >
-              ➕
-            </button>
-
-            <button
-              onClick={() =>
-                updateItemQty(g.restaurant.id, item.id, 0)
-              }
-              className="text-red-600 ml-2"
-            >
-              🗑
+              حذف المطعم ✖
             </button>
           </div>
-        </div>
-      ))
-    )}
-  </div>
-))}
 
-<button
-  onClick={() => setCurrentRestaurant(null)}
-  className="mt-3 bg-indigo-600 text-white px-3 py-2 rounded"
->
-  ➕ إضافة مطعم آخر
-</button>
+          {g.items.length === 0 ? (
+            <p className="text-sm text-gray-500">لا توجد منتجات</p>
+          ) : (
+            g.items.map((item) => (
+              <div
+                key={item.id}
+                className="flex justify-between items-center border-b py-1"
+              >
+                <span className="flex-1">{item.name}</span>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() =>
+                      updateItemQty(g.restaurant.id, item.id, item.quantity - 1)
+                    }
+                    className="px-2 py-1 bg-gray-200 rounded"
+                  >
+                    ➖
+                  </button>
+
+                  <span className="min-w-[24px] text-center">
+                    {item.quantity}
+                  </span>
+
+                  <button
+                    onClick={() =>
+                      updateItemQty(g.restaurant.id, item.id, item.quantity + 1)
+                    }
+                    className="px-2 py-1 bg-gray-200 rounded"
+                  >
+                    ➕
+                  </button>
+
+                  <button
+                    onClick={() => updateItemQty(g.restaurant.id, item.id, 0)}
+                    className="text-red-600 ml-2"
+                  >
+                    🗑
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      ))}
+
+      <button
+        onClick={() => setCurrentRestaurant(null)}
+        className="mt-3 bg-indigo-600 text-white px-3 py-2 rounded"
+      >
+        ➕ إضافة مطعم آخر
+      </button>
 
       <div className="mt-4 flex justify-end gap-2">
-        <button onClick={saveOrder} className="bg-green-600 text-white px-4 py-2 rounded">
+        <button
+          onClick={saveOrder}
+          className="bg-green-600 text-white px-4 py-2 rounded"
+        >
           💾 حفظ
         </button>
-        <button onClick={() => setShowAddOrderModal(false)} className="bg-gray-400 text-white px-4 py-2 rounded">
+        <button
+          onClick={() => setShowAddOrderModal(false)}
+          className="bg-gray-400 text-white px-4 py-2 rounded"
+        >
           إلغاء
         </button>
       </div>
@@ -804,7 +808,10 @@ const selectCustomer = async (customerId: number) => {
         {products
           .filter((p) => !selectedCategory || p.category_id === selectedCategory)
           .map((p) => (
-            <div key={p.id} className="border p-2 rounded flex flex-col justify-between">
+            <div
+              key={p.id}
+              className="border p-2 rounded flex flex-col justify-between"
+            >
               <span className="font-bold">{p.name}</span>
               <span>{p.price} ريال</span>
               <button
@@ -818,13 +825,17 @@ const selectCustomer = async (customerId: number) => {
       </div>
 
       <div className="mt-4 flex justify-end gap-2">
-        <button onClick={() => setShowProductsModal(false)} className="bg-gray-400 text-white px-4 py-2 rounded">
+        <button
+          onClick={() => setShowProductsModal(false)}
+          className="bg-gray-400 text-white px-4 py-2 rounded"
+        >
           إغلاق
         </button>
       </div>
     </div>
   </div>
 )}
+
     </div>
   );
 };
