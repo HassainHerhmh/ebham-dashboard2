@@ -147,18 +147,20 @@ const Restaurants: React.FC = () => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const data = new FormData();
-    data.append("name", formData.name);
-    data.append("address", formData.address);
-    data.append("phone", formData.phone);
-    data.append("type_id", String(selectedType));
-    data.append("category_ids", JSON.stringify(selectedCategories));
-    data.append("schedule", JSON.stringify(storeSchedule));
-    if (latitude) data.append("latitude", latitude);
-    if (longitude) data.append("longitude", longitude);
-    if (file) data.append("image", file);
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  const data = new FormData();
+
+  data.append("name", formData.name);
+  data.append("address", formData.address);
+  data.append("phone", formData.phone);
+  data.append("type_id", String(selectedType));
+  data.append("category_ids", JSON.stringify(selectedCategories));
+  data.append("schedule", JSON.stringify(storeSchedule));
+
+  if (mapUrl) data.append("map_url", mapUrl);
+
+  if (file) data.append("image", file);
 
     const headers =
       isAdminGeneral && selectedBranch ? { "x-branch-id": selectedBranch } : {};
@@ -266,6 +268,7 @@ const Restaurants: React.FC = () => {
                 <th>الهاتف</th>
                 <th>الفئات</th>
                 <th>الصورة</th>
+                <th>الخريطة</th>
                 <th>الإجراءات</th>
               </tr>
             </thead>
@@ -291,6 +294,21 @@ const Restaurants: React.FC = () => {
                       <Trash2 />
                     </button>
                   </td>
+                  <td>
+  {r.map_url ? (
+    <a
+      href={r.map_url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-blue-600 underline"
+    >
+      🌍 عرض
+    </a>
+  ) : (
+    "-"
+  )}
+</td>
+
                 </tr>
               ))}
             </tbody>
@@ -439,22 +457,14 @@ const Restaurants: React.FC = () => {
                 ))}
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                <input
-                  type="text"
-                  placeholder="Latitude"
-                  value={latitude}
-                  onChange={(e) => setLatitude(e.target.value)}
-                  className="border rounded-lg px-3 py-2 w-full"
-                />
-                <input
-                  type="text"
-                  placeholder="Longitude"
-                  value={longitude}
-                  onChange={(e) => setLongitude(e.target.value)}
-                  className="border rounded-lg px-3 py-2 w-full"
-                />
-              </div>
+        <input
+  type="text"
+  placeholder="رابط الموقع من Google Maps"
+  value={mapUrl}
+  onChange={(e) => setMapUrl(e.target.value)}
+  className="border rounded-lg px-3 py-2 w-full"
+ />
+
 
               <input type="file" accept="image/*" onChange={handleImageChange} />
 
