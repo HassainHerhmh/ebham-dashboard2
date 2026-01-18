@@ -519,6 +519,10 @@ const selectCustomer = async (customerId: number) => {
         </div>
       )}
 
+
+ return (
+  <>
+     
   {/* ===== مودال تفاصيل الطلب ===== */}
 {isDetailsModalOpen && selectedOrderDetails && (
   <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
