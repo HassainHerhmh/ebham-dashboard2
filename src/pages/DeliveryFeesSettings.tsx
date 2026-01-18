@@ -17,6 +17,7 @@ const DeliveryFeesSettings: React.FC = () => {
   const [method, setMethod] = useState<"distance" | "neighborhood">("distance");
   const [single, setSingle] = useState<number>(0);
   const [multi, setMulti] = useState<number>(0);
+  const [extraStoreFee, setExtraStoreFee] = useState<number>(0);
 
   // إدارة عامة
   const [rows, setRows] = useState<BranchRow[]>([]);
@@ -52,6 +53,21 @@ const DeliveryFeesSettings: React.FC = () => {
     alert("تم الحفظ");
   };
 
+    await api.post("/delivery-settings", {
+  method,
+  km_price_single: single,
+  km_price_multi: multi,
+  extra_store_fee: extraStoreFee,
+});
+
+  if (d) {
+  setMethod(d.method);
+  setSingle(Number(d.km_price_single || 0));
+  setMulti(Number(d.km_price_multi || 0));
+  setExtraStoreFee(Number(d.extra_store_fee || 0));
+}
+
+  
   if (loading) return <div>جارِ التحميل...</div>;
 
   // ================== الإدارة العامة ==================
