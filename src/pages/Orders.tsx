@@ -902,8 +902,8 @@ const selectCustomer = async (customerId: number) => {
     </div>
   </div>
 )}
-
-  );
+  </>
+);
 };
 
 export default Orders;
