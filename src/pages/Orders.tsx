@@ -797,66 +797,66 @@ return (
 
 return (
   <>
-{/* ===== مودال اختيار المنتجات ===== */}
-{showProductsModal && (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-    <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-      <h2 className="text-lg font-bold mb-4">📦 قائمة المنتجات</h2>
+    {/* ===== مودال اختيار المنتجات ===== */}
+    {showProductsModal && (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+        <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+          <h2 className="text-lg font-bold mb-4">📦 قائمة المنتجات</h2>
 
-      <div className="flex gap-3 overflow-x-auto border-b pb-2">
-        {restaurantCategories.map((cat) => (
-          <button
-            key={cat.id}
-            onClick={() => setSelectedCategory(cat.id)}
-            className={`px-4 py-2 rounded ${
-              selectedCategory === cat.id
-                ? "bg-blue-600 text-white"
-                : "bg-gray-200"
-            }`}
-          >
-            {cat.name}
-          </button>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-2 gap-3 mt-4">
-        {products
-          .filter((p) => {
-            if (!selectedCategory) return true;
-            const ids = String(p.category_ids || "").split(",");
-            return ids.includes(String(selectedCategory));
-          })
-          .map((p) => (
-            <div
-              key={p.id}
-              className="border p-2 rounded flex flex-col justify-between"
-            >
-              <span className="font-bold">{p.name}</span>
-              <span>{p.price} ريال</span>
+          <div className="flex gap-3 overflow-x-auto border-b pb-2">
+            {restaurantCategories.map((cat) => (
               <button
-                onClick={() => addToCart(p)}
-                className="bg-green-600 text-white mt-2 px-3 py-1 rounded"
+                key={cat.id}
+                onClick={() => setSelectedCategory(cat.id)}
+                className={`px-4 py-2 rounded ${
+                  selectedCategory === cat.id
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-200"
+                }`}
               >
-                ➕ إضافة
+                {cat.name}
               </button>
-            </div>
-          ))}
-      </div>
+            ))}
+          </div>
 
-      <div className="mt-4 flex justify-end gap-2">
-        <button
-          onClick={() => setShowProductsModal(false)}
-          className="bg-gray-400 text-white px-4 py-2 rounded"
-        >
-          إغلاق
-        </button>
+          <div className="grid grid-cols-2 gap-3 mt-4">
+            {products
+              .filter((p) => {
+                if (!selectedCategory) return true;
+                const ids = String(p.category_ids || "").split(",");
+                return ids.includes(String(selectedCategory));
+              })
+              .map((p) => (
+                <div
+                  key={p.id}
+                  className="border p-2 rounded flex flex-col justify-between"
+                >
+                  <span className="font-bold">{p.name}</span>
+                  <span>{p.price} ريال</span>
+                  <button
+                    onClick={() => addToCart(p)}
+                    className="bg-green-600 text-white mt-2 px-3 py-1 rounded"
+                  >
+                    ➕ إضافة
+                  </button>
+                </div>
+              ))}
+          </div>
+
+          <div className="mt-4 flex justify-end gap-2">
+            <button
+              onClick={() => setShowProductsModal(false)}
+              className="bg-gray-400 text-white px-4 py-2 rounded"
+            >
+              إغلاق
+            </button>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
-)}
+    )}
   </>
 );
-};
 
+};
 export default Orders;
 
