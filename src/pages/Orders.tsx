@@ -40,8 +40,7 @@ interface OrderDetails {
   customer_name: string;
   customer_phone: string;
   customer_address: string;
-  latitude: string;
-  longitude: string;
+    map_url?: string;   // ⬅️ الجديد
   delivery_fee: number | string | null;
   extra_store_fee?: number | string | null; // ← أضف هذا السطر
 }
@@ -81,6 +80,7 @@ type CartGroup = {
 
 const [groups, setGroups] = useState<CartGroup[]>([]);
 const [currentRestaurant, setCurrentRestaurant] = useState<any>(null);
+const [mapUrl, setMapUrl] = useState("");
 
 
 
@@ -603,16 +603,17 @@ const selectCustomer = async (customerId: number) => {
                       <p>الاسم: {r.name}</p>
                       <p>الهاتف: {r.phone}</p>
 
-                      {r.latitude && r.longitude && (
-                        <a
-                          href={`https://www.google.com/maps?q=${r.latitude},${r.longitude}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 underline"
-                        >
-                          عرض على الخريطة 🌍
-                        </a>
-                      )}
+                   {r.map_url && (
+                     <a
+                 href={r.map_url}
+                 target="_blank"
+                 rel="noopener noreferrer"
+                 className="text-blue-600 underline"
+                   >
+                 عرض على الخريطة 🌍
+               </a>
+                  )}
+
 
                       <hr className="my-2" />
                     </div>
@@ -634,10 +635,11 @@ const selectCustomer = async (customerId: number) => {
                     </strong>
                   </p>
 
-                  <p>
-                    🧭 الإحداثيات: {selectedOrderDetails.latitude},{" "}
-                    {selectedOrderDetails.longitude}
-                  </p>
+                ${
+  selectedOrderDetails.map_url
+    ? `<p><a href="${selectedOrderDetails.map_url}" target="_blank">عرض على الخريطة 🌍</a></p>`
+    : ""
+}
 
                   <a
                     href={`https://www.google.com/maps?q=${selectedOrderDetails.latitude},${selectedOrderDetails.longitude}`}
