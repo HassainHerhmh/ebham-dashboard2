@@ -2,16 +2,20 @@ import React, { useState, useEffect, useRef } from "react";
 import { Plus } from "lucide-react";
 import api from "../services/api";
 
+/* =====================
+   Interfaces
+===================== */
+
 interface Order {
   id: number;
   customer_name: string;
   customer_phone: string;
-  restaurant_name: string;
-  restaurant_phone: string;
+  stores_count: number;
   captain_name?: string;
   status: string;
   total_amount?: number | string | null;
   delivery_fee?: number | string | null;
+  extra_store_fee?: number | string | null;
   created_at: string;
 }
 
@@ -27,37 +31,45 @@ interface Product {
   name: string;
   quantity: number;
   price: number;
-  discount?: number;
-  notes?: string;
-  category_id?: number;
 }
 
 interface OrderDetails {
   id: number;
-  products: Product[];
-  restaurant_name: string;
-  restaurant_phone: string;
+  restaurants: any[];
   customer_name: string;
   customer_phone: string;
   customer_address: string;
-    map_url?: string;   // ⬅️ الجديد
+  neighborhood_name?: string;
+  latitude?: string;
+  longitude?: string;
+  map_url?: string;
   delivery_fee: number | string | null;
-  extra_store_fee?: number | string | null; // ← أضف هذا السطر
+  extra_store_fee?: number | string | null;
 }
 
+/* =====================
+   Component
+===================== */
 
 const Orders: React.FC = () => {
   // ========= الطلبات =========
   const [orders, setOrders] = useState<Order[]>([]);
-  const [captains, setCaptains] = useState<Captain[]>([]);
   const [loading, setLoading] = useState(true);
+
+
+
+  // ========= الكباتن =========
+  const [captains, setCaptains] = useState<Captain[]>([]);
   const [captainsLoading, setCaptainsLoading] = useState(true);
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [isCaptainModalOpen, setIsCaptainModalOpen] = useState(false);
-  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
-  const [selectedOrderDetails, setSelectedOrderDetails] = useState<OrderDetails | null>(null);
 
-  // ========= إضافة طلب جديد =========
+  // ========= تفاصيل الطلب =========
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [selectedOrderDetails, setSelectedOrderDetails] =
+    useState<OrderDetails | null>(null);
+
+  // ========= إضافة طلب =========
   const [showAddOrderModal, setShowAddOrderModal] = useState(false);
   const [customers, setCustomers] = useState<any[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
@@ -65,46 +77,29 @@ const Orders: React.FC = () => {
   const [selectedAddress, setSelectedAddress] = useState<any>(null);
   const [gpsLink, setGpsLink] = useState("");
   const [restaurants, setRestaurants] = useState<any[]>([]);
-  const [selectedRestaurant, setSelectedRestaurant] = useState<any>(null);
-
-  // المنتجات داخل إضافة الطلب
-  const [showProductsModal, setShowProductsModal] = useState(false);
-  const [restaurantCategories, setRestaurantCategories] = useState<any[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
-  const [products, setProducts] = useState<any[]>([]);
-  const [cart, setCart] = useState<any[]>([]);
-type CartGroup = {
-  restaurant: any;
-  items: any[];
-};
-
-const [groups, setGroups] = useState<CartGroup[]>([]);
-const [currentRestaurant, setCurrentRestaurant] = useState<any>(null);
-const [mapUrl, setMapUrl] = useState("");
-
-
+  const [currentRestaurant, setCurrentRestaurant] = useState<any>(null);
 
   const printRef = useRef<HTMLDivElement>(null);
-  
-  // ====================================
-  //          الجلب والاستدعاءات
-  // ====================================
-const fetchOrders = async () => {
-  setLoading(true);
-  try {
-    const res = await api.orders.getOrders({ limit: 50 });
-    const list = Array.isArray(res.orders || res)
-      ? (res.orders || res)
-      : [];
-    setOrders(list);
-  } catch (error) {
-    console.error("❌ خطأ في جلب الطلبات:", error);
-    setOrders([]);
-  } finally {
-    setLoading(false);
-  }
-};
 
+  /* =====================
+     جلب البيانات
+  ===================== */
+
+  const fetchOrders = async () => {
+    setLoading(true);
+    try {
+      const res = await api.orders.getOrders({ limit: 100 });
+      const list = Array.isArray(res.orders || res)
+        ? res.orders || res
+        : [];
+      setOrders(list);
+    } catch (error) {
+      console.error("❌ خطأ في جلب الطلبات:", error);
+      setOrders([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchCaptains = async () => {
     setCaptainsLoading(true);
@@ -118,28 +113,28 @@ const fetchOrders = async () => {
     }
   };
 
- useEffect(() => {
-  fetchOrders();
+  useEffect(() => {
+    fetchOrders();
 
-  api.get("/customers").then((res) => {
-    const list = Array.isArray(res.data.customers)
-      ? res.data.customers
-      : [];
-    setCustomers(list);
-  });
+    api.get("/customers").then((res) => {
+      const list = Array.isArray(res.data.customers)
+        ? res.data.customers
+        : [];
+      setCustomers(list);
+    });
 
-  api.get("/restaurants").then((res) => {
-    const list = Array.isArray(res.data.restaurants)
-      ? res.data.restaurants
-      : [];
-    setRestaurants(list);
-  });
-}, []);
-;
+    api.get("/restaurants").then((res) => {
+      const list = Array.isArray(res.data.restaurants)
+        ? res.data.restaurants
+        : [];
+      setRestaurants(list);
+    });
+  }, []);
 
-  // ====================================
-  //      إدارة الطلبات الحالية
-  // ====================================
+  /* =====================
+     أوامر الطلب
+  ===================== */
+
   const openCaptainModal = (orderId: number) => {
     setSelectedOrderId(orderId);
     setIsCaptainModalOpen(true);
@@ -162,7 +157,6 @@ const fetchOrders = async () => {
   const updateOrderStatus = async (orderId: number, newStatus: string) => {
     try {
       await api.orders.updateStatus(orderId, newStatus);
-      alert("✅ تم تحديث حالة الطلب");
       fetchOrders();
     } catch (error) {
       console.error("❌ خطأ في تحديث الحالة:", error);
@@ -179,225 +173,337 @@ const fetchOrders = async () => {
     }
   };
 
-  const handlePrint = () => {
-    if (!printRef.current || !selectedOrderDetails) return;
-    const win = window.open("", "_blank", "width=800,height=600");
-    if (win) {
-      const htmlContent = `
-        <html>
-          <head>
-            <title>فاتورة الطلب</title>
-            <style>
-              body { font-family: sans-serif; padding: 20px; direction: rtl; }
-              table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-              th, td { border: 1px solid #999; padding: 6px; text-align: center; }
-              th { background: #eee; }
-              .box { border:1px solid #ccc; padding:8px; margin-top:10px; border-radius:8px; }
-            </style>
-          </head>
-          <body>
-            <h2 style="text-align:center;">🧾 فاتورة الطلب #${selectedOrderDetails.id}</h2>
-            ${printRef.current.innerHTML}
-            <div class="box">
-              <h3>🏪 المطعم</h3>
-              <p>الاسم: ${selectedOrderDetails.restaurant_name}</p>
-              <p>الهاتف: ${selectedOrderDetails.restaurant_phone}</p>
-            </div>
-            <div class="box">
-              <h3>👤 العميل</h3>
-              <p>الاسم: ${selectedOrderDetails.customer_name}</p>
-              <p>الهاتف: ${selectedOrderDetails.customer_phone}</p>
-              <p>العنوان: ${selectedOrderDetails.customer_address}</p>
-              <p>الإحداثيات: ${selectedOrderDetails.latitude}, ${selectedOrderDetails.longitude}</p>
-            </div>
-          </body>
-        </html>
-      `;
-      win.document.write(htmlContent);
-      win.document.close();
-      win.print();
-    }
-  };
-
   const formatAmount = (amount: any): string => {
     const num = Number(amount);
     return isNaN(num) ? "-" : num.toFixed(2) + " ريال";
   };
 
-// ====================================
-//          إضافة طلب جديد (متعدد المطاعم)
-// ====================================
 
-const selectRestaurant = async (restaurantId: number) => {
-  const rest = restaurants.find((r) => r.id === restaurantId);
-  if (!rest) return;
 
-  setCurrentRestaurant(rest);
+  // ⬅️ هنا يتوقف الجزء الأول
+  // ====================================
+  //        إضافة طلب جديد (متعدد المطاعم)
+  // ====================================
 
-  try {
-    const catRes = await api.get(`/restaurants/${restaurantId}/categories`);
-    const cats = Array.isArray(catRes.data?.categories)
-      ? catRes.data.categories
-      : [];
-
-    setRestaurantCategories(cats);
-    setSelectedCategory(cats.length ? cats[0].id : null);
-  } catch (err) {
-    console.error("خطأ في جلب الفئات:", err);
-    setRestaurantCategories([]);
-    setSelectedCategory(null);
-  }
-};
-
-const openProductsModal = async () => {
-  if (!currentRestaurant) return alert("اختر مطعم أولا");
-
-  try {
-    const prodRes = await api.get(
-      `/restaurants/${currentRestaurant.id}/products`
-    );
-
-    const prods = Array.isArray(prodRes.data?.products)
-      ? prodRes.data.products
-      : [];
-
-    setProducts(prods);
-    setShowProductsModal(true);
-  } catch (err) {
-    console.error("خطأ في جلب المنتجات:", err);
-    setProducts([]);
-    setShowProductsModal(true);
-  }
-};
-
-const addToCart = (product: any) => {
-  if (!currentRestaurant) return;
-
-  setGroups((prev) => {
-    const idx = prev.findIndex(
-      (g) => g.restaurant.id === currentRestaurant.id
-    );
-
-    // لو المطعم غير موجود نضيفه
-    if (idx === -1) {
-      return [
-        ...prev,
-        {
-          restaurant: currentRestaurant,
-          items: [{ ...product, quantity: 1 }],
-        },
-      ];
-    }
-
-    // لو موجود نضيف / نزيد المنتج
-    return prev.map((g) => {
-      if (g.restaurant.id !== currentRestaurant.id) return g;
-
-      const exists = g.items.find((p) => p.id === product.id);
-      if (exists) {
-        return {
-          ...g,
-          items: g.items.map((p) =>
-            p.id === product.id
-              ? { ...p, quantity: p.quantity + 1 }
-              : p
-          ),
-        };
-      }
-
-      return {
-        ...g,
-        items: [...g.items, { ...product, quantity: 1 }],
-      };
-    });
-  });
-};
-
-const updateItemQty = (
-  restaurantId: number,
-  productId: number,
-  qty: number
-) => {
-  setGroups((prev) =>
-    prev.map((g) => {
-      if (g.restaurant.id !== restaurantId) return g;
-      return {
-        ...g,
-        items: g.items
-          .map((i) =>
-            i.id === productId ? { ...i, quantity: qty } : i
-          )
-          .filter((i) => i.quantity > 0),
-      };
-    })
-  );
-};
-
-const removeRestaurantGroup = (restaurantId: number) => {
-  setGroups((prev) =>
-    prev.filter((g) => g.restaurant.id !== restaurantId)
-  );
-};
-
-const saveOrder = async () => {
-  if (!selectedCustomer || !selectedAddress || groups.length === 0) {
-    return alert("اكمل البيانات المطلوبة");
-  }
-
-  const payload = {
-    customer_id: selectedCustomer.id,
-    address_id: selectedAddress.id,
-    gps_link: gpsLink,
-    restaurants: groups.map((g) => ({
-      restaurant_id: g.restaurant.id,
-      products: g.items.map((i) => ({
-        product_id: i.id,
-        quantity: i.quantity,
-      })),
-    })),
+  type CartGroup = {
+    restaurant: any;
+    items: any[];
   };
 
-  await api.post("/orders", payload);
+  const [groups, setGroups] = useState<CartGroup[]>([]);
+  const [restaurantCategories, setRestaurantCategories] = useState<any[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
+  const [products, setProducts] = useState<any[]>([]);
+  const [showProductsModal, setShowProductsModal] = useState(false);
 
-  alert("✅ تم إضافة الطلب");
-  setShowAddOrderModal(false);
-  setGroups([]);
-  setCurrentRestaurant(null);
-  fetchOrders();
-};
-
-const selectCustomer = async (customerId: number) => {
-  const customer = customers.find((c) => c.id === customerId);
-  setSelectedCustomer(customer);
-  setAddresses([]);
-  setSelectedAddress(null);
-
-  if (!customer) return;
-
-  try {
-    const res = await api.get(`/customer-addresses?customer_id=${customer.id}`);
-    const list = Array.isArray(res.data?.addresses)
-      ? res.data.addresses
-      : [];
-
-    setAddresses(list);
-  } catch (err) {
-    console.error("خطأ في جلب عناوين العميل:", err);
+  const selectCustomer = async (customerId: number) => {
+    const customer = customers.find((c) => c.id === customerId);
+    setSelectedCustomer(customer);
     setAddresses([]);
+    setSelectedAddress(null);
+
+    if (!customer) return;
+
+    try {
+      const res = await api.get(`/customer-addresses?customer_id=${customer.id}`);
+      const list = Array.isArray(res.data?.addresses)
+        ? res.data.addresses
+        : [];
+      setAddresses(list);
+    } catch (err) {
+      console.error("خطأ في جلب عناوين العميل:", err);
+      setAddresses([]);
+    }
+  };
+
+  const selectRestaurant = async (restaurantId: number) => {
+    const rest = restaurants.find((r) => r.id === restaurantId);
+    if (!rest) return;
+
+    setCurrentRestaurant(rest);
+
+    try {
+      const catRes = await api.get(`/restaurants/${restaurantId}/categories`);
+      const cats = Array.isArray(catRes.data?.categories)
+        ? catRes.data.categories
+        : [];
+
+      setRestaurantCategories(cats);
+      setSelectedCategory(cats.length ? cats[0].id : null);
+    } catch (err) {
+      console.error("خطأ في جلب الفئات:", err);
+      setRestaurantCategories([]);
+      setSelectedCategory(null);
+    }
+  };
+
+  const openProductsModal = async () => {
+    if (!currentRestaurant) return alert("اختر مطعم أولا");
+
+    try {
+      const prodRes = await api.get(
+        `/restaurants/${currentRestaurant.id}/products`
+      );
+
+      const prods = Array.isArray(prodRes.data?.products)
+        ? prodRes.data.products
+        : [];
+
+      setProducts(prods);
+      setShowProductsModal(true);
+    } catch (err) {
+      console.error("خطأ في جلب المنتجات:", err);
+      setProducts([]);
+      setShowProductsModal(true);
+    }
+  };
+
+  const addToCart = (product: any) => {
+    if (!currentRestaurant) return;
+
+    setGroups((prev) => {
+      const idx = prev.findIndex(
+        (g) => g.restaurant.id === currentRestaurant.id
+      );
+
+      if (idx === -1) {
+        return [
+          ...prev,
+          {
+            restaurant: currentRestaurant,
+            items: [{ ...product, quantity: 1 }],
+          },
+        ];
+      }
+
+      return prev.map((g) => {
+        if (g.restaurant.id !== currentRestaurant.id) return g;
+
+        const exists = g.items.find((p) => p.id === product.id);
+        if (exists) {
+          return {
+            ...g,
+            items: g.items.map((p) =>
+              p.id === product.id
+                ? { ...p, quantity: p.quantity + 1 }
+                : p
+            ),
+          };
+        }
+
+        return {
+          ...g,
+          items: [...g.items, { ...product, quantity: 1 }],
+        };
+      });
+    });
+  };
+
+  const updateItemQty = (
+    restaurantId: number,
+    productId: number,
+    qty: number
+  ) => {
+    setGroups((prev) =>
+      prev.map((g) => {
+        if (g.restaurant.id !== restaurantId) return g;
+        return {
+          ...g,
+          items: g.items
+            .map((i) =>
+              i.id === productId ? { ...i, quantity: qty } : i
+            )
+            .filter((i) => i.quantity > 0),
+        };
+      })
+    );
+  };
+
+  const removeRestaurantGroup = (restaurantId: number) => {
+    setGroups((prev) =>
+      prev.filter((g) => g.restaurant.id !== restaurantId)
+    );
+  };
+
+  const saveOrder = async () => {
+    if (!selectedCustomer || !selectedAddress || groups.length === 0) {
+      return alert("اكمل البيانات المطلوبة");
+    }
+
+    const payload = {
+      customer_id: selectedCustomer.id,
+      address_id: selectedAddress.id,
+      gps_link: gpsLink,
+      restaurants: groups.map((g) => ({
+        restaurant_id: g.restaurant.id,
+        products: g.items.map((i) => ({
+          product_id: i.id,
+          quantity: i.quantity,
+        })),
+      })),
+    };
+
+    await api.post("/orders", payload);
+
+    alert("✅ تم إضافة الطلب");
+    setShowAddOrderModal(false);
+    setGroups([]);
+    setCurrentRestaurant(null);
+    fetchOrders();
+  };
+// ========= تبويبات الحالات =========
+type OrderTab =
+  | "pending"      // اعتماد
+  | "processing"   // قيد المعالجة
+  | "ready"        // جاهز
+  | "delivering"   // قيد التوصيل
+  | "completed"    // مكتمل
+  | "cancelled";   // ملغي
+
+const [activeTab, setActiveTab] = useState<OrderTab>("pending");
+
+const filterByTab = (list: Order[]) => {
+  switch (activeTab) {
+    case "pending":
+      return list.filter((o) => o.status === "pending");
+    case "processing":
+      return list.filter(
+        (o) => o.status === "confirmed" || o.status === "preparing"
+      );
+    case "ready":
+      return list.filter((o) => o.status === "ready");
+    case "delivering":
+      return list.filter((o) => o.status === "delivering");
+    case "completed":
+      return list.filter((o) => o.status === "completed");
+    case "cancelled":
+      return list.filter((o) => o.status === "cancelled");
+    default:
+      return list;
   }
 };
+
+const visibleOrders = filterByTab(orders);
 
 
 
   // ====================================
   //                JSX
   // ====================================
+ const renderActions = (o: Order) => {
+  switch (activeTab) {
+    case "pending":
+      return (
+        <div className="flex gap-2 justify-center">
+          <button
+            onClick={() => updateOrderStatus(o.id, "confirmed")}
+            className="bg-green-600 text-white px-2 py-1 rounded text-xs"
+          >
+            اعتماد
+          </button>
+          <button
+            onClick={() => updateOrderStatus(o.id, "cancelled")}
+            className="bg-red-600 text-white px-2 py-1 rounded text-xs"
+          >
+            إلغاء
+          </button>
+        </div>
+      );
+
+    case "processing":
+      return (
+        <div className="flex gap-2 justify-center">
+          <button
+            onClick={() => updateOrderStatus(o.id, "ready")}
+            className="bg-blue-600 text-white px-2 py-1 rounded text-xs"
+          >
+            جاهز
+          </button>
+          <button
+            onClick={() => openCaptainModal(o.id)}
+            className="bg-green-600 text-white px-2 py-1 rounded text-xs"
+          >
+            كابتن
+          </button>
+          <button
+            onClick={() => updateOrderStatus(o.id, "cancelled")}
+            className="bg-red-600 text-white px-2 py-1 rounded text-xs"
+          >
+            إلغاء
+          </button>
+        </div>
+      );
+
+    case "ready":
+      return (
+        <div className="flex gap-2 justify-center">
+          <button
+            onClick={() => openCaptainModal(o.id)}
+            className="bg-green-600 text-white px-2 py-1 rounded text-xs"
+          >
+            تعيين كابتن
+          </button>
+          <button
+            onClick={() => updateOrderStatus(o.id, "preparing")}
+            className="bg-gray-600 text-white px-2 py-1 rounded text-xs"
+          >
+            رجوع للمعالجة
+          </button>
+        </div>
+      );
+
+    case "delivering":
+      return (
+        <div className="flex gap-2 justify-center">
+          <button
+            onClick={() => updateOrderStatus(o.id, "completed")}
+            className="bg-green-600 text-white px-2 py-1 rounded text-xs"
+          >
+            تم التسليم
+          </button>
+          <button
+            onClick={() => updateOrderStatus(o.id, "cancelled")}
+            className="bg-red-600 text-white px-2 py-1 rounded text-xs"
+          >
+            إلغاء
+          </button>
+        </div>
+      );
+
+    default:
+      return <span className="text-gray-400">—</span>;
+  }
+};
+
+
   return (
     <>
       <div className="space-y-6">
         {/* ===== رأس الصفحة ===== */}
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">الطلبات</h1>
+           <div className="flex gap-2 mb-4 flex-wrap">
+  {[
+    { key: "pending", label: "🟡 اعتماد" },
+    { key: "processing", label: "🔵 قيد المعالجة" },
+    { key: "ready", label: "🟢 جاهز" },
+    { key: "delivering", label: "🚚 قيد التوصيل" },
+    { key: "completed", label: "✅ مكتمل" },
+    { key: "cancelled", label: "❌ ملغي" },
+  ].map((t) => (
+    <button
+      key={t.key}
+      onClick={() => setActiveTab(t.key as OrderTab)}
+      className={`px-4 py-2 rounded ${
+        activeTab === t.key
+          ? "bg-blue-600 text-white"
+          : "bg-gray-200 text-gray-700"
+      }`}
+    >
+      {t.label}
+    </button>
+  ))}
+</div>
           <div className="flex gap-2">
             <button
               onClick={() => setShowAddOrderModal(true)}
@@ -433,7 +539,7 @@ const selectCustomer = async (customerId: number) => {
                 </tr>
               </thead>
               <tbody>
-                {orders.map((o) => (
+               {visibleOrders.map((o) => (
                   <tr key={o.id} className="border-b hover:bg-gray-50 text-center">
                     <td>#{o.id}</td>
                     <td>{o.customer_name}</td>
@@ -463,14 +569,8 @@ const selectCustomer = async (customerId: number) => {
                         عرض
                       </button>
                     </td>
-                    <td>
-                      <button
-                        onClick={() => openCaptainModal(o.id)}
-                        className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
-                      >
-                        تعيين
-                      </button>
-                    </td>
+               <td>{renderActions(o)}</td>
+
                   </tr>
                 ))}
               </tbody>
