@@ -57,6 +57,8 @@ const Customers: React.FC = () => {
   const [editPhone, setEditPhone] = useState("");
   const [editPhoneAlt, setEditPhoneAlt] = useState("");
   const [editEmail, setEditEmail] = useState("");
+  const [isEditAddressOpen, setIsEditAddressOpen] = useState(false);
+const [editAddress, setEditAddress] = useState<Address | null>(null);
 
   const fetchBranches = async () => {
     if (!isAdmin) return;
@@ -282,11 +284,29 @@ const Customers: React.FC = () => {
                       ) : (
                         "-"
                       )}
-                    </td>
-                    <td className="flex gap-2 justify-center">
-                      <button className="text-blue-600">تعديل</button>
-                      <button className="text-red-600">حذف</button>
-                    </td>
+                   <td className="flex gap-2 justify-center">
+  <button
+    onClick={() => {
+      setEditAddress(a);
+      setIsEditAddressOpen(true);
+    }}
+    className="text-blue-600"
+  >
+    تعديل
+  </button>
+
+  <button
+    onClick={async () => {
+      if (!confirm("حذف العنوان؟")) return;
+      await api.delete(`/customer-addresses/${a.id}`);
+      fetchAddresses();
+    }}
+    className="text-red-600"
+  >
+    حذف
+  </button>
+</td>
+
                   </tr>
                 ))}
               </tbody>
@@ -374,6 +394,21 @@ const Customers: React.FC = () => {
           }}
         />
       )}
+                {isEditAddressOpen && editAddress && (
+  <EditAddressModal
+    address={editAddress}
+    onClose={() => {
+      setIsEditAddressOpen(false);
+      setEditAddress(null);
+    }}
+    onSaved={() => {
+      setIsEditAddressOpen(false);
+      setEditAddress(null);
+      fetchAddresses();
+    }}
+  />
+)}
+
     </div>
   );
 };
@@ -518,8 +553,8 @@ const AddAddressModal = ({
 
   const [customerId, setCustomerId] = useState("");
   const [branchId, setBranchId] = useState(isAdmin ? "" : String(userBranchId || ""));
-  const [neighborhoods, setNeighborhoods] = useState<Neighborhood[]>([]);
-  const [district, setDistrict] = useState(""); // اسم الحي
+  const [neighborhoods, setNeighborhoods] = useState<any[]>([]);
+  const [district, setDistrict] = useState("");
   const [address, setAddress] = useState("");
   const [lat, setLat] = useState("");
   const [lng, setLng] = useState("");
@@ -552,13 +587,12 @@ const AddAddressModal = ({
 
     const res = await api.customers.addAddress({
       customer_id: Number(customerId),
-      district, // اسم الحي
+      district,
       location_type: locationType || null,
       address,
-      latitude: lat,
-      longitude: lng,
-      gps_link: gpsLink,
-      // الفرع يُحدد في السيرفر تلقائيًا لمستخدم الفرع
+      latitude: lat || null,
+      longitude: lng || null,
+      gps_link: gpsLink || null,
     });
 
     if (res.success) onSaved();
@@ -610,7 +644,7 @@ const AddAddressModal = ({
           onChange={(e) => setDistrict(e.target.value)}
         >
           <option value="">اختر الحي</option>
-          {neighborhoods.map((n) => (
+          {neighborhoods.map((n: any) => (
             <option key={n.id} value={n.name}>
               {n.name}
             </option>
@@ -660,7 +694,12 @@ const AddAddressModal = ({
         </div>
 
         {gpsLink && (
-          <a href={gpsLink} target="_blank" className="text-blue-600 underline text-sm">
+          <a
+            href={gpsLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 underline text-sm"
+          >
             فتح الموقع على الخريطة
           </a>
         )}
