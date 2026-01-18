@@ -519,113 +519,176 @@ const selectCustomer = async (customerId: number) => {
         </div>
       )}
 
-      {/* ===== مودال تفاصيل الطلب ===== */}
-      {isDetailsModalOpen && selectedOrderDetails && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-          <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl flex flex-col max-h-[90vh]">
-            <div ref={printRef} className="p-6 overflow-y-auto">
-              <h2 className="text-lg font-bold mb-4 text-center">
-                🧾 فاتورة الطلب #{selectedOrderDetails.id}
-              </h2>
-              <table className="w-full mb-4 border">
-                <thead className="bg-gray-100">
-                  <tr>
-                    <th>المنتج</th>
-                    <th>السعر</th>
-                    <th>الكمية</th>
-                    <th>الخصم</th>
-                    <th>الإجمالي</th>
-                    <th>الملاحظات</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {selectedOrderDetails.products.map((p, idx) => {
-                    const subtotal = p.price * p.quantity - (p.discount || 0);
-                    return (
-                      <tr key={idx}>
-                        <td className="border px-2 py-1">{p.name}</td>
-                        <td className="border">{p.price} ر.س</td>
-                        <td className="border">{p.quantity}</td>
-                        <td className="border">{p.discount ? `${p.discount} ر.س` : "-"}</td>
-                        <td className="border font-semibold text-green-600">{subtotal} ر.س</td>
-                        <td className="border">{p.notes || "-"}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-              <div className="border p-3 rounded mb-4">
-                <p>📦 رسوم التوصيل: {Number(selectedOrderDetails.delivery_fee || 0)} ريال</p>
-                <p>
-                  💰 الإجمالي الكلي:{" "}
-                  <strong className="text-blue-600">
-                    {(
-                      selectedOrderDetails.products.reduce(
-                        (sum, p) => sum + (p.price * p.quantity - (p.discount || 0)),
-                        0
-                      ) + Number(selectedOrderDetails.delivery_fee || 0)
-                    ).toFixed(2)}{" "}
-                    ريال
-                  </strong>
+    {/* ===== مودال تفاصيل الطلب ===== */}
+{isDetailsModalOpen && selectedOrderDetails && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+    <div className="bg-white rounded-lg shadow-lg w-full max-w-3xl flex flex-col max-h-[90vh]">
+      <div ref={printRef} className="p-6 overflow-y-auto">
+        <h2 className="text-lg font-bold mb-4 text-center">
+          🧾 فاتورة الطلب #{selectedOrderDetails.id}
+        </h2>
+
+        {(() => {
+          const groups = selectedOrderDetails.products.reduce((acc: any, p: any) => {
+            if (!acc[p.restaurant_id]) {
+              acc[p.restaurant_id] = {
+                restaurant_name: p.restaurant_name,
+                restaurant_phone: p.restaurant_phone,
+                latitude: p.restaurant_latitude,
+                longitude: p.restaurant_longitude,
+                items: [],
+              };
+            }
+            acc[p.restaurant_id].items.push(p);
+            return acc;
+          }, {});
+
+          const restaurantTotals = Object.values(groups).map((g: any) =>
+            g.items.reduce(
+              (sum: number, p: any) =>
+                sum + (p.price * p.quantity - (p.discount || 0)),
+              0
+            )
+          );
+
+          const allRestaurantsTotal = restaurantTotals.reduce((a: number, b: number) => a + b, 0);
+          const delivery = Number(selectedOrderDetails.delivery_fee || 0);
+          const grandTotal = allRestaurantsTotal + delivery;
+
+          return (
+            <>
+              {Object.values(groups).map((g: any, idx: number) => {
+                const restTotal = g.items.reduce(
+                  (sum: number, p: any) =>
+                    sum + (p.price * p.quantity - (p.discount || 0)),
+                  0
+                );
+
+                return (
+                  <div key={idx} className="mb-6 border rounded p-3">
+                    <h3 className="font-bold text-lg mb-2">
+                      🏪 {g.restaurant_name}
+                    </h3>
+
+                    <table className="w-full mb-2 border">
+                      <thead className="bg-gray-100">
+                        <tr>
+                          <th>المنتج</th>
+                          <th>السعر</th>
+                          <th>الكمية</th>
+                          <th>الخصم</th>
+                          <th>الإجمالي</th>
+                          <th>الملاحظات</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {g.items.map((p: any, i: number) => {
+                          const subtotal = p.price * p.quantity - (p.discount || 0);
+                          return (
+                            <tr key={i}>
+                              <td className="border px-2 py-1">{p.name}</td>
+                              <td className="border">{p.price} ر.س</td>
+                              <td className="border">{p.quantity}</td>
+                              <td className="border">
+                                {p.discount ? `${p.discount} ر.س` : "-"}
+                              </td>
+                              <td className="border font-semibold text-green-600">
+                                {subtotal} ر.س
+                              </td>
+                              <td className="border">{p.notes || "-"}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+
+                    <div className="text-right font-bold">
+                      إجمالي المطعم: {restTotal.toFixed(2)} ريال
+                    </div>
+                  </div>
+                );
+              })}
+
+              <div className="border p-3 rounded mt-4 bg-gray-50">
+                <p>🧮 إجمالي المطاعم: {allRestaurantsTotal.toFixed(2)} ريال</p>
+                <p>📦 رسوم التوصيل: {delivery.toFixed(2)} ريال</p>
+                <p className="text-lg font-bold text-blue-600">
+                  💰 الإجمالي الكلي: {grandTotal.toFixed(2)} ريال
                 </p>
               </div>
 
-              {/* تفاصيل المطعم والعميل */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3 mt-4">
                 <div className="border p-3 rounded">
-                  <h3 className="font-bold mb-1">🏪 بيانات المطعم</h3>
-                  <p>الاسم: {selectedOrderDetails.restaurant_name}</p>
-                  <p>الهاتف: {selectedOrderDetails.restaurant_phone}</p>
+                  <h3 className="font-bold mb-2">🏪 المطاعم المشاركة</h3>
+                  {Object.values(groups).map((g: any, i: number) => (
+                    <div key={i} className="mb-2 text-sm">
+                      <p>الاسم: {g.restaurant_name}</p>
+                      <p>الهاتف: {g.restaurant_phone}</p>
+                      {g.latitude && g.longitude && (
+                        <a
+                          href={`https://www.google.com/maps?q=${g.latitude},${g.longitude}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 underline"
+                        >
+                          عرض على الخريطة 🌍
+                        </a>
+                      )}
+                      <hr className="my-2" />
+                    </div>
+                  ))}
                 </div>
-<div className="border p-3 rounded">
-  <h3 className="font-bold mb-1">👤 بيانات العميل</h3>
-  <p>الاسم: {selectedOrderDetails.customer_name}</p>
-  <p>الهاتف: {selectedOrderDetails.customer_phone}</p>
 
-<p>
-  📍 العنوان:{" "}
-  <strong>
-    {selectedOrderDetails.neighborhood_name
-      ? `${selectedOrderDetails.neighborhood_name} - `
-      : ""}
-    {selectedOrderDetails.customer_address || "-"}
-  </strong>
-</p>
-
-
-  <p>
-    🧭 الإحداثيات: {selectedOrderDetails.latitude}, {selectedOrderDetails.longitude}
-  </p>
-
-  <a
-    href={`https://www.google.com/maps?q=${selectedOrderDetails.latitude},${selectedOrderDetails.longitude}`}
-    target="_blank"
-    rel="noopener noreferrer"
-    className="text-blue-600 underline"
-  >
-    عرض على الخريطة 🌍
-  </a>
-</div>
-
+                <div className="border p-3 rounded">
+                  <h3 className="font-bold mb-1">👤 بيانات العميل</h3>
+                  <p>الاسم: {selectedOrderDetails.customer_name}</p>
+                  <p>الهاتف: {selectedOrderDetails.customer_phone}</p>
+                  <p>
+                    📍 العنوان:{" "}
+                    <strong>
+                      {selectedOrderDetails.neighborhood_name
+                        ? `${selectedOrderDetails.neighborhood_name} - `
+                        : ""}
+                      {selectedOrderDetails.customer_address || "-"}
+                    </strong>
+                  </p>
+                  <p>
+                    🧭 الإحداثيات: {selectedOrderDetails.latitude},{" "}
+                    {selectedOrderDetails.longitude}
+                  </p>
+                  <a
+                    href={`https://www.google.com/maps?q=${selectedOrderDetails.latitude},${selectedOrderDetails.longitude}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 underline"
+                  >
+                    عرض على الخريطة 🌍
+                  </a>
+                </div>
               </div>
-            </div>
-            <div className="flex justify-end gap-3 p-4 border-t bg-gray-100">
-              <button
-                onClick={handlePrint}
-                className="bg-blue-600 text-white px-4 py-2 rounded"
-              >
-                🧾 طباعة الفاتورة
-              </button>
-              <button
-                onClick={() => setIsDetailsModalOpen(false)}
-                className="bg-gray-400 text-white px-4 py-2 rounded"
-              >
-                إغلاق
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+            </>
+          );
+        })()}
+      </div>
+
+      <div className="flex justify-end gap-3 p-4 border-t bg-gray-100">
+        <button
+          onClick={handlePrint}
+          className="bg-blue-600 text-white px-4 py-2 rounded"
+        >
+          🧾 طباعة الفاتورة
+        </button>
+        <button
+          onClick={() => setIsDetailsModalOpen(false)}
+          className="bg-gray-400 text-white px-4 py-2 rounded"
+        >
+          إغلاق
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
 
 {/* ===== مودال إضافة الطلب ===== */}
 {showAddOrderModal && (
