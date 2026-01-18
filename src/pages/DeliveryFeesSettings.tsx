@@ -112,6 +112,25 @@ const DeliveryFeesSettings: React.FC = () => {
         </label>
       </div>
 
+      {method === "neighborhood" && (
+  <div className="space-y-4">
+    <div>
+      <div className="mb-1">
+        الطلب من أكثر من محل – رسوم إضافية
+      </div>
+      <input
+        type="number"
+        className="border p-2 w-full"
+        value={multi}
+        onChange={(e) => setMulti(Number(e.target.value))}
+      />
+      <p className="text-sm text-gray-500 mt-1">
+        ملاحظة: سعر الطلب من محل واحد يتم أخذه تلقائيًا من رسوم الحي.
+      </p>
+    </div>
+  </div>
+)}
+
       {method === "distance" && (
         <div className="space-y-4">
           <div>
