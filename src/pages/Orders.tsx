@@ -570,7 +570,6 @@ const visibleOrders = filterByTab(orders);
     </button>
   </td>
   <td>{renderActions(o)}</td>
-</tr>
  </tr>
                 ))}
               </tbody>
