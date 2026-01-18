@@ -531,13 +531,15 @@ const selectCustomer = async (customerId: number) => {
         {(() => {
           const restaurants = selectedOrderDetails.restaurants || [];
 
-          const allRestaurantsTotal = restaurants.reduce(
-            (sum: number, r: any) => sum + (r.total || 0),
-            0
-          );
+const allRestaurantsTotal = restaurants.reduce(
+  (sum: number, r: any) => sum + (r.total || 0),
+  0
+);
 
-          const delivery = Number(selectedOrderDetails.delivery_fee || 0);
-          const grandTotal = allRestaurantsTotal + delivery;
+const delivery = Number(selectedOrderDetails.delivery_fee || 0);
+const extraStore = Number(selectedOrderDetails.extra_store_fee || 0);
+const grandTotal = allRestaurantsTotal + delivery + extraStore;
+
 
           return (
             <>
@@ -568,19 +570,19 @@ const selectCustomer = async (customerId: number) => {
                     </tbody>
                   </table>
 
-                  <div className="text-right font-bold">
-                    إجمالي المطعم: {Number(r.total || 0).toFixed(2)} ريال
-                  </div>
-                </div>
-              ))}
+                <div className="border p-3 rounded mt-4 bg-gray-50">
+  <p>🧮 إجمالي المطاعم: {allRestaurantsTotal.toFixed(2)} ريال</p>
+  <p>📦 رسوم التوصيل: {delivery.toFixed(2)} ريال</p>
 
-              <div className="border p-3 rounded mt-4 bg-gray-50">
-                <p>🧮 إجمالي المطاعم: {allRestaurantsTotal.toFixed(2)} ريال</p>
-                <p>📦 رسوم التوصيل: {delivery.toFixed(2)} ريال</p>
-                <p className="text-lg font-bold text-blue-600">
-                  💰 الإجمالي الكلي: {grandTotal.toFixed(2)} ريال
-                </p>
-              </div>
+  {extraStore > 0 && (
+    <p>🏪 رسوم المحل الإضافي: {extraStore.toFixed(2)} ريال</p>
+  )}
+
+  <p className="text-lg font-bold text-blue-600">
+    💰 الإجمالي الكلي: {grandTotal.toFixed(2)} ريال
+  </p>
+</div>
+
 
               <div className="grid grid-cols-2 gap-3 mt-4">
                 <div className="border p-3 rounded">
