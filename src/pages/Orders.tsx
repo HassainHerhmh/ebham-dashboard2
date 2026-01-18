@@ -72,9 +72,13 @@ const Orders: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [products, setProducts] = useState<any[]>([]);
   const [cart, setCart] = useState<any[]>([]);
+   const [carts, setCarts] = useState<
+  { restaurant: any; items: any[] }[]
+>([]);
+const [activeRestaurantId, setActiveRestaurantId] = useState<number | null>(null);
 
   const printRef = useRef<HTMLDivElement>(null);
-
+  
   // ====================================
   //          الجلب والاستدعاءات
   // ====================================
@@ -213,16 +217,25 @@ const fetchOrders = async () => {
     return isNaN(num) ? "-" : num.toFixed(2) + " ريال";
   };
 
-  // ====================================
-  //          إضافة طلب جديد
-  // ====================================
+ // ====================================
+//          إضافة طلب جديد (متعدد المطاعم)
+// ====================================
+
 const selectRestaurant = async (restaurantId: number) => {
   const rest = restaurants.find((r) => r.id === restaurantId);
-  setSelectedRestaurant(rest);
+  if (!rest) return;
+
+  // لو المطعم موجود مسبقًا نجعله نشط فقط
+  const exists = carts.find((c) => c.restaurant.id === rest.id);
+  if (exists) {
+    setActiveRestaurantId(rest.id);
+  } else {
+    setCarts((prev) => [...prev, { restaurant: rest, items: [] }]);
+    setActiveRestaurantId(rest.id);
+  }
 
   try {
     const catRes = await api.get(`/restaurants/${restaurantId}/categories`);
-
     const cats = Array.isArray(catRes.data?.categories)
       ? catRes.data.categories
       : [];
@@ -237,11 +250,11 @@ const selectRestaurant = async (restaurantId: number) => {
 };
 
 const openProductsModal = async () => {
-  if (!selectedRestaurant) return alert("اختر مطعم أولا");
+  if (!activeRestaurantId) return alert("اختر مطعم أولا");
 
   try {
     const prodRes = await api.get(
-      `/restaurants/${selectedRestaurant.id}/products`
+      `/restaurants/${activeRestaurantId}/products`
     );
 
     const prods = Array.isArray(prodRes.data?.products)
@@ -257,36 +270,60 @@ const openProductsModal = async () => {
   }
 };
 
+const addToCart = (product: any) => {
+  if (!activeRestaurantId) return;
 
-  const addToCart = (product: any) => {
-    const exists = cart.find((p) => p.id === product.id);
-    if (exists) {
-      setCart(cart.map((p) => (p.id === product.id ? { ...p, quantity: p.quantity + 1 } : p)));
-    } else {
-      setCart([...cart, { ...product, quantity: 1 }]);
-    }
+  setCarts((prev) =>
+    prev.map((c) => {
+      if (c.restaurant.id !== activeRestaurantId) return c;
+
+      const exists = c.items.find((p) => p.id === product.id);
+      if (exists) {
+        return {
+          ...c,
+          items: c.items.map((p) =>
+            p.id === product.id ? { ...p, quantity: p.quantity + 1 } : p
+          ),
+        };
+      }
+
+      return {
+        ...c,
+        items: [...c.items, { ...product, quantity: 1 }],
+      };
+    })
+  );
+};
+
+const saveOrder = async () => {
+  if (!selectedCustomer || !selectedAddress || carts.length === 0) {
+    return alert("اكمل البيانات المطلوبة");
+  }
+
+  // تجهيز المنتجات مع ربطها بالمطاعم
+  const payload = {
+    customer_id: selectedCustomer.id,
+    address_id: selectedAddress.id,
+    gps_link: gpsLink,
+    restaurants: carts.map((c) => ({
+      restaurant_id: c.restaurant.id,
+      products: c.items.map((i) => ({
+        product_id: i.id,
+        quantity: i.quantity,
+      })),
+    })),
   };
 
-  const saveOrder = async () => {
-    if (!selectedCustomer || !selectedAddress || !selectedRestaurant || cart.length === 0) {
-      return alert("اكمل البيانات المطلوبة");
-    }
-    const payload = {
-      customer_id: selectedCustomer.id,
-      address_id: selectedAddress.id,
-      gps_link: gpsLink,
-      restaurant_id: selectedRestaurant.id,
-      products: cart.map((c) => ({ product_id: c.id, quantity: c.quantity })),
-    };
-    await api.post("/orders", payload);
-    alert("✅ تم إضافة الطلب");
-    setShowAddOrderModal(false);
-    setCart([]);
-    fetchOrders();
-  };
+  await api.post("/orders", payload);
 
+  alert("✅ تم إضافة الطلب");
+  setShowAddOrderModal(false);
+  setCarts([]);
+  setActiveRestaurantId(null);
+  fetchOrders();
+};
 
-  const selectCustomer = async (customerId: number) => {
+const selectCustomer = async (customerId: number) => {
   const customer = customers.find((c) => c.id === customerId);
   setSelectedCustomer(customer);
   setAddresses([]);
@@ -307,6 +344,7 @@ const openProductsModal = async () => {
     setAddresses([]);
   }
 };
+
 
   // ====================================
   //                JSX
@@ -548,144 +586,166 @@ const openProductsModal = async () => {
         </div>
       )}
 
-      {/* ===== مودال إضافة الطلب ===== */}
-      {showAddOrderModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-            <h2 className="text-lg font-bold mb-4">➕ إضافة طلب جديد</h2>
-            <label>👤 اختر العميل:</label>
-            <select onChange={(e) => selectCustomer(Number(e.target.value))}>
-              <option value="">-- اختر --</option>
-              {customers.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-            {selectedCustomer && <div>📞 {selectedCustomer.phone}</div>}
-        <label>📍 اختر العنوان:</label>
-<select
-  value={selectedAddress?.id || ""}
-  onChange={(e) => {
-    const addr = addresses.find((a) => a.id == e.target.value);
-    setSelectedAddress(addr || null);
+{/* ===== مودال إضافة الطلب ===== */}
+{showAddOrderModal && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+    <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+      <h2 className="text-lg font-bold mb-4">➕ إضافة طلب جديد</h2>
 
-    // تعبئة رابط الـ GPS تلقائيًا
-    if (addr?.gps_link) {
-      setGpsLink(addr.gps_link);
-    } else if (addr?.latitude && addr?.longitude) {
-      setGpsLink(`https://www.google.com/maps?q=${addr.latitude},${addr.longitude}`);
-    } else {
-      setGpsLink("");
-    }
-  }}
-  className="border w-full p-2 mt-1 rounded"
->
-  <option value="">-- اختر --</option>
-  {addresses.map((a) => (
-    <option key={a.id} value={a.id}>
-      {`${a.district_name || a.neighborhood_name || "بدون حي"} - ${a.address || ""}`}
-    </option>
-  ))}
-</select>
+      <label>👤 اختر العميل:</label>
+      <select onChange={(e) => selectCustomer(Number(e.target.value))} className="border w-full p-2 rounded">
+        <option value="">-- اختر --</option>
+        {customers.map((c) => (
+          <option key={c.id} value={c.id}>{c.name}</option>
+        ))}
+      </select>
+      {selectedCustomer && <div className="mt-1">📞 {selectedCustomer.phone}</div>}
 
-           <input
-  type="text"
-  placeholder="🌍 رابط GPS"
-  value={gpsLink}
-  readOnly
-  className="border w-full p-2 mt-2 mb-2 rounded bg-gray-50"
- />
+      <label className="mt-3 block">📍 اختر العنوان:</label>
+      <select
+        value={selectedAddress?.id || ""}
+        onChange={(e) => {
+          const addr = addresses.find((a) => a.id == e.target.value);
+          setSelectedAddress(addr || null);
+          if (addr?.gps_link) setGpsLink(addr.gps_link);
+          else if (addr?.latitude && addr?.longitude)
+            setGpsLink(`https://www.google.com/maps?q=${addr.latitude},${addr.longitude}`);
+          else setGpsLink("");
+        }}
+        className="border w-full p-2 mt-1 rounded"
+      >
+        <option value="">-- اختر --</option>
+        {addresses.map((a) => (
+          <option key={a.id} value={a.id}>
+            {`${a.district_name || a.neighborhood_name || "بدون حي"} - ${a.address || ""}`}
+          </option>
+        ))}
+      </select>
 
-            <label>🏪 اختر المطعم:</label>
-            <select onChange={(e) => selectRestaurant(Number(e.target.value))}>
-              <option value="">-- اختر --</option>
-              {restaurants.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.name}
-                </option>
-              ))}
-            </select>
+      <input
+        type="text"
+        placeholder="🌍 رابط GPS"
+        value={gpsLink}
+        readOnly
+        className="border w-full p-2 mt-2 mb-2 rounded bg-gray-50"
+      />
+
+      <label className="mt-3 block">🏪 اختر المطعم:</label>
+      <select
+        onChange={(e) => selectRestaurant(Number(e.target.value))}
+        className="border w-full p-2 rounded"
+      >
+        <option value="">-- اختر --</option>
+        {restaurants.map((r) => (
+          <option key={r.id} value={r.id}>{r.name}</option>
+        ))}
+      </select>
+
+      <button
+        onClick={openProductsModal}
+        className="bg-blue-600 text-white px-3 py-1 mt-3 rounded"
+        disabled={!activeRestaurantId}
+      >
+        📦 تحديد المنتجات
+      </button>
+
+      <h3 className="font-bold mt-4">🛒 السلال:</h3>
+      {carts.length === 0 && (
+        <div className="text-sm text-gray-500">لم يتم إضافة أي مطعم بعد</div>
+      )}
+
+      {carts.map((c) => (
+        <div key={c.restaurant.id} className="border rounded p-3 mt-3">
+          <div className="flex justify-between items-center">
+            <h4 className="font-semibold">🏪 {c.restaurant.name}</h4>
             <button
-              onClick={openProductsModal}
-              className="bg-blue-600 text-white px-3 py-1 mt-3 rounded"
+              onClick={() => setActiveRestaurantId(c.restaurant.id)}
+              className={`text-xs px-2 py-1 rounded ${
+                activeRestaurantId === c.restaurant.id
+                  ? "bg-green-600 text-white"
+                  : "bg-gray-200"
+              }`}
             >
-              📦 تحديد المنتجات
+              نشط
             </button>
-            <h3 className="font-bold mt-4">🛒 السلة:</h3>
-            {cart.map((item) => (
-              <div key={item.id} className="flex justify-between border-b py-1">
-                <span>{item.name}</span>
-                <span>
-                  {item.quantity} × {item.price} ريال
-                </span>
-              </div>
-            ))}
-            <div className="mt-4 flex justify-end gap-2">
-              <button
-                onClick={saveOrder}
-                className="bg-green-600 text-white px-4 py-2 rounded"
-              >
-                💾 حفظ
-              </button>
-              <button
-                onClick={() => setShowAddOrderModal(false)}
-                className="bg-gray-400 text-white px-4 py-2 rounded"
-              >
-                إلغاء
-              </button>
-            </div>
           </div>
-        </div>
-      )}
 
-      {/* ===== مودال اختيار المنتجات ===== */}
-      {showProductsModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-            <h2 className="text-lg font-bold mb-4">📦 قائمة المنتجات</h2>
-            <div className="flex gap-3 overflow-x-auto border-b pb-2">
-              {restaurantCategories.map((cat) => (
-                <button
-                  key={cat.id}
-                  onClick={() => setSelectedCategory(cat.id)}
-                  className={`px-4 py-2 rounded ${
-                    selectedCategory === cat.id
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-200"
-                  }`}
-                >
-                  {cat.name}
-                </button>
-              ))}
-            </div>
-            <div className="grid grid-cols-2 gap-3 mt-4">
-              {products
-                .filter((p) => !selectedCategory || p.category_id === selectedCategory)
-                .map((p) => (
-                  <div key={p.id} className="border p-2 rounded flex flex-col justify-between">
-                    <span className="font-bold">{p.name}</span>
-                    <span>{p.price} ريال</span>
-                    <button
-                      onClick={() => addToCart(p)}
-                      className="bg-green-600 text-white mt-2 px-3 py-1 rounded"
-                    >
-                      ➕ إضافة
-                    </button>
-                  </div>
-                ))}
-            </div>
-            <div className="mt-4 flex justify-end gap-2">
+          {c.items.length === 0 ? (
+            <p className="text-sm text-gray-500 mt-2">لا توجد منتجات</p>
+          ) : (
+            c.items.map((item) => (
+              <div key={item.id} className="flex justify-between border-b py-1 mt-2">
+                <span>{item.name}</span>
+                <span>{item.quantity} × {item.price} ريال</span>
+              </div>
+            ))
+          )}
+        </div>
+      ))}
+
+      <button
+        onClick={() => setActiveRestaurantId(null)}
+        className="mt-3 bg-indigo-600 text-white px-3 py-2 rounded"
+      >
+        ➕ إضافة مطعم آخر
+      </button>
+
+      <div className="mt-4 flex justify-end gap-2">
+        <button onClick={saveOrder} className="bg-green-600 text-white px-4 py-2 rounded">
+          💾 حفظ
+        </button>
+        <button onClick={() => setShowAddOrderModal(false)} className="bg-gray-400 text-white px-4 py-2 rounded">
+          إلغاء
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+{/* ===== مودال اختيار المنتجات ===== */}
+{showProductsModal && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+    <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+      <h2 className="text-lg font-bold mb-4">📦 قائمة المنتجات</h2>
+      <div className="flex gap-3 overflow-x-auto border-b pb-2">
+        {restaurantCategories.map((cat) => (
+          <button
+            key={cat.id}
+            onClick={() => setSelectedCategory(cat.id)}
+            className={`px-4 py-2 rounded ${
+              selectedCategory === cat.id ? "bg-blue-600 text-white" : "bg-gray-200"
+            }`}
+          >
+            {cat.name}
+          </button>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 mt-4">
+        {products
+          .filter((p) => !selectedCategory || p.category_id === selectedCategory)
+          .map((p) => (
+            <div key={p.id} className="border p-2 rounded flex flex-col justify-between">
+              <span className="font-bold">{p.name}</span>
+              <span>{p.price} ريال</span>
               <button
-                onClick={() => setShowProductsModal(false)}
-                className="bg-gray-400 text-white px-4 py-2 rounded"
+                onClick={() => addToCart(p)}
+                className="bg-green-600 text-white mt-2 px-3 py-1 rounded"
               >
-                إغلاق
+                ➕ إضافة
               </button>
             </div>
-          </div>
-        </div>
-      )}
+          ))}
+      </div>
+
+      <div className="mt-4 flex justify-end gap-2">
+        <button onClick={() => setShowProductsModal(false)} className="bg-gray-400 text-white px-4 py-2 rounded">
+          إغلاق
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 };
