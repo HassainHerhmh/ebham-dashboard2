@@ -277,14 +277,21 @@ const [editAddress, setEditAddress] = useState<Address | null>(null);
                     <td>{a.latitude || "-"}</td>
                     <td>{a.longitude || "-"}</td>
                     <td>
-                      {a.gps_link ? (
-                        <a href={a.gps_link} target="_blank" className="text-blue-600 underline">
-                          GPS
-                        </a>
-                      ) : (
-                        "-"
-                      )}
-                   <td className="flex gap-2 justify-center">
+  {a.gps_link ? (
+    <a
+      href={a.gps_link}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-blue-600 underline"
+    >
+      GPS
+    </a>
+  ) : (
+    "-"
+  )}
+</td>
+
+<td className="flex gap-2 justify-center">
   <button
     onClick={() => {
       setEditAddress(a);
@@ -306,6 +313,7 @@ const [editAddress, setEditAddress] = useState<Address | null>(null);
     حذف
   </button>
 </td>
+
 
                   </tr>
                 ))}
