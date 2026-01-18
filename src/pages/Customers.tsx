@@ -137,34 +137,7 @@ const [editAddress, setEditAddress] = useState<Address | null>(null);
     alert(res.data?.password ? `كلمة المرور الجديدة: ${res.data.password}` : "تمت العملية");
   };
 
-      const EditAddressModal = ({
-  address,
-  onClose,
-  onSaved,
-}: {
-  address: any;
-  onClose: () => void;
-  onSaved: () => void;
-}) => {
-  const [district, setDistrict] = useState(address.district_name || "");
-  const [addr, setAddr] = useState(address.address || "");
-  const [lat, setLat] = useState(address.latitude || "");
-  const [lng, setLng] = useState(address.longitude || "");
-
-  const gpsLink = lat && lng ? `https://www.google.com/maps?q=${lat},${lng}` : "";
-
-  const handleSave = async () => {
-    await api.put(`/customer-addresses/${address.id}`, {
-      district,
-      address: addr,
-      latitude: lat,
-      longitude: lng,
-      gps_link: gpsLink,
-    });
-
-    onSaved();
-  };
-
+     
   
   return (
     <div className="p-6 space-y-6" dir="rtl">
@@ -751,3 +724,102 @@ const AddAddressModal = ({
     </div>
   );
 };
+
+const Customers: React.FC = () => {
+  // كل كود الصفحة هنا
+};
+
+export default Customers;
+
+/* ================= مودال تعديل عنوان ================= */
+
+const EditAddressModal = ({
+  address,
+  onClose,
+  onSaved,
+}: {
+  address: any;
+  onClose: () => void;
+  onSaved: () => void;
+}) => {
+  const [district, setDistrict] = useState(address.district_name || "");
+  const [addr, setAddr] = useState(address.address || "");
+  const [lat, setLat] = useState(address.latitude || "");
+  const [lng, setLng] = useState(address.longitude || "");
+
+  const gpsLink = lat && lng ? `https://www.google.com/maps?q=${lat},${lng}` : "";
+
+  const handleSave = async () => {
+    await api.put(`/customer-addresses/${address.id}`, {
+      district,
+      address: addr,
+      latitude: lat,
+      longitude: lng,
+      gps_link: gpsLink,
+    });
+
+    onSaved();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
+      <div className="bg-white w-full max-w-lg p-4 rounded relative">
+        <button
+          onClick={onClose}
+          className="absolute top-2 right-2 bg-red-600 text-white w-6 h-6 text-xs rounded-full"
+        >
+          ✖
+        </button>
+
+        <h3 className="text-lg font-bold mb-3">✏️ تعديل العنوان</h3>
+
+        <input
+          className="border p-2 w-full mb-2"
+          placeholder="الحي"
+          value={district}
+          onChange={(e) => setDistrict(e.target.value)}
+        />
+
+        <input
+          className="border p-2 w-full mb-2"
+          placeholder="العنوان التفصيلي"
+          value={addr}
+          onChange={(e) => setAddr(e.target.value)}
+        />
+
+        <div className="flex gap-2 mb-2">
+          <input
+            className="border p-2 w-full"
+            placeholder="Latitude"
+            value={lat}
+            onChange={(e) => setLat(e.target.value)}
+          />
+          <input
+            className="border p-2 w-full"
+            placeholder="Longitude"
+            value={lng}
+            onChange={(e) => setLng(e.target.value)}
+          />
+        </div>
+
+        {gpsLink && (
+          <a
+            href={gpsLink}
+            target="_blank"
+            className="text-blue-600 underline text-sm"
+          >
+            فتح الموقع على الخريطة
+          </a>
+        )}
+
+        <button
+          onClick={handleSave}
+          className="bg-green-600 text-white w-full py-2 rounded mt-3"
+        >
+          حفظ التعديل
+        </button>
+      </div>
+    </div>
+  );
+};
+
