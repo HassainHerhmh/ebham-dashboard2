@@ -519,7 +519,7 @@ const selectCustomer = async (customerId: number) => {
         </div>
       )}
 
-    {/* ===== مودال تفاصيل الطلب ===== */}
+   {/* ===== مودال تفاصيل الطلب ===== */}
 {isDetailsModalOpen && selectedOrderDetails && (
   <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
     <div className="bg-white rounded-lg shadow-lg w-full max-w-3xl flex flex-col max-h-[90vh]">
@@ -529,87 +529,50 @@ const selectCustomer = async (customerId: number) => {
         </h2>
 
         {(() => {
-       const products = selectedOrderDetails.products || [];
-const groups = products.reduce((acc: any, p: any) => {
+          const restaurants = selectedOrderDetails.restaurants || [];
 
-            if (!acc[p.restaurant_id]) {
-              acc[p.restaurant_id] = {
-                restaurant_name: p.restaurant_name,
-                restaurant_phone: p.restaurant_phone,
-                latitude: p.restaurant_latitude,
-                longitude: p.restaurant_longitude,
-                items: [],
-              };
-            }
-            acc[p.restaurant_id].items.push(p);
-            return acc;
-          }, {});
-
-          const restaurantTotals = Object.values(groups).map((g: any) =>
-            g.items.reduce(
-              (sum: number, p: any) =>
-                sum + (p.price * p.quantity - (p.discount || 0)),
-              0
-            )
+          const allRestaurantsTotal = restaurants.reduce(
+            (sum: number, r: any) => sum + (r.total || 0),
+            0
           );
 
-          const allRestaurantsTotal = restaurantTotals.reduce((a: number, b: number) => a + b, 0);
           const delivery = Number(selectedOrderDetails.delivery_fee || 0);
           const grandTotal = allRestaurantsTotal + delivery;
 
           return (
             <>
-              {Object.values(groups).map((g: any, idx: number) => {
-                const restTotal = g.items.reduce(
-                  (sum: number, p: any) =>
-                    sum + (p.price * p.quantity - (p.discount || 0)),
-                  0
-                );
+              {restaurants.map((r: any, idx: number) => (
+                <div key={idx} className="mb-6 border rounded p-3">
+                  <h3 className="font-bold text-lg mb-2">🏪 {r.name}</h3>
 
-                return (
-                  <div key={idx} className="mb-6 border rounded p-3">
-                    <h3 className="font-bold text-lg mb-2">
-                      🏪 {g.restaurant_name}
-                    </h3>
-
-                    <table className="w-full mb-2 border">
-                      <thead className="bg-gray-100">
-                        <tr>
-                          <th>المنتج</th>
-                          <th>السعر</th>
-                          <th>الكمية</th>
-                          <th>الخصم</th>
-                          <th>الإجمالي</th>
-                          <th>الملاحظات</th>
+                  <table className="w-full mb-2 border">
+                    <thead className="bg-gray-100">
+                      <tr>
+                        <th>المنتج</th>
+                        <th>السعر</th>
+                        <th>الكمية</th>
+                        <th>الإجمالي</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {r.items.map((p: any, i: number) => (
+                        <tr key={i}>
+                          <td className="border px-2 py-1">{p.name}</td>
+                          <td className="border">{p.price} ر.س</td>
+                          <td className="border">{p.quantity}</td>
+                          <td className="border font-semibold text-green-600">
+                            {p.subtotal} ر.س
+                          </td>
                         </tr>
-                      </thead>
-                      <tbody>
-                        {g.items.map((p: any, i: number) => {
-                          const subtotal = p.price * p.quantity - (p.discount || 0);
-                          return (
-                            <tr key={i}>
-                              <td className="border px-2 py-1">{p.name}</td>
-                              <td className="border">{p.price} ر.س</td>
-                              <td className="border">{p.quantity}</td>
-                              <td className="border">
-                                {p.discount ? `${p.discount} ر.س` : "-"}
-                              </td>
-                              <td className="border font-semibold text-green-600">
-                                {subtotal} ر.س
-                              </td>
-                              <td className="border">{p.notes || "-"}</td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
+                      ))}
+                    </tbody>
+                  </table>
 
-                    <div className="text-right font-bold">
-                      إجمالي المطعم: {restTotal.toFixed(2)} ريال
-                    </div>
+                  <div className="text-right font-bold">
+                    إجمالي المطعم: {Number(r.total || 0).toFixed(2)} ريال
                   </div>
-                );
-              })}
+                </div>
+              ))}
 
               <div className="border p-3 rounded mt-4 bg-gray-50">
                 <p>🧮 إجمالي المطاعم: {allRestaurantsTotal.toFixed(2)} ريال</p>
@@ -622,13 +585,13 @@ const groups = products.reduce((acc: any, p: any) => {
               <div className="grid grid-cols-2 gap-3 mt-4">
                 <div className="border p-3 rounded">
                   <h3 className="font-bold mb-2">🏪 المطاعم المشاركة</h3>
-                  {Object.values(groups).map((g: any, i: number) => (
+                  {restaurants.map((r: any, i: number) => (
                     <div key={i} className="mb-2 text-sm">
-                      <p>الاسم: {g.restaurant_name}</p>
-                      <p>الهاتف: {g.restaurant_phone}</p>
-                      {g.latitude && g.longitude && (
+                      <p>الاسم: {r.name}</p>
+                      <p>الهاتف: {r.phone}</p>
+                      {r.latitude && r.longitude && (
                         <a
-                          href={`https://www.google.com/maps?q=${g.latitude},${g.longitude}`}
+                          href={`https://www.google.com/maps?q=${r.latitude},${r.longitude}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-blue-600 underline"
