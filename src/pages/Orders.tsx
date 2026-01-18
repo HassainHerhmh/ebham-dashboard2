@@ -529,7 +529,9 @@ const selectCustomer = async (customerId: number) => {
         </h2>
 
         {(() => {
-          const groups = selectedOrderDetails.products.reduce((acc: any, p: any) => {
+       const products = selectedOrderDetails.products || [];
+const groups = products.reduce((acc: any, p: any) => {
+
             if (!acc[p.restaurant_id]) {
               acc[p.restaurant_id] = {
                 restaurant_name: p.restaurant_name,
