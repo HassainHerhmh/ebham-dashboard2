@@ -137,6 +137,35 @@ const [editAddress, setEditAddress] = useState<Address | null>(null);
     alert(res.data?.password ? `كلمة المرور الجديدة: ${res.data.password}` : "تمت العملية");
   };
 
+      const EditAddressModal = ({
+  address,
+  onClose,
+  onSaved,
+}: {
+  address: any;
+  onClose: () => void;
+  onSaved: () => void;
+}) => {
+  const [district, setDistrict] = useState(address.district_name || "");
+  const [addr, setAddr] = useState(address.address || "");
+  const [lat, setLat] = useState(address.latitude || "");
+  const [lng, setLng] = useState(address.longitude || "");
+
+  const gpsLink = lat && lng ? `https://www.google.com/maps?q=${lat},${lng}` : "";
+
+  const handleSave = async () => {
+    await api.put(`/customer-addresses/${address.id}`, {
+      district,
+      address: addr,
+      latitude: lat,
+      longitude: lng,
+      gps_link: gpsLink,
+    });
+
+    onSaved();
+  };
+
+  
   return (
     <div className="p-6 space-y-6" dir="rtl">
       <div className="flex justify-between items-center">
