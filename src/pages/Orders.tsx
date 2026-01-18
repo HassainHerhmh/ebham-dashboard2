@@ -813,29 +813,30 @@ const selectCustomer = async (customerId: number) => {
         ))}
       </div>
 
-      <div className="grid grid-cols-2 gap-3 mt-4">
-      products.filter((p) => {
-  if (!selectedCategory) return true;
-  const ids = String(p.category_ids || "").split(",");
-  return ids.includes(String(selectedCategory));
-});
+<div className="grid grid-cols-2 gap-3 mt-4">
+  products.filter((p) => {
+    if (!selectedCategory) return true;
+    const ids = String(p.category_ids || "").split(",");
+    return ids.includes(String(selectedCategory));
+  });
 
-          .map((p) => (
-            <div
-              key={p.id}
-              className="border p-2 rounded flex flex-col justify-between"
-            >
-              <span className="font-bold">{p.name}</span>
-              <span>{p.price} ريال</span>
-              <button
-                onClick={() => addToCart(p)}
-                className="bg-green-600 text-white mt-2 px-3 py-1 rounded"
-              >
-                ➕ إضافة
-              </button>
-            </div>
-          ))}
+    .map((p) => (
+      <div
+        key={p.id}
+        className="border p-2 rounded flex flex-col justify-between"
+      >
+        <span className="font-bold">{p.name}</span>
+        <span>{p.price} ريال</span>
+        <button
+          onClick={() => addToCart(p)}
+          className="bg-green-600 text-white mt-2 px-3 py-1 rounded"
+        >
+          ➕ إضافة
+        </button>
       </div>
+    ))}
+</div>
+
 
       <div className="mt-4 flex justify-end gap-2">
         <button
