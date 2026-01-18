@@ -391,133 +391,135 @@ const selectCustomer = async (customerId: number) => {
   //                JSX
   // ====================================
   return (
-    <div className="space-y-6">
-      {/* ===== رأس الصفحة ===== */}
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">الطلبات</h1>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setShowAddOrderModal(true)}
-            className="bg-green-600 text-white px-4 py-2 rounded flex items-center gap-2"
-          >
-            <Plus className="w-4 h-4" /> إضافة طلب
-          </button>
-          <button
-            onClick={fetchOrders}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-          >
-            🔄 تحديث
-          </button>
-        </div>
-      </div>
-
-      {/* ===== جدول الطلبات ===== */}
-      {loading ? (
-        <div className="p-6 text-center">⏳ جاري التحميل...</div>
-      ) : (
-        <div className="overflow-x-auto bg-white rounded-xl shadow-lg">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th>رقم</th>
-                <th>العميل</th>
-                <th>المطعم</th>
-                <th>الكابتن</th>
-                <th>المبلغ</th>
-                <th>الحالة</th>
-                <th>تفاصيل</th>
-                <th>تعيين كابتن</th>
-              </tr>
-            </thead>
-            <tbody>
-              {orders.map((o) => (
-                <tr key={o.id} className="border-b hover:bg-gray-50 text-center">
-                  <td>#{o.id}</td>
-                  <td>{o.customer_name}</td>
-                  <td>{o.stores_count} مطعم</td>
-                  <td>{o.captain_name || "لم يُعيّن"}</td>
-                  <td>{formatAmount(o.total_amount)}</td>
-                  <td>
-                    <select
-                      value={o.status}
-                      onChange={(e) => updateOrderStatus(o.id, e.target.value)}
-                      className="border rounded px-2 py-1 text-sm"
-                    >
-                      <option value="pending">قيد الانتظار</option>
-                      <option value="confirmed">مؤكد</option>
-                      <option value="preparing">قيد التحضير</option>
-                      <option value="ready">جاهز</option>
-                      <option value="delivering">قيد التوصيل</option>
-                      <option value="completed">مكتمل</option>
-                      <option value="cancelled">ملغي</option>
-                    </select>
-                  </td>
-                  <td>
-                    <button
-                      onClick={() => openDetailsModal(o.id)}
-                      className="text-blue-600 hover:underline"
-                    >
-                      عرض
-                    </button>
-                  </td>
-                  <td>
-                    <button
-                      onClick={() => openCaptainModal(o.id)}
-                      className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
-                    >
-                      تعيين
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* ===== مودال تعيين الكابتن ===== */}
-      {isCaptainModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
-            <div className="flex justify-between items-center border-b pb-3">
-              <h2 className="text-lg font-bold">🚗 اختر الكابتن</h2>
-              <button onClick={() => setIsCaptainModalOpen(false)}>✖</button>
-            </div>
-            {captainsLoading ? (
-              <div className="py-6 text-center">⏳ جاري التحميل...</div>
-            ) : captains.length === 0 ? (
-              <div className="py-6 text-center">❌ لا يوجد كباتن متاحين</div>
-            ) : (
-              <ul className="divide-y mt-4">
-                {captains.map((c) => (
-                  <li key={c.id} className="flex justify-between items-center py-3">
-                    <div>
-                      <p className="font-semibold">{c.name}</p>
-                      <p className="text-sm text-gray-600">
-                        🕓 معلقة: {c.pending_orders} | ✅ مكتملة اليوم: {c.completed_today}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => assignCaptain(c.id)}
-                      className="bg-green-600 text-white px-3 py-1 rounded"
-                    >
-                      تعيين
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-            <div className="mt-6 text-right">
-              <button
-                onClick={() => setIsCaptainModalOpen(false)}
-                className="bg-gray-400 text-white px-4 py-2 rounded"
-              >
-                إغلاق
-              </button>
-            </div>
+    <>
+      <div className="space-y-6">
+        {/* ===== رأس الصفحة ===== */}
+        <div className="flex justify-between items-center">
+          <h1 className="text-2xl font-bold">الطلبات</h1>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowAddOrderModal(true)}
+              className="bg-green-600 text-white px-4 py-2 rounded flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" /> إضافة طلب
+            </button>
+            <button
+              onClick={fetchOrders}
+              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            >
+              🔄 تحديث
+            </button>
           </div>
         </div>
-      )}
+
+        {/* ===== جدول الطلبات ===== */}
+        {loading ? (
+          <div className="p-6 text-center">⏳ جاري التحميل...</div>
+        ) : (
+          <div className="overflow-x-auto bg-white rounded-xl shadow-lg">
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th>رقم</th>
+                  <th>العميل</th>
+                  <th>المطعم</th>
+                  <th>الكابتن</th>
+                  <th>المبلغ</th>
+                  <th>الحالة</th>
+                  <th>تفاصيل</th>
+                  <th>تعيين كابتن</th>
+                </tr>
+              </thead>
+              <tbody>
+                {orders.map((o) => (
+                  <tr key={o.id} className="border-b hover:bg-gray-50 text-center">
+                    <td>#{o.id}</td>
+                    <td>{o.customer_name}</td>
+                    <td>{o.stores_count} مطعم</td>
+                    <td>{o.captain_name || "لم يُعيّن"}</td>
+                    <td>{formatAmount(o.total_amount)}</td>
+                    <td>
+                      <select
+                        value={o.status}
+                        onChange={(e) => updateOrderStatus(o.id, e.target.value)}
+                        className="border rounded px-2 py-1 text-sm"
+                      >
+                        <option value="pending">قيد الانتظار</option>
+                        <option value="confirmed">مؤكد</option>
+                        <option value="preparing">قيد التحضير</option>
+                        <option value="ready">جاهز</option>
+                        <option value="delivering">قيد التوصيل</option>
+                        <option value="completed">مكتمل</option>
+                        <option value="cancelled">ملغي</option>
+                      </select>
+                    </td>
+                    <td>
+                      <button
+                        onClick={() => openDetailsModal(o.id)}
+                        className="text-blue-600 hover:underline"
+                      >
+                        عرض
+                      </button>
+                    </td>
+                    <td>
+                      <button
+                        onClick={() => openCaptainModal(o.id)}
+                        className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
+                      >
+                        تعيين
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* ===== مودال تعيين الكابتن ===== */}
+        {isCaptainModalOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+            <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+              <div className="flex justify-between items-center border-b pb-3">
+                <h2 className="text-lg font-bold">🚗 اختر الكابتن</h2>
+                <button onClick={() => setIsCaptainModalOpen(false)}>✖</button>
+              </div>
+              {captainsLoading ? (
+                <div className="py-6 text-center">⏳ جاري التحميل...</div>
+              ) : captains.length === 0 ? (
+                <div className="py-6 text-center">❌ لا يوجد كباتن متاحين</div>
+              ) : (
+                <ul className="divide-y mt-4">
+                  {captains.map((c) => (
+                    <li key={c.id} className="flex justify-between items-center py-3">
+                      <div>
+                        <p className="font-semibold">{c.name}</p>
+                        <p className="text-sm text-gray-600">
+                          🕓 معلقة: {c.pending_orders} | ✅ مكتملة اليوم: {c.completed_today}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => assignCaptain(c.id)}
+                        className="bg-green-600 text-white px-3 py-1 rounded"
+                      >
+                        تعيين
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <div className="mt-6 text-right">
+                <button
+                  onClick={() => setIsCaptainModalOpen(false)}
+                  className="bg-gray-400 text-white px-4 py-2 rounded"
+                >
+                  إغلاق
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
 
 
 
@@ -793,66 +795,66 @@ const selectCustomer = async (customerId: number) => {
   </div>
 )}
 
+      {/* ===== مودال اختيار المنتجات ===== */}
+      {showProductsModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <h2 className="text-lg font-bold mb-4">📦 قائمة المنتجات</h2>
 
-    {/* ===== مودال اختيار المنتجات ===== */}
-    {showProductsModal && (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-        <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-          <h2 className="text-lg font-bold mb-4">📦 قائمة المنتجات</h2>
-
-          <div className="flex gap-3 overflow-x-auto border-b pb-2">
-            {restaurantCategories.map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => setSelectedCategory(cat.id)}
-                className={`px-4 py-2 rounded ${
-                  selectedCategory === cat.id
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-200"
-                }`}
-              >
-                {cat.name}
-              </button>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-2 gap-3 mt-4">
-            {products
-              .filter((p) => {
-                if (!selectedCategory) return true;
-                const ids = String(p.category_ids || "").split(",");
-                return ids.includes(String(selectedCategory));
-              })
-              .map((p) => (
-                <div
-                  key={p.id}
-                  className="border p-2 rounded flex flex-col justify-between"
+            <div className="flex gap-3 overflow-x-auto border-b pb-2">
+              {restaurantCategories.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => setSelectedCategory(cat.id)}
+                  className={`px-4 py-2 rounded ${
+                    selectedCategory === cat.id
+                      ? "bg-blue-600 text-white"
+                      : "bg-gray-200"
+                  }`}
                 >
-                  <span className="font-bold">{p.name}</span>
-                  <span>{p.price} ريال</span>
-                  <button
-                    onClick={() => addToCart(p)}
-                    className="bg-green-600 text-white mt-2 px-3 py-1 rounded"
-                  >
-                    ➕ إضافة
-                  </button>
-                </div>
+                  {cat.name}
+                </button>
               ))}
-          </div>
+            </div>
 
-          <div className="mt-4 flex justify-end gap-2">
-            <button
-              onClick={() => setShowProductsModal(false)}
-              className="bg-gray-400 text-white px-4 py-2 rounded"
-            >
-              إغلاق
-            </button>
+            <div className="grid grid-cols-2 gap-3 mt-4">
+              {products
+                .filter((p) => {
+                  if (!selectedCategory) return true;
+                  const ids = String(p.category_ids || "").split(",");
+                  return ids.includes(String(selectedCategory));
+                })
+                .map((p) => (
+                  <div
+                    key={p.id}
+                    className="border p-2 rounded flex flex-col justify-between"
+                  >
+                    <span className="font-bold">{p.name}</span>
+                    <span>{p.price} ريال</span>
+                    <button
+                      onClick={() => addToCart(p)}
+                      className="bg-green-600 text-white mt-2 px-3 py-1 rounded"
+                    >
+                      ➕ إضافة
+                    </button>
+                  </div>
+                ))}
+            </div>
+
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                onClick={() => setShowProductsModal(false)}
+                className="bg-gray-400 text-white px-4 py-2 rounded"
+              >
+                إغلاق
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-    )}
-);
-
+      )}
+    </>
+  );
 };
+
 export default Orders;
 
