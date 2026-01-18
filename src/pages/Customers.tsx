@@ -725,11 +725,6 @@ const AddAddressModal = ({
   );
 };
 
-const Customers: React.FC = () => {
-  // كل كود الصفحة هنا
-};
-
-export default Customers;
 
 /* ================= مودال تعديل عنوان ================= */
 
