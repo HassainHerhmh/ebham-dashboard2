@@ -7,6 +7,7 @@ type BranchRow = {
   method: "distance" | "neighborhood";
   km_price_single: number;
   km_price_multi: number;
+  extra_store_fee: number;
 };
 
 const DeliveryFeesSettings: React.FC = () => {
@@ -29,6 +30,7 @@ const DeliveryFeesSettings: React.FC = () => {
   const load = async () => {
     setLoading(true);
     const res = await api.get("/delivery-settings");
+
     if (res.data.mode === "admin") {
       setMode("admin");
       setRows(res.data.rows);
@@ -39,8 +41,10 @@ const DeliveryFeesSettings: React.FC = () => {
         setMethod(d.method);
         setSingle(Number(d.km_price_single || 0));
         setMulti(Number(d.km_price_multi || 0));
+        setExtraStoreFee(Number(d.extra_store_fee || 0));
       }
     }
+
     setLoading(false);
   };
 
@@ -49,25 +53,11 @@ const DeliveryFeesSettings: React.FC = () => {
       method,
       km_price_single: single,
       km_price_multi: multi,
+      extra_store_fee: extraStoreFee,
     });
     alert("تم الحفظ");
   };
 
-    await api.post("/delivery-settings", {
-  method,
-  km_price_single: single,
-  km_price_multi: multi,
-  extra_store_fee: extraStoreFee,
-});
-
-  if (d) {
-  setMethod(d.method);
-  setSingle(Number(d.km_price_single || 0));
-  setMulti(Number(d.km_price_multi || 0));
-  setExtraStoreFee(Number(d.extra_store_fee || 0));
-}
-
-  
   if (loading) return <div>جارِ التحميل...</div>;
 
   // ================== الإدارة العامة ==================
@@ -83,6 +73,7 @@ const DeliveryFeesSettings: React.FC = () => {
               <th className="p-2 border">طريقة الحساب</th>
               <th className="p-2 border">سعر 1 كم</th>
               <th className="p-2 border">سعر كل كم إضافي</th>
+              <th className="p-2 border">رسوم محل إضافي</th>
             </tr>
           </thead>
           <tbody>
@@ -94,6 +85,7 @@ const DeliveryFeesSettings: React.FC = () => {
                 </td>
                 <td className="p-2 border">{r.km_price_single}</td>
                 <td className="p-2 border">{r.km_price_multi}</td>
+                <td className="p-2 border">{r.extra_store_fee}</td>
               </tr>
             ))}
           </tbody>
@@ -129,23 +121,21 @@ const DeliveryFeesSettings: React.FC = () => {
       </div>
 
       {method === "neighborhood" && (
-  <div className="space-y-4">
-    <div>
-      <div className="mb-1">
-        الطلب من أكثر من محل – رسوم إضافية
-      </div>
-      <input
-        type="number"
-        className="border p-2 w-full"
-        value={multi}
-        onChange={(e) => setMulti(Number(e.target.value))}
-      />
-      <p className="text-sm text-gray-500 mt-1">
-        ملاحظة: سعر الطلب من محل واحد يتم أخذه تلقائيًا من رسوم الحي.
-      </p>
-    </div>
-  </div>
-)}
+        <div className="space-y-4">
+          <div>
+            <div className="mb-1">الطلب من أكثر من محل – رسوم إضافية</div>
+            <input
+              type="number"
+              className="border p-2 w-full"
+              value={extraStoreFee}
+              onChange={(e) => setExtraStoreFee(Number(e.target.value))}
+            />
+            <p className="text-sm text-gray-500 mt-1">
+              سعر الطلب من محل واحد يؤخذ تلقائيًا من رسوم الحي.
+            </p>
+          </div>
+        </div>
+      )}
 
       {method === "distance" && (
         <div className="space-y-4">
@@ -160,9 +150,7 @@ const DeliveryFeesSettings: React.FC = () => {
           </div>
 
           <div>
-            <div className="mb-1">
-              الطلب من أكثر من محل – كل 1 كم إضافي
-            </div>
+            <div className="mb-1">الطلب من أكثر من محل – كل 1 كم إضافي</div>
             <input
               type="number"
               className="border p-2 w-full"
