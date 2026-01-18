@@ -540,38 +540,38 @@ const visibleOrders = filterByTab(orders);
               </thead>
               <tbody>
                {visibleOrders.map((o) => (
-                  <tr key={o.id} className="border-b hover:bg-gray-50 text-center">
-                    <td>#{o.id}</td>
-                    <td>{o.customer_name}</td>
-                    <td>{o.stores_count} مطعم</td>
-                    <td>{o.captain_name || "لم يُعيّن"}</td>
-                    <td>{formatAmount(o.total_amount)}</td>
-                    <td>
-                      <select
-                        value={o.status}
-                        onChange={(e) => updateOrderStatus(o.id, e.target.value)}
-                        className="border rounded px-2 py-1 text-sm"
-                      >
-                        <option value="pending">قيد الانتظار</option>
-                        <option value="confirmed">مؤكد</option>
-                        <option value="preparing">قيد التحضير</option>
-                        <option value="ready">جاهز</option>
-                        <option value="delivering">قيد التوصيل</option>
-                        <option value="completed">مكتمل</option>
-                        <option value="cancelled">ملغي</option>
-                      </select>
-                    </td>
-                    <td>
-                      <button
-                        onClick={() => openDetailsModal(o.id)}
-                        className="text-blue-600 hover:underline"
-                      >
-                        عرض
-                      </button>
-                    </td>
-               <td>{renderActions(o)}</td>
-
-                  </tr>
+               <tr key={o.id} className="border-b hover:bg-gray-50 text-center">
+  <td>#{o.id}</td>
+  <td>{o.customer_name}</td>
+  <td>{o.stores_count} مطعم</td>
+  <td>{o.captain_name || "لم يُعيّن"}</td>
+  <td>{formatAmount(o.total_amount)}</td>
+  <td>
+    <select
+      value={o.status}
+      onChange={(e) => updateOrderStatus(o.id, e.target.value)}
+      className="border rounded px-2 py-1 text-sm"
+    >
+      <option value="pending">قيد الانتظار</option>
+      <option value="confirmed">مؤكد</option>
+      <option value="preparing">قيد التحضير</option>
+      <option value="ready">جاهز</option>
+      <option value="delivering">قيد التوصيل</option>
+      <option value="completed">مكتمل</option>
+      <option value="cancelled">ملغي</option>
+    </select>
+  </td>
+  <td>
+    <button
+      onClick={() => openDetailsModal(o.id)}
+      className="text-blue-600 hover:underline"
+    >
+      عرض
+    </button>
+  </td>
+  <td>{renderActions(o)}</td>
+</tr>
+ </tr>
                 ))}
               </tbody>
             </table>
