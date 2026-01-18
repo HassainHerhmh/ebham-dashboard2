@@ -677,10 +677,12 @@ const selectCustomer = async (customerId: number) => {
       />
 
       <label className="mt-3 block">🏪 اختر المطعم:</label>
-      <select
-        onChange={(e) => selectRestaurant(Number(e.target.value))}
-        className="border w-full p-2 rounded"
-      >
+     <select
+  value={currentRestaurant?.id || ""}
+  onChange={(e) => selectRestaurant(Number(e.target.value))}
+  className="border w-full p-2 rounded"
+>
+
         <option value="">-- اختر --</option>
         {restaurants.map((r) => (
           <option key={r.id} value={r.id}>
