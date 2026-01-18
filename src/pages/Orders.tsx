@@ -1081,6 +1081,29 @@ const visibleOrders = filterByTab(orders);
               onChange={(e) => setCancelReason(e.target.value)}
               className="border w-full p-2 rounded mb-4"
               placeholder="اكتب سبب الإلغاء..."
+            />            <div className="mt-4 flex justify-end gap-2">
+              <button
+                onClick={() => setShowProductsModal(false)}
+                className="bg-gray-400 text-white px-4 py-2 rounded"
+              >
+                إغلاق
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== مودال إلغاء الطلب ===== */}
+      {cancelModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h2 className="text-lg font-bold mb-3">تأكيد إلغاء الطلب</h2>
+
+            <textarea
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              className="border w-full p-2 rounded mb-4"
+              placeholder="اكتب سبب الإلغاء..."
             />
 
             <div className="flex justify-end gap-2">
@@ -1104,7 +1127,6 @@ const visibleOrders = filterByTab(orders);
     </>
   );
 };
-
 
 export default Orders;
 
