@@ -814,8 +814,12 @@ const selectCustomer = async (customerId: number) => {
       </div>
 
       <div className="grid grid-cols-2 gap-3 mt-4">
-        {products
-          .filter((p) => !selectedCategory || p.category_id === selectedCategory)
+      products.filter((p) => {
+  if (!selectedCategory) return true;
+  const ids = String(p.category_ids || "").split(",");
+  return ids.includes(String(selectedCategory));
+});
+
           .map((p) => (
             <div
               key={p.id}
