@@ -520,153 +520,98 @@ const selectCustomer = async (customerId: number) => {
       )}
 
 
- return (
+return (
   <>
-     
-  {/* ===== مودال تفاصيل الطلب ===== */}
-{isDetailsModalOpen && selectedOrderDetails && (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-    <div className="bg-white rounded-lg shadow-lg w-full max-w-3xl flex flex-col max-h-[90vh]">
-      {/* محتوى الطباعة */}
-      <div ref={printRef} className="p-6 overflow-y-auto">
-        <h2 className="text-lg font-bold mb-4 text-center">
-          🧾 فاتورة الطلب #{selectedOrderDetails.id}
-        </h2>
+    {/* ===== مودال تفاصيل الطلب ===== */}
+    {isDetailsModalOpen && selectedOrderDetails && (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+        <div className="bg-white rounded-lg shadow-lg w-full max-w-3xl flex flex-col max-h-[90vh]">
+          {/* محتوى الطباعة */}
+          <div ref={printRef} className="p-6 overflow-y-auto">
+            <h2 className="text-lg font-bold mb-4 text-center">
+              🧾 فاتورة الطلب #{selectedOrderDetails.id}
+            </h2>
 
-        {(() => {
-          const restaurants = selectedOrderDetails.restaurants || [];
+            {(() => {
+              const restaurants = selectedOrderDetails.restaurants || [];
+              const allRestaurantsTotal = restaurants.reduce(
+                (sum: number, r: any) => sum + (r.total || 0),
+                0
+              );
 
-          const allRestaurantsTotal = restaurants.reduce(
-            (sum: number, r: any) => sum + (r.total || 0),
-            0
-          );
+              const delivery = Number(selectedOrderDetails.delivery_fee || 0);
+              const extraStore = Number(selectedOrderDetails.extra_store_fee || 0);
+              const grandTotal = allRestaurantsTotal + delivery + extraStore;
 
-          const delivery = Number(selectedOrderDetails.delivery_fee || 0);
-          const extraStore = Number(selectedOrderDetails.extra_store_fee || 0);
-          const grandTotal = allRestaurantsTotal + delivery + extraStore;
+              return (
+                <>
+                  {restaurants.map((r: any, idx: number) => (
+                    <div key={idx} className="mb-6 border rounded p-3">
+                      <h3 className="font-bold text-lg mb-2">🏪 {r.name}</h3>
 
-          return (
-            <>
-              {restaurants.map((r: any, idx: number) => (
-                <div key={idx} className="mb-6 border rounded p-3">
-                  <h3 className="font-bold text-lg mb-2">🏪 {r.name}</h3>
+                      <table className="w-full mb-2 border">
+                        <thead className="bg-gray-100">
+                          <tr>
+                            <th>المنتج</th>
+                            <th>السعر</th>
+                            <th>الكمية</th>
+                            <th>الإجمالي</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {r.items.map((p: any, i: number) => (
+                            <tr key={i}>
+                              <td className="border px-2 py-1">{p.name}</td>
+                              <td className="border">{p.price} ر.س</td>
+                              <td className="border">{p.quantity}</td>
+                              <td className="border font-semibold text-green-600">
+                                {p.subtotal} ر.س
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
 
-                  <table className="w-full mb-2 border">
-                    <thead className="bg-gray-100">
-                      <tr>
-                        <th>المنتج</th>
-                        <th>السعر</th>
-                        <th>الكمية</th>
-                        <th>الإجمالي</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {r.items.map((p: any, i: number) => (
-                        <tr key={i}>
-                          <td className="border px-2 py-1">{p.name}</td>
-                          <td className="border">{p.price} ر.س</td>
-                          <td className="border">{p.quantity}</td>
-                          <td className="border font-semibold text-green-600">
-                            {p.subtotal} ر.س
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-
-                  <div className="text-right font-bold">
-                    إجمالي المطعم: {Number(r.total || 0).toFixed(2)} ريال
-                  </div>
-                </div>
-              ))}
-
-              <div className="border p-3 rounded mt-4 bg-gray-50">
-                <p>🧮 إجمالي المطاعم: {allRestaurantsTotal.toFixed(2)} ريال</p>
-                <p>📦 رسوم التوصيل: {delivery.toFixed(2)} ريال</p>
-
-                {extraStore > 0 && (
-                  <p>🏪 رسوم المحل الإضافي: {extraStore.toFixed(2)} ريال</p>
-                )}
-
-                <p className="text-lg font-bold text-blue-600">
-                  💰 الإجمالي الكلي: {grandTotal.toFixed(2)} ريال
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 mt-4">
-                <div className="border p-3 rounded">
-                  <h3 className="font-bold mb-2">🏪 المطاعم المشاركة</h3>
-                  {restaurants.map((r: any, i: number) => (
-                    <div key={i} className="mb-2 text-sm">
-                      <p>الاسم: {r.name}</p>
-                      <p>الهاتف: {r.phone}</p>
-                      {r.latitude && r.longitude && (
-                        <a
-                          href={`https://www.google.com/maps?q=${r.latitude},${r.longitude}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 underline"
-                        >
-                          عرض على الخريطة 🌍
-                        </a>
-                      )}
-                      <hr className="my-2" />
+                      <div className="text-right font-bold">
+                        إجمالي المطعم: {Number(r.total || 0).toFixed(2)} ريال
+                      </div>
                     </div>
                   ))}
-                </div>
 
-                <div className="border p-3 rounded">
-                  <h3 className="font-bold mb-1">👤 بيانات العميل</h3>
-                  <p>الاسم: {selectedOrderDetails.customer_name}</p>
-                  <p>الهاتف: {selectedOrderDetails.customer_phone}</p>
-                  <p>
-                    📍 العنوان:{" "}
-                    <strong>
-                      {selectedOrderDetails.neighborhood_name
-                        ? `${selectedOrderDetails.neighborhood_name} - `
-                        : ""}
-                      {selectedOrderDetails.customer_address || "-"}
-                    </strong>
-                  </p>
-                  <p>
-                    🧭 الإحداثيات: {selectedOrderDetails.latitude},{" "}
-                    {selectedOrderDetails.longitude}
-                  </p>
-                  <a
-                    href={`https://www.google.com/maps?q=${selectedOrderDetails.latitude},${selectedOrderDetails.longitude}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 underline"
-                  >
-                    عرض على الخريطة 🌍
-                  </a>
-                </div>
-              </div>
-            </>
-          );
-        })()}
+                  <div className="border p-3 rounded mt-4 bg-gray-50">
+                    <p>🧮 إجمالي المطاعم: {allRestaurantsTotal.toFixed(2)} ريال</p>
+                    <p>📦 رسوم التوصيل: {delivery.toFixed(2)} ريال</p>
+
+                    {extraStore > 0 && (
+                      <p>🏪 رسوم المحل الإضافي: {extraStore.toFixed(2)} ريال</p>
+                    )}
+
+                    <p className="text-lg font-bold text-blue-600">
+                      💰 الإجمالي الكلي: {grandTotal.toFixed(2)} ريال
+                    </p>
+                  </div>
+                </>
+              );
+            })()}
+          </div>
+
+          <div className="flex justify-end gap-3 p-4 border-t bg-gray-100">
+            <button
+              onClick={handlePrint}
+              className="bg-blue-600 text-white px-4 py-2 rounded"
+            >
+              🧾 طباعة الفاتورة
+            </button>
+            <button
+              onClick={() => setIsDetailsModalOpen(false)}
+              className="bg-gray-400 text-white px-4 py-2 rounded"
+            >
+              إغلاق
+            </button>
+          </div>
+        </div>
       </div>
-
-      {/* أزرار أسفل المودال */}
-      <div className="flex justify-end gap-3 p-4 border-t bg-gray-100">
-        <button
-          onClick={handlePrint}
-          className="bg-blue-600 text-white px-4 py-2 rounded"
-        >
-          🧾 طباعة الفاتورة
-        </button>
-        <button
-          onClick={() => setIsDetailsModalOpen(false)}
-          className="bg-gray-400 text-white px-4 py-2 rounded"
-        >
-          إغلاق
-        </button>
-      </div>
-    </div>
-  </div>
-)}
-
-
+    )}
 
 {/* ===== مودال إضافة الطلب ===== */}
 {showAddOrderModal && (
