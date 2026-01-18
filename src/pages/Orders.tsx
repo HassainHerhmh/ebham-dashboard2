@@ -57,6 +57,9 @@ const Orders: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
 
+const [cancelModalOpen, setCancelModalOpen] = useState(false);
+const [cancelOrderId, setCancelOrderId] = useState<number | null>(null);
+const [cancelReason, setCancelReason] = useState("");
 
   // ========= الكباتن =========
   const [captains, setCaptains] = useState<Captain[]>([]);
@@ -178,7 +181,32 @@ const Orders: React.FC = () => {
     return isNaN(num) ? "-" : num.toFixed(2) + " ريال";
   };
 
+ const openCancelModal = (orderId: number) => {
+  setCancelOrderId(orderId);
+  setCancelReason("");
+  setCancelModalOpen(true);
+};
 
+const confirmCancelOrder = async () => {
+  if (!cancelOrderId) return;
+
+  if (!cancelReason.trim()) {
+    return alert("اكتب سبب الإلغاء");
+  }
+
+  try {
+    await api.orders.updateStatus(cancelOrderId, "cancelled", {
+      reason: cancelReason,
+    });
+
+    setCancelModalOpen(false);
+    setCancelOrderId(null);
+    setCancelReason("");
+    fetchOrders();
+  } catch (err) {
+    console.error("خطأ في إلغاء الطلب:", err);
+  }
+};
 
   // ⬅️ هنا يتوقف الجزء الأول
   // ====================================
@@ -401,12 +429,13 @@ const visibleOrders = filterByTab(orders);
           >
             اعتماد
           </button>
-          <button
-            onClick={() => updateOrderStatus(o.id, "cancelled")}
-            className="bg-red-600 text-white px-2 py-1 rounded text-xs"
-          >
-            إلغاء
-          </button>
+        <button
+  onClick={() => openCancelModal(o.id)}
+  className="bg-red-600 text-white px-2 py-1 rounded text-xs"
+>
+  إلغاء
+</button>
+
         </div>
       );
 
