@@ -704,73 +704,76 @@ const selectCustomer = async (customerId: number) => {
         <div className="text-sm text-gray-500">لم يتم إضافة أي مطعم بعد</div>
       )}
 
-      {groups.map((g) => (
-        <div key={g.restaurant.id} className="border rounded p-3 mt-3">
-          <div className="flex justify-between items-center mb-2">
-            <h4 className="font-semibold">🏪 {g.restaurant.name}</h4>
-            <button
-              onClick={() => removeRestaurantGroup(g.restaurant.id)}
-              className="text-red-600 text-sm"
-            >
-              حذف المطعم ✖
-            </button>
-          </div>
-
-         {g.items.length === 0 ? (
-  <p className="text-sm text-gray-500">لا توجد منتجات</p>
-) : (
-  g.items.map((item) => {
-    const total = item.price * item.quantity;
-
-    return (
-      <div
-        key={item.id}
-        className="flex justify-between items-center border-b py-1"
+   {groups.map((g) => (
+  <div key={g.restaurant.id} className="border rounded p-3 mt-3">
+    <div className="flex justify-between items-center mb-2">
+      <h4 className="font-semibold">🏪 {g.restaurant.name}</h4>
+      <button
+        onClick={() => removeRestaurantGroup(g.restaurant.id)}
+        className="text-red-600 text-sm"
       >
-        <div className="flex-1">
-          <div className="font-semibold">{item.name}</div>
-          <div className="text-sm text-gray-600">
-            {item.price} ريال × {item.quantity} ={" "}
-            <span className="text-green-600 font-bold">
-              {total} ريال
-            </span>
+        حذف المطعم ✖
+      </button>
+    </div>
+
+    {g.items.length === 0 ? (
+      <p className="text-sm text-gray-500">لا توجد منتجات</p>
+    ) : (
+      g.items.map((item) => {
+        const total = item.price * item.quantity;
+
+        return (
+          <div
+            key={item.id}
+            className="flex justify-between items-center border-b py-1"
+          >
+            <div className="flex-1">
+              <div className="font-semibold">{item.name}</div>
+              <div className="text-sm text-gray-600">
+                {item.price} ريال × {item.quantity} ={" "}
+                <span className="text-green-600 font-bold">
+                  {total} ريال
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() =>
+                  updateItemQty(g.restaurant.id, item.id, item.quantity - 1)
+                }
+                className="px-2 py-1 bg-gray-200 rounded"
+              >
+                ➖
+              </button>
+
+              <span className="min-w-[24px] text-center">
+                {item.quantity}
+              </span>
+
+              <button
+                onClick={() =>
+                  updateItemQty(g.restaurant.id, item.id, item.quantity + 1)
+                }
+                className="px-2 py-1 bg-gray-200 rounded"
+              >
+                ➕
+              </button>
+
+              <button
+                onClick={() => updateItemQty(g.restaurant.id, item.id, 0)}
+                className="text-red-600 ml-2"
+              >
+                🗑
+              </button>
+            </div>
           </div>
-        </div>
+        );
+      })
+    )}
+  </div>
+))}
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() =>
-              updateItemQty(g.restaurant.id, item.id, item.quantity - 1)
-            }
-            className="px-2 py-1 bg-gray-200 rounded"
-          >
-            ➖
-          </button>
-
-          <span className="min-w-[24px] text-center">
-            {item.quantity}
-          </span>
-
-          <button
-            onClick={() =>
-              updateItemQty(g.restaurant.id, item.id, item.quantity + 1)
-            }
-            className="px-2 py-1 bg-gray-200 rounded"
-          >
-            ➕
-          </button>
-
-          <button
-            onClick={() => updateItemQty(g.restaurant.id, item.id, 0)}
-            className="text-red-600 ml-2"
-          >
-            🗑
-          </button>
-        </div>
-      </div>
-    );
-  })
-)}
 
 
   <button
