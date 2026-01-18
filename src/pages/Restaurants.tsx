@@ -296,7 +296,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                        rel="noopener noreferrer"
                       className="text-blue-600 underline"
                        >
-                      🌍 عرض
+                      GPS
                      </a>
                        ) : (
                          "-"
