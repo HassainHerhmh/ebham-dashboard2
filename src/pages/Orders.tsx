@@ -475,6 +475,30 @@ const visibleOrders = filterByTab(orders);
   }
 };
 
+   const handlePrint = () => {
+  if (!printRef.current) return;
+
+  const win = window.open("", "_blank", "width=800,height=600");
+  if (!win) return;
+
+  win.document.write(`
+    <html>
+      <head>
+        <title>فاتورة الطلب</title>
+        <style>
+          body { font-family: sans-serif; padding: 20px; direction: rtl; }
+        </style>
+      </head>
+      <body>
+        ${printRef.current.innerHTML}
+      </body>
+    </html>
+  `);
+
+  win.document.close();
+  win.print();
+};
+
 
   return (
     <>
