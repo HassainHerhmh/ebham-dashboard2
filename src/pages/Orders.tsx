@@ -771,9 +771,6 @@ const selectCustomer = async (customerId: number) => {
   );
 })}
 
-        </div>
-      ))}
-
   <button
   onClick={() => {
     setCurrentRestaurant(null);   // نوقف المطعم الحالي فقط
