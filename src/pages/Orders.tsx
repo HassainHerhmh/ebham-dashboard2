@@ -812,7 +812,6 @@ const selectCustomer = async (customerId: number) => {
           </button>
         ))}
       </div>
-
 <div className="grid grid-cols-2 gap-3 mt-4">
   products.filter((p) => {
     if (!selectedCategory) return true;
@@ -836,6 +835,7 @@ const selectCustomer = async (customerId: number) => {
       </div>
     ))}
 </div>
+
 
 
       <div className="mt-4 flex justify-end gap-2">
