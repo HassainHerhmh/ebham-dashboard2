@@ -434,7 +434,7 @@ const selectCustomer = async (customerId: number) => {
                 <tr key={o.id} className="border-b hover:bg-gray-50 text-center">
                   <td>#{o.id}</td>
                   <td>{o.customer_name}</td>
-                  <td>{o.restaurant_name}</td>
+                  <td>{o.stores_count} مطعم</td>
                   <td>{o.captain_name || "لم يُعيّن"}</td>
                   <td>{formatAmount(o.total_amount)}</td>
                   <td>
