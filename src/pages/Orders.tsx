@@ -760,15 +760,18 @@ const selectCustomer = async (customerId: number) => {
         </div>
       ))}
 
-    <button
+  <button
   onClick={() => {
-    setCurrentRestaurant(null);      // نوقف المطعم النشط فقط
-    setSelectedRestaurantId("");     // نفرغ مربع الاختيار
+    setCurrentRestaurant(null);   // نوقف المطعم الحالي فقط
+    setRestaurantCategories([]);  // نفضي الفئات
+    setProducts([]);              // نفضي المنتجات
+    setSelectedCategory(null);    // نرجع التصنيف للوضع الافتراضي
   }}
   className="mt-3 bg-indigo-600 text-white px-3 py-2 rounded"
 >
   ➕ إضافة مطعم آخر
 </button>
+
 
 
       <div className="mt-4 flex justify-end gap-2">
