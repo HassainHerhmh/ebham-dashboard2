@@ -716,60 +716,62 @@ const selectCustomer = async (customerId: number) => {
             </button>
           </div>
 
-          {g.items.length === 0 ? (
-            <p className="text-sm text-gray-500">لا توجد منتجات</p>
-          ) : (
-          {g.items.map((item) => {
-  const total = item.price * item.quantity;
+         {g.items.length === 0 ? (
+  <p className="text-sm text-gray-500">لا توجد منتجات</p>
+) : (
+  g.items.map((item) => {
+    const total = item.price * item.quantity;
 
-  return (
-    <div
-      key={item.id}
-      className="flex justify-between items-center border-b py-1"
-    >
-      <div className="flex-1">
-        <div className="font-semibold">{item.name}</div>
-        <div className="text-sm text-gray-600">
-          {item.price} ريال × {item.quantity} ={" "}
-          <span className="text-green-600 font-bold">
-            {total} ريال
+    return (
+      <div
+        key={item.id}
+        className="flex justify-between items-center border-b py-1"
+      >
+        <div className="flex-1">
+          <div className="font-semibold">{item.name}</div>
+          <div className="text-sm text-gray-600">
+            {item.price} ريال × {item.quantity} ={" "}
+            <span className="text-green-600 font-bold">
+              {total} ريال
+            </span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() =>
+              updateItemQty(g.restaurant.id, item.id, item.quantity - 1)
+            }
+            className="px-2 py-1 bg-gray-200 rounded"
+          >
+            ➖
+          </button>
+
+          <span className="min-w-[24px] text-center">
+            {item.quantity}
           </span>
+
+          <button
+            onClick={() =>
+              updateItemQty(g.restaurant.id, item.id, item.quantity + 1)
+            }
+            className="px-2 py-1 bg-gray-200 rounded"
+          >
+            ➕
+          </button>
+
+          <button
+            onClick={() => updateItemQty(g.restaurant.id, item.id, 0)}
+            className="text-red-600 ml-2"
+          >
+            🗑
+          </button>
         </div>
       </div>
+    );
+  })
+)}
 
-      <div className="flex items-center gap-2">
-        <button
-          onClick={() =>
-            updateItemQty(g.restaurant.id, item.id, item.quantity - 1)
-          }
-          className="px-2 py-1 bg-gray-200 rounded"
-        >
-          ➖
-        </button>
-
-        <span className="min-w-[24px] text-center">
-          {item.quantity}
-        </span>
-
-        <button
-          onClick={() =>
-            updateItemQty(g.restaurant.id, item.id, item.quantity + 1)
-          }
-          className="px-2 py-1 bg-gray-200 rounded"
-        >
-          ➕
-        </button>
-
-        <button
-          onClick={() => updateItemQty(g.restaurant.id, item.id, 0)}
-          className="text-red-600 ml-2"
-        >
-          🗑
-        </button>
-      </div>
-    </div>
-  );
-})}
 
   <button
   onClick={() => {
