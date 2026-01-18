@@ -75,6 +75,7 @@ const Restaurants: React.FC = () => {
   const [editMode, setEditMode] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
+ const [mapUrl, setMapUrl] = useState("");
 
   const [formData, setFormData] = useState({
     id: 0,
