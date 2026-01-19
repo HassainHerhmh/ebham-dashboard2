@@ -319,45 +319,55 @@ if (res.success) {
     </thead>
 
     <tbody>
-      {/* رصيد سابق */}
-      {reportMode === "detailed" &&
-        detailedType === "full" &&
-        opening !== 0 && (
-          <tr className="bg-gray-100 font-semibold">
-          <td>
-  {new Date(row.journal_date).toISOString().slice(0, 10)}
-</td>
+     {/* رصيد سابق */}
+{reportMode === "detailed" &&
+  detailedType === "full" &&
+  opening !== 0 && (
+    <tr className="bg-gray-100 font-semibold">
+      <td className="border px-2 py-1">
+        {periodType === "day" ||
+        periodType === "from_start" ||
+        periodType === "month"
+          ? date
+          : fromDate}
+      </td>
+      <td className="border px-2 py-1"></td>
+      <td className="border px-2 py-1"></td>
+      <td className="border px-2 py-1">رصيد سابق</td>
+      <td className="border px-2 py-1"></td>
+      <td className="border px-2 py-1"></td>
+      <td className="border px-2 py-1">
+        {opening.toLocaleString(undefined, {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })}
+      </td>
+      <td className="border px-2 py-1">رصيد سابق</td>
+    </tr>
+  )}
 
-            <td className="border px-2 py-1"></td>
-            <td className="border px-2 py-1"></td>
-            <td className="border px-2 py-1">رصيد سابق</td>
-            <td className="border px-2 py-1"></td>
-            <td className="border px-2 py-1"></td>
-            <td className="border px-2 py-1">{opening}</td>
-            <td className="border px-2 py-1">رصيد سابق</td>
-          </tr>
-        )}
-
-      {rows.length ? (
-        rows.map((r) => (
-          <tr key={r.id}>
-            <td className="border px-2 py-1">{r.journal_date}</td>
-            <td className="border px-2 py-1">{r.reference_type || "-"}</td>
-            <td className="border px-2 py-1">{r.reference_id || "-"}</td>
-            <td className="border px-2 py-1">{r.account_name}</td>
-            <td className="border px-2 py-1">{r.debit || ""}</td>
-            <td className="border px-2 py-1">{r.credit || ""}</td>
-            <td className="border px-2 py-1">{r.balance}</td>
-            <td className="border px-2 py-1">{r.notes}</td>
-          </tr>
-        ))
-      ) : (
-        <tr>
-          <td colSpan={8} className="py-6 text-gray-400 border">
-            لا توجد بيانات
-          </td>
-        </tr>
-      )}
+{rows.length ? (
+  rows.map((r) => (
+    <tr key={r.id}>
+      <td className="border px-2 py-1">
+        {r.journal_date?.slice(0, 10)}
+      </td>
+      <td className="border px-2 py-1">{r.reference_type || "-"}</td>
+      <td className="border px-2 py-1">{r.reference_id || "-"}</td>
+      <td className="border px-2 py-1">{r.account_name}</td>
+      <td className="border px-2 py-1">{r.debit || ""}</td>
+      <td className="border px-2 py-1">{r.credit || ""}</td>
+      <td className="border px-2 py-1">{r.balance}</td>
+      <td className="border px-2 py-1">{r.notes}</td>
+    </tr>
+  ))
+) : (
+  <tr>
+    <td colSpan={8} className="py-6 text-gray-400 border">
+      لا توجد بيانات
+    </td>
+  </tr>
+)}
 
    {/* صف الإجمالي */}
 {rows.length > 0 && (
