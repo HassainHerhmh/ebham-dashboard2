@@ -138,21 +138,23 @@ const remove = async () => {
     return;
   }
 
-  if (!window.confirm("هل أنت متأكد من حذف القيد؟")) return;
+  if (!window.confirm("هل أنت متأكد من حذف القيد بالكامل؟")) return;
 
   try {
-    await api.delete(`/journal-entries/${selectedRow.id}`);
+    await api.delete(
+      `/journal-entries/by-reference/${selectedRow.reference_id}?type=manual`
+    );
 
-    // إعادة تحميل البيانات بعد الحذف
-        await loadRows(); // أو نفس الدالة التي تجلب القيود
-
+    await loadRows();
     setSelectedRow(null);
-    alert("تم حذف القيد بنجاح");
+
+    alert("تم حذف القيد بالكامل");
   } catch (err) {
     console.error(err);
     alert("حدث خطأ أثناء حذف القيد");
   }
 };
+
 
 
   const saveEntry = async () => {
