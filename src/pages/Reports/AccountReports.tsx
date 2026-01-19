@@ -55,11 +55,22 @@ const AccountStatement: React.FC = () => {
 
   const [summaryType, setSummaryType] = useState("local");
 
-  const totalDebit = rows.reduce((s, r) => s + (Number(r.debit) || 0), 0);
-const totalCredit = rows.reduce((s, r) => s + (Number(r.credit) || 0), 0);
-const finalBalance =
-  (opening || 0) + totalDebit - totalCredit;
 
+const totalDebit = rows.reduce(
+  (s, r) => s + (Number(r.debit) || 0),
+  0
+);
+
+const totalCredit = rows.reduce(
+  (s, r) => s + (Number(r.credit) || 0),
+  0
+);
+
+const finalBalance = Number(
+  ((Number(opening) || 0) + totalDebit - totalCredit).toFixed(2)
+);
+
+  
   const [detailedType, setDetailedType] = useState("full");
 
   useEffect(() => {
@@ -313,7 +324,10 @@ if (res.success) {
         detailedType === "full" &&
         opening !== 0 && (
           <tr className="bg-gray-100 font-semibold">
-            <td className="border px-2 py-1">{fromDate || date}</td>
+          <td>
+  {new Date(row.journal_date).toISOString().slice(0, 10)}
+</td>
+
             <td className="border px-2 py-1"></td>
             <td className="border px-2 py-1"></td>
             <td className="border px-2 py-1">رصيد سابق</td>
@@ -345,26 +359,52 @@ if (res.success) {
         </tr>
       )}
 
-      {/* صف الإجمالي */}
-      {rows.length > 0 && (
-        <>
-          <tr className="bg-yellow-100 font-semibold">
-            <td colSpan={4} className="border px-2 py-1">الإجمالي</td>
-            <td className="border px-2 py-1">{totalDebit}</td>
-            <td className="border px-2 py-1">{totalCredit}</td>
-            <td className="border px-2 py-1">{finalBalance}</td>
-            <td className="border px-2 py-1"></td>
-          </tr>
+   {/* صف الإجمالي */}
+{rows.length > 0 && (
+  <>
+    <tr className="bg-yellow-100 font-semibold">
+      <td colSpan={4} className="border px-2 py-1">الإجمالي</td>
 
-          <tr className="bg-yellow-50">
-            <td colSpan={8} className="border px-2 py-2 text-right font-semibold">
-              {finalBalance >= 0
-                ? `عليه ${finalBalance} ريال`
-                : `له ${Math.abs(finalBalance)} ريال`}
-            </td>
-          </tr>
-        </>
-      )}
+      <td className="border px-2 py-1">
+        {totalDebit.toLocaleString(undefined, {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })}
+      </td>
+
+      <td className="border px-2 py-1">
+        {totalCredit.toLocaleString(undefined, {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })}
+      </td>
+
+      <td className="border px-2 py-1">
+        {finalBalance.toLocaleString(undefined, {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })}
+      </td>
+
+      <td className="border px-2 py-1"></td>
+    </tr>
+
+    <tr className="bg-yellow-50">
+      <td colSpan={8} className="border px-2 py-2 text-right font-semibold">
+        {finalBalance >= 0
+          ? `عليه ${finalBalance.toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })} ريال`
+          : `له ${Math.abs(finalBalance).toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })} ريال`}
+      </td>
+    </tr>
+  </>
+)}
+
     </tbody>
   </table>
 </div>
