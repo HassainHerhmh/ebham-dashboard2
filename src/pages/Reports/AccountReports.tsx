@@ -1,6 +1,3 @@
-main_account_id عند “كل الحسابات”
-
-هذا هو الملف كامل بعد التعديل:
 
 import React, { useEffect, useState } from "react";
 import api from "../../services/api";
