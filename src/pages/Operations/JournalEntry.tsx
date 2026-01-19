@@ -251,47 +251,52 @@ const base = {
       </div>
 
       <div className="bg-white rounded shadow overflow-x-auto">
-        <table className="w-full text-sm text-center border">
-          <thead className="bg-green-600 text-white">
-            <tr>
-              <th className="border px-2 py-1">التاريخ</th>
-              <th className="border px-2 py-1">المبلغ</th>
-              <th className="border px-2 py-1">العملة</th>
-              <th className="border px-2 py-1">من حساب</th>
-              <th className="border px-2 py-1">إلى حساب</th>
-              <th className="border px-2 py-1">ملاحظات</th>
-              <th className="border px-2 py-1">المستخدم</th>
-              <th className="border px-2 py-1">الفرع</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.length ? (
-              filtered.map(r => (
-                <tr
-                  key={r.id}
-                  onClick={() => setSelectedRow(r)}
-                  className={`cursor-pointer ${selectedRow?.id === r.id ? "bg-green-100" : ""}`}
-                >
-                  <td className="border px-2 py-1">{r.journal_date}</td>
-                  <td className="border px-2 py-1">{r.amount}</td>
-                  <td className="border px-2 py-1">{r.currency_name}</td>
-                  <td className="border px-2 py-1">{r.from_account}</td>
-                  <td className="border px-2 py-1">{r.to_account}</td>
-                  <td className="border px-2 py-1">{r.notes}</td>
-                  <td className="border px-2 py-1">{r.user_name}</td>
-                  <td className="border px-2 py-1">{r.branch_name}</td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={8} className="py-6 text-gray-400 border">
-                  لا توجد بيانات
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+  <table className="w-full text-sm text-center border">
+    <thead className="bg-green-600 text-white">
+      <tr>
+        <th className="border px-2 py-1">رقم السند</th>
+        <th className="border px-2 py-1">التاريخ</th>
+        <th className="border px-2 py-1">المبلغ</th>
+        <th className="border px-2 py-1">العملة</th>
+        <th className="border px-2 py-1">من حساب</th>
+        <th className="border px-2 py-1">إلى حساب</th>
+        <th className="border px-2 py-1">ملاحظات</th>
+        <th className="border px-2 py-1">المستخدم</th>
+        <th className="border px-2 py-1">الفرع</th>
+      </tr>
+    </thead>
+    <tbody>
+      {filtered.length ? (
+        filtered.map(r => (
+          <tr
+            key={r.id}
+            onClick={() => setSelectedRow(r)}
+            className={`cursor-pointer ${
+              selectedRow?.id === r.id ? "bg-green-100" : ""
+            }`}
+          >
+            <td className="border px-2 py-1">{r.reference_id}</td>
+            <td className="border px-2 py-1">{r.journal_date}</td>
+            <td className="border px-2 py-1">{r.amount}</td>
+            <td className="border px-2 py-1">{r.currency_name}</td>
+            <td className="border px-2 py-1">{r.from_account}</td>
+            <td className="border px-2 py-1">{r.to_account}</td>
+            <td className="border px-2 py-1">{r.notes}</td>
+            <td className="border px-2 py-1">{r.user_name}</td>
+            <td className="border px-2 py-1">{r.branch_name}</td>
+          </tr>
+        ))
+      ) : (
+        <tr>
+          <td colSpan={9} className="py-6 text-gray-400 border">
+            لا توجد بيانات
+          </td>
+        </tr>
+      )}
+    </tbody>
+  </table>
+</div>
+
 
       {showModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
