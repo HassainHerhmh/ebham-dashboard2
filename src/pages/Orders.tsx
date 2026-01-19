@@ -783,36 +783,35 @@ const visibleOrders = filterByTab(orders);
                   ))}
                 </div>
 
-                <div className="border p-3 rounded">
-                  <h3 className="font-bold mb-1">👤 بيانات العميل</h3>
-                  <p>الاسم: {selectedOrderDetails.customer_name}</p>
-                  <p>الهاتف: {selectedOrderDetails.customer_phone}</p>
+            <div className="border p-3 rounded">
+  <h3 className="font-bold mb-1">👤 بيانات العميل</h3>
+  <p>الاسم: {selectedOrderDetails.customer_name}</p>
+  <p>الهاتف: {selectedOrderDetails.customer_phone}</p>
 
-                  <p>
-                    📍 العنوان:{" "}
-                    <strong>
-                      {selectedOrderDetails.neighborhood_name
-                        ? `${selectedOrderDetails.neighborhood_name} - `
-                        : ""}
-                      {selectedOrderDetails.customer_address || "-"}
-                    </strong>
-                  </p>
+  <p>
+    📍 العنوان:{" "}
+    <strong>
+      {selectedOrderDetails.neighborhood_name
+        ? `${selectedOrderDetails.neighborhood_name} - `
+        : ""}
+      {selectedOrderDetails.customer_address || "-"}
+    </strong>
+  </p>
 
-                ${
-  selectedOrderDetails.map_url
-    ? `<p><a href="${selectedOrderDetails.map_url}" target="_blank">عرض على الخريطة 🌍</a></p>`
-    : ""
-}
+  {selectedOrderDetails.map_url && (
+    <p>
+      <a
+        href={selectedOrderDetails.map_url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-blue-600 underline"
+      >
+        عرض على الخريطة 🌍
+      </a>
+    </p>
+  )}
+</div>
 
-                  <a
-                    href={`https://www.google.com/maps?q=${selectedOrderDetails.latitude},${selectedOrderDetails.longitude}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 underline"
-                  >
-                    عرض على الخريطة 🌍
-                  </a>
-                </div>
               </div>
             </>
           );
