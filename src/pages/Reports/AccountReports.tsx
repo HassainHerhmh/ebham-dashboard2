@@ -161,8 +161,7 @@ if (res.success) {
     setRows([]);
     setOpening(0);
   };
-
-  return (
+    return (
     <div className="space-y-4">
       <h2 className="text-xl font-bold">كشف الحساب</h2>
 
@@ -203,8 +202,6 @@ if (res.success) {
             ))}
           </select>
         )}
-
-
 
         <select
           className="input"
@@ -283,11 +280,46 @@ if (res.success) {
           <>
             <div className="font-semibold">نوع التقرير الإجمالي</div>
             <div className="flex flex-wrap gap-6">
-              <label><input type="radio" checked={summaryType==="local"} onChange={()=>setSummaryType("local")} /> إجمالي عملة محلية</label>
-              <label><input type="radio" checked={summaryType==="with_move"} onChange={()=>setSummaryType("with_move")} /> الأرصدة مع الحركة</label>
-              <label><input type="radio" checked={summaryType==="with_pair"} onChange={()=>setSummaryType("with_pair")} /> الأرصدة بالعملة والمقابل</label>
-              <label><input type="radio" checked={summaryType==="with_pair_move"} onChange={()=>setSummaryType("with_pair_move")} /> الأرصدة بالعملة والمقابل مع الحركة</label>
-              <label><input type="radio" checked={summaryType==="final"} onChange={()=>setSummaryType("final")} /> أرصدة نهائية</label>
+              <label>
+                <input
+                  type="radio"
+                  checked={summaryType === "local"}
+                  onChange={() => setSummaryType("local")}
+                />{" "}
+                إجمالي عملة محلية
+              </label>
+              <label>
+                <input
+                  type="radio"
+                  checked={summaryType === "with_move"}
+                  onChange={() => setSummaryType("with_move")}
+                />{" "}
+                الأرصدة مع الحركة
+              </label>
+              <label>
+                <input
+                  type="radio"
+                  checked={summaryType === "with_pair"}
+                  onChange={() => setSummaryType("with_pair")}
+                />{" "}
+                الأرصدة بالعملة والمقابل
+              </label>
+              <label>
+                <input
+                  type="radio"
+                  checked={summaryType === "with_pair_move"}
+                  onChange={() => setSummaryType("with_pair_move")}
+                />{" "}
+                الأرصدة بالعملة والمقابل مع الحركة
+              </label>
+              <label>
+                <input
+                  type="radio"
+                  checked={summaryType === "final"}
+                  onChange={() => setSummaryType("final")}
+                />{" "}
+                أرصدة نهائية
+              </label>
             </div>
           </>
         )}
@@ -296,130 +328,151 @@ if (res.success) {
           <>
             <div className="font-semibold">نوع التقرير التحليلي</div>
             <div className="flex gap-6">
-              <label><input type="radio" checked={detailedType==="full"} onChange={()=>setDetailedType("full")} /> كشف كامل</label>
-              <label><input type="radio" checked={detailedType==="no_open"} onChange={()=>setDetailedType("no_open")} /> كشف بدون رصيد سابق</label>
+              <label>
+                <input
+                  type="radio"
+                  checked={detailedType === "full"}
+                  onChange={() => setDetailedType("full")}
+                />{" "}
+                كشف كامل
+              </label>
+              <label>
+                <input
+                  type="radio"
+                  checked={detailedType === "no_open"}
+                  onChange={() => setDetailedType("no_open")}
+                />{" "}
+                كشف بدون رصيد سابق
+              </label>
             </div>
           </>
         )}
       </div>
 
-<div className="bg-white rounded shadow overflow-x-auto">
-  <table className="w-full text-sm text-center border">
-    <thead className="bg-green-600 text-white">
-      <tr>
-        <th className="border px-2 py-1">التاريخ</th>
-        <th className="border px-2 py-1">المستند</th>
-        <th className="border px-2 py-1">رقمه</th>
-        <th className="border px-2 py-1">الحساب</th>
-        <th className="border px-2 py-1">مدين</th>
-        <th className="border px-2 py-1">دائن</th>
-        <th className="border px-2 py-1">الرصيد</th>
-        <th className="border px-2 py-1">البيان</th>
-      </tr>
-    </thead>
+      {(() => {
+  // تجميع الصفوف حسب العملة (إن وُجدت)
+  const byCurrency: Record<string, Row[]> = {};
+  rows.forEach((r: any) => {
+    const key = r.currency_name || "default";
+    if (!byCurrency[key]) byCurrency[key] = [];
+    byCurrency[key].push(r);
+  });
 
-    <tbody>
-     {/* رصيد سابق */}
-{reportMode === "detailed" &&
-  detailedType === "full" &&
-  opening !== 0 && (
-    <tr className="bg-gray-100 font-semibold">
-      <td className="border px-2 py-1">
-        {periodType === "day" ||
-        periodType === "from_start" ||
-        periodType === "month"
-          ? date
-          : fromDate}
-      </td>
-      <td className="border px-2 py-1"></td>
-      <td className="border px-2 py-1"></td>
-      <td className="border px-2 py-1">رصيد سابق</td>
-      <td className="border px-2 py-1"></td>
-      <td className="border px-2 py-1"></td>
-      <td className="border px-2 py-1">
-        {opening.toLocaleString(undefined, {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        })}
-      </td>
-      <td className="border px-2 py-1">رصيد سابق</td>
-    </tr>
-  )}
+  const blocks = currencyId ? { single: rows } : byCurrency;
 
-{rows.length ? (
-  rows.map((r) => (
-    <tr key={r.id}>
-      <td className="border px-2 py-1">
-        {r.journal_date?.slice(0, 10)}
-      </td>
-      <td className="border px-2 py-1">{r.reference_type || "-"}</td>
-      <td className="border px-2 py-1">{r.reference_id || "-"}</td>
-      <td className="border px-2 py-1">{r.account_name}</td>
-      <td className="border px-2 py-1">{r.debit || ""}</td>
-      <td className="border px-2 py-1">{r.credit || ""}</td>
-      <td className="border px-2 py-1">{r.balance}</td>
-      <td className="border px-2 py-1">{r.notes}</td>
-    </tr>
-  ))
-) : (
-  <tr>
-    <td colSpan={8} className="py-6 text-gray-400 border">
-      لا توجد بيانات
-    </td>
-  </tr>
-)}
+  return Object.entries(blocks).map(([cur, list]) => {
+    if (!list.length) return null;
 
-   {/* صف الإجمالي */}
-{rows.length > 0 && (
-  <>
-    <tr className="bg-yellow-100 font-semibold">
-      <td colSpan={4} className="border px-2 py-1">الإجمالي</td>
+    const curDebit = list.reduce((s, r) => s + (Number(r.debit) || 0), 0);
+    const curCredit = list.reduce((s, r) => s + (Number(r.credit) || 0), 0);
+    const curFinal = Number(((opening || 0) + curDebit - curCredit).toFixed(2));
 
-      <td className="border px-2 py-1">
-        {totalDebit.toLocaleString(undefined, {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        })}
-      </td>
+    return (
+      <div key={cur} className="bg-white rounded shadow overflow-x-auto mb-6">
+        {!currencyId && (
+          <div className="text-center font-bold py-2 bg-gray-100">
+            {cur}
+          </div>
+        )}
 
-      <td className="border px-2 py-1">
-        {totalCredit.toLocaleString(undefined, {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        })}
-      </td>
+        <table className="w-full text-sm text-center border">
+          <thead className="bg-green-600 text-white">
+            <tr>
+              <th className="border px-2 py-1">التاريخ</th>
+              <th className="border px-2 py-1">المستند</th>
+              <th className="border px-2 py-1">رقمه</th>
+              <th className="border px-2 py-1">الحساب</th>
+              <th className="border px-2 py-1">مدين</th>
+              <th className="border px-2 py-1">دائن</th>
+              <th className="border px-2 py-1">الرصيد</th>
+              <th className="border px-2 py-1">البيان</th>
+            </tr>
+          </thead>
 
-      <td className="border px-2 py-1">
-        {finalBalance.toLocaleString(undefined, {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        })}
-      </td>
+          <tbody>
+            {reportMode === "detailed" &&
+              detailedType === "full" &&
+              opening !== 0 && (
+                <tr className="bg-gray-100 font-semibold">
+                  <td className="border px-2 py-1">
+                    {periodType === "day" ||
+                    periodType === "from_start" ||
+                    periodType === "month"
+                      ? date
+                      : fromDate}
+                  </td>
+                  <td className="border px-2 py-1"></td>
+                  <td className="border px-2 py-1"></td>
+                  <td className="border px-2 py-1">رصيد سابق</td>
+                  <td className="border px-2 py-1"></td>
+                  <td className="border px-2 py-1"></td>
+                  <td className="border px-2 py-1">
+                    {opening.toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </td>
+                  <td className="border px-2 py-1">رصيد سابق</td>
+                </tr>
+              )}
 
-      <td className="border px-2 py-1"></td>
-    </tr>
+            {list.map((r: any) => (
+              <tr key={r.id}>
+                <td className="border px-2 py-1">
+                  {r.journal_date?.slice(0, 10)}
+                </td>
+                <td className="border px-2 py-1">{r.reference_type || "-"}</td>
+                <td className="border px-2 py-1">{r.reference_id || "-"}</td>
+                <td className="border px-2 py-1">{r.account_name}</td>
+                <td className="border px-2 py-1">{r.debit || ""}</td>
+                <td className="border px-2 py-1">{r.credit || ""}</td>
+                <td className="border px-2 py-1">{r.balance}</td>
+                <td className="border px-2 py-1">{r.notes}</td>
+              </tr>
+            ))}
 
-    <tr className="bg-yellow-50">
-      <td colSpan={8} className="border px-2 py-2 text-right font-semibold">
-        {finalBalance >= 0
-          ? `عليه ${finalBalance.toLocaleString(undefined, {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })} ريال`
-          : `له ${Math.abs(finalBalance).toLocaleString(undefined, {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })} ريال`}
-      </td>
-    </tr>
-  </>
-)}
+            <tr className="bg-yellow-100 font-semibold">
+              <td colSpan={4} className="border px-2 py-1">الإجمالي</td>
+              <td className="border px-2 py-1">
+                {curDebit.toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </td>
+              <td className="border px-2 py-1">
+                {curCredit.toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </td>
+              <td className="border px-2 py-1">
+                {curFinal.toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </td>
+              <td className="border px-2 py-1"></td>
+            </tr>
 
-    </tbody>
-  </table>
-</div>
-
-
+            <tr className="bg-yellow-50">
+              <td colSpan={8} className="border px-2 py-2 text-right font-semibold">
+                {curFinal >= 0
+                  ? `عليه ${curFinal.toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}`
+                  : `له ${Math.abs(curFinal).toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}`}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    );
+  });
+})()}
 
       <style>{`
         .input { padding:10px; border-radius:8px; border:1px solid #ccc; }
