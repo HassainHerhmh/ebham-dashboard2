@@ -1,3 +1,7 @@
+main_account_id عند “كل الحسابات”
+
+هذا هو الملف كامل بعد التعديل:
+
 import React, { useEffect, useState } from "react";
 import api from "../../services/api";
 
@@ -32,12 +36,16 @@ type AccountMode = "all" | "single";
 
 const AccountStatement: React.FC = () => {
   const [accounts, setAccounts] = useState<Account[]>([]);
+  const [mainAccounts, setMainAccounts] = useState<Account[]>([]);
+  const [subAccounts, setSubAccounts] = useState<Account[]>([]);
+
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [rows, setRows] = useState<Row[]>([]);
   const [opening, setOpening] = useState(0);
 
   const [accountMode, setAccountMode] = useState<AccountMode>("single");
   const [accountId, setAccountId] = useState("");
+  const [mainAccountId, setMainAccountId] = useState("");
 
   const [currencyId, setCurrencyId] = useState("");
 
@@ -57,22 +65,22 @@ const AccountStatement: React.FC = () => {
 
   const loadLookups = async () => {
     const [a, c] = await Promise.all([
-      api.get("/accounts/sub-for-ceiling"),
+      api.get("/accounts"),
       api.get("/currencies"),
     ]);
 
-    const accs = a.data?.list || a.data || [];
-    setAccounts(accs);
+    const list = a.data?.list || [];
+    setAccounts(list);
+
+    setMainAccounts(list.filter((a: Account) => a.account_level === "رئيسي"));
+    setSubAccounts(list.filter((a: Account) => a.account_level === "فرعي"));
+
     setCurrencies(c.data?.currencies || c.data?.list || c.data || []);
   };
 
   const buildDates = () => {
-    if (periodType === "day") {
-      return { from_date: date, to_date: date };
-    }
-    if (periodType === "from_start") {
-      return { from_date: null, to_date: date };
-    }
+    if (periodType === "day") return { from_date: date, to_date: date };
+    if (periodType === "from_start") return { from_date: null, to_date: date };
     if (periodType === "month") {
       const d = new Date(date);
       const first = new Date(d.getFullYear(), d.getMonth(), 1)
@@ -99,10 +107,12 @@ const AccountStatement: React.FC = () => {
     };
 
     if (accountMode === "single") {
-      // حساب واحد = فرعي
       payload.account_id = accountId ? Number(accountId) : null;
+    } else {
+      payload.main_account_id = mainAccountId
+        ? Number(mainAccountId)
+        : null;
     }
-    // كل الحسابات = رئيسي → لا نرسل أي حساب
 
     try {
       const res = await (api as any).reports.accountStatement(payload);
@@ -124,6 +134,7 @@ const AccountStatement: React.FC = () => {
   const reset = () => {
     setAccountMode("single");
     setAccountId("");
+    setMainAccountId("");
     setCurrencyId("");
     setPeriodType("day");
     setDate(today);
@@ -149,36 +160,34 @@ const AccountStatement: React.FC = () => {
           <option value="single">حساب واحد</option>
           <option value="all">كل الحسابات</option>
         </select>
-        
-{accountMode === "single" ? (
-  <select
-    className="input"
-    value={accountId}
-    onChange={(e) => setAccountId(e.target.value)}
-  >
-    <option value="">اختر حساب فرعي</option>
-    {accounts
-      .filter((a) => a.account_level === "فرعي")
-      .map((a) => (
-        <option key={a.id} value={a.id}>
-          {a.name_ar}
-        </option>
-      ))}
-  </select>
-) : (
-  <select
-    className="input"
-    value={mainAccountId}
-    onChange={(e) => setMainAccountId(e.target.value)}
-  >
-    <option value="">اختر حساب رئيسي</option>
-    {mainAccounts.map((a) => (
-      <option key={a.id} value={a.id}>
-        {a.name_ar}
-      </option>
-    ))}
-  </select>
-)}
+
+        {accountMode === "single" ? (
+          <select
+            className="input"
+            value={accountId}
+            onChange={(e) => setAccountId(e.target.value)}
+          >
+            <option value="">اختر حساب فرعي</option>
+            {subAccounts.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.name_ar}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <select
+            className="input"
+            value={mainAccountId}
+            onChange={(e) => setMainAccountId(e.target.value)}
+          >
+            <option value="">اختر حساب رئيسي</option>
+            {mainAccounts.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.name_ar}
+              </option>
+            ))}
+          </select>
+        )}
 
 
 
