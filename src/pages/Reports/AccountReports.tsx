@@ -112,14 +112,16 @@ const AccountStatement: React.FC = () => {
     }
 
     try {
-      const res = await (api as any).reports.accountStatement(payload);
+    const res = await (api as any).reports.accountStatement(payload);
 
-      if (res.data?.success) {
-        setOpening(res.data.opening_balance || 0);
-        setRows(res.data.list || []);
-      } else {
-        setOpening(0);
-        setRows([]);
+if (res.success) {
+  setOpening(res.opening_balance || 0);
+  setRows(res.list || []);
+} else {
+  setOpening(0);
+  setRows([]);
+}
+
       }
     } catch (e) {
       console.error(e);
