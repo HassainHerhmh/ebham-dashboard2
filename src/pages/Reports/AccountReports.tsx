@@ -121,8 +121,7 @@ if (res.success) {
   setOpening(0);
   setRows([]);
 }
-
-      }
+      
     } catch (e) {
       console.error(e);
       setOpening(0);
