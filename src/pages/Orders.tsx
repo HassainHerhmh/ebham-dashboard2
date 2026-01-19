@@ -578,27 +578,35 @@ const visibleOrders = filterByTab(orders);
           <div className="p-6 text-center">⏳ جاري التحميل...</div>
         ) : (
           <div className="overflow-x-auto bg-white rounded-xl shadow-lg">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th>رقم</th>
-                  <th>العميل</th>
-                  <th>المطعم</th>
-                  <th>الكابتن</th>
-                  <th>المبلغ</th>
-                  <th>الحالة</th>
-                  <th>تفاصيل</th>
-                  <th>تعيين كابتن</th>
-                </tr>
-              </thead>
-              <tbody>
-               {visibleOrders.map((o) => (
-               <tr key={o.id} className="border-b hover:bg-gray-50 text-center">
-  <td>#{o.id}</td>
-  <td>{o.customer_name}</td>
-  <td>{o.stores_count} مطعم</td>
-  <td>{o.captain_name || "لم يُعيّن"}</td>
-  <td>{formatAmount(o.total_amount)}</td>
+      <table className="w-full table-fixed">
+  <thead className="bg-gray-50">
+    <tr className="text-center">
+      <th className="px-2">رقم</th>
+      <th className="px-2">العميل</th>
+      <th className="px-2">المطعم</th>
+      <th className="px-2">الكابتن</th>
+      <th className="px-2">المبلغ</th>
+      <th className="px-2">الحالة</th>
+      <th className="px-2">تفاصيل</th>
+      <th className="px-2">تعيين كابتن</th>
+    </tr>
+  </thead>
+  <tbody>
+    {visibleOrders.map((o) => (
+      <tr key={o.id} className="border-b hover:bg-gray-50 text-center">
+        <td className="px-2">#{o.id}</td>
+        <td className="px-2">{o.customer_name}</td>
+        <td className="px-2">{o.stores_count} مطعم</td>
+        <td className="px-2">{o.captain_name || "لم يُعيّن"}</td>
+        <td className="px-2">{formatAmount(o.total_amount)}</td>
+        <td className="px-2">…</td>
+        <td className="px-2">عرض</td>
+        <td className="px-2">{renderActions(o)}</td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+
 <td>
   {o.status === "completed" || o.status === "cancelled" ? (
     <span
