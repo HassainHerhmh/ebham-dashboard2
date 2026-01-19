@@ -54,6 +54,12 @@ const AccountStatement: React.FC = () => {
   const [reportMode, setReportMode] = useState<ReportMode>("detailed");
 
   const [summaryType, setSummaryType] = useState("local");
+
+  const totalDebit = rows.reduce((s, r) => s + (Number(r.debit) || 0), 0);
+const totalCredit = rows.reduce((s, r) => s + (Number(r.credit) || 0), 0);
+const finalBalance =
+  (opening || 0) + totalDebit - totalCredit;
+
   const [detailedType, setDetailedType] = useState("full");
 
   useEffect(() => {
@@ -286,11 +292,13 @@ if (res.success) {
         )}
       </div>
 
-  <div className="bg-white rounded shadow overflow-x-auto">
+<div className="bg-white rounded shadow overflow-x-auto">
   <table className="w-full text-sm text-center border">
     <thead className="bg-green-600 text-white">
       <tr>
         <th className="border px-2 py-1">التاريخ</th>
+        <th className="border px-2 py-1">المستند</th>
+        <th className="border px-2 py-1">رقمه</th>
         <th className="border px-2 py-1">الحساب</th>
         <th className="border px-2 py-1">مدين</th>
         <th className="border px-2 py-1">دائن</th>
@@ -300,12 +308,14 @@ if (res.success) {
     </thead>
 
     <tbody>
-      {/* صف الرصيد السابق */}
+      {/* رصيد سابق */}
       {reportMode === "detailed" &&
         detailedType === "full" &&
         opening !== 0 && (
           <tr className="bg-gray-100 font-semibold">
             <td className="border px-2 py-1">{fromDate || date}</td>
+            <td className="border px-2 py-1"></td>
+            <td className="border px-2 py-1"></td>
             <td className="border px-2 py-1">رصيد سابق</td>
             <td className="border px-2 py-1"></td>
             <td className="border px-2 py-1"></td>
@@ -314,11 +324,12 @@ if (res.success) {
           </tr>
         )}
 
-      {/* الحركات */}
       {rows.length ? (
         rows.map((r) => (
           <tr key={r.id}>
             <td className="border px-2 py-1">{r.journal_date}</td>
+            <td className="border px-2 py-1">{r.reference_type || "-"}</td>
+            <td className="border px-2 py-1">{r.reference_id || "-"}</td>
             <td className="border px-2 py-1">{r.account_name}</td>
             <td className="border px-2 py-1">{r.debit || ""}</td>
             <td className="border px-2 py-1">{r.credit || ""}</td>
@@ -328,14 +339,36 @@ if (res.success) {
         ))
       ) : (
         <tr>
-          <td colSpan={6} className="py-6 text-gray-400 border">
+          <td colSpan={8} className="py-6 text-gray-400 border">
             لا توجد بيانات
           </td>
         </tr>
       )}
+
+      {/* صف الإجمالي */}
+      {rows.length > 0 && (
+        <>
+          <tr className="bg-yellow-100 font-semibold">
+            <td colSpan={4} className="border px-2 py-1">الإجمالي</td>
+            <td className="border px-2 py-1">{totalDebit}</td>
+            <td className="border px-2 py-1">{totalCredit}</td>
+            <td className="border px-2 py-1">{finalBalance}</td>
+            <td className="border px-2 py-1"></td>
+          </tr>
+
+          <tr className="bg-yellow-50">
+            <td colSpan={8} className="border px-2 py-2 text-right font-semibold">
+              {finalBalance >= 0
+                ? `عليه ${finalBalance} ريال`
+                : `له ${Math.abs(finalBalance)} ريال`}
+            </td>
+          </tr>
+        </>
+      )}
     </tbody>
   </table>
 </div>
+
 
 
       <style>{`
