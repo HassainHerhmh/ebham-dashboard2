@@ -132,15 +132,28 @@ const JournalEntry: React.FC = () => {
     setToAccountName(selectedRow.to_account);
   };
 
-  const remove = async () => {
-    if (!selectedRow) {
-      alert("حدد قيدًا أولاً");
-      return;
-    }
-    if (!window.confirm("هل أنت متأكد من حذف القيد؟")) return;
+const remove = async () => {
+  if (!selectedRow) {
+    alert("حدد قيدًا أولاً");
+    return;
+  }
 
-    alert("سيتم ربط الحذف مع السيرفر لاحقاً");
-  };
+  if (!window.confirm("هل أنت متأكد من حذف القيد؟")) return;
+
+  try {
+    await api.delete(`/journal-entries/${selectedRow.id}`);
+
+    // إعادة تحميل البيانات بعد الحذف
+    await loadData(); // أو نفس الدالة التي تجلب القيود
+
+    setSelectedRow(null);
+    alert("تم حذف القيد بنجاح");
+  } catch (err) {
+    console.error(err);
+    alert("حدث خطأ أثناء حذف القيد");
+  }
+};
+
 
   const saveEntry = async () => {
     if (!fromAccount || !toAccount || !amount || !currencyId) {
