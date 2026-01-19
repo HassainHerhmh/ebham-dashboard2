@@ -287,9 +287,41 @@ if (res.success) {
       </div>
 
       <div className="bg-white rounded shadow overflow-x-auto">
-        <div className="p-3 font-semibold">
-          الرصيد الافتتاحي: {opening}
+       
         </div>
+       <tbody>
+  {reportMode === "detailed" &&
+    detailedType === "full" &&
+    opening !== 0 && (
+      <tr className="bg-gray-100 font-semibold">
+        <td className="border px-2 py-1">{fromDate || date}</td>
+        <td className="border px-2 py-1">رصيد سابق</td>
+        <td className="border px-2 py-1"></td>
+        <td className="border px-2 py-1"></td>
+        <td className="border px-2 py-1">{opening}</td>
+        <td className="border px-2 py-1">رصيد سابق</td>
+      </tr>
+    )}
+
+  {rows.length ? (
+    rows.map((r) => (
+      <tr key={r.id}>
+        <td className="border px-2 py-1">{r.journal_date}</td>
+        <td className="border px-2 py-1">{r.account_name}</td>
+        <td className="border px-2 py-1">{r.debit || ""}</td>
+        <td className="border px-2 py-1">{r.credit || ""}</td>
+        <td className="border px-2 py-1">{r.balance}</td>
+        <td className="border px-2 py-1">{r.notes}</td>
+      </tr>
+    ))
+  ) : (
+    <tr>
+      <td colSpan={6} className="py-6 text-gray-400 border">
+        لا توجد بيانات
+      </td>
+    </tr>
+  )}
+</tbody>
 
         <table className="w-full text-sm text-center border">
           <thead className="bg-green-600 text-white">
