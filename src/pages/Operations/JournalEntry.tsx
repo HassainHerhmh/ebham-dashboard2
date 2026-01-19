@@ -144,7 +144,7 @@ const remove = async () => {
     await api.delete(`/journal-entries/${selectedRow.id}`);
 
     // إعادة تحميل البيانات بعد الحذف
-    await loadData(); // أو نفس الدالة التي تجلب القيود
+        await loadRows(); // أو نفس الدالة التي تجلب القيود
 
     setSelectedRow(null);
     alert("تم حذف القيد بنجاح");
