@@ -216,46 +216,118 @@ const CurrencyExchange: React.FC = () => {
               </div>
             )}
 
-            {mode && (
-              <>
-                <div className="bg-[#e9efe6] p-4 rounded grid grid-cols-3 gap-3">
-                  <input type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} />
+           {mode && (
+  <>
+    <div className="grid grid-cols-2 gap-6">
 
-                  <select className="input" value={fromCurrency} onChange={(e) => setFromCurrency(Number(e.target.value))}>
-                    <option value="">العملة المصدر</option>
-                    {currencies.map(c => <option key={c.id} value={c.id}>{c.name_ar}</option>)}
-                  </select>
+      {/* تفاصيل البيع / الشراء */}
+      <div className="bg-[#eef3ea] p-4 rounded-lg space-y-3">
+        <div className="flex justify-between items-center">
+          <h4 className="font-bold text-green-700">
+            {mode === "buy" ? "تفاصيل الشراء" : "تفاصيل البيع"}
+          </h4>
+        </div>
 
-                  <select className="input" value={toCurrency} onChange={(e) => setToCurrency(Number(e.target.value))}>
-                    <option value="">العملة المقابلة</option>
-                    {currencies.map(c => <option key={c.id} value={c.id}>{c.name_ar}</option>)}
-                  </select>
+        <select className="input" value={fromCurrency} onChange={(e) => setFromCurrency(Number(e.target.value))}>
+          <option value="">العملة</option>
+          {currencies.map(c => (
+            <option key={c.id} value={c.id}>{c.name_ar}</option>
+          ))}
+        </select>
 
-                  <input className="input" placeholder="المبلغ" value={amount} onChange={(e) => setAmount(e.target.value)} />
-                  <input className="input" placeholder="سعر الصرف" value={rate} onChange={(e) => setRate(e.target.value)} />
-                  <input className="input bg-gray-100" disabled value={result || ""} placeholder="المقابل" />
+        <select className="input" value={fromAccount} onChange={(e) => setFromAccount(Number(e.target.value))}>
+          <option value="">الصندوق / الحساب</option>
+          {accounts.map(a => (
+            <option key={a.id} value={a.id}>{a.name_ar}</option>
+          ))}
+        </select>
 
-                  <select className="input" value={fromAccount} onChange={(e) => setFromAccount(Number(e.target.value))}>
-                    <option value="">من حساب</option>
-                    {accounts.map(a => <option key={a.id} value={a.id}>{a.name_ar}</option>)}
-                  </select>
+        <div className="grid grid-cols-3 gap-2">
+          <input
+            className="input"
+            placeholder="المبلغ"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+          />
+          <input
+            className="input"
+            placeholder="سعر الصرف"
+            value={rate}
+            onChange={(e) => setRate(e.target.value)}
+          />
+          <input
+            className="input bg-gray-100"
+            disabled
+            value={result || ""}
+            placeholder="المقابل"
+          />
+        </div>
+      </div>
 
-                  <select className="input" value={toAccount} onChange={(e) => setToAccount(Number(e.target.value))}>
-                    <option value="">إلى حساب</option>
-                    {accounts.map(a => <option key={a.id} value={a.id}>{a.name_ar}</option>)}
-                  </select>
+      {/* تفاصيل القيمة */}
+      <div className="bg-[#eef3ea] p-4 rounded-lg space-y-3">
+        <div className="flex justify-between items-center">
+          <h4 className="font-bold text-green-700">تفاصيل القيمة</h4>
+        </div>
 
-                  <input className="input" placeholder="اسم العميل" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
-                  <input className="input" placeholder="رقم الهاتف" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} />
-                  <input className="input col-span-3" placeholder="البيان" value={notes} onChange={(e) => setNotes(e.target.value)} />
-                </div>
+        <select className="input" value={toCurrency} onChange={(e) => setToCurrency(Number(e.target.value))}>
+          <option value="">عملة القيمة</option>
+          {currencies.map(c => (
+            <option key={c.id} value={c.id}>{c.name_ar}</option>
+          ))}
+        </select>
 
-                <div className="flex justify-end gap-2">
-                  <button onClick={() => { setShowModal(false); resetForm(); }} className="px-4 py-2 bg-gray-200 rounded">إلغاء</button>
-                  <button onClick={submit} className="btn-green">إضافة</button>
-                </div>
-              </>
-            )}
+        <select className="input" value={toAccount} onChange={(e) => setToAccount(Number(e.target.value))}>
+          <option value="">الصندوق / الحساب</option>
+          {accounts.map(a => (
+            <option key={a.id} value={a.id}>{a.name_ar}</option>
+          ))}
+        </select>
+
+        <div className="grid grid-cols-3 gap-2">
+          <input
+            className="input bg-gray-100"
+            disabled
+            value={result || ""}
+            placeholder="المبلغ"
+          />
+          <input
+            className="input bg-gray-100"
+            disabled
+            value={rate || ""}
+            placeholder="سعر الصرف"
+          />
+          <input
+            className="input bg-gray-100"
+            disabled
+            value={amount || ""}
+            placeholder="المقابل"
+          />
+        </div>
+      </div>
+    </div>
+
+    {/* بيانات العميل والملاحظات */}
+    <div className="grid grid-cols-2 gap-3 mt-4">
+      <input className="input" placeholder="اسم العميل" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
+      <input className="input" placeholder="رقم الهاتف" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} />
+      <input className="input col-span-2" placeholder="البيان" value={notes} onChange={(e) => setNotes(e.target.value)} />
+    </div>
+
+    <div className="flex justify-end gap-2 mt-4">
+      <button
+        onClick={() => { setShowModal(false); resetForm(); }}
+        className="px-4 py-2 bg-gray-200 rounded"
+      >
+        إلغاء
+      </button>
+      <button onClick={submit} className="btn-green">
+        إضافة
+      </button>
+    </div>
+  </>
+)}
+
           </div>
         </div>
       )}
