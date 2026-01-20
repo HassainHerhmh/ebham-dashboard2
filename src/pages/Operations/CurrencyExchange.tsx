@@ -376,7 +376,7 @@ const CurrencyExchange: React.FC = () => {
     readOnly
   />
 </div>
-
+</div>
 
 
             {/* بيانات إضافية */}
