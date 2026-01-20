@@ -849,6 +849,32 @@ export const createJournalEntry = (data: {
 }) => {
   return api.post("/journal-entries", data);
 };
+
+// تعديل قيد واحد بالسطر
+export const updateJournalEntry = (
+  id: number,
+  data: {
+    journal_date?: string;
+    currency_id?: number;
+    account_id?: number;
+    debit?: number;
+    credit?: number;
+    notes?: string | null;
+  }
+) => {
+  return api.put(`/journal-entries/${id}`, data);
+};
+
+// حذف سطر واحد فقط
+export const deleteJournalEntry = (id: number) => {
+  return api.delete(`/journal-entries/${id}`);
+};
+
+// حذف قيد كامل (مدين + دائن) بواسطة reference_id
+export const deleteJournalEntryByRef = (ref: number | string) => {
+  return api.delete(`/journal-entries/by-ref/${ref}`);
+};
+
 /* =========================
    REPORTS – ACCOUNT STATEMENT
 ========================= */
