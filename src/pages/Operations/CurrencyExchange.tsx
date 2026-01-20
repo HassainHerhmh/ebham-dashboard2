@@ -146,7 +146,7 @@ const submit = async () => {
   try {
     await api.post("/currency-exchange", payload);
 
-    // بعد نجاح الحفظ فقط نضيفه في الجدول
+    // الإضافة للواجهة بعد نجاح السيرفر فقط
     setRows((p) => [
       {
         id: reference,
@@ -168,34 +168,8 @@ const submit = async () => {
 };
 
 
-    const id = Date.now();
-    const fromText =
-      mode === "buy"
-        ? `${fromCur.name_ar} (${fromAmount})`
-        : `${toCur.name_ar} (${toAmount})`;
 
-    const toText =
-      mode === "buy"
-        ? `${toCur.name_ar} (${toAmount})`
-        : `${fromCur.name_ar} (${fromAmount})`;
-
-    setRows((p) => [
-      {
-        id,
-        date,
-        type: mode,
-        from_text: fromText,
-        to_text: toText,
-        rate: Number(fromRate),
-        notes: notes || (mode === "buy" ? "شراء عملة" : "بيع عملة"),
-      },
-      ...p,
-    ]);
-
-    setShowModal(false);
-    resetForm();
-  };
-
+  
   return (
     <div className="space-y-4" dir="rtl">
       <div className="flex justify-between items-center">
