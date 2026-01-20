@@ -142,7 +142,7 @@ const remove = async () => {
 
   try {
     await api.delete(
-      `/journal-entries/by-reference/${selectedRow.reference_id}?type=manual`
+      `/journal-entries/by-ref/${selectedRow.reference_id}`
     );
 
     await loadRows();
