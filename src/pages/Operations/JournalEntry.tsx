@@ -19,7 +19,8 @@ type Currency = {
 
 type Row = {
   id: number;
-     reference_id: number;  
+  reference_id: number;      // 🔴 مهم
+  reference_type?: string;   // اختياري
   journal_date: string;
   amount: number;
   currency_name: string;
