@@ -5,8 +5,8 @@ type Currency = {
   id: number;
   name_ar: string;
   code: string;
-  buy_rate?: number;
-  sell_rate?: number;
+  exchange_rate: number;
+  convert_mode: "*" | "/";
 };
 
 type Account = {
@@ -31,8 +31,8 @@ const CurrencyExchange: React.FC = () => {
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
 
-  const [fromCurrency, setFromCurrency] = useState("");
-  const [toCurrency, setToCurrency] = useState("");
+  const [fromCurrency, setFromCurrency] = useState<Currency | null>(null);
+  const [toCurrency, setToCurrency] = useState<Currency | null>(null);
   const [rate, setRate] = useState("");
 
   const [amount, setAmount] = useState("");
@@ -56,26 +56,49 @@ const CurrencyExchange: React.FC = () => {
       api.get("/accounts"),
     ]);
 
-    const clist = cRes.data?.currencies || cRes.data?.list || [];
+    const clist = cRes.data?.currencies || [];
     const alist = aRes.data?.list || [];
 
     setCurrencies(clist);
     setAccounts(alist);
   };
 
+  // الحساب حسب معامل التحويل
   useEffect(() => {
+    if (!fromCurrency) return;
+
     const a = Number(amount);
     const r = Number(rate);
-    if (!a || !r) setResult(0);
-    else setResult(Number((a * r).toFixed(2)));
-  }, [amount, rate]);
+
+    if (!a || !r) {
+      setResult(0);
+      return;
+    }
+
+    let value = 0;
+
+    if (fromCurrency.convert_mode === "*") {
+      value = a * r;
+    } else {
+      value = a / r;
+    }
+
+    setResult(Number(value.toFixed(2)));
+  }, [amount, rate, fromCurrency]);
 
   const onSelectFromCurrency = (id: string) => {
-    setFromCurrency(id);
-    const cur = currencies.find(c => c.id === Number(id));
-    if (cur?.sell_rate) {
-      setRate(String(cur.sell_rate));
+    const cur = currencies.find(c => c.id === Number(id)) || null;
+    setFromCurrency(cur);
+
+    if (cur) {
+      // عرض سعر الصرف مباشرة
+      setRate(String(cur.exchange_rate));
     }
+  };
+
+  const onSelectToCurrency = (id: string) => {
+    const cur = currencies.find(c => c.id === Number(id)) || null;
+    setToCurrency(cur);
   };
 
   const submit = async () => {
@@ -86,15 +109,12 @@ const CurrencyExchange: React.FC = () => {
 
     const ref = Date.now();
 
-    const fromCur = currencies.find(c => c.id === Number(fromCurrency));
-    const toCur = currencies.find(c => c.id === Number(toCurrency));
-
     setRows(prev => [
       {
         ref,
         date,
-        fromCur: `${fromCur?.name_ar} (${amount})`,
-        toCur: `${toCur?.name_ar} (${result})`,
+        fromCur: `${fromCurrency.name_ar} (${amount})`,
+        toCur: `${toCurrency.name_ar} (${result})`,
         amount: Number(amount),
         result,
         rate: Number(rate),
@@ -114,14 +134,14 @@ const CurrencyExchange: React.FC = () => {
       <div className="bg-[#e9efe6] p-4 rounded-lg grid grid-cols-3 gap-4">
         <input type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} />
 
-        <select className="input" value={fromCurrency} onChange={(e) => onSelectFromCurrency(e.target.value)}>
+        <select className="input" onChange={(e) => onSelectFromCurrency(e.target.value)}>
           <option value="">-- العملة المصدر --</option>
           {currencies.map(c => (
             <option key={c.id} value={c.id}>{c.name_ar} ({c.code})</option>
           ))}
         </select>
 
-        <select className="input" value={toCurrency} onChange={(e) => setToCurrency(e.target.value)}>
+        <select className="input" onChange={(e) => onSelectToCurrency(e.target.value)}>
           <option value="">-- العملة المقابلة --</option>
           {currencies.map(c => (
             <option key={c.id} value={c.id}>{c.name_ar} ({c.code})</option>
@@ -144,7 +164,10 @@ const CurrencyExchange: React.FC = () => {
 
         <input className="input col-span-3" placeholder="البيان" value={notes} onChange={(e) => setNotes(e.target.value)} />
 
-        <div className="col-span-3 flex justify-end">
+        <div className="col-span-3 flex justify-between items-center">
+          <span className="text-sm text-gray-600">
+            المعامل: {fromCurrency?.convert_mode === "*" ? "ضرب" : fromCurrency?.convert_mode === "/" ? "قسمة" : "-"}
+          </span>
           <button onClick={submit} className="btn-green">تنفيذ المصارفة</button>
         </div>
       </div>
