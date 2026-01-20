@@ -233,18 +233,29 @@ const resetForm = () => {
               </button>
             </div>
 
-            {/* تفاصيل الشراء/البيع */}
-
-            <div className="flex justify-between items-center">
+      {/* الهيدر الموحد: رقم السند + العنوان + التاريخ */}
+<div className="flex items-center justify-between bg-white p-3 rounded-lg border mb-3">
   <div className="text-sm text-gray-600">
     رقم السند: <span className="font-bold">{reference}</span>
+  </div>
 
+  <h3 className="font-bold text-lg text-green-700">
+    {mode === "buy" ? "شراء عملة" : mode === "sell" ? "بيع عملة" : "عملية جديدة"}
+  </h3>
 
-                             
-            <div className="bg-[#eef3ea] p-4 rounded-lg space-y-3">
-              <h4 className="font-bold text-green-700 text-center">
-                {mode === "buy" ? "تفاصيل الشراء" : "تفاصيل البيع"}
-              </h4>
+  <input
+    type="date"
+    className="border rounded p-2"
+    value={date}
+    onChange={(e) => setDate(e.target.value)}
+  />
+</div>
+
+{/* تفاصيل الشراء/البيع */}
+<div className="bg-[#eef3ea] p-4 rounded-lg space-y-3">
+  <h4 className="font-bold text-green-700 text-center">
+    {mode === "buy" ? "تفاصيل الشراء" : "تفاصيل البيع"}
+  </h4>
 
               <select
                 className="input"
