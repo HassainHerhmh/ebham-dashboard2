@@ -19,6 +19,7 @@ type Currency = {
 
 type Row = {
   id: number;
+     reference_id: number;  
   journal_date: string;
   amount: number;
   currency_name: string;
@@ -138,6 +139,11 @@ const remove = async () => {
     return;
   }
 
+  if (!selectedRow.reference_id) {
+    alert("هذا السطر لا يملك رقم سند صالح");
+    return;
+  }
+
   if (!window.confirm("هل أنت متأكد من حذف القيد بالكامل؟")) return;
 
   try {
@@ -154,6 +160,7 @@ const remove = async () => {
     alert("حدث خطأ أثناء حذف القيد");
   }
 };
+
 
 
 
