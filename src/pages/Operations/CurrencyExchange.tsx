@@ -232,7 +232,7 @@ const [toType, setToType] = useState<"cash" | "account" | "">("");
     <div className="grid grid-cols-1">
       <select className="input">
         <option value="">نوع العملية</option>
-        <option value="cash">نقدي</option>
+        <option value="cash">صندوق</option>
         <option value="account">حساب</option>
       </select>
     </div>
