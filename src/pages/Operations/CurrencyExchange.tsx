@@ -46,6 +46,8 @@ const CurrencyExchange: React.FC = () => {
 
   const [fromAccount, setFromAccount] = useState<number | "">("");
   const [toAccount, setToAccount] = useState<number | "">("");
+  const [fromType, setFromType] = useState<"cash" | "account" | "">("");
+const [toType, setToType] = useState<"cash" | "account" | "">("");
 
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
@@ -220,92 +222,146 @@ const CurrencyExchange: React.FC = () => {
   <>
     <div className="grid grid-cols-2 gap-6">
 
-      {/* تفاصيل البيع / الشراء */}
-      <div className="bg-[#eef3ea] p-4 rounded-lg space-y-3">
-        <div className="flex justify-between items-center">
-          <h4 className="font-bold text-green-700">
-            {mode === "buy" ? "تفاصيل الشراء" : "تفاصيل البيع"}
-          </h4>
-        </div>
+     {/* تفاصيل البيع / الشراء */}
+<div className="bg-[#eef3ea] p-4 rounded-lg space-y-3">
+  <div className="flex justify-between items-center">
+    <h4 className="font-bold text-green-700">
+      {mode === "buy" ? "تفاصيل الشراء" : "تفاصيل البيع"}
+    </h4>
+  </div>
 
-        <select className="input" value={fromCurrency} onChange={(e) => setFromCurrency(Number(e.target.value))}>
-          <option value="">العملة</option>
-          {currencies.map(c => (
-            <option key={c.id} value={c.id}>{c.name_ar}</option>
-          ))}
-        </select>
+  {/* نوع العملية */}
+  <select
+    className="input"
+    value={fromType}
+    onChange={(e) => setFromType(e.target.value as "cash" | "account")}
+  >
+    <option value="">نوع العملية</option>
+    <option value="cash">صندوق</option>
+    <option value="account">حساب</option>
+  </select>
 
-        <select className="input" value={fromAccount} onChange={(e) => setFromAccount(Number(e.target.value))}>
-          <option value="">الصندوق / الحساب</option>
-          {accounts.map(a => (
-            <option key={a.id} value={a.id}>{a.name_ar}</option>
-          ))}
-        </select>
+  {/* العملة */}
+  <select
+    className="input"
+    value={fromCurrency}
+    onChange={(e) => setFromCurrency(Number(e.target.value))}
+  >
+    <option value="">العملة</option>
+    {currencies.map((c) => (
+      <option key={c.id} value={c.id}>
+        {c.name_ar}
+      </option>
+    ))}
+  </select>
 
-        <div className="grid grid-cols-3 gap-2">
-          <input
-            className="input"
-            placeholder="المبلغ"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-          />
-          <input
-            className="input"
-            placeholder="سعر الصرف"
-            value={rate}
-            onChange={(e) => setRate(e.target.value)}
-          />
-          <input
-            className="input bg-gray-100"
-            disabled
-            value={result || ""}
-            placeholder="المقابل"
-          />
-        </div>
-      </div>
+  {/* الصندوق أو الحساب */}
+  <select
+    className="input"
+    value={fromAccount}
+    onChange={(e) => setFromAccount(Number(e.target.value))}
+  >
+    <option value="">
+      {fromType === "cash" ? "الصندوق" : fromType === "account" ? "الحساب" : "الصندوق / الحساب"}
+    </option>
+    {accounts.map((a) => (
+      <option key={a.id} value={a.id}>
+        {a.name_ar}
+      </option>
+    ))}
+  </select>
 
-      {/* تفاصيل القيمة */}
-      <div className="bg-[#eef3ea] p-4 rounded-lg space-y-3">
-        <div className="flex justify-between items-center">
-          <h4 className="font-bold text-green-700">تفاصيل القيمة</h4>
-        </div>
+  <div className="grid grid-cols-3 gap-2">
+    <input
+      className="input"
+      placeholder="المبلغ"
+      value={amount}
+      onChange={(e) => setAmount(e.target.value)}
+    />
+    <input
+      className="input"
+      placeholder="سعر الصرف"
+      value={rate}
+      onChange={(e) => setRate(e.target.value)}
+    />
+    <input
+      className="input bg-gray-100"
+      disabled
+      value={result || ""}
+      placeholder="المقابل"
+    />
+  </div>
+</div>
 
-        <select className="input" value={toCurrency} onChange={(e) => setToCurrency(Number(e.target.value))}>
-          <option value="">عملة القيمة</option>
-          {currencies.map(c => (
-            <option key={c.id} value={c.id}>{c.name_ar}</option>
-          ))}
-        </select>
+{/* تفاصيل القيمة */}
+<div className="bg-[#eef3ea] p-4 rounded-lg space-y-3">
+  <div className="flex justify-between items-center">
+    <h4 className="font-bold text-green-700">تفاصيل القيمة</h4>
+  </div>
 
-        <select className="input" value={toAccount} onChange={(e) => setToAccount(Number(e.target.value))}>
-          <option value="">الصندوق / الحساب</option>
-          {accounts.map(a => (
-            <option key={a.id} value={a.id}>{a.name_ar}</option>
-          ))}
-        </select>
+  {/* نوع القيمة */}
+  <select
+    className="input"
+    value={toType}
+    onChange={(e) => setToType(e.target.value as "cash" | "account")}
+  >
+    <option value="">نوع القيمة</option>
+    <option value="cash">صندوق</option>
+    <option value="account">حساب</option>
+  </select>
 
-        <div className="grid grid-cols-3 gap-2">
-          <input
-            className="input bg-gray-100"
-            disabled
-            value={result || ""}
-            placeholder="المبلغ"
-          />
-          <input
-            className="input bg-gray-100"
-            disabled
-            value={rate || ""}
-            placeholder="سعر الصرف"
-          />
-          <input
-            className="input bg-gray-100"
-            disabled
-            value={amount || ""}
-            placeholder="المقابل"
-          />
-        </div>
-      </div>
-    </div>
+  {/* عملة القيمة */}
+  <select
+    className="input"
+    value={toCurrency}
+    onChange={(e) => setToCurrency(Number(e.target.value))}
+  >
+    <option value="">عملة القيمة</option>
+    {currencies.map((c) => (
+      <option key={c.id} value={c.id}>
+        {c.name_ar}
+      </option>
+    ))}
+  </select>
+
+  {/* الصندوق أو الحساب */}
+  <select
+    className="input"
+    value={toAccount}
+    onChange={(e) => setToAccount(Number(e.target.value))}
+  >
+    <option value="">
+      {toType === "cash" ? "الصندوق" : toType === "account" ? "الحساب" : "الصندوق / الحساب"}
+    </option>
+    {accounts.map((a) => (
+      <option key={a.id} value={a.id}>
+        {a.name_ar}
+      </option>
+    ))}
+  </select>
+
+  <div className="grid grid-cols-3 gap-2">
+    <input
+      className="input bg-gray-100"
+      disabled
+      value={result || ""}
+      placeholder="المبلغ"
+    />
+    <input
+      className="input bg-gray-100"
+      disabled
+      value={rate || ""}
+      placeholder="سعر الصرف"
+    />
+    <input
+      className="input bg-gray-100"
+      disabled
+      value={amount || ""}
+      placeholder="المقابل"
+    />
+  </div>
+</div>
+    </div> 
 
     {/* بيانات العميل والملاحظات */}
     <div className="grid grid-cols-2 gap-3 mt-4">
