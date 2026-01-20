@@ -47,6 +47,7 @@ import Operations from "./pages/Operations";
 import ReceiptVoucher from "./pages/Operations/ReceiptVoucher";
 import PaymentVoucher from "./pages/Operations/PaymentVoucher";
 import JournalEntry from "./pages/Operations/JournalEntry";
+import CurrencyExchange from "./pages/Operations/CurrencyExchange";
 
 // تقارير الحسابات
 import AccountReports from "./pages/Reports/AccountReports";
@@ -127,6 +128,8 @@ const App: React.FC = () => {
                         <Route path="receipt-voucher" element={<ReceiptVoucher />} />
                         <Route path="payment-voucher" element={<PaymentVoucher />} />
                         <Route path="journal-entry" element={<JournalEntry />} />
+                          <Route path="currency-exchange" element={<CurrencyExchange />} />
+
                       </Route>
 
                       {/* تقارير الحسابات */}
