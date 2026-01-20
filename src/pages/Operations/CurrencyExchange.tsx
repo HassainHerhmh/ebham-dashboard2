@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import api from "../../services/api";
 
 type Currency = {
@@ -6,6 +6,8 @@ type Currency = {
   name_ar: string;
   code: string;
   exchange_rate: number;
+  min_rate?: number | null;
+  max_rate?: number | null;
   convert_mode?: "multiply" | "divide";
 };
 
@@ -14,205 +16,249 @@ type Account = {
   name_ar: string;
 };
 
-type CashBox = {
-  id: number;
-  name_ar: string;
-};
-
 type Row = {
   id: number;
   date: string;
-  debit: string;
-  credit: string;
-  type: "شراء" | "بيع";
-  notes: string;
+  type: "buy" | "sell";
+  from_text: string;
+  to_text: string;
   rate: number;
+  notes: string;
 };
 
 const today = new Date().toLocaleDateString("en-CA");
 
 const CurrencyExchange: React.FC = () => {
-  const [tab, setTab] = useState<"buy" | "sell">("buy");
-  const [mode, setMode] = useState<"cash" | "account">("cash");
-
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
-  const [cashBoxes, setCashBoxes] = useState<CashBox[]>([]);
-
-  const [currencyId, setCurrencyId] = useState("");
-  const [targetCurrencyId, setTargetCurrencyId] = useState("");
-
-  const [amount, setAmount] = useState("");
-  const [rate, setRate] = useState("");
-  const [result, setResult] = useState(0);
-
-  const [sourceId, setSourceId] = useState("");
-  const [targetId, setTargetId] = useState("");
-
-  const [date, setDate] = useState(today);
-  const [notes, setNotes] = useState("");
-
   const [rows, setRows] = useState<Row[]>([]);
 
+  const [showModal, setShowModal] = useState(false);
+  const [mode, setMode] = useState<"buy" | "sell" | "">("");
+
+  const [date, setDate] = useState(today);
+
+  const [fromCurrency, setFromCurrency] = useState<number | "">("");
+  const [toCurrency, setToCurrency] = useState<number | "">("");
+  const [rate, setRate] = useState("");
+  const [amount, setAmount] = useState("");
+  const [result, setResult] = useState(0);
+
+  const [fromAccount, setFromAccount] = useState<number | "">("");
+  const [toAccount, setToAccount] = useState<number | "">("");
+
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [notes, setNotes] = useState("");
+
   useEffect(() => {
-    loadData();
+    (async () => {
+      const [cRes, aRes] = await Promise.all([
+        api.get("/currencies"),
+        api.get("/accounts"),
+      ]);
+      setCurrencies(cRes.data?.currencies || []);
+      setAccounts(aRes.data?.list || []);
+    })();
   }, []);
 
-  const loadData = async () => {
-    const [cRes, aRes, bRes] = await Promise.all([
-      api.get("/currencies"),
-      api.get("/accounts"),
-      api.get("/cash-boxes"),
-    ]);
+  const fromCur = useMemo(
+    () => currencies.find((c) => c.id === Number(fromCurrency)),
+    [fromCurrency, currencies]
+  );
+  const toCur = useMemo(
+    () => currencies.find((c) => c.id === Number(toCurrency)),
+    [toCurrency, currencies]
+  );
 
-    setCurrencies(cRes.data?.currencies || []);
-    setAccounts(aRes.data?.list || []);
-    setCashBoxes(bRes.data?.list || []);
-  };
+  useEffect(() => {
+    if (!fromCur) return;
+    setRate(String(fromCur.exchange_rate || ""));
+  }, [fromCur]);
 
   useEffect(() => {
     const a = Number(amount);
     const r = Number(rate);
-    if (!a || !r) {
+    if (!a || !r || !fromCur) {
       setResult(0);
       return;
     }
+    const v =
+      fromCur.convert_mode === "divide" ? a / r : a * r;
+    setResult(Number(v.toFixed(2)));
+  }, [amount, rate, fromCur]);
 
-    if (tab === "buy") {
-      setResult(Number((a * r).toFixed(2)));
-    } else {
-      setResult(Number((a / r).toFixed(2)));
-    }
-  }, [amount, rate, tab]);
-
-  const onSelectCurrency = (id: string) => {
-    setCurrencyId(id);
-    const cur = currencies.find((c) => c.id === Number(id));
-    if (cur) setRate(String(cur.exchange_rate));
+  const resetForm = () => {
+    setMode("");
+    setFromCurrency("");
+    setToCurrency("");
+    setRate("");
+    setAmount("");
+    setResult(0);
+    setFromAccount("");
+    setToAccount("");
+    setCustomerName("");
+    setCustomerPhone("");
+    setNotes("");
+    setDate(today);
   };
 
   const submit = () => {
-    if (!currencyId || !targetCurrencyId || !amount || !rate || !sourceId || !targetId) {
-      alert("يرجى إدخال جميع البيانات");
+    if (!mode || !fromCur || !toCur || !amount || !rate) {
+      alert("يرجى إدخال جميع البيانات الأساسية");
       return;
     }
 
-    const fromCur = currencies.find((c) => c.id === Number(currencyId));
-    const toCur = currencies.find((c) => c.id === Number(targetCurrencyId));
+    const id = Date.now();
+    const fromText =
+      mode === "buy"
+        ? `${fromCur.name_ar} (${amount})`
+        : `${toCur.name_ar} (${result})`;
+    const toText =
+      mode === "buy"
+        ? `${toCur.name_ar} (${result})`
+        : `${fromCur.name_ar} (${amount})`;
 
-    setRows((prev) => [
+    setRows((p) => [
       {
-        id: Date.now(),
+        id,
         date,
-        debit: `${fromCur?.name_ar} (${amount})`,
-        credit: `${toCur?.name_ar} (${result})`,
-        type: tab === "buy" ? "شراء" : "بيع",
-        notes: notes || "مصارفة عملة",
+        type: mode,
+        from_text: fromText,
+        to_text: toText,
         rate: Number(rate),
+        notes: notes || (mode === "buy" ? "شراء عملة" : "بيع عملة"),
       },
-      ...prev,
+      ...p,
     ]);
 
-    setAmount("");
-    setNotes("");
+    setShowModal(false);
+    resetForm();
   };
 
   return (
     <div className="space-y-4" dir="rtl">
-      <div className="flex gap-2">
-        <button onClick={() => setTab("buy")} className={`px-4 py-2 rounded ${tab === "buy" ? "bg-green-600 text-white" : "bg-gray-200"}`}>شراء عملة</button>
-        <button onClick={() => setTab("sell")} className={`px-4 py-2 rounded ${tab === "sell" ? "bg-green-600 text-white" : "bg-gray-200"}`}>بيع عملة</button>
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-bold">مصارفة عملة</h2>
+        <button
+          onClick={() => setShowModal(true)}
+          className="btn-green"
+        >
+          + إضافة عملية
+        </button>
       </div>
 
-      <div className="bg-[#e9efe6] p-4 rounded-lg grid grid-cols-3 gap-4">
-        <input type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} />
-
-        <select className="input" value={mode} onChange={(e) => setMode(e.target.value as any)}>
-          <option value="cash">نقدي</option>
-          <option value="account">حساب</option>
-        </select>
-
-        <select className="input" value={currencyId} onChange={(e) => onSelectCurrency(e.target.value)}>
-          <option value="">-- العملة --</option>
-          {currencies.map((c) => (
-            <option key={c.id} value={c.id}>{c.name_ar}</option>
-          ))}
-        </select>
-
-        <select className="input" value={targetCurrencyId} onChange={(e) => setTargetCurrencyId(e.target.value)}>
-          <option value="">-- العملة المقابلة --</option>
-          {currencies.map((c) => (
-            <option key={c.id} value={c.id}>{c.name_ar}</option>
-          ))}
-        </select>
-
-        <input className="input" placeholder="المبلغ" value={amount} onChange={(e) => setAmount(e.target.value)} />
-        <input className="input" placeholder="سعر الصرف" value={rate} onChange={(e) => setRate(e.target.value)} />
-        <input className="input bg-gray-100" disabled value={result || ""} placeholder="المقابل" />
-
-        {mode === "cash" ? (
-          <>
-            <select className="input" value={sourceId} onChange={(e) => setSourceId(e.target.value)}>
-              <option value="">-- من صندوق --</option>
-              {cashBoxes.map((b) => (<option key={b.id} value={b.id}>{b.name_ar}</option>))}
-            </select>
-            <select className="input" value={targetId} onChange={(e) => setTargetId(e.target.value)}>
-              <option value="">-- إلى صندوق --</option>
-              {cashBoxes.map((b) => (<option key={b.id} value={b.id}>{b.name_ar}</option>))}
-            </select>
-          </>
-        ) : (
-          <>
-            <select className="input" value={sourceId} onChange={(e) => setSourceId(e.target.value)}>
-              <option value="">-- من حساب --</option>
-              {accounts.map((a) => (<option key={a.id} value={a.id}>{a.name_ar}</option>))}
-            </select>
-            <select className="input" value={targetId} onChange={(e) => setTargetId(e.target.value)}>
-              <option value="">-- إلى حساب --</option>
-              {accounts.map((a) => (<option key={a.id} value={a.id}>{a.name_ar}</option>))}
-            </select>
-          </>
-        )}
-
-        <input className="input col-span-3" placeholder="البيان" value={notes} onChange={(e) => setNotes(e.target.value)} />
-
-        <div className="col-span-3 flex justify-end">
-          <button onClick={submit} className="btn-green">تنفيذ العملية</button>
-        </div>
-      </div>
-
+      {/* جدول العمليات */}
       <div className="bg-white rounded shadow overflow-x-auto">
         <table className="w-full text-sm text-center border">
           <thead className="bg-green-600 text-white">
             <tr>
-              <th className="border p-2">رقم</th>
-              <th className="border p-2">التاريخ</th>
-              <th className="border p-2">مدين</th>
-              <th className="border p-2">دائن</th>
-              <th className="border p-2">النوع</th>
-              <th className="border p-2">البيان</th>
-              <th className="border p-2">سعر الصرف</th>
+              <th className="border px-2 py-1">رقم السند</th>
+              <th className="border px-2 py-1">التاريخ</th>
+              <th className="border px-2 py-1">مدين</th>
+              <th className="border px-2 py-1">دائن</th>
+              <th className="border px-2 py-1">النوع</th>
+              <th className="border px-2 py-1">البيان</th>
+              <th className="border px-2 py-1">سعر الصرف</th>
             </tr>
           </thead>
           <tbody>
-            {rows.length ? rows.map(r => (
-              <tr key={r.id}>
-                <td className="border p-2">{r.id}</td>
-                <td className="border p-2">{r.date}</td>
-                <td className="border p-2">{r.debit}</td>
-                <td className="border p-2">{r.credit}</td>
-                <td className="border p-2">{r.type}</td>
-                <td className="border p-2">{r.notes}</td>
-                <td className="border p-2">{r.rate}</td>
-              </tr>
-            )) : (
+            {rows.length ? (
+              rows.map((r) => (
+                <tr key={r.id}>
+                  <td className="border px-2 py-1">{r.id}</td>
+                  <td className="border px-2 py-1">{r.date}</td>
+                  <td className="border px-2 py-1">{r.from_text}</td>
+                  <td className="border px-2 py-1">{r.to_text}</td>
+                  <td className="border px-2 py-1">
+                    {r.type === "buy" ? "شراء" : "بيع"}
+                  </td>
+                  <td className="border px-2 py-1">{r.notes}</td>
+                  <td className="border px-2 py-1">{r.rate}</td>
+                </tr>
+              ))
+            ) : (
               <tr>
-                <td colSpan={7} className="p-6 text-gray-400 border">لا توجد عمليات</td>
+                <td colSpan={7} className="py-6 text-gray-400 border">
+                  لا توجد عمليات
+                </td>
               </tr>
             )}
           </tbody>
         </table>
       </div>
+
+      {/* Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-[900px] max-h-[90vh] overflow-y-auto space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="font-bold text-lg">
+                {mode ? (mode === "buy" ? "شراء عملة" : "بيع عملة") : "إضافة عملية"}
+              </h3>
+              <button onClick={() => setShowModal(false)}>✖</button>
+            </div>
+
+            {!mode && (
+              <div className="flex gap-4">
+                <button
+                  onClick={() => setMode("buy")}
+                  className="btn-green"
+                >
+                  شراء عملة
+                </button>
+                <button
+                  onClick={() => setMode("sell")}
+                  className="btn-green"
+                >
+                  بيع عملة
+                </button>
+              </div>
+            )}
+
+            {mode && (
+              <>
+                <div className="bg-[#e9efe6] p-4 rounded grid grid-cols-3 gap-3">
+                  <input type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} />
+
+                  <select className="input" value={fromCurrency} onChange={(e) => setFromCurrency(Number(e.target.value))}>
+                    <option value="">العملة المصدر</option>
+                    {currencies.map(c => <option key={c.id} value={c.id}>{c.name_ar}</option>)}
+                  </select>
+
+                  <select className="input" value={toCurrency} onChange={(e) => setToCurrency(Number(e.target.value))}>
+                    <option value="">العملة المقابلة</option>
+                    {currencies.map(c => <option key={c.id} value={c.id}>{c.name_ar}</option>)}
+                  </select>
+
+                  <input className="input" placeholder="المبلغ" value={amount} onChange={(e) => setAmount(e.target.value)} />
+                  <input className="input" placeholder="سعر الصرف" value={rate} onChange={(e) => setRate(e.target.value)} />
+                  <input className="input bg-gray-100" disabled value={result || ""} placeholder="المقابل" />
+
+                  <select className="input" value={fromAccount} onChange={(e) => setFromAccount(Number(e.target.value))}>
+                    <option value="">من حساب</option>
+                    {accounts.map(a => <option key={a.id} value={a.id}>{a.name_ar}</option>)}
+                  </select>
+
+                  <select className="input" value={toAccount} onChange={(e) => setToAccount(Number(e.target.value))}>
+                    <option value="">إلى حساب</option>
+                    {accounts.map(a => <option key={a.id} value={a.id}>{a.name_ar}</option>)}
+                  </select>
+
+                  <input className="input" placeholder="اسم العميل" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
+                  <input className="input" placeholder="رقم الهاتف" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} />
+                  <input className="input col-span-3" placeholder="البيان" value={notes} onChange={(e) => setNotes(e.target.value)} />
+                </div>
+
+                <div className="flex justify-end gap-2">
+                  <button onClick={() => { setShowModal(false); resetForm(); }} className="px-4 py-2 bg-gray-200 rounded">إلغاء</button>
+                  <button onClick={submit} className="btn-green">إضافة</button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       <style>{`
         .input { padding:10px; border-radius:8px; border:1px solid #ccc; }
