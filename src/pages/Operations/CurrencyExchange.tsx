@@ -289,26 +289,31 @@ const CurrencyExchange: React.FC = () => {
     </select>
   </div>
 
-  <div className="grid grid-cols-3 gap-2">
-    <input
-      className="input"
-      placeholder="المبلغ"
-      value={fromAmount}
-      onChange={(e) => setFromAmount(e.target.value)}
-    />
-    <input
-      className="input"
-      placeholder="سعر الصرف"
-      value={fromRate}
-      onChange={(e) => setFromRate(e.target.value)}
-    />
-    <input
-      className="input bg-gray-100"
-      disabled
-      value={toAmount || ""}
-      placeholder="المقابل"
-    />
-  </div>
+<div className="grid grid-cols-3 gap-2">
+  <input
+    className="input"
+    placeholder="المبلغ"
+    value={fromAmount}
+    onChange={(e) => setFromAmount(e.target.value)}
+  />
+  <input
+    className="input"
+    placeholder="سعر الصرف"
+    value={fromRate}
+    onChange={(e) => setFromRate(e.target.value)}
+  />
+  <input
+    className="input bg-gray-100"
+    disabled
+    value={
+      fromAmount && fromRate
+        ? (Number(fromAmount) * Number(fromRate)).toFixed(2)
+        : ""
+    }
+    placeholder="المقابل"
+  />
+</div>
+
 </div>
 
 {/* تفاصيل القيمة */}
@@ -370,12 +375,17 @@ const CurrencyExchange: React.FC = () => {
     onChange={(e) => setToRate(e.target.value)}
   />
   <input
-    className="input"
+    className="input bg-gray-100"
+    disabled
+    value={
+      toAmount && toRate
+        ? (Number(toAmount) * Number(toRate)).toFixed(2)
+        : ""
+    }
     placeholder="المقابل"
-    value={fromAmount}
-    readOnly
   />
 </div>
+
 </div>
 
 
