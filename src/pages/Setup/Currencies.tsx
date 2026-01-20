@@ -13,6 +13,7 @@ type Currency = {
   min_rate?: number | null;
   max_rate?: number | null;
   is_local: number; // 1 | 0
+  convert_mode: "*" | "/";
 };
 
 /* =========================
@@ -34,6 +35,7 @@ const Currencies = () => {
     min_rate: "",
     max_rate: "",
     is_local: false,
+    convert_mode: "*" as "*" | "/",
   });
 
   /* =========================
@@ -84,6 +86,7 @@ const Currencies = () => {
       min_rate: "",
       max_rate: "",
       is_local: false,
+      convert_mode: "*",
     });
     setEditId(null);
   };
@@ -105,6 +108,7 @@ const Currencies = () => {
       min_rate: form.min_rate ? Number(form.min_rate) : null,
       max_rate: form.max_rate ? Number(form.max_rate) : null,
       is_local: Boolean(form.is_local),
+      convert_mode: form.convert_mode,
     };
 
     try {
@@ -135,6 +139,7 @@ const Currencies = () => {
       min_rate: c.min_rate ? String(c.min_rate) : "",
       max_rate: c.max_rate ? String(c.max_rate) : "",
       is_local: c.is_local === 1,
+      convert_mode: c.convert_mode || "*",
     });
     setShowModal(true);
   };
@@ -216,7 +221,7 @@ const Currencies = () => {
                   <td className="p-2">{c.code}</td>
                   <td className="p-2">{c.symbol}</td>
                   <td className="p-2">{index + 1}</td>
-                  <td className="p-2">*</td>
+                  <td className="p-2">{c.convert_mode}</td>
                   <td className="p-2">{c.exchange_rate}</td>
                   <td className="p-2">{c.min_rate ?? "—"}</td>
                   <td className="p-2">{c.max_rate ?? "—"}</td>
@@ -284,6 +289,21 @@ const Currencies = () => {
                 }
               />
             </div>
+
+            {/* معامل التحويل */}
+            <select
+              className="border rounded w-full p-2"
+              value={form.convert_mode}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  convert_mode: e.target.value as "*" | "/",
+                })
+              }
+            >
+              <option value="*">ضرب (*)</option>
+              <option value="/">قسمة (/)</option>
+            </select>
 
             <input
               placeholder="سعر التحويل"
