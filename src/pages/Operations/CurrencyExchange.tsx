@@ -238,19 +238,7 @@ const resetForm = () => {
             <div className="flex justify-between items-center">
   <div className="text-sm text-gray-600">
     رقم السند: <span className="font-bold">{reference}</span>
-  </div>
 
-  <h3 className="font-bold text-lg">
-    {mode === "buy" ? "شراء عملة" : mode === "sell" ? "بيع عملة" : "عملية جديدة"}
-  </h3>
-
-  <input
-    type="date"
-    className="border rounded p-2"
-    value={date}
-    onChange={(e) => setDate(e.target.value)}
-  />
-</div>
 
                              
             <div className="bg-[#eef3ea] p-4 rounded-lg space-y-3">
