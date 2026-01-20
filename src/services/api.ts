@@ -946,5 +946,48 @@ export const saveDeliverySettings = (data: any) =>
     (await api.get("/captains")).data,
 };
 
+/* =========================
+   CURRENCY EXCHANGE (مصارفة العملة)
+========================= */
+
+// جلب سعر الصرف وحدوده للعملة المختارة
+export const previewExchange = async (currency_id: number) => {
+  const res = await api.post("/currency-exchange/preview", { currency_id });
+  return res.data;
+};
+
+// تنفيذ عملية المصارفة
+export const executeExchange = async (data: {
+  from_currency_id: number;
+  to_currency_id: number;
+  amount: number;
+  rate: number;
+  from_account_id: number;
+  to_account_id: number;
+  journal_date: string;
+  notes?: string;
+}) => {
+  const res = await api.post("/currency-exchange", data);
+  return res.data;
+};
+
+// نمط مشابه لبقية الأقسام (اختياري)
+(api as any).currencyExchange = {
+  preview: async (currency_id: number) =>
+    (await api.post("/currency-exchange/preview", { currency_id })).data,
+
+  execute: async (payload: {
+    from_currency_id: number;
+    to_currency_id: number;
+    amount: number;
+    rate: number;
+    from_account_id: number;
+    to_account_id: number;
+    journal_date: string;
+    notes?: string;
+  }) =>
+    (await api.post("/currency-exchange", payload)).data,
+};
+
 
 export default api;
