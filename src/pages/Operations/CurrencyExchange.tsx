@@ -322,73 +322,73 @@ const resetForm = () => {
               </div>
             </div>
 
-            {/* تفاصيل القيمة */}
-            <div className="bg-[#eef3ea] p-4 rounded-lg space-y-3">
-              <h4 className="font-bold text-green-700 text-center">تفاصيل القيمة</h4>
+          {/* تفاصيل القيمة */}
+<div className="bg-[#eef3ea] p-4 rounded-lg space-y-3">
+  <h4 className="font-bold text-green-700 text-center">تفاصيل القيمة</h4>
 
-              <select
-                className="input"
-                value={toType}
-                onChange={(e) => {
-                  setToType(e.target.value as any);
-                  setToAccount("");
-                }}
-              >
-                <option value="cash">صندوق</option>
-                <option value="account">حساب</option>
-              </select>
+  <select
+    className="input"
+    value={toType}
+    onChange={(e) => {
+      setToType(e.target.value as any);
+      setToAccount("");
+    }}
+  >
+    <option value="cash">صندوق</option>
+    <option value="account">حساب</option>
+  </select>
 
-              <div className="grid grid-cols-2 gap-2">
-                <select
-                  className="input"
-                  value={toCurrency}
-                  onChange={(e) => setToCurrency(Number(e.target.value))}
-                >
-                  <option value="">عملة القيمة</option>
-                  {currencies.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name_ar}
-                    </option>
-                  ))}
-                </select>
+  <div className="grid grid-cols-2 gap-2">
+    <select
+      className="input"
+      value={toCurrency}
+      onChange={(e) => setToCurrency(Number(e.target.value))}
+    >
+      <option value="">عملة القيمة</option>
+      {currencies.map((c) => (
+        <option key={c.id} value={c.id}>
+          {c.name_ar}
+        </option>
+      ))}
+    </select>
 
-                <select
-                  className="input"
-                  value={toAccount}
-                  onChange={(e) => setToAccount(Number(e.target.value))}
-                >
-                  <option value="">
-                    {toType === "cash" ? "اختر الصندوق" : "اختر الحساب"}
-                  </option>
-                  {accounts.map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.name_ar}
-                    </option>
-                  <div className="grid grid-cols-3 gap-2">
-  <input
-    className="input bg-gray-100"
-    disabled
-    value={result || ""}
-    placeholder="المبلغ"
-  />
-  <input
-    className="input bg-gray-100"
-    disabled
-    value={rate || ""}
-    placeholder="سعر الصرف"
-  />
-  <input
-    className="input bg-gray-100"
-    disabled
-    value={amount || ""}
-    placeholder="المقابل"
-  />
+    <select
+      className="input"
+      value={toAccount}
+      onChange={(e) => setToAccount(Number(e.target.value))}
+    >
+      <option value="">
+        {toType === "cash" ? "اختر الصندوق" : "اختر الحساب"}
+      </option>
+      {accounts.map((a) => (
+        <option key={a.id} value={a.id}>
+          {a.name_ar}
+        </option>
+      ))}
+    </select>
+  </div>
+
+  <div className="grid grid-cols-3 gap-2">
+    <input
+      className="input bg-gray-100"
+      disabled
+      value={result || ""}
+      placeholder="المبلغ"
+    />
+    <input
+      className="input bg-gray-100"
+      disabled
+      value={rate || ""}
+      placeholder="سعر الصرف"
+    />
+    <input
+      className="input bg-gray-100"
+      disabled
+      value={amount || ""}
+      placeholder="المقابل"
+    />
+  </div>
 </div>
-
-                  ))}
-                </select>
-              </div>
-            </div>
 
             {/* بيانات إضافية */}
             <div className="grid grid-cols-2 gap-2">
