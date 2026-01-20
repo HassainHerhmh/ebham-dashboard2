@@ -201,113 +201,117 @@ const resetForm = () => {
         </table>
       </div>
 
-      {/* Modal */}
       {showModal && (
+  <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
+    <div className="bg-white rounded-lg p-4 w-[700px] space-y-3">
 
-
-            {/* اختيار نوع العملية */}
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                onClick={() => setMode("buy")}
-                className={`p-2 rounded border ${mode === "buy" ? "bg-green-600 text-white" : ""}`}
-              >
-                شراء
-              </button>
-              <button
-                onClick={() => setMode("sell")}
-                className={`p-2 rounded border ${mode === "sell" ? "bg-green-600 text-white" : ""}`}
-              >
-                بيع
-              </button>
-            </div>
+      {/* اختيار نوع العملية */}
+      <div className="grid grid-cols-2 gap-2">
+        <button
+          onClick={() => setMode("buy")}
+          className={`p-2 rounded border ${mode === "buy" ? "bg-green-600 text-white" : ""}`}
+        >
+          شراء
+        </button>
+        <button
+          onClick={() => setMode("sell")}
+          className={`p-2 rounded border ${mode === "sell" ? "bg-green-600 text-white" : ""}`}
+        >
+          بيع
+        </button>
+      </div>
 
       {/* الهيدر الموحد: رقم السند + العنوان + التاريخ */}
-<div className="flex items-center justify-between bg-white p-3 rounded-lg border mb-3">
-  <div className="text-sm text-gray-600">
-    رقم السند: <span className="font-bold">{reference}</span>
+      <div className="flex items-center justify-between bg-white p-3 rounded-lg border mb-3">
+        <div className="text-sm text-gray-600">
+          رقم السند: <span className="font-bold">{reference}</span>
+        </div>
+
+        <h3 className="font-bold text-lg text-green-700">
+          {mode === "buy" ? "شراء عملة" : mode === "sell" ? "بيع عملة" : "عملية جديدة"}
+        </h3>
+
+        <input
+          type="date"
+          className="border rounded p-2"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+        />
+      </div>
+
+      {/* تفاصيل الشراء/البيع */}
+      <div className="bg-[#eef3ea] p-4 rounded-lg space-y-3">
+        <h4 className="font-bold text-green-700 text-center">
+          {mode === "buy" ? "تفاصيل الشراء" : "تفاصيل البيع"}
+        </h4>
+
+        <select
+          className="input"
+          value={fromType}
+          onChange={(e) => {
+            setFromType(e.target.value as any);
+            setFromAccount("");
+          }}
+        >
+          <option value="cash">صندوق</option>
+          <option value="account">حساب</option>
+        </select>
+
+        <div className="grid grid-cols-2 gap-2">
+          <select
+            className="input"
+            value={fromCurrency}
+            onChange={(e) => setFromCurrency(Number(e.target.value))}
+          >
+            <option value="">العملة</option>
+            {currencies.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name_ar}
+              </option>
+            ))}
+          </select>
+
+          <select
+            className="input"
+            value={fromAccount}
+            onChange={(e) => setFromAccount(Number(e.target.value))}
+          >
+            <option value="">
+              {fromType === "cash" ? "اختر الصندوق" : "اختر الحساب"}
+            </option>
+            {accounts.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.name_ar}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="grid grid-cols-3 gap-2">
+          <input
+            className="input"
+            placeholder="المبلغ"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+          />
+          <input
+            className="input"
+            placeholder="سعر الصرف"
+            value={rate}
+            onChange={(e) => setRate(e.target.value)}
+          />
+          <input
+            className="input bg-gray-100"
+            disabled
+            value={result || ""}
+            placeholder="المقابل"
+          />
+        </div>
+      </div>
+
+    </div>
   </div>
-
-  <h3 className="font-bold text-lg text-green-700">
-    {mode === "buy" ? "شراء عملة" : mode === "sell" ? "بيع عملة" : "عملية جديدة"}
-  </h3>
-
-  <input
-    type="date"
-    className="border rounded p-2"
-    value={date}
-    onChange={(e) => setDate(e.target.value)}
-  />
-</div>
-
-{/* تفاصيل الشراء/البيع */}
-<div className="bg-[#eef3ea] p-4 rounded-lg space-y-3">
-  <h4 className="font-bold text-green-700 text-center">
-    {mode === "buy" ? "تفاصيل الشراء" : "تفاصيل البيع"}
-  </h4>
-
-              <select
-                className="input"
-                value={fromType}
-                onChange={(e) => {
-                  setFromType(e.target.value as any);
-                  setFromAccount("");
-                }}
-              >
-                <option value="cash">صندوق</option>
-                <option value="account">حساب</option>
-              </select>
-
-              <div className="grid grid-cols-2 gap-2">
-                <select
-                  className="input"
-                  value={fromCurrency}
-                  onChange={(e) => setFromCurrency(Number(e.target.value))}
-                >
-                  <option value="">العملة</option>
-                  {currencies.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name_ar}
-                    </option>
-                  ))}
-                </select>
-
-                <select
-                  className="input"
-                  value={fromAccount}
-                  onChange={(e) => setFromAccount(Number(e.target.value))}
-                >
-                  <option value="">
-                    {fromType === "cash" ? "اختر الصندوق" : "اختر الحساب"}
-                  </option>
-                  {accounts.map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.name_ar}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="grid grid-cols-3 gap-2">
-                <input
-                  className="input"
-                  placeholder="المبلغ"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                />
-                <input
-                  className="input"
-                  placeholder="سعر الصرف"
-                  value={rate}
-                  onChange={(e) => setRate(e.target.value)}
-                />
-                <input
-                  className="input bg-gray-100"
-                  disabled
-                  value={result || ""}
-                  placeholder="المقابل"
-                />
-              </div>
-            </div>
+)}
 
           {/* تفاصيل القيمة */}
 <div className="bg-[#eef3ea] p-4 rounded-lg space-y-3">
