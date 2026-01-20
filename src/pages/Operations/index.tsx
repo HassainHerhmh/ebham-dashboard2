@@ -3,6 +3,7 @@ import {
   ArrowUpCircle,
   ArrowDownCircle,
   BookOpen,
+  RefreshCcw,
 } from "lucide-react";
 
 const Operations = () => {
@@ -23,9 +24,7 @@ const Operations = () => {
 
   return (
     <div className="space-y-6" dir="rtl">
-      
-
-      {/* شريط العمليات – مطابق للتهيئة */}
+      {/* شريط العمليات */}
       <div className="bg-white rounded shadow px-4 py-3 flex flex-wrap gap-4">
         <NavLink to="receipt-voucher" className={linkClass}>
           <ArrowUpCircle size={18} />
@@ -40,6 +39,12 @@ const Operations = () => {
         <NavLink to="journal-entry" className={linkClass}>
           <BookOpen size={18} />
           قيد يومي
+        </NavLink>
+
+        {/* مصارفة عملة */}
+        <NavLink to="currency-exchange" className={linkClass}>
+          <RefreshCcw size={18} />
+          مصارفة عملة
         </NavLink>
       </div>
 
