@@ -309,7 +309,6 @@ const resetForm = () => {
         </div>
       </div>
 
-)}
 
           {/* تفاصيل القيمة */}
 <div className="bg-[#eef3ea] p-4 rounded-lg space-y-3">
