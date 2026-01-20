@@ -49,6 +49,7 @@ const CurrencyExchange: React.FC = () => {
 
   const [fromType, setFromType] = useState<"cash" | "account">("cash");
   const [toType, setToType] = useState<"cash" | "account">("cash");
+  const [reference, setReference] = useState<number>(() => Date.now());
 
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
@@ -92,22 +93,24 @@ const CurrencyExchange: React.FC = () => {
     setResult(Number(v.toFixed(2)));
   }, [amount, rate, fromCur]);
 
-  const resetForm = () => {
-    setMode("");
-    setFromCurrency("");
-    setToCurrency("");
-    setRate("");
-    setAmount("");
-    setResult(0);
-    setFromAccount("");
-    setToAccount("");
-    setCustomerName("");
-    setCustomerPhone("");
-    setNotes("");
-    setDate(today);
-    setFromType("cash");
-    setToType("cash");
-  };
+const resetForm = () => {
+  setReference(Date.now());
+  setMode("");
+  setFromCurrency("");
+  setToCurrency("");
+  setRate("");
+  setAmount("");
+  setResult(0);
+  setFromAccount("");
+  setToAccount("");
+  setCustomerName("");
+  setCustomerPhone("");
+  setNotes("");
+  setDate(today);
+  setFromType("cash");
+  setToType("cash");
+};
+
 
   const submit = () => {
     if (!mode || !fromCur || !toCur || !amount || !rate) {
@@ -231,6 +234,25 @@ const CurrencyExchange: React.FC = () => {
             </div>
 
             {/* تفاصيل الشراء/البيع */}
+
+            <div className="flex justify-between items-center">
+  <div className="text-sm text-gray-600">
+    رقم السند: <span className="font-bold">{reference}</span>
+  </div>
+
+  <h3 className="font-bold text-lg">
+    {mode === "buy" ? "شراء عملة" : mode === "sell" ? "بيع عملة" : "عملية جديدة"}
+  </h3>
+
+  <input
+    type="date"
+    className="border rounded p-2"
+    value={date}
+    onChange={(e) => setDate(e.target.value)}
+  />
+</div>
+
+                             
             <div className="bg-[#eef3ea] p-4 rounded-lg space-y-3">
               <h4 className="font-bold text-green-700 text-center">
                 {mode === "buy" ? "تفاصيل الشراء" : "تفاصيل البيع"}
@@ -342,6 +364,27 @@ const CurrencyExchange: React.FC = () => {
                     <option key={a.id} value={a.id}>
                       {a.name_ar}
                     </option>
+                  <div className="grid grid-cols-3 gap-2">
+  <input
+    className="input bg-gray-100"
+    disabled
+    value={result || ""}
+    placeholder="المبلغ"
+  />
+  <input
+    className="input bg-gray-100"
+    disabled
+    value={rate || ""}
+    placeholder="سعر الصرف"
+  />
+  <input
+    className="input bg-gray-100"
+    disabled
+    value={amount || ""}
+    placeholder="المقابل"
+  />
+</div>
+
                   ))}
                 </select>
               </div>
