@@ -46,8 +46,9 @@ const CurrencyExchange: React.FC = () => {
 
   const [fromAccount, setFromAccount] = useState<number | "">("");
   const [toAccount, setToAccount] = useState<number | "">("");
-  const [fromType, setFromType] = useState<"cash" | "account" | "">("");
-const [toType, setToType] = useState<"cash" | "account" | "">("");
+
+  const [fromType, setFromType] = useState<"cash" | "account">("cash");
+  const [toType, setToType] = useState<"cash" | "account">("cash");
 
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
@@ -73,11 +74,13 @@ const [toType, setToType] = useState<"cash" | "account" | "">("");
     [toCurrency, currencies]
   );
 
+  // تعبئة سعر الصرف تلقائيًا من العملة المختارة
   useEffect(() => {
     if (!fromCur) return;
     setRate(String(fromCur.exchange_rate || ""));
   }, [fromCur]);
 
+  // حساب الناتج حسب convert_mode
   useEffect(() => {
     const a = Number(amount);
     const r = Number(rate);
@@ -85,8 +88,7 @@ const [toType, setToType] = useState<"cash" | "account" | "">("");
       setResult(0);
       return;
     }
-    const v =
-      fromCur.convert_mode === "divide" ? a / r : a * r;
+    const v = fromCur.convert_mode === "divide" ? a / r : a * r;
     setResult(Number(v.toFixed(2)));
   }, [amount, rate, fromCur]);
 
@@ -103,11 +105,17 @@ const [toType, setToType] = useState<"cash" | "account" | "">("");
     setCustomerPhone("");
     setNotes("");
     setDate(today);
+    setFromType("cash");
+    setToType("cash");
   };
 
   const submit = () => {
     if (!mode || !fromCur || !toCur || !amount || !rate) {
       alert("يرجى إدخال جميع البيانات الأساسية");
+      return;
+    }
+    if (!fromAccount || !toAccount) {
+      alert("يرجى اختيار الصندوق/الحساب للطرفين");
       return;
     }
 
@@ -144,9 +152,9 @@ const [toType, setToType] = useState<"cash" | "account" | "">("");
         <h2 className="text-xl font-bold">مصارفة عملة</h2>
         <button
           onClick={() => setShowModal(true)}
-          className="btn-green"
+          className="bg-green-600 text-white px-4 py-2 rounded"
         >
-          + إضافة عملية
+          إضافة
         </button>
       </div>
 
@@ -155,13 +163,13 @@ const [toType, setToType] = useState<"cash" | "account" | "">("");
         <table className="w-full text-sm text-center border">
           <thead className="bg-green-600 text-white">
             <tr>
-              <th className="border px-2 py-1">رقم السند</th>
+              <th className="border px-2 py-1">رقم</th>
               <th className="border px-2 py-1">التاريخ</th>
               <th className="border px-2 py-1">مدين</th>
               <th className="border px-2 py-1">دائن</th>
               <th className="border px-2 py-1">النوع</th>
-              <th className="border px-2 py-1">البيان</th>
               <th className="border px-2 py-1">سعر الصرف</th>
+              <th className="border px-2 py-1">البيان</th>
             </tr>
           </thead>
           <tbody>
@@ -175,8 +183,8 @@ const [toType, setToType] = useState<"cash" | "account" | "">("");
                   <td className="border px-2 py-1">
                     {r.type === "buy" ? "شراء" : "بيع"}
                   </td>
-                  <td className="border px-2 py-1">{r.notes}</td>
                   <td className="border px-2 py-1">{r.rate}</td>
+                  <td className="border px-2 py-1">{r.notes}</td>
                 </tr>
               ))
             ) : (
@@ -192,228 +200,196 @@ const [toType, setToType] = useState<"cash" | "account" | "">("");
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-[900px] max-h-[90vh] overflow-y-auto space-y-4">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
+          <div className="bg-white rounded-lg p-6 w-[700px] space-y-4">
             <div className="flex justify-between items-center">
               <h3 className="font-bold text-lg">
-                {mode ? (mode === "buy" ? "شراء عملة" : "بيع عملة") : "إضافة عملية"}
+                {mode === "buy" ? "شراء عملة" : mode === "sell" ? "بيع عملة" : "عملية جديدة"}
               </h3>
-              <button onClick={() => setShowModal(false)}>✖</button>
+              <input
+                type="date"
+                className="border rounded p-2"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+              />
             </div>
 
-            {!mode && (
-              <div className="flex gap-4">
-                <button
-                  onClick={() => setMode("buy")}
-                  className="btn-green"
+            {/* اختيار نوع العملية */}
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => setMode("buy")}
+                className={`p-2 rounded border ${mode === "buy" ? "bg-green-600 text-white" : ""}`}
+              >
+                شراء
+              </button>
+              <button
+                onClick={() => setMode("sell")}
+                className={`p-2 rounded border ${mode === "sell" ? "bg-green-600 text-white" : ""}`}
+              >
+                بيع
+              </button>
+            </div>
+
+            {/* تفاصيل الشراء/البيع */}
+            <div className="bg-[#eef3ea] p-4 rounded-lg space-y-3">
+              <h4 className="font-bold text-green-700 text-center">
+                {mode === "buy" ? "تفاصيل الشراء" : "تفاصيل البيع"}
+              </h4>
+
+              <select
+                className="input"
+                value={fromType}
+                onChange={(e) => {
+                  setFromType(e.target.value as any);
+                  setFromAccount("");
+                }}
+              >
+                <option value="cash">صندوق</option>
+                <option value="account">حساب</option>
+              </select>
+
+              <div className="grid grid-cols-2 gap-2">
+                <select
+                  className="input"
+                  value={fromCurrency}
+                  onChange={(e) => setFromCurrency(Number(e.target.value))}
                 >
-                  شراء عملة
-                </button>
-                <button
-                  onClick={() => setMode("sell")}
-                  className="btn-green"
+                  <option value="">العملة</option>
+                  {currencies.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name_ar}
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  className="input"
+                  value={fromAccount}
+                  onChange={(e) => setFromAccount(Number(e.target.value))}
                 >
-                  بيع عملة
-                </button>
+                  <option value="">
+                    {fromType === "cash" ? "اختر الصندوق" : "اختر الحساب"}
+                  </option>
+                  {accounts.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.name_ar}
+                    </option>
+                  ))}
+                </select>
               </div>
-            )}
 
-           {mode && (
-  <>
-   <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-2">
+                <input
+                  className="input"
+                  placeholder="المبلغ"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                />
+                <input
+                  className="input"
+                  placeholder="سعر الصرف"
+                  value={rate}
+                  onChange={(e) => setRate(e.target.value)}
+                />
+                <input
+                  className="input bg-gray-100"
+                  disabled
+                  value={result || ""}
+                  placeholder="المقابل"
+                />
+              </div>
+            </div>
 
-  {/* تفاصيل الشراء / البيع */}
-  <div className="bg-[#eef3ea] p-4 rounded-lg space-y-3">
-    <h4 className="font-bold text-green-700 text-center">
-      {mode === "buy" ? "تفاصيل الشراء" : "تفاصيل البيع"}
-    </h4>
+            {/* تفاصيل القيمة */}
+            <div className="bg-[#eef3ea] p-4 rounded-lg space-y-3">
+              <h4 className="font-bold text-green-700 text-center">تفاصيل القيمة</h4>
 
-    {/* نوع العملية – صف مستقل */}
-    <div className="grid grid-cols-1">
-      <select className="input">
-        <option value="">نوع العملية</option>
-        <option value="cash">صندوق</option>
-        <option value="account">حساب</option>
-      </select>
-    </div>
+              <select
+                className="input"
+                value={toType}
+                onChange={(e) => {
+                  setToType(e.target.value as any);
+                  setToAccount("");
+                }}
+              >
+                <option value="cash">صندوق</option>
+                <option value="account">حساب</option>
+              </select>
 
-   {/* نوع العملية + العملة */}
-<div className="grid grid-cols-2 gap-2">
-  <select
-    className="input"
-    value={fromType}
-    onChange={(e) => {
-      const t = e.target.value as "box" | "account";
-      setFromType(t);
-      loadAccounts(t); // يجلب صناديق فقط أو حسابات فرعية فقط
-      setFromAccount("");
-    }}
-  >
-    <option value="box">صندوق</option>
-    <option value="account">حساب</option>
-  </select>
+              <div className="grid grid-cols-2 gap-2">
+                <select
+                  className="input"
+                  value={toCurrency}
+                  onChange={(e) => setToCurrency(Number(e.target.value))}
+                >
+                  <option value="">عملة القيمة</option>
+                  {currencies.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name_ar}
+                    </option>
+                  ))}
+                </select>
 
-  <select
-    className="input"
-    value={fromCurrency}
-    onChange={(e) => onSelectFromCurrency(e.target.value)}
-  >
-    <option value="">العملة</option>
-    {currencies.map((c) => (
-      <option key={c.id} value={c.id}>
-        {c.name_ar}
-      </option>
-    ))}
-  </select>
-</div>
+                <select
+                  className="input"
+                  value={toAccount}
+                  onChange={(e) => setToAccount(Number(e.target.value))}
+                >
+                  <option value="">
+                    {toType === "cash" ? "اختر الصندوق" : "اختر الحساب"}
+                  </option>
+                  {accounts.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.name_ar}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
 
-{/* الصندوق / الحساب */}
-<select
-  className="input"
-  value={fromAccount}
-  onChange={(e) => setFromAccount(e.target.value)}
->
-  <option value="">
-    {fromType === "box" ? "اختر الصندوق" : "اختر الحساب"}
-  </option>
-  {accounts.map((a) => (
-    <option key={a.id} value={a.id}>
-      {a.name_ar}
-    </option>
-  ))}
-</select>
+            {/* بيانات إضافية */}
+            <div className="grid grid-cols-2 gap-2">
+              <input
+                className="input"
+                placeholder="اسم العميل"
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+              />
+              <input
+                className="input"
+                placeholder="رقم الهاتف"
+                value={customerPhone}
+                onChange={(e) => setCustomerPhone(e.target.value)}
+              />
+            </div>
 
-    {/* المبلغ – سعر الصرف – المقابل */}
-    <div className="grid grid-cols-3 gap-2">
-      <input
-        className="input"
-        placeholder="المبلغ"
-        value={amount}
-        onChange={(e) => setAmount(e.target.value)}
-      />
-      <input
-        className="input"
-        placeholder="سعر الصرف"
-        value={rate}
-        onChange={(e) => setRate(e.target.value)}
-      />
-      <input
-        className="input bg-gray-50"
-        value={result || ""}
-        placeholder="المقابل"
-        readOnly
-      />
-    </div>
-  </div>
+            <input
+              className="input w-full"
+              placeholder="ملاحظات"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+            />
 
-{/* تفاصيل القيمة */}
-<div className="bg-[#eef3ea] p-4 rounded-lg space-y-3">
-  <h4 className="font-bold text-green-700 text-center">تفاصيل القيمة</h4>
-
-  {/* نوع القيمة – صف مستقل */}
-  <div className="grid grid-cols-1">
-    <select
-      className="input"
-      value={toType}
-      onChange={(e) => {
-        const t = e.target.value as "box" | "account";
-        setToType(t);
-        loadAccounts(t); // يجلب صناديق فقط أو حسابات فرعية فقط
-        setToAccount("");
-      }}
-    >
-      <option value="box">صندوق</option>
-      <option value="account">حساب</option>
-    </select>
-  </div>
-
-  {/* عملة القيمة + الصندوق/الحساب */}
-  <div className="grid grid-cols-2 gap-2">
-    <select
-      className="input"
-      value={toCurrency}
-      onChange={(e) => setToCurrency(e.target.value)}
-    >
-      <option value="">عملة القيمة</option>
-      {currencies.map((c) => (
-        <option key={c.id} value={c.id}>
-          {c.name_ar}
-        </option>
-      ))}
-    </select>
-
-    <select
-      className="input"
-      value={toAccount}
-      onChange={(e) => setToAccount(e.target.value)}
-    >
-      <option value="">
-        {toType === "box" ? "اختر الصندوق" : "اختر الحساب"}
-      </option>
-      {accounts.map((a) => (
-        <option key={a.id} value={a.id}>
-          {a.name_ar}
-        </option>
-      ))}
-    </select>
-  </div>
-</div>
-
-
-    {/* المبلغ – سعر الصرف – المقابل */}
-    <div className="grid grid-cols-3 gap-2">
-      <input
-        className="input"
-        value={result || ""}
-        placeholder="المبلغ"
-        readOnly
-      />
-      <input
-        className="input"
-        value={rate || ""}
-        placeholder="سعر الصرف"
-        readOnly
-      />
-      <input
-        className="input"
-        value={amount || ""}
-        placeholder="المقابل"
-        readOnly
-      />
-    </div>
-  </div>
-
-</div>
-
-
-    {/* بيانات العميل والملاحظات */}
-    <div className="grid grid-cols-2 gap-3 mt-4">
-      <input className="input" placeholder="اسم العميل" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
-      <input className="input" placeholder="رقم الهاتف" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} />
-      <input className="input col-span-2" placeholder="البيان" value={notes} onChange={(e) => setNotes(e.target.value)} />
-    </div>
-
-    <div className="flex justify-end gap-2 mt-4">
-      <button
-        onClick={() => { setShowModal(false); resetForm(); }}
-        className="px-4 py-2 bg-gray-200 rounded"
-      >
-        إلغاء
-      </button>
-      <button onClick={submit} className="btn-green">
-        إضافة
-      </button>
-    </div>
-  </>
-)}
-
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setShowModal(false)}
+                className="px-4 py-2 bg-gray-200 rounded"
+              >
+                إلغاء
+              </button>
+              <button
+                onClick={submit}
+                className="px-4 py-2 bg-green-600 text-white rounded"
+              >
+                حفظ
+              </button>
+            </div>
           </div>
         </div>
       )}
 
       <style>{`
         .input { padding:10px; border-radius:8px; border:1px solid #ccc; }
-        .btn-green { background:#14532d; color:#fff; padding:10px 20px; border-radius:8px; }
       `}</style>
     </div>
   );
