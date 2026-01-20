@@ -92,22 +92,7 @@ const CurrencyExchange: React.FC = () => {
     setToRate(String(toCur.exchange_rate || ""));
   }, [toCur]);
 
-  // حساب الناتج من تفاصيل الشراء إلى تفاصيل القيمة
-  useEffect(() => {
-    const a = Number(fromAmount);
-    const r = Number(fromRate);
-    if (!a || !r || !fromCur) {
-      setToAmount("");
-      return;
-    }
-
-    const v =
-      fromCur.convert_mode === "divide"
-        ? a / r
-        : a * r;
-
-    setToAmount(v.toFixed(2));
-  }, [fromAmount, fromRate, fromCur]);
+  
 
   const resetForm = () => {
     setReference(Date.now());
@@ -371,28 +356,27 @@ const CurrencyExchange: React.FC = () => {
       ))}
     </select>
   </div>
-
-  <div className="grid grid-cols-3 gap-2">
-    <input
-      className="input bg-gray-100"
-      disabled
-      value={toAmount || ""}
-      placeholder="المبلغ"
-    />
-    <input
-      className="input bg-gray-100"
-      disabled
-      value={fromRate || ""}
-      placeholder="سعر الصرف"
-    />
-    <input
-      className="input bg-gray-100"
-      disabled
-      value={fromAmount || ""}
-      placeholder="المقابل"
-    />
-  </div>
+<div className="grid grid-cols-3 gap-2">
+  <input
+    className="input"
+    placeholder="المبلغ"
+    value={toAmount}
+    onChange={(e) => setToAmount(e.target.value)}
+  />
+  <input
+    className="input"
+    placeholder="سعر الصرف"
+    value={toRate}
+    onChange={(e) => setToRate(e.target.value)}
+  />
+  <input
+    className="input"
+    placeholder="المقابل"
+    value={fromAmount}
+    readOnly
+  />
 </div>
+
 
 
             {/* بيانات إضافية */}
