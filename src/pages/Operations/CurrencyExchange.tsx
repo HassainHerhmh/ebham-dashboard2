@@ -203,19 +203,7 @@ const resetForm = () => {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
-          <div className="bg-white rounded-lg p-6 w-[700px] space-y-4">
-            <div className="flex justify-between items-center">
-              <h3 className="font-bold text-lg">
-                {mode === "buy" ? "شراء عملة" : mode === "sell" ? "بيع عملة" : "عملية جديدة"}
-              </h3>
-              <input
-                type="date"
-                className="border rounded p-2"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-              />
-            </div>
+
 
             {/* اختيار نوع العملية */}
             <div className="grid grid-cols-2 gap-2">
