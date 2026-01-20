@@ -309,8 +309,6 @@ const resetForm = () => {
         </div>
       </div>
 
-    </div>
-  </div>
 )}
 
           {/* تفاصيل القيمة */}
@@ -419,7 +417,7 @@ const resetForm = () => {
               </button>
             </div>
           </div>
-    
+        </div>
       )}
 
       <style>{`
