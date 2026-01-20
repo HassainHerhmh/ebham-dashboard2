@@ -113,15 +113,60 @@ const CurrencyExchange: React.FC = () => {
     setToType("cash");
   };
 
-  const submit = () => {
-    if (!mode || !fromCur || !toCur || !fromAmount || !fromRate) {
-      alert("يرجى إدخال جميع البيانات الأساسية");
-      return;
-    }
-    if (!fromAccount || !toAccount) {
-      alert("يرجى اختيار الصندوق/الحساب للطرفين");
-      return;
-    }
+const submit = async () => {
+  if (!mode || !fromCurrency || !toCurrency || !fromAmount || !fromRate) {
+    alert("يرجى إدخال جميع البيانات الأساسية");
+    return;
+  }
+  if (!fromAccount || !toAccount) {
+    alert("يرجى اختيار الصندوق/الحساب للطرفين");
+    return;
+  }
+
+  const payload = {
+    reference,
+    date,
+    type: mode,
+
+    from_currency: fromCurrency,
+    from_amount: fromAmount,
+    from_rate: fromRate,
+    from_account: fromAccount,
+
+    to_currency: toCurrency,
+    to_amount: toAmount,
+    to_rate: toRate,
+    to_account: toAccount,
+
+    customer_name: customerName,
+    customer_phone: customerPhone,
+    notes,
+  };
+
+  try {
+    await api.post("/currency-exchange", payload);
+
+    // بعد نجاح الحفظ فقط نضيفه في الجدول
+    setRows((p) => [
+      {
+        id: reference,
+        date,
+        type: mode,
+        from_text: `${fromAmount}`,
+        to_text: `${toAmount}`,
+        rate: Number(fromRate),
+        notes: notes || (mode === "buy" ? "شراء عملة" : "بيع عملة"),
+      },
+      ...p,
+    ]);
+
+    setShowModal(false);
+    resetForm();
+  } catch (e) {
+    alert("فشل حفظ العملية في السيرفر");
+  }
+};
+
 
     const id = Date.now();
     const fromText =
