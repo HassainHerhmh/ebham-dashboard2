@@ -349,31 +349,28 @@ if (res.success) {
         )}
       </div>
 
-      {(() => {
-  // تجميع الصفوف حسب العملة (إن وُجدت)
-  const byCurrency: Record<string, Row[]> = {};
-  rows.forEach((r: any) => {
-    const key = r.currency_name || "default";
-    if (!byCurrency[key]) byCurrency[key] = [];
-    byCurrency[key].push(r);
-  });
+   {(() => {
+  // تقسيم الصفوف حسب العملة
+  const grouped = rows.reduce((acc: any, r: any) => {
+    const key = r.currency_name || "غير محدد";
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(r);
+    return acc;
+  }, {});
 
-  const blocks = currencyId ? { single: rows } : byCurrency;
-
-  return Object.entries(blocks).map(([cur, list]) => {
-    if (!list.length) return null;
-
-    const curDebit = list.reduce((s, r) => s + (Number(r.debit) || 0), 0);
-    const curCredit = list.reduce((s, r) => s + (Number(r.credit) || 0), 0);
-    const curFinal = Number(((opening || 0) + curDebit - curCredit).toFixed(2));
+  return Object.entries(grouped).map(([currencyName, list]: any) => {
+    const totalDebit = list.reduce((s: number, r: any) => s + (Number(r.debit) || 0), 0);
+    const totalCredit = list.reduce((s: number, r: any) => s + (Number(r.credit) || 0), 0);
+    const finalBalance = Number(
+      ((Number(opening) || 0) + totalDebit - totalCredit).toFixed(2)
+    );
 
     return (
-      <div key={cur} className="bg-white rounded shadow overflow-x-auto mb-6">
-        {!currencyId && (
-          <div className="text-center font-bold py-2 bg-gray-100">
-            {cur}
-          </div>
-        )}
+      <div key={currencyName} className="mb-8">
+        {/* عنوان العملة */}
+        <div className="text-center font-bold text-lg my-3">
+          {currencyName}
+        </div>
 
         <table className="w-full text-sm text-center border">
           <thead className="bg-green-600 text-white">
@@ -418,9 +415,7 @@ if (res.success) {
 
             {list.map((r: any) => (
               <tr key={r.id}>
-                <td className="border px-2 py-1">
-                  {r.journal_date?.slice(0, 10)}
-                </td>
+                <td className="border px-2 py-1">{r.journal_date?.slice(0, 10)}</td>
                 <td className="border px-2 py-1">{r.reference_type || "-"}</td>
                 <td className="border px-2 py-1">{r.reference_id || "-"}</td>
                 <td className="border px-2 py-1">{r.account_name}</td>
@@ -433,39 +428,10 @@ if (res.success) {
 
             <tr className="bg-yellow-100 font-semibold">
               <td colSpan={4} className="border px-2 py-1">الإجمالي</td>
-              <td className="border px-2 py-1">
-                {curDebit.toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
-              </td>
-              <td className="border px-2 py-1">
-                {curCredit.toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
-              </td>
-              <td className="border px-2 py-1">
-                {curFinal.toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
-              </td>
+              <td className="border px-2 py-1">{totalDebit.toFixed(2)}</td>
+              <td className="border px-2 py-1">{totalCredit.toFixed(2)}</td>
+              <td className="border px-2 py-1">{finalBalance.toFixed(2)}</td>
               <td className="border px-2 py-1"></td>
-            </tr>
-
-            <tr className="bg-yellow-50">
-              <td colSpan={8} className="border px-2 py-2 text-right font-semibold">
-                {curFinal >= 0
-                  ? `عليه ${curFinal.toLocaleString(undefined, {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}`
-                  : `له ${Math.abs(curFinal).toLocaleString(undefined, {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}`}
-              </td>
             </tr>
           </tbody>
         </table>
@@ -473,6 +439,7 @@ if (res.success) {
     );
   });
 })()}
+
 
       <style>{`
         .input { padding:10px; border-radius:8px; border:1px solid #ccc; }
