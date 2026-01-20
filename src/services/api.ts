@@ -950,9 +950,9 @@ export const saveDeliverySettings = (data: any) =>
    CURRENCY EXCHANGE (مصارفة العملة)
 ========================= */
 
-// جلب سعر الصرف وحدوده للعملة المختارة
-export const previewExchange = async (currency_id: number) => {
-  const res = await api.post("/currency-exchange/preview", { currency_id });
+// جلب بيانات النموذج (عملات + حسابات حسب النوع)
+export const getExchangeFormData = async (type: "cash" | "account") => {
+  const res = await api.get(`/currency-exchange/form-data?type=${type}`);
   return res.data;
 };
 
@@ -971,10 +971,10 @@ export const executeExchange = async (data: {
   return res.data;
 };
 
-// نمط مشابه لبقية الأقسام (اختياري)
+// نمط موحد مثل بقية الأقسام
 (api as any).currencyExchange = {
-  preview: async (currency_id: number) =>
-    (await api.post("/currency-exchange/preview", { currency_id })).data,
+  formData: async (type: "cash" | "account") =>
+    (await api.get(`/currency-exchange/form-data?type=${type}`)).data,
 
   execute: async (payload: {
     from_currency_id: number;
@@ -988,6 +988,7 @@ export const executeExchange = async (data: {
   }) =>
     (await api.post("/currency-exchange", payload)).data,
 };
+
 
 
 export default api;
