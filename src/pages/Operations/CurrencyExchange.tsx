@@ -419,7 +419,7 @@ const resetForm = () => {
               </button>
             </div>
           </div>
-        </div>
+    
       )}
 
       <style>{`
