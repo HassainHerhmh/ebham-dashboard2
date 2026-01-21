@@ -85,16 +85,17 @@ const loadData = async () => {
       api.currencies.getAll(),         // العملات
     ]);
 
-    setRows(info || []);
-    setAgents(agentsData || []);
-    setCaptains(captainsData || []);
-    setGroups(groupsData || []);
+   setRows(info?.data || []);
+setAgents(agentsData?.data || []);
+setCaptains(captainsData?.data || []);
+setGroups(groupsData?.data || []);
 
-    // getAccounts يرجّع { tree, list }
-    const list = accountsRes?.list || [];
-    setAccounts(list.filter((a: any) => a.parent_id)); // الفرعية فقط
+// getAccounts يرجّع { tree, list }
+const list = accountsRes?.list || accountsRes?.data?.list || [];
+setAccounts(list.filter((a: any) => a.parent_id));
 
-    setCurrencies(currenciesData || []);
+setCurrencies(currenciesData?.data || []);
+
   } catch (e) {
     console.error("AgentInfo loadData error:", e);
   }
