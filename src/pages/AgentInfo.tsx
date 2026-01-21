@@ -217,7 +217,7 @@ const handleDelete = async (id: number) => {
 
       <div className="bg-white rounded shadow overflow-hidden">
         <table className="w-full text-right">
-        <thead className="bg-gray-100">
+  <thead className="bg-gray-100">
   <tr>
     <th className="p-3">#</th>
     <th className="p-3">الوكيل</th>
@@ -225,9 +225,11 @@ const handleDelete = async (id: number) => {
     <th className="p-3">حساب الوكيل / الموصل</th>
     <th className="p-3">طريقة احتساب العمولة</th>
     <th className="p-3">النسبة / المبلغ</th>
+    <th className="p-3">فترة العقد</th>
     <th className="p-3">إجراءات</th>
   </tr>
 </thead>
+
 
 
 <tbody>
@@ -250,6 +252,10 @@ const handleDelete = async (id: number) => {
       </td>
 
       <td className="p-3">
+        {r.contract_start} → {r.contract_end}
+      </td>
+
+      <td className="p-3">
         <div className="flex gap-2 justify-center">
           <button
             className="px-3 py-1 rounded bg-blue-600 text-white"
@@ -269,6 +275,7 @@ const handleDelete = async (id: number) => {
     </tr>
   ))}
 </tbody>
+
 
         </table>
       </div>
