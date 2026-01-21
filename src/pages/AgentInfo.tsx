@@ -25,6 +25,18 @@ interface AgentInfoRow {
   commission_account_name: string;
 }
 
+interface Captain {
+  id: number;
+  name: string;
+}
+
+interface Currency {
+  id: number;
+  code: string;
+  name_ar: string;
+}
+
+
 
 const AgentInfo: React.FC = () => {
   const [rows, setRows] = useState<AgentInfoRow[]>([]);
@@ -45,23 +57,35 @@ const [commissionType, setCommissionType] = useState<"percent" | "fixed">("perce
 const [contractStart, setContractStart] = useState("");
 const [contractEnd, setContractEnd] = useState("");
 
+
+  const [captains, setCaptains] = useState<Captain[]>([]);
+const [currencies, setCurrencies] = useState<Currency[]>([]);
+const [currencyId, setCurrencyId] = useState("");
   /* =========================
      تحميل البيانات
   ========================= */
 const loadData = async () => {
-  const [info, agentsData, groupsData, accountsData] = await Promise.all([
-    api.agentInfo.getAll(),
-    api.agents.getAgents(),
-    api.agentGroups.getGroups(),
-    api.accounts.getAll(),
-  ]);
+  const [info, agentsData, captainsData, groupsData, accountsData, currenciesData] =
+    await Promise.all([
+      api.agentInfo.getAll(),
+      api.agents.getAgents(),        // الوكلاء
+      api.captains.getAll(),         // الكباتن
+      api.agentGroups.getGroups(),
+      api.accounts.getAll(),         // كل الحسابات
+      api.currencies.getAll(),       // العملات
+    ]);
 
   setRows(info);
   setAgents(agentsData);
+  setCaptains(captainsData);
   setGroups(groupsData);
-  setAccounts(accountsData);
+
+  // نعرض الحسابات الفرعية فقط
+  setAccounts(accountsData.filter((a: any) => a.parent_id));
+
+  setCurrencies(currenciesData);
 };
-;
+
 
   useEffect(() => {
     loadData();
@@ -160,29 +184,36 @@ const loadData = async () => {
         {/* نوع الحساب */}
 <select
   className="w-full p-3 rounded"
-  value={accountType}
-  onChange={(e) => setAccountType(e.target.value as any)}
+  value={agentId}
+  onChange={(e) => setAgentId(e.target.value)}
 >
-  <option value="agent">وكيل</option>
-  <option value="captain">موصل</option>
+  <option value="">
+    {accountType === "agent" ? "اختر الوكيل" : "اختر الموصل"}
+  </option>
+
+  {(accountType === "agent" ? agents : captains).map((a: any) => (
+    <option key={a.id} value={a.id}>
+      {a.name}
+    </option>
+  ))}
 </select>
+
 
 {/* الحساب + المجموعة */}
 <div className="grid grid-cols-2 gap-3">
-  <select
-    className="w-full p-3 rounded"
-    value={agentId}
-    onChange={(e) => setAgentId(e.target.value)}
-  >
-    <option value="">
-      {accountType === "agent" ? "اختر الوكيل" : "اختر الموصل"}
+<select
+  className="w-full p-3 rounded"
+  value={agentAccountId}
+  onChange={(e) => setAgentAccountId(e.target.value)}
+>
+  <option value="">اختر حساب الوكيل / الموصل</option>
+  {accounts.map((a) => (
+    <option key={a.id} value={a.id}>
+      {a.name}
     </option>
-    {(accountType === "agent" ? agents : captains).map((a: any) => (
-      <option key={a.id} value={a.id}>
-        {a.name}
-      </option>
-    ))}
-  </select>
+  ))}
+</select>
+
 
   <select
     className="w-full p-3 rounded"
@@ -220,11 +251,19 @@ const loadData = async () => {
     onChange={(e) => setCommission(e.target.value)}
   />
 
-  <select className="w-full p-3 rounded">
-    <option value="">العملة</option>
-    <option value="YER">YER</option>
-    <option value="USD">USD</option>
-  </select>
+<select
+  className="w-full p-3 rounded"
+  value={currencyId}
+  onChange={(e) => setCurrencyId(e.target.value)}
+>
+  <option value="">العملة</option>
+  {currencies.map((c) => (
+    <option key={c.id} value={c.id}>
+      {c.code} - {c.name_ar}
+    </option>
+  ))}
+</select>
+
 </div>
 
 {/* فترة العقد */}
