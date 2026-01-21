@@ -79,7 +79,7 @@ const loadData = async () => {
     ] = await Promise.all([
       api.agentInfo.getAll(),
       api.agents.getAgents(),
-      api.captains.getCaptains(),
+       api.captains.getAll(),   
       api.agentGroups.getGroups(),
       api.accounts.getAccounts(),
       api.currencies.getAll(),
