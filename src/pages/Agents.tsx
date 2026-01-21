@@ -136,6 +136,19 @@ if (user?.is_admin === 1) {
     }
   };
 
+  const resetPassword = async (id: number) => {
+  const newPass = prompt("أدخل كلمة المرور الجديدة:");
+  if (!newPass) return;
+
+  try {
+    await api.agents.resetPassword(id, { password: newPass });
+    alert("✅ تم تغيير كلمة المرور");
+  } catch {
+    alert("❌ فشل تغيير كلمة المرور");
+  }
+};
+
+
   /* =========================
      Toggle Active
   ========================= */
@@ -183,62 +196,82 @@ if (user?.is_admin === 1) {
         ) : agents.length === 0 ? (
           <div className="p-6 text-center text-gray-500">لا يوجد وكلاء</div>
         ) : (
-          <table className="w-full text-right">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="px-4 py-3">#</th>
-                <th className="px-4 py-3">الاسم</th>
-                <th className="px-4 py-3">الجوال</th>
-                <th className="px-4 py-3">الحالة</th>
-                <th className="px-4 py-3 text-center">إجراءات</th>
-              </tr>
-            </thead>
+         <thead className="bg-gray-100">
+  <tr>
+    <th className="px-4 py-3">#</th>
+    <th className="px-4 py-3">الاسم</th>
+    <th className="px-4 py-3">الجوال</th>
+
+    {user?.is_admin === 1 && (
+      <th className="px-4 py-3">الفرع</th>
+    )}
+
+    <th className="px-4 py-3">الحالة</th>
+    <th className="px-4 py-3 text-center">إجراءات</th>
+  </tr>
+</thead>
+
 
             <tbody className="divide-y">
               {agents.map((a, i) => (
-                <tr key={a.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-2">{i + 1}</td>
-                  <td className="px-4 py-2">{a.name}</td>
-                  <td className="px-4 py-2">{a.phone || "-"}</td>
-                  <td className="px-4 py-2">
-                    {a.is_active ? (
-                      <span className="text-green-600 font-semibold">مفعل</span>
-                    ) : (
-                      <span className="text-red-600 font-semibold">معطل</span>
-                    )}
-                  </td>
+               <tr key={a.id} className="hover:bg-gray-50">
+  <td className="px-4 py-2">{i + 1}</td>
+  <td className="px-4 py-2">{a.name}</td>
+  <td className="px-4 py-2">{a.phone || "-"}</td>
 
-                  <td className="px-4 py-2 flex justify-center gap-3">
-                    {hasPermission(user, "agents", "edit") && (
-                      <button
-                        onClick={() => openEditModal(a)}
-                        className="text-blue-600"
-                      >
-                        تعديل
-                      </button>
-                    )}
+  {user?.is_admin === 1 && (
+    <td className="px-4 py-2">
+      {branches.find((b) => b.id === a.branch_id)?.name || "-"}
+    </td>
+  )}
 
-                    {hasPermission(user, "agents", "edit") && (
-                      <button
-                        onClick={() => toggleAgent(a)}
-                        className={
-                          a.is_active ? "text-yellow-600" : "text-green-600"
-                        }
-                      >
-                        {a.is_active ? "تعطيل" : "تفعيل"}
-                      </button>
-                    )}
+  <td className="px-4 py-2">
+    {a.is_active ? (
+      <span className="text-green-600 font-semibold">مفعل</span>
+    ) : (
+      <span className="text-red-600 font-semibold">معطل</span>
+    )}
+  </td>
 
-                    {hasPermission(user, "agents", "delete") && (
-                      <button
-                        onClick={() => deleteAgent(a.id)}
-                        className="text-red-600"
-                      >
-                        حذف
-                      </button>
-                    )}
-                  </td>
-                </tr>
+  <td className="px-4 py-2 flex justify-center gap-3 flex-wrap">
+    {hasPermission(user, "agents", "edit") && (
+      <button
+        onClick={() => openEditModal(a)}
+        className="text-blue-600"
+      >
+        تعديل
+      </button>
+    )}
+
+    {hasPermission(user, "agents", "edit") && (
+      <button
+        onClick={() => toggleAgent(a)}
+        className={a.is_active ? "text-yellow-600" : "text-green-600"}
+      >
+        {a.is_active ? "تعطيل" : "تفعيل"}
+      </button>
+    )}
+
+    {hasPermission(user, "agents", "edit") && (
+      <button
+        onClick={() => resetPassword(a.id)}
+        className="text-purple-600"
+      >
+        إعادة كلمة المرور
+      </button>
+    )}
+
+    {hasPermission(user, "agents", "delete") && (
+      <button
+        onClick={() => deleteAgent(a.id)}
+        className="text-red-600"
+      >
+        حذف
+      </button>
+    )}
+  </td>
+</tr>
+
               ))}
             </tbody>
           </table>
