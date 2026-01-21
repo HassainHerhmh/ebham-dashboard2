@@ -65,25 +65,36 @@ const [currencyId, setCurrencyId] = useState("");
      تحميل البيانات
   ========================= */
 const loadData = async () => {
-  const [info, agentsData, captainsData, groupsData, accountsData, currenciesData] =
-    await Promise.all([
+  try {
+    const [
+      info,
+      agentsData,
+      captainsData,
+      groupsData,
+      accountsRes,
+      currenciesData,
+    ] = await Promise.all([
       api.agentInfo.getAll(),
-      api.agents.getAgents(),        // الوكلاء
-      api.captains.getCaptains(),    // الكباتن
-      api.agentGroups.getGroups(),
-      api.accounts.getAccounts(),    // { tree, list }
-      api.currencies.getAll(),       // العملات
+      api.agents.getAgents(),          // الوكلاء
+      api.captains.getCaptains(),      // الكباتن (الاسم الصحيح)
+      api.agentGroups.getGroups(),     // مجموعات الوكلاء
+      api.accounts.getAccounts(),      // الحسابات
+      api.currencies.getAll(),         // العملات
     ]);
 
-  setRows(info);
-  setAgents(agentsData);
-  setCaptains(captainsData);
-  setGroups(groupsData);
+    setRows(info || []);
+    setAgents(agentsData || []);
+    setCaptains(captainsData || []);
+    setGroups(groupsData || []);
 
-  // نعرض الحسابات الفرعية فقط من list
-  setAccounts((accountsData.list || []).filter((a: any) => a.parent_id));
+    // getAccounts يرجّع { tree, list }
+    const list = accountsRes?.list || [];
+    setAccounts(list.filter((a: any) => a.parent_id)); // الفرعية فقط
 
-  setCurrencies(currenciesData);
+    setCurrencies(currenciesData || []);
+  } catch (e) {
+    console.error("AgentInfo loadData error:", e);
+  }
 };
 
 
