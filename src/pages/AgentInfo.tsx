@@ -167,8 +167,8 @@ const handleAdd = async () => {
     r.agent_name.includes(search)
   );
 
-   const handleEdit = (row: AgentInfoRow) => {
-  // افتح نفس المودال مع تعبئة القيم
+  const handleEdit = (row: AgentInfoRow) => {
+  setEditingId(row.id);
   setShowModal(true);
 
   setAccountType((row as any).account_type || "agent");
@@ -179,12 +179,21 @@ const handleAdd = async () => {
   setAgentAccountId(String((row as any).agent_account_id || ""));
   setCommissionAccountId(String((row as any).commission_account_id || ""));
   setCurrencyId(String((row as any).currency_id || ""));
-  setContractStart((row as any).contract_start || "");
-  setContractEnd((row as any).contract_end || "");
 
-  // خزّن المعرف للتعديل
-  setEditingId(row.id);
+  // المهم هنا
+  setContractStart(
+    (row as any).contract_start
+      ? String((row as any).contract_start).slice(0, 10)
+      : ""
+  );
+
+  setContractEnd(
+    (row as any).contract_end
+      ? String((row as any).contract_end).slice(0, 10)
+      : ""
+  );
 };
+
 
 const handleDelete = async (id: number) => {
   if (!confirm("هل أنت متأكد من الحذف؟")) return;
