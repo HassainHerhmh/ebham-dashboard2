@@ -10,7 +10,9 @@ interface Agent {
   address?: string;
   is_active: number;
   branch_id?: number;
+  branch_name?: string; // ← أضف هذا السطر
 }
+
 
 interface Branch {
   id: number;
