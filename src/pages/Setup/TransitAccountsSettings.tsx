@@ -14,25 +14,23 @@ const TransitAccountsSettings = () => {
   const [transferGuarantee, setTransferGuarantee] = useState<number | "">("");
   const [currencyExchange, setCurrencyExchange] = useState<number | "">("");
 
-  useEffect(() => {
-    (async () => {
-      try {
-        // جلب الحسابات
-        const accRes = await (api as any).accounts.getAccounts();
-        setAccounts(accRes.list || []);
+useEffect(() => {
+  (async () => {
+    const accRes = await api.get("/accounts/list");
+    setAccounts(accRes.data?.list || []);
 
-        // جلب الإعدادات الحالية
-        const settings = await (api as any).transitAccounts.get();
+    const setRes = await api.get("/settings/transit-accounts");
+    const s = setRes.data?.data;
 
-        setCommissionIncome(settings?.commission_income_account || "");
-        setCourierCommission(settings?.courier_commission_account || "");
-        setTransferGuarantee(settings?.transfer_guarantee_account || "");
-        setCurrencyExchange(settings?.currency_exchange_account || "");
-      } catch (e) {
-        console.error(e);
-      }
-    })();
-  }, []);
+    if (s) {
+      setCommissionIncome(s.commission_income_account || "");
+      setCourierCommission(s.courier_commission_account || "");
+      setTransferGuarantee(s.transfer_guarantee_account || "");
+      setCurrencyExchange(s.currency_exchange_account || "");
+    }
+  })();
+}, []);
+
 
   const save = async () => {
     const payload = {
