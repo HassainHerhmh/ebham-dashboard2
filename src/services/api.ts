@@ -1028,8 +1028,16 @@ export const executeExchange = async (data: {
 ========================= */
 (api as any).agents = {
   // لوحة التحكم
-  getAgents: async () =>
-    (await api.get("/agents")).data,
+  getAgents: async () => {
+    const headers: any = {};
+    const branchId = localStorage.getItem("branch_id");
+
+    if (branchId) {
+      headers["x-branch-id"] = branchId;
+    }
+
+    return (await api.get("/agents", { headers })).data;
+  },
 
   addAgent: async (data: any) =>
     (await api.post("/agents", data)).data,
