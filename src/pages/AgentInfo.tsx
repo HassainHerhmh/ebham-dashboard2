@@ -107,6 +107,14 @@ setCurrencies(currenciesData?.data || []);
     loadData();
   }, []);
 
+    console.log("agentsData", agentsData);
+console.log("captainsData", captainsData);
+console.log("groupsData", groupsData);
+console.log("accountsRes", accountsRes);
+console.log("currenciesData", currenciesData);
+
+
+  
   /* =========================
      إضافة
   ========================= */
@@ -232,11 +240,12 @@ const handleAdd = async () => {
     {accountType === "agent" ? "اختر الوكيل" : "اختر الموصل"}
   </option>
 
-  {(accountType === "agent" ? agents : captains).map((a: any) => (
-    <option key={a.id} value={a.id}>
-      {a.name}
-    </option>
-  ))}
+{(accountType === "agent" ? agents : captains).map((a: any) => (
+  <option key={a.id} value={a.id}>
+    {a.name}
+  </option>
+))}
+
 </select>
 
 {/* الحساب + المجموعة */}
