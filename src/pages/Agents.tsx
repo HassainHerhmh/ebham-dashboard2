@@ -9,6 +9,7 @@ interface Agent {
   phone?: string;
   address?: string;
   is_active: number;
+  branch_id?: number;
 }
 
 interface Branch {
@@ -21,8 +22,6 @@ const Agents: React.FC = () => {
 
   const [agents, setAgents] = useState<Agent[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
-  const [branchId, setBranchId] = useState<number | "">("");
-
   const [loading, setLoading] = useState(true);
 
   // modal
@@ -35,6 +34,7 @@ const Agents: React.FC = () => {
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [password, setPassword] = useState("");
+  const [branchId, setBranchId] = useState<number | "">("");
 
   /* =========================
      Load
@@ -54,15 +54,11 @@ const Agents: React.FC = () => {
   useEffect(() => {
     fetchAgents();
 
-    // الإداري فقط يجلب كل الفروع
-    if (user?.is_admin === 1) {
+    // جلب الفروع فقط لفرع الإدارة
+    if (user?.is_admin_branch) {
       (async () => {
-        try {
-          const res = await api.branches.getAll();
-          setBranches(res.branches || []);
-        } catch (e) {
-          console.error("Fetch branches error", e);
-        }
+        const res = await api.branches.getAll();
+        setBranches(res.branches || []);
       })();
     }
   }, []);
@@ -82,6 +78,7 @@ const Agents: React.FC = () => {
     setEmail(agent.email || "");
     setPhone(agent.phone || "");
     setAddress(agent.address || "");
+    setBranchId(agent.branch_id || "");
     setPassword("");
     setIsModalOpen(true);
   };
@@ -108,15 +105,12 @@ const Agents: React.FC = () => {
 
     const payload: any = { name, email, phone, address };
 
-    // تحديد الفرع
-    if (user?.is_admin === 1) {
+    if (user?.is_admin_branch) {
       if (!branchId) {
         alert("❌ اختر الفرع");
         return;
       }
       payload.branch_id = branchId;
-    } else {
-      payload.branch_id = user?.branch_id;
     }
 
     if (!editingAgent && !password) {
@@ -166,7 +160,7 @@ const Agents: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" dir="rtl">
       {/* Header */}
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">الوكلاء</h1>
@@ -174,7 +168,7 @@ const Agents: React.FC = () => {
         {hasPermission(user, "agents", "add") && (
           <button
             onClick={openAddModal}
-            className="bg-green-600 text-white px-4 py-2 rounded"
+            className="bg-green-600 text-white px-4 py-2 rounded-lg"
           >
             إضافة وكيل
           </button>
@@ -253,8 +247,8 @@ const Agents: React.FC = () => {
       {/* Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white w-full max-w-lg p-6 rounded-xl space-y-4 shadow-lg">
-            <h2 className="text-xl font-bold border-b pb-2">
+          <div className="bg-white w-full max-w-lg p-6 rounded-xl space-y-4">
+            <h2 className="text-xl font-bold">
               {editingAgent ? "تعديل وكيل" : "إضافة وكيل"}
             </h2>
 
@@ -269,16 +263,16 @@ const Agents: React.FC = () => {
 
               <input
                 className="border p-2 rounded"
-                placeholder="البريد الإلكتروني"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                placeholder="رقم الجوال"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
               />
 
               <input
                 className="border p-2 rounded"
-                placeholder="رقم الجوال"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                placeholder="البريد الإلكتروني"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
               />
 
               <input
@@ -288,7 +282,7 @@ const Agents: React.FC = () => {
                 onChange={(e) => setAddress(e.target.value)}
               />
 
-              {user?.is_admin === 1 && (
+              {user?.is_admin_branch && (
                 <select
                   className="border p-2 rounded col-span-2"
                   value={branchId}
@@ -297,6 +291,7 @@ const Agents: React.FC = () => {
                       ? setBranchId(Number(e.target.value))
                       : setBranchId("")
                   }
+                  required
                 >
                   <option value="">اختر الفرع</option>
                   {branches.map((b) => (
@@ -318,17 +313,17 @@ const Agents: React.FC = () => {
                 />
               )}
 
-              <div className="col-span-2 flex justify-end gap-2 pt-3">
+              <div className="col-span-2 flex justify-end gap-2 pt-2">
                 <button
                   type="submit"
-                  className="bg-green-600 text-white px-5 py-2 rounded"
+                  className="bg-green-600 text-white px-4 py-2 rounded"
                 >
                   حفظ
                 </button>
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="bg-gray-400 text-white px-5 py-2 rounded"
+                  className="bg-gray-400 text-white px-4 py-2 rounded"
                 >
                   إلغاء
                 </button>
