@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import api from "../../services/api";
 
- type Account = {
+type Account = {
   id: number;
   name_ar: string;
   parent_id: number | null;
