@@ -87,17 +87,6 @@ useEffect(() => {
 const PaymentSettings: React.FC = () => {
   const [methods, setMethods] = useState<PaymentMethod[]>([]);
 
-  const loadMethods = async () => {
-  const res = await api.paymentMethods.getAll();
-  const list = res?.methods || res || [];
-  setMethods(
-    list.map((m: any) => ({
-      ...m,
-      is_active: Number(m.is_active),
-    }))
-  );
-};
-
 
   // الإضافة / التعديل
   const [company, setCompany] = useState("");
@@ -118,9 +107,10 @@ const PaymentSettings: React.FC = () => {
 
   /* ===== Load ===== */
   const loadMethods = async () => {
-    const rows = await api.paymentMethods.getAll();
+    const res = await api.paymentMethods.getAll();
+    const list = res?.methods || res || [];
     setMethods(
-      (rows || []).map((m: any) => ({
+      list.map((m: any) => ({
         ...m,
         is_active: Number(m.is_active),
       }))
@@ -130,6 +120,7 @@ const PaymentSettings: React.FC = () => {
   useEffect(() => {
     loadMethods();
   }, []);
+
 
   /* ===== Save ===== */
   const saveMethod = async () => {
