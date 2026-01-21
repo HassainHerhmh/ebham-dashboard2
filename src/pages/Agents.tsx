@@ -287,20 +287,24 @@ useEffect(() => {
   )}
 
   {/* اختيار الفرع – يظهر فقط لإدارة الفروع */}
-{user?.is_admin === 0 && (
+{user?.is_admin === 1 && (
   <select
-    className="border p-2 rounded w-full"
-    value={branchId}
-    onChange={(e) => setBranchId(Number(e.target.value))}
-    required
-  >
-    <option value="">اختر الفرع</option>
-    {branches.map((b) => (
-      <option key={b.id} value={b.id}>
-        {b.name}
-      </option>
-    ))}
-  </select>
+  className="border p-2 rounded w-full"
+  value={branchId}
+  onChange={(e) => setBranchId(Number(e.target.value))}
+  disabled={user?.is_admin !== 1}
+>
+  <option value="">
+    {user?.is_admin === 1 ? "اختر الفرع" : "فرعك الحالي"}
+  </option>
+
+  {branches.map((b) => (
+    <option key={b.id} value={b.id}>
+      {b.name}
+    </option>
+  ))}
+</select>
+
 )}
 
 
