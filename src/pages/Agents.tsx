@@ -213,11 +213,12 @@ const resetPassword = async (agentId: number) => {
             <td className="px-4 py-2">{a.name}</td>
             <td className="px-4 py-2">{a.phone || "-"}</td>
 
-            {user?.is_admin === 1 && (
-              <td className="px-4 py-2">
-                {branches.find((b) => b.id === a.branch_id)?.name || "-"}
-              </td>
-            )}
+{user?.is_admin === 1 && (
+  <td className="px-4 py-2">
+    {a.branch_name || "-"}
+  </td>
+)}
+
 
             <td className="px-4 py-2">
               {a.is_active ? (
