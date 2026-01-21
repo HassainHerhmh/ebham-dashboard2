@@ -103,6 +103,7 @@ const App: React.FC = () => {
                     <Route path="/categories" element={<ProtectedRoute section="categories"><Categories /></ProtectedRoute>} />
                     <Route path="/units" element={<ProtectedRoute section="units"><Units /></ProtectedRoute>} />
                     <Route path="/captains" element={<ProtectedRoute section="captains"><Captains /></ProtectedRoute>} />
+                     <Route path="/CaptainGroups" element={<ProtectedRoute section="captains"><CaptainGroups /></ProtectedRoute>} />
                     <Route path="/marketing" element={<ProtectedRoute section="marketing"><Marketing /></ProtectedRoute>} />
                     <Route path="/reports" element={<ProtectedRoute section="reports"><Reports /></ProtectedRoute>} />
                     <Route path="/neighborhoods" element={<ProtectedRoute section="neighborhoods"><Neighborhoods /></ProtectedRoute>} />
