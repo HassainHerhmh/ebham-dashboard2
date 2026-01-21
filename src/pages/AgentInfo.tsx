@@ -40,6 +40,10 @@ const AgentInfo: React.FC = () => {
   const [accounts, setAccounts] = useState<Account[]>([]);
 const [agentAccountId, setAgentAccountId] = useState("");
 const [commissionAccountId, setCommissionAccountId] = useState("");
+const [accountType, setAccountType] = useState<"agent" | "captain">("agent");
+const [commissionType, setCommissionType] = useState<"percent" | "fixed">("percent");
+const [contractStart, setContractStart] = useState("");
+const [contractEnd, setContractEnd] = useState("");
 
   /* =========================
      تحميل البيانات
@@ -66,28 +70,31 @@ const loadData = async () => {
   /* =========================
      إضافة
   ========================= */
-  const handleAdd = async () => {
-  if (!agentId || !groupId || !agentAccountId || !commissionAccountId) {
+ const handleAdd = async () => {
+  if (!agentId || !contractStart || !contractEnd) {
     alert("اكمل كل الحقول");
     return;
   }
 
   await api.agentInfo.add({
-    agent_id: Number(agentId),
-    group_id: Number(groupId),
-    commission: Number(commission),
-    agent_account_id: Number(agentAccountId),
-    commission_account_id: Number(commissionAccountId),
+    account_type: accountType,      // agent | captain
+    account_id: Number(agentId),
+    group_id: groupId ? Number(groupId) : null,
+    commission_type: commissionType, // percent | fixed
+    commission_value: Number(commission),
+    contract_start: contractStart,
+    contract_end: contractEnd,
   });
 
   setShowModal(false);
   setAgentId("");
   setGroupId("");
   setCommission("0");
-  setAgentAccountId("");
-  setCommissionAccountId("");
+  setContractStart("");
+  setContractEnd("");
   loadData();
 };
+
 
   const filtered = rows.filter((r) =>
     r.agent_name.includes(search)
@@ -150,56 +157,92 @@ const loadData = async () => {
 
             <h2 className="text-xl font-bold text-right">إضافة وكيل</h2>
 
-            <select
-              className="w-full p-3 rounded"
-              value={agentId}
-              onChange={(e) => setAgentId(e.target.value)}
-            >
-              <option value="">اختر الوكيل</option>
-              {agents.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.name}
-                </option>
-              ))}
-            </select>
-
-            <select
-              className="w-full p-3 rounded"
-              value={groupId}
-              onChange={(e) => setGroupId(e.target.value)}
-            >
-              <option value="">اختر المجموعة</option>
-              {groups.map((g) => (
-                <option key={g.id} value={g.id}>
-                  {g.name}
-                </option>
-              ))}
-            </select>
+        {/* نوع الحساب */}
 <select
   className="w-full p-3 rounded"
-  value={agentAccountId}
-  onChange={(e) => setAgentAccountId(e.target.value)}
+  value={accountType}
+  onChange={(e) => setAccountType(e.target.value as any)}
 >
-  <option value="">اختر حساب الوكيل</option>
-  {accounts.map((a) => (
-    <option key={a.id} value={a.id}>
-      {a.name}
-    </option>
-  ))}
+  <option value="agent">وكيل</option>
+  <option value="captain">موصل</option>
 </select>
 
+{/* الحساب + المجموعة */}
+<div className="grid grid-cols-2 gap-3">
+  <select
+    className="w-full p-3 rounded"
+    value={agentId}
+    onChange={(e) => setAgentId(e.target.value)}
+  >
+    <option value="">
+      {accountType === "agent" ? "اختر الوكيل" : "اختر الموصل"}
+    </option>
+    {(accountType === "agent" ? agents : captains).map((a: any) => (
+      <option key={a.id} value={a.id}>
+        {a.name}
+      </option>
+    ))}
+  </select>
+
+  <select
+    className="w-full p-3 rounded"
+    value={groupId}
+    onChange={(e) => setGroupId(e.target.value)}
+  >
+    <option value="">اختر المجموعة</option>
+    {groups.map((g) => (
+      <option key={g.id} value={g.id}>
+        {g.name}
+      </option>
+    ))}
+  </select>
+</div>
+
+{/* نوع العمولة */}
 <select
   className="w-full p-3 rounded"
-  value={commissionAccountId}
-  onChange={(e) => setCommissionAccountId(e.target.value)}
+  value={commissionType}
+  onChange={(e) => setCommissionType(e.target.value as any)}
 >
-  <option value="">اختر حساب العمولة</option>
-  {accounts.map((a) => (
-    <option key={a.id} value={a.id}>
-      {a.name}
-    </option>
-  ))}
+  <option value="percent">نسبة مئوية</option>
+  <option value="fixed">مبلغ ثابت</option>
 </select>
+
+{/* القيمة + العملة (إن وجدت) */}
+<div className="grid grid-cols-2 gap-3">
+  <input
+    type="number"
+    placeholder={
+      commissionType === "percent" ? "النسبة %" : "المبلغ الثابت"
+    }
+    className="w-full p-3 rounded"
+    value={commission}
+    onChange={(e) => setCommission(e.target.value)}
+  />
+
+  <select className="w-full p-3 rounded">
+    <option value="">العملة</option>
+    <option value="YER">YER</option>
+    <option value="USD">USD</option>
+  </select>
+</div>
+
+{/* فترة العقد */}
+<div className="grid grid-cols-2 gap-3">
+  <input
+    type="date"
+    className="w-full p-3 rounded"
+    value={contractStart}
+    onChange={(e) => setContractStart(e.target.value)}
+  />
+  <input
+    type="date"
+    className="w-full p-3 rounded"
+    value={contractEnd}
+    onChange={(e) => setContractEnd(e.target.value)}
+  />
+</div>
+
 
             <input
               type="number"
