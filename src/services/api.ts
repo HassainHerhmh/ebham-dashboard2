@@ -309,13 +309,17 @@ export const deleteRestaurant = async (id: number) => {
 };
 
 
-
- /* =========================
+/* =========================
    CAPTAINS
 ========================= */
 (api as any).captains = {
-  getCaptains: async () =>
+  // لكل الصفحات (مثل صفحة العمولات)
+  getAll: async () =>
     (await api.get("/captains")).data.captains,
+
+  // لصفحة الطلبات (المتاحين)
+  getAvailableCaptains: async () =>
+    (await api.get("/captains")).data,
 
   addCaptain: async (data: any) =>
     (await api.post("/captains", data)).data,
@@ -935,16 +939,6 @@ export const saveDeliverySettings = (data: any) =>
     (await api.post("/orders", data)).data,
 };
 
-/* =========================
-   CAPTAINS – AVAILABLE
-========================= */
-(api as any).captains = {
-  ...(api as any).captains,
-
-  // جلب الكباتن المتاحين للتعيين
-  getAvailableCaptains: async () =>
-    (await api.get("/captains")).data,
-};
 
 /* =========================
    CURRENCY EXCHANGE (مصارفة العملة)
