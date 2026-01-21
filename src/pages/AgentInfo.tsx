@@ -11,12 +11,20 @@ interface Group {
   name: string;
 }
 
+interface Account {
+  id: number;
+  name: string;
+}
+
 interface AgentInfoRow {
   id: number;
   agent_name: string;
   group_name: string;
   commission: number;
+  agent_account_name: string;
+  commission_account_name: string;
 }
+
 
 const AgentInfo: React.FC = () => {
   const [rows, setRows] = useState<AgentInfoRow[]>([]);
@@ -29,21 +37,27 @@ const AgentInfo: React.FC = () => {
   const [agentId, setAgentId] = useState("");
   const [groupId, setGroupId] = useState("");
   const [commission, setCommission] = useState("0");
+  const [accounts, setAccounts] = useState<Account[]>([]);
+const [agentAccountId, setAgentAccountId] = useState("");
+const [commissionAccountId, setCommissionAccountId] = useState("");
 
   /* =========================
      تحميل البيانات
   ========================= */
-  const loadData = async () => {
-    const [info, agentsData, groupsData] = await Promise.all([
-      api.agentInfo.getAll(),
-      api.agents.getAgents(),
-      api.agentGroups.getGroups(),
-    ]);
+const loadData = async () => {
+  const [info, agentsData, groupsData, accountsData] = await Promise.all([
+    api.agentInfo.getAll(),
+    api.agents.getAgents(),
+    api.agentGroups.getGroups(),
+    api.accounts.getAll(),
+  ]);
 
-    setRows(info);
-    setAgents(agentsData);
-    setGroups(groupsData);
-  };
+  setRows(info);
+  setAgents(agentsData);
+  setGroups(groupsData);
+  setAccounts(accountsData);
+};
+;
 
   useEffect(() => {
     loadData();
@@ -53,23 +67,27 @@ const AgentInfo: React.FC = () => {
      إضافة
   ========================= */
   const handleAdd = async () => {
-    if (!agentId || !groupId) {
-      alert("اختر الوكيل والمجموعة");
-      return;
-    }
+  if (!agentId || !groupId || !agentAccountId || !commissionAccountId) {
+    alert("اكمل كل الحقول");
+    return;
+  }
 
-    await api.agentInfo.add({
-      agent_id: Number(agentId),
-      group_id: Number(groupId),
-      commission: Number(commission),
-    });
+  await api.agentInfo.add({
+    agent_id: Number(agentId),
+    group_id: Number(groupId),
+    commission: Number(commission),
+    agent_account_id: Number(agentAccountId),
+    commission_account_id: Number(commissionAccountId),
+  });
 
-    setShowModal(false);
-    setAgentId("");
-    setGroupId("");
-    setCommission("0");
-    loadData();
-  };
+  setShowModal(false);
+  setAgentId("");
+  setGroupId("");
+  setCommission("0");
+  setAgentAccountId("");
+  setCommissionAccountId("");
+  loadData();
+};
 
   const filtered = rows.filter((r) =>
     r.agent_name.includes(search)
@@ -98,22 +116,28 @@ const AgentInfo: React.FC = () => {
 
       <div className="bg-white rounded shadow overflow-hidden">
         <table className="w-full text-right">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="p-3">الوكيل</th>
-              <th className="p-3">المجموعة</th>
-              <th className="p-3">العمولة %</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((r) => (
-              <tr key={r.id} className="border-t">
-                <td className="p-3">{r.agent_name}</td>
-                <td className="p-3">{r.group_name}</td>
-                <td className="p-3">{r.commission}</td>
-              </tr>
-            ))}
-          </tbody>
+         <thead className="bg-gray-100">
+  <tr>
+    <th className="p-3">الوكيل</th>
+    <th className="p-3">المجموعة</th>
+    <th className="p-3">حساب الوكيل</th>
+    <th className="p-3">حساب العمولة</th>
+    <th className="p-3">العمولة %</th>
+  </tr>
+</thead>
+
+<tbody>
+  {filtered.map((r) => (
+    <tr key={r.id} className="border-t">
+      <td className="p-3">{r.agent_name}</td>
+      <td className="p-3">{r.group_name}</td>
+      <td className="p-3">{r.agent_account_name}</td>
+      <td className="p-3">{r.commission_account_name}</td>
+      <td className="p-3">{r.commission}</td>
+    </tr>
+  ))}
+</tbody>
+
         </table>
       </div>
 
@@ -151,6 +175,31 @@ const AgentInfo: React.FC = () => {
                 </option>
               ))}
             </select>
+<select
+  className="w-full p-3 rounded"
+  value={agentAccountId}
+  onChange={(e) => setAgentAccountId(e.target.value)}
+>
+  <option value="">اختر حساب الوكيل</option>
+  {accounts.map((a) => (
+    <option key={a.id} value={a.id}>
+      {a.name}
+    </option>
+  ))}
+</select>
+
+<select
+  className="w-full p-3 rounded"
+  value={commissionAccountId}
+  onChange={(e) => setCommissionAccountId(e.target.value)}
+>
+  <option value="">اختر حساب العمولة</option>
+  {accounts.map((a) => (
+    <option key={a.id} value={a.id}>
+      {a.name}
+    </option>
+  ))}
+</select>
 
             <input
               type="number"
