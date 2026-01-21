@@ -226,57 +226,43 @@ const handleDelete = async (id: number) => {
 
       <div className="bg-white rounded shadow overflow-hidden">
         <table className="w-full text-right">
-  <thead className="bg-gray-100">
+ <thead className="bg-gray-100">
   <tr>
-    <th className="p-3">#</th>
-    <th className="p-3">الوكيل</th>
-    <th className="p-3">المجموعة</th>
-    <th className="p-3">حساب الوكيل / الموصل</th>
-    <th className="p-3">طريقة احتساب العمولة</th>
-    <th className="p-3">النسبة / المبلغ</th>
-    <th className="p-3">فترة العقد</th>
-    <th className="p-3">إجراءات</th>
+    <th className="p-3 text-center">#</th>
+    <th className="p-3 text-center">الوكيل</th>
+    <th className="p-3 text-center">المجموعة</th>
+    <th className="p-3 text-center">حساب الوكيل / الموصل</th>
+    <th className="p-3 text-center">طريقة احتساب العمولة</th>
+    <th className="p-3 text-center">النسبة / المبلغ</th>
+    <th className="p-3 text-center">فترة العقد</th>
+    <th className="p-3 text-center">إجراءات</th>
   </tr>
 </thead>
-
-
 
 <tbody>
   {filtered.map((r, i) => (
     <tr key={r.id} className="border-t">
-      <td className="p-3">{i + 1}</td>
-      <td className="p-3">{r.agent_name}</td>
-      <td className="p-3">{r.group_name || "-"}</td>
-      <td className="p-3">{r.agent_account_name || "-"}</td>
-
-      <td className="p-3">
+      <td className="p-3 text-center">{i + 1}</td>
+      <td className="p-3 text-center">{r.agent_name}</td>
+      <td className="p-3 text-center">{r.group_name || "-"}</td>
+      <td className="p-3 text-center">{r.agent_account_name || "-"}</td>
+      <td className="p-3 text-center">
         {r.commission_type === "percent" ? "نسبة مئوية" : "مبلغ ثابت"}
-    
       </td>
-<td className="p-3">
-  {r.contract_start
-    ? String(r.contract_start).slice(0, 10)
-    : "-"}
-  {" → "}
-  {r.contract_end
-    ? String(r.contract_end).slice(0, 10)
-    : "-"}
-</td>
-
-
-      <td className="p-3">
+      <td className="p-3 text-center">
+        {r.commission_value}
+        {r.commission_type === "percent" ? "%" : ` ${r.currency_code || ""}`}
+      </td>
+      <td className="p-3 text-center">
+        {String(r.contract_start).slice(0, 10)} →{" "}
+        {String(r.contract_end).slice(0, 10)}
+      </td>
+      <td className="p-3 text-center">
         <div className="flex gap-2 justify-center">
-          <button
-            className="px-3 py-1 rounded bg-blue-600 text-white"
-            onClick={() => handleEdit(r)}
-          >
+          <button className="px-3 py-1 rounded bg-blue-600 text-white">
             تعديل
           </button>
-
-          <button
-            className="px-3 py-1 rounded bg-red-600 text-white"
-            onClick={() => handleDelete(r.id)}
-          >
+          <button className="px-3 py-1 rounded bg-red-600 text-white">
             حذف
           </button>
         </div>
@@ -284,6 +270,7 @@ const handleDelete = async (id: number) => {
     </tr>
   ))}
 </tbody>
+
 
 
         </table>
