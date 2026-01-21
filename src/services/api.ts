@@ -1043,6 +1043,10 @@ export const executeExchange = async (data: {
   toggleAgent: async (id: number, is_active: boolean) =>
     (await api.patch(`/agents/${id}/toggle`, { is_active })).data,
 
+  // 🔐 إعادة تعيين كلمة المرور (توليد تلقائي من السيرفر)
+  resetPassword: async (id: number) =>
+    (await api.post(`/agents/${id}/reset-password`)).data,
+
   // تطبيق الوكلاء
   login: async (phone: string, password: string) =>
     (await api.post("/agents/login", { phone, password })).data,
