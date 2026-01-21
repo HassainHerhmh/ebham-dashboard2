@@ -14,6 +14,7 @@ import Types from "./pages/Types";
 import Customers from "./pages/Customers";
 import Restaurants from "./pages/Restaurants";
 import Captains from "./pages/Captains";
+import CaptainGroups from "./pages/CaptainGroups";
 import Marketing from "./pages/Marketing";
 import Reports from "./pages/Reports";
 import Categories from "./pages/Categories";
