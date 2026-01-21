@@ -69,9 +69,9 @@ const loadData = async () => {
     await Promise.all([
       api.agentInfo.getAll(),
       api.agents.getAgents(),        // الوكلاء
-      api.captains.getAll(),         // الكباتن
+      api.captains.getCaptains(),    // الكباتن
       api.agentGroups.getGroups(),
-    api.accounts.getAccounts(),       // كل الحسابات
+      api.accounts.getAccounts(),    // { tree, list }
       api.currencies.getAll(),       // العملات
     ]);
 
@@ -80,11 +80,12 @@ const loadData = async () => {
   setCaptains(captainsData);
   setGroups(groupsData);
 
-  // نعرض الحسابات الفرعية فقط
-  setAccounts(accountsData.filter((a: any) => a.parent_id));
+  // نعرض الحسابات الفرعية فقط من list
+  setAccounts((accountsData.list || []).filter((a: any) => a.parent_id));
 
   setCurrencies(currenciesData);
 };
+
 
 
   useEffect(() => {
