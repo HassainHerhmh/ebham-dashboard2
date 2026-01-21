@@ -280,7 +280,13 @@ const handleDelete = async (id: number) => {
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
           <div className="bg-[#e9efe6] rounded-xl w-full max-w-2xl mx-4 p-6 space-y-4">
 
-            <h2 className="text-xl font-bold text-right">إضافة وكيل</h2>
+         <button
+  onClick={handleAdd}
+  className="bg-green-700 text-white px-6 py-2 rounded"
+>
+  {editingId ? "حفظ التعديل" : "إضافة"}
+</button>
+
 
      {/* نوع الحساب */}
 <select
