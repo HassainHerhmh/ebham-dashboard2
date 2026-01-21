@@ -272,19 +272,19 @@ const startEdit = (m: PaymentMethod) => {
     const acc = accounts.find((a: any) => a.id === m.account_id);
 
     return (
-      <SortableRow key={m.id} method={m}>
-        <td>{m.company}</td>
-        <td>{m.account_number}</td>
-        <td>{m.owner_name}</td>
-        <td>{m.address}</td>
+   <SortableRow key={m.id} method={m}>
+  <td>{m.company}</td>
+  <td>{m.account_number}</td>
+  <td>{m.owner_name}</td>
+  <td>{m.address}</td>
 
-        <td className="text-sm text-gray-700">
-          {acc ? (acc.name_ar || acc.name) : "-"}
-        </td>
+  <td className="text-sm text-gray-700">
+    {acc ? (acc.name_ar || acc.name) : "-"}
+  </td>
 
-        <td>{m.is_active === 1 ? "مفعّلة" : "معطّلة"}</td>
+  <td>{m.is_active === 1 ? "مفعّلة" : "معطّلة"}</td>
 
-        <td className="flex gap-2 items-center">
+  <td className="flex gap-2 items-center">
           <button
             onClick={() => startEdit(m)}
             className="text-blue-600 hover:underline"
