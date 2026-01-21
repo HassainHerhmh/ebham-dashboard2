@@ -1023,5 +1023,29 @@ export const executeExchange = async (data: {
     (await api.delete(`/agent-groups/${id}`)).data,
 };
 
+/* =========================
+   AGENTS
+========================= */
+(api as any).agents = {
+  // لوحة التحكم
+  getAgents: async () =>
+    (await api.get("/agents")).data,
+
+  addAgent: async (data: any) =>
+    (await api.post("/agents", data)).data,
+
+  updateAgent: async (id: number, data: any) =>
+    (await api.put(`/agents/${id}`, data)).data,
+
+  deleteAgent: async (id: number) =>
+    (await api.delete(`/agents/${id}`)).data,
+
+  toggleAgent: async (id: number, is_active: boolean) =>
+    (await api.patch(`/agents/${id}/toggle`, { is_active })).data,
+
+  // تطبيق الوكلاء
+  login: async (phone: string, password: string) =>
+    (await api.post("/agents/login", { phone, password })).data,
+};
 
 export default api;
