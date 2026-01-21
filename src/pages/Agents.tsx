@@ -190,48 +190,49 @@ if (user?.is_admin === 1) {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded shadow overflow-hidden">
-        {loading ? (
-          <div className="p-6 text-center text-gray-500">جاري التحميل...</div>
-        ) : agents.length === 0 ? (
-          <div className="p-6 text-center text-gray-500">لا يوجد وكلاء</div>
-        ) : (
-         <thead className="bg-gray-100">
-  <tr>
-    <th className="px-4 py-3">#</th>
-    <th className="px-4 py-3">الاسم</th>
-    <th className="px-4 py-3">الجوال</th>
+<div className="bg-white rounded shadow overflow-hidden">
+  {loading ? (
+    <div className="p-6 text-center text-gray-500">جاري التحميل...</div>
+  ) : agents.length === 0 ? (
+    <div className="p-6 text-center text-gray-500">لا يوجد وكلاء</div>
+  ) : (
+    <table className="w-full text-right">
+      <thead className="bg-gray-100">
+        <tr>
+          <th className="px-4 py-3">#</th>
+          <th className="px-4 py-3">الاسم</th>
+          <th className="px-4 py-3">الجوال</th>
 
-    {user?.is_admin === 1 && (
-      <th className="px-4 py-3">الفرع</th>
-    )}
+          {user?.is_admin === 1 && (
+            <th className="px-4 py-3">الفرع</th>
+          )}
 
-    <th className="px-4 py-3">الحالة</th>
-    <th className="px-4 py-3 text-center">إجراءات</th>
-  </tr>
-</thead>
+          <th className="px-4 py-3">الحالة</th>
+          <th className="px-4 py-3 text-center">إجراءات</th>
+        </tr>
+      </thead>
 
+      <tbody className="divide-y">
+        {agents.map((a, i) => (
+          <tr key={a.id} className="hover:bg-gray-50">
+            <td className="px-4 py-2">{i + 1}</td>
+            <td className="px-4 py-2">{a.name}</td>
+            <td className="px-4 py-2">{a.phone || "-"}</td>
 
-            <tbody className="divide-y">
-              {agents.map((a, i) => (
-               <tr key={a.id} className="hover:bg-gray-50">
-  <td className="px-4 py-2">{i + 1}</td>
-  <td className="px-4 py-2">{a.name}</td>
-  <td className="px-4 py-2">{a.phone || "-"}</td>
+            {user?.is_admin === 1 && (
+              <td className="px-4 py-2">
+                {branches.find((b) => b.id === a.branch_id)?.name || "-"}
+              </td>
+            )}
 
-  {user?.is_admin === 1 && (
-    <td className="px-4 py-2">
-      {branches.find((b) => b.id === a.branch_id)?.name || "-"}
-    </td>
-  )}
+            <td className="px-4 py-2">
+              {a.is_active ? (
+                <span className="text-green-600 font-semibold">مفعل</span>
+              ) : (
+                <span className="text-red-600 font-semibold">معطل</span>
+              )}
+            </td>
 
-  <td className="px-4 py-2">
-    {a.is_active ? (
-      <span className="text-green-600 font-semibold">مفعل</span>
-    ) : (
-      <span className="text-red-600 font-semibold">معطل</span>
-    )}
-  </td>
 
   <td className="px-4 py-2 flex justify-center gap-3 flex-wrap">
     {hasPermission(user, "agents", "edit") && (
@@ -277,6 +278,7 @@ if (user?.is_admin === 1) {
           </table>
         )}
       </div>
+
 
       {/* Modal */}
       {isModalOpen && (
