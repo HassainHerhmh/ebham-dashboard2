@@ -78,28 +78,33 @@ const loadData = async () => {
       currenciesData,
     ] = await Promise.all([
       api.agentInfo.getAll(),
-      api.agents.getAgents(),          // الوكلاء
-      api.captains.getCaptains(),      // الكباتن (الاسم الصحيح)
-      api.agentGroups.getGroups(),     // مجموعات الوكلاء
-      api.accounts.getAccounts(),      // الحسابات
-      api.currencies.getAll(),         // العملات
+      api.agents.getAgents(),
+      api.captains.getCaptains(),
+      api.agentGroups.getGroups(),
+      api.accounts.getAccounts(),
+      api.currencies.getAll(),
     ]);
 
-   setRows(info?.data || []);
-setAgents(agentsData?.data || []);
-setCaptains(captainsData?.data || []);
-setGroups(groupsData?.data || []);
+    console.log("agentsData", agentsData);
+    console.log("captainsData", captainsData);
+    console.log("groupsData", groupsData);
+    console.log("accountsRes", accountsRes);
+    console.log("currenciesData", currenciesData);
 
-// getAccounts يرجّع { tree, list }
-const list = accountsRes?.list || accountsRes?.data?.list || [];
-setAccounts(list.filter((a: any) => a.parent_id));
+    setRows(info?.data || []);
+    setAgents(agentsData?.data || []);
+    setCaptains(captainsData?.data || []);
+    setGroups(groupsData?.data || []);
 
-setCurrencies(currenciesData?.data || []);
+    const list = accountsRes?.list || accountsRes?.data?.list || [];
+    setAccounts(list.filter((a: any) => a.parent_id));
 
+    setCurrencies(currenciesData?.data || []);
   } catch (e) {
     console.error("AgentInfo loadData error:", e);
   }
 };
+
 
 
 
