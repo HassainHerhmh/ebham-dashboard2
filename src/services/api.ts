@@ -988,6 +988,25 @@ export const executeExchange = async (data: {
   }) =>
     (await api.post("/currency-exchange", payload)).data,
 };
+/* =========================
+   TRANSIT ACCOUNTS SETTINGS
+   (الحسابات الوسيطة)
+========================= */
+
+(api as any).transitAccounts = {
+  // جلب الإعدادات الحالية
+  get: async () =>
+    (await api.get("/settings/transit-accounts")).data,
+
+  // حفظ الإعدادات
+  save: async (data: {
+    commission_income_account?: number | null;     // حساب وسيط إيرادات العمولات
+    courier_commission_account?: number | null;    // حساب وسيط عمولات الموصلين
+    transfer_guarantee_account?: number | null;    // حساب وسيط اعتماد الحوالات
+    currency_exchange_account?: number | null;     // حساب وسيط مصارفة العملة
+  }) =>
+    (await api.post("/settings/transit-accounts", data)).data,
+};
 
 
 
