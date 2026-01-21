@@ -55,10 +55,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
   const agentsGroup: MenuItem[] = [
     { key: "agents", label: "الوكلاء", path: "/agents" },
-    { key: "agent_info", label: "معلومات الوكلاء", path: "/agents/info" },
     { key: "agent_groups", label: "مجموعة الوكلاء", path: "/agents/groups" },
     { key: "captains", label: "الكباتن", path: "/captains" },
       { key: "Captain_Groups", label: "مجموعة الكباتن", path: "/CaptainGroups" },
+    { key: "agent_info", label: "عمولات", path: "/agents/info" },
   ];
 
   const settingsGroup: MenuItem[] = [
