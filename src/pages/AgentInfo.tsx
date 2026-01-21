@@ -181,7 +181,19 @@ const loadData = async () => {
 
             <h2 className="text-xl font-bold text-right">إضافة وكيل</h2>
 
-        {/* نوع الحساب */}
+     {/* نوع الحساب */}
+<select
+  className="w-full p-3 rounded"
+  value={accountType}
+  onChange={(e) => {
+    setAccountType(e.target.value as any);
+    setAgentId(""); // تصفير الاختيار عند التغيير
+  }}
+>
+  <option value="agent">وكيل</option>
+  <option value="captain">موصل</option>
+</select>
+
 <select
   className="w-full p-3 rounded"
   value={agentId}
@@ -197,8 +209,6 @@ const loadData = async () => {
     </option>
   ))}
 </select>
-
-
 
 {/* الحساب + المجموعة */}
 <div className="grid grid-cols-2 gap-3">
