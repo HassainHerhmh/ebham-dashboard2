@@ -11,6 +11,7 @@ import {
   Building2,
   Users,
   ShieldCheck,
+  Shuffle,
 } from "lucide-react";
 
 const setupTabs = [
@@ -25,6 +26,9 @@ const setupTabs = [
   { label: "مجموعة البنوك", path: "setup/bank-groups", icon: Building2 },
   { label: "مجموعة الحسابات", path: "setup/account-groups", icon: Users },
   { label: "تسقيف الحسابات", path: "setup/account-ceiling", icon: ShieldCheck },
+
+  // ⭐ الجديد
+  { label: "الحسابات الوسيطة", path: "setup/transit-accounts", icon: Shuffle },
 ];
 
 const Accounting = () => {
@@ -76,7 +80,7 @@ const Accounting = () => {
         <span className="text-gray-400">إدارة الترحيلات</span>
       </div>
 
-      {/* شريط التهيئة – يظهر فقط في setup */}
+      {/* شريط التهيئة */}
       {isSetup && (
         <div className="bg-white rounded shadow px-4 py-3 flex flex-wrap gap-4">
           {setupTabs.map((tab) => {
