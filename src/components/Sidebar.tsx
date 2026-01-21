@@ -57,6 +57,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     { key: "agents", label: "الوكلاء", path: "/agents" },
     { key: "agent_info", label: "معلومات الوكلاء", path: "/agents/info" },
     { key: "agent_groups", label: "مجموعة الوكلاء", path: "/agents/groups" },
+    { key: "captains", label: "الكباتن", path: "/captains" },
   ];
 
   const settingsGroup: MenuItem[] = [
@@ -125,13 +126,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             </Link>
           )}
 
-          {/* الكباتن */}
-          {canShow("captains") && (
-            <Link to="/captains" onClick={onClose}
-              className={`${linkBase} ${isPathActive("/captains") ? active : ""}`}>
-              الكباتن
-            </Link>
-          )}
+          
 
           {/* الطلبات */}
           {canShow("orders") && (
@@ -217,7 +212,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                 className="rounded px-4 py-2 cursor-pointer flex justify-between items-center hover:bg-blue-100"
                 onClick={() => setAgentsOpen(!agentsOpen)}
               >
-                <span className="font-semibold">الوكلاء</span>
+                <span className="font-semibold">تهيئة الوكلاء/الكباتن</span>
                 {agentsOpen ? <ChevronDown size={16} /> : <ChevronLeft size={16} />}
               </div>
 
