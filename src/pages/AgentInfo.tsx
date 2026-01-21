@@ -261,12 +261,20 @@ const handleDelete = async (id: number) => {
 
    <td className="p-3 text-center w-[120px]">
   <div className="flex gap-2 justify-center">
-    <button className="px-3 py-1 rounded bg-blue-600 text-white">
-      تعديل
-    </button>
-    <button className="px-3 py-1 rounded bg-red-600 text-white">
-      حذف
-    </button>
+  <button
+  className="px-3 py-1 rounded bg-blue-600 text-white"
+  onClick={() => handleEdit(r)}
+>
+  تعديل
+</button>
+
+<button
+  className="px-3 py-1 rounded bg-red-600 text-white"
+  onClick={() => handleDelete(r.id)}
+>
+  حذف
+</button>
+
   </div>
 </td>
 
@@ -285,13 +293,6 @@ const handleDelete = async (id: number) => {
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
           <div className="bg-[#e9efe6] rounded-xl w-full max-w-2xl mx-4 p-6 space-y-4">
-
-         <button
-  onClick={handleAdd}
-  className="bg-green-700 text-white px-6 py-2 rounded"
->
-  {editingId ? "حفظ التعديل" : "إضافة"}
-</button>
 
 
      {/* نوع الحساب */}
@@ -413,21 +414,25 @@ const handleDelete = async (id: number) => {
 
 
 
-            <div className="flex justify-between items-center">
-              <button
-                onClick={handleAdd}
-                className="bg-green-700 text-white px-6 py-2 rounded"
-              >
-                إضافة
-              </button>
+         <div className="flex justify-between items-center">
+  <button
+    onClick={handleAdd}
+    className="bg-green-700 text-white px-6 py-2 rounded"
+  >
+    {editingId ? "حفظ التعديل" : "إضافة"}
+  </button>
 
-              <button
-                onClick={() => setShowModal(false)}
-                className="text-green-700"
-              >
-                إلغاء الأمر
-              </button>
-            </div>
+  <button
+    onClick={() => {
+      setShowModal(false);
+      setEditingId(null);
+    }}
+    className="text-green-700"
+  >
+    إلغاء الأمر
+  </button>
+</div>
+
 
           </div>
         </div>
