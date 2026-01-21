@@ -50,11 +50,10 @@ const Agents: React.FC = () => {
       setLoading(false);
     }
   };
-
- useEffect(() => {
+useEffect(() => {
   fetchAgents();
 
-  if (user?.is_admin_branch) {
+  if (user?.is_admin === 1) {
     api.get("/branches").then((res) => {
       setBranches(res.data?.list || []);
     });
@@ -288,22 +287,23 @@ const Agents: React.FC = () => {
   )}
 
   {/* اختيار الفرع – يظهر فقط لإدارة الفروع */}
-  {user?.is_admin_branch && (
-   <select
-  className="border p-2 rounded w-full"
-  value={branchId}
-  onChange={(e) => setBranchId(Number(e.target.value))}
-  required
->
-  <option value="">اختر الفرع</option>
-  {branches.map((b: any) => (
-    <option key={b.id} value={b.id}>
-      {b.name}
-    </option>
-  ))}
-</select>
+{user?.is_admin === 1 && (
+  <select
+    className="border p-2 rounded w-full"
+    value={branchId}
+    onChange={(e) => setBranchId(Number(e.target.value))}
+    required
+  >
+    <option value="">اختر الفرع</option>
+    {branches.map((b) => (
+      <option key={b.id} value={b.id}>
+        {b.name}
+      </option>
+    ))}
+  </select>
+)}
 
-  )}
+
 
   <input
     className="border p-2 rounded w-full"
