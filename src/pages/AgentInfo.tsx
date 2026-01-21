@@ -20,10 +20,13 @@ interface AgentInfoRow {
   id: number;
   agent_name: string;
   group_name: string;
-  commission: number;
-  agent_account_name: string;
-  commission_account_name: string;
+  commission_value: number;
+  commission_type: "percent" | "fixed";
+  agent_account_name: string | null;
+  commission_account_name: string | null;
+  currency_code: string | null;
 }
+
 
 interface Captain {
   id: number;
@@ -106,26 +109,35 @@ const loadData = async () => {
   /* =========================
      إضافة
   ========================= */
- const handleAdd = async () => {
+const handleAdd = async () => {
   if (!agentId || !contractStart || !contractEnd) {
     alert("اكمل كل الحقول");
     return;
   }
 
   await api.agentInfo.add({
-    account_type: accountType,      // agent | captain
+    account_type: accountType,
     account_id: Number(agentId),
     group_id: groupId ? Number(groupId) : null,
-    commission_type: commissionType, // percent | fixed
+    commission_type: commissionType,
     commission_value: Number(commission),
     contract_start: contractStart,
     contract_end: contractEnd,
+
+    agent_account_id: agentAccountId ? Number(agentAccountId) : null,
+    commission_account_id: commissionAccountId
+      ? Number(commissionAccountId)
+      : null,
+    currency_id: currencyId ? Number(currencyId) : null,
   });
 
   setShowModal(false);
   setAgentId("");
   setGroupId("");
   setCommission("0");
+  setAgentAccountId("");
+  setCommissionAccountId("");
+  setCurrencyId("");
   setContractStart("");
   setContractEnd("");
   loadData();
@@ -173,13 +185,17 @@ const loadData = async () => {
   {filtered.map((r) => (
     <tr key={r.id} className="border-t">
       <td className="p-3">{r.agent_name}</td>
-      <td className="p-3">{r.group_name}</td>
-      <td className="p-3">{r.agent_account_name}</td>
-      <td className="p-3">{r.commission_account_name}</td>
-      <td className="p-3">{r.commission}</td>
+      <td className="p-3">{r.group_name || "-"}</td>
+      <td className="p-3">{r.agent_account_name || "-"}</td>
+      <td className="p-3">{r.commission_account_name || "-"}</td>
+      <td className="p-3">
+        {r.commission_value}
+        {r.commission_type === "percent" ? "%" : ` ${r.currency_code || ""}`}
+      </td>
     </tr>
   ))}
 </tbody>
+
 
         </table>
       </div>
