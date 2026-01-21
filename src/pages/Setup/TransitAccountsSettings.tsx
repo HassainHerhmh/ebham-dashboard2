@@ -4,7 +4,6 @@ import api from "../../services/api";
 type Account = {
   id: number;
   name_ar: string;
-  parent_id?: number | null;
 };
 
 const TransitAccountsSettings = () => {
@@ -17,23 +16,18 @@ const TransitAccountsSettings = () => {
 
   useEffect(() => {
     (async () => {
-      const res = await (api as any).accounts.getAccounts();
+      const res = await api.get("/accounts/list");
+      setAccounts(res.data?.list || []);
+    })();
 
-      // نأخذ الحسابات الفرعية فقط
-      const subs = (res.list || []).filter(
-        (a: Account) => a.parent_id !== null
-      );
-
-      setAccounts(subs);
-
-      // جلب الإعدادات المحفوظة
-      const s = await api.get("/settings/transit-accounts");
-      const data = s.data?.data || {};
-
-      setCommissionIncome(data.commission_income_account || "");
-      setCourierCommission(data.courier_commission_account || "");
-      setTransferGuarantee(data.transfer_guarantee_account || "");
-      setCurrencyExchange(data.currency_exchange_account || "");
+    // جلب القيم المحفوظة
+    (async () => {
+      const res = await api.get("/settings/transit-accounts");
+      const d = res.data?.data || {};
+      setCommissionIncome(d.commission_income_account || "");
+      setCourierCommission(d.courier_commission_account || "");
+      setTransferGuarantee(d.transfer_guarantee_account || "");
+      setCurrencyExchange(d.currency_exchange_account || "");
     })();
   }, []);
 
@@ -53,18 +47,22 @@ const TransitAccountsSettings = () => {
     }
   };
 
-  const renderSelect = (
-    label: string,
-    value: number | "",
-    setValue: (v: any) => void
-  ) => (
-    <div className="space-y-1">
-      <label className="text-sm text-gray-600">{label}</label>
+  const Field = ({
+    label,
+    value,
+    onChange,
+  }: {
+    label: string;
+    value: number | "";
+    onChange: (v: number | "") => void;
+  }) => (
+    <div className="bg-white border rounded-xl p-4 space-y-2 shadow-sm">
+      <div className="text-sm font-semibold text-gray-700">{label}</div>
       <select
-        className="input w-full"
+        className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
         value={value}
         onChange={(e) =>
-          setValue(e.target.value ? Number(e.target.value) : "")
+          e.target.value ? onChange(Number(e.target.value)) : onChange("")
         }
       >
         <option value="">اختر حساب</option>
@@ -83,17 +81,33 @@ const TransitAccountsSettings = () => {
         الحسابات الوسيطة (Transit)
       </h2>
 
-      <div className="grid grid-cols-2 gap-4">
-        {renderSelect("حساب وسيط إيرادات العمولات", commissionIncome, setCommissionIncome)}
-        {renderSelect("حساب وسيط عمولات الموصلين", courierCommission, setCourierCommission)}
-        {renderSelect("حساب وسيط اعتماد الحوالات", transferGuarantee, setTransferGuarantee)}
-        {renderSelect("حساب وسيط مصارفة العملة", currencyExchange, setCurrencyExchange)}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Field
+          label="حساب وسيط إيرادات العمولات"
+          value={commissionIncome}
+          onChange={setCommissionIncome}
+        />
+        <Field
+          label="حساب وسيط عمولات الموصلين"
+          value={courierCommission}
+          onChange={setCourierCommission}
+        />
+        <Field
+          label="حساب وسيط اعتماد الحوالات"
+          value={transferGuarantee}
+          onChange={setTransferGuarantee}
+        />
+        <Field
+          label="حساب وسيط مصارفة العملة"
+          value={currencyExchange}
+          onChange={setCurrencyExchange}
+        />
       </div>
 
       <div className="flex justify-end">
         <button
           onClick={save}
-          className="bg-green-600 text-white px-6 py-2 rounded"
+          className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700"
         >
           حفظ الإعدادات
         </button>
