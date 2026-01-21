@@ -251,18 +251,18 @@ const handleDelete = async (id: number) => {
 
       <td className="p-3">
         {r.commission_type === "percent" ? "نسبة مئوية" : "مبلغ ثابت"}
+    
       </td>
+<td className="p-3">
+  {r.contract_start
+    ? String(r.contract_start).slice(0, 10)
+    : "-"}
+  {" → "}
+  {r.contract_end
+    ? String(r.contract_end).slice(0, 10)
+    : "-"}
+</td>
 
-      <td className="p-3">
-        {r.commission_value}
-        {r.commission_type === "percent"
-          ? "%"
-          : ` ${r.currency_code || ""}`}
-      </td>
-
-      <td className="p-3">
-        {r.contract_start} → {r.contract_end}
-      </td>
 
       <td className="p-3">
         <div className="flex gap-2 justify-center">
