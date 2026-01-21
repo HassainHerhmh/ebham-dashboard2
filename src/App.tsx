@@ -41,6 +41,8 @@ import CashBoxGroups from "./pages/Setup/CashBoxGroups";
 import ReceiptTypes from "./pages/Setup/ReceiptTypes";
 import PaymentTypes from "./pages/Setup/PaymentTypes";
 import JournalTypes from "./pages/Setup/JournalTypes";
+import TransitAccountsSettings from "./pages/Setup/TransitAccountsSettings";
+
 
 // العمليات
 import Operations from "./pages/Operations";
@@ -122,7 +124,8 @@ const App: React.FC = () => {
                       <Route path="setup/receipt-types" element={<ReceiptTypes />} />
                       <Route path="setup/payment-types" element={<PaymentTypes />} />
                       <Route path="setup/journal-types" element={<JournalTypes />} />
-
+                       <Route path="setup/transit-accounts"element={<TransitAccountsSettings />}  />
+                      
                       {/* العمليات */}
                       <Route path="operations" element={<Operations />}>
                         <Route path="receipt-voucher" element={<ReceiptVoucher />} />
