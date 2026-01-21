@@ -334,6 +334,20 @@ export const deleteRestaurant = async (id: number) => {
     (await api.put(`/captains/${id}/status`, { status })).data,
 };
 
+/*===========================
+مجموعة الكباتن
+=========================*/
+(api as any).captainGroups = {
+  getGroups: async () =>
+    (await api.get("/captain-groups")).data,
+
+  addGroup: async (data: { name: string; code: number }) =>
+    (await api.post("/captain-groups", data)).data,
+
+  deleteGroup: async (id: number) =>
+    (await api.delete(`/captain-groups/${id}`)).data,
+};
+
 /* =========================
    PAYMENT METHODS
 ========================= */
