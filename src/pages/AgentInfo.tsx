@@ -106,18 +106,9 @@ const loadData = async () => {
 };
 
 
-
-
   useEffect(() => {
     loadData();
   }, []);
-
-    console.log("agentsData", agentsData);
-console.log("captainsData", captainsData);
-console.log("groupsData", groupsData);
-console.log("accountsRes", accountsRes);
-console.log("currenciesData", currenciesData);
-
 
   
   /* =========================
