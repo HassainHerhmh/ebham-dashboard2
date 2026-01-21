@@ -4,7 +4,7 @@ import api from "../services/api";
 interface AgentGroup {
   id: number;
   name: string;
-  code: string;
+  code: number; // صار رقم
   status?: string;
 }
 
@@ -13,7 +13,7 @@ const AgentGroups: React.FC = () => {
   const [filteredGroups, setFilteredGroups] = useState<AgentGroup[]>([]);
 
   const [name, setName] = useState("");
-  const [code, setCode] = useState("");
+  const [code, setCode] = useState<number | "">("");
   const [search, setSearch] = useState("");
 
   const [loading, setLoading] = useState(true);
@@ -48,7 +48,7 @@ const AgentGroups: React.FC = () => {
       groups.filter(
         (g) =>
           g.name.toLowerCase().includes(q) ||
-          g.code.toLowerCase().includes(q)
+          String(g.code).includes(q)
       )
     );
   }, [search, groups]);
@@ -58,7 +58,7 @@ const AgentGroups: React.FC = () => {
   ========================= */
   const handleAdd = async () => {
     if (!name || !code) {
-      alert("الاسم والرمز مطلوبان");
+      alert("الاسم والرقم مطلوبان");
       return;
     }
 
@@ -69,7 +69,7 @@ const AgentGroups: React.FC = () => {
       setIsModalOpen(false);
       fetchGroups();
     } catch (err) {
-      alert("❌ الرمز مستخدم مسبقًا");
+      alert("❌ الرقم مستخدم مسبقًا");
     }
   };
 
@@ -104,7 +104,7 @@ const AgentGroups: React.FC = () => {
       {/* البحث */}
       <input
         type="text"
-        placeholder="بحث بالاسم أو الرمز..."
+        placeholder="بحث بالاسم أو الرقم..."
         className="border p-2 rounded w-full"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
@@ -124,7 +124,7 @@ const AgentGroups: React.FC = () => {
               <tr>
                 <th className="p-3">#</th>
                 <th className="p-3">الاسم</th>
-                <th className="p-3">الرمز</th>
+                <th className="p-3">الرقم</th>
                 <th className="p-3 text-center">إجراءات</th>
               </tr>
             </thead>
@@ -150,9 +150,7 @@ const AgentGroups: React.FC = () => {
         )}
       </div>
 
-      {/* =========================
-         نافذة الإضافة (Modal)
-      ========================= */}
+      {/* نافذة الإضافة */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white w-full max-w-md rounded-lg p-6 shadow-lg">
@@ -171,11 +169,15 @@ const AgentGroups: React.FC = () => {
               />
 
               <input
-                type="text"
-                placeholder="رمز المجموعة"
+                type="number"
+                placeholder="رقم المجموعة"
                 className="border p-2 rounded w-full"
                 value={code}
-                onChange={(e) => setCode(e.target.value)}
+                onChange={(e) =>
+                  e.target.value
+                    ? setCode(Number(e.target.value))
+                    : setCode("")
+                }
               />
             </div>
 
