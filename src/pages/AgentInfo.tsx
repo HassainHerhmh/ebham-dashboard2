@@ -244,13 +244,6 @@ const loadData = async () => {
 </div>
 
 
-            <input
-              type="number"
-              placeholder="العمولة %"
-              className="w-full p-3 rounded"
-              value={commission}
-              onChange={(e) => setCommission(e.target.value)}
-            />
 
             <div className="flex justify-between items-center">
               <button
