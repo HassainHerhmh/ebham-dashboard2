@@ -1,102 +1,105 @@
-// routes/settings-transit.js
-import express from "express";
-import db from "../db.js";
-import auth from "../middlewares/auth.js";
+import { useEffect, useState } from "react";
+import api from "../../services/api";
 
-const router = express.Router();
-router.use(auth);
+type Account = {
+  id: number;
+  name_ar: string;
+  parent_id?: number | null;
+};
 
-/*
-GET /settings/transit-accounts
-يرجع الإعدادات الحالية
-*/
-router.get("/", async (req, res) => {
-  try {
-    const [rows] = await db.query(`
-      SELECT
-        commission_income_account,
-        courier_commission_account,
-        transfer_guarantee_account,
-        currency_exchange_account
-      FROM settings
-      WHERE id = 1
-      LIMIT 1
-    `);
+const TransitAccountsSettings = () => {
+  const [accounts, setAccounts] = useState<Account[]>([]);
 
-    // إذا ما فيه صف، نرجع قيم فاضية
-    res.json({
-      success: true,
-      data: rows[0] || {
-        commission_income_account: null,
-        courier_commission_account: null,
-        transfer_guarantee_account: null,
-        currency_exchange_account: null,
-      },
-    });
-  } catch (err) {
-    console.error("GET TRANSIT SETTINGS ERROR:", err);
-    res.status(500).json({ success: false });
-  }
-});
+  const [commissionIncome, setCommissionIncome] = useState<number | "">("");
+  const [courierCommission, setCourierCommission] = useState<number | "">("");
+  const [transferGuarantee, setTransferGuarantee] = useState<number | "">("");
+  const [currencyExchange, setCurrencyExchange] = useState<number | "">("");
 
-/*
-POST /settings/transit-accounts
-يحفظ الإعدادات (مع إنشاء السجل إن لم يكن موجودًا)
-*/
-router.post("/", async (req, res) => {
-  try {
-    const {
-      commission_income_account,
-      courier_commission_account,
-      transfer_guarantee_account,
-      currency_exchange_account,
-    } = req.body;
+  useEffect(() => {
+    (async () => {
+      const res = await (api as any).accounts.getAccounts();
 
-    // نتأكد هل السجل موجود
-    const [exists] = await db.query(
-      `SELECT id FROM settings WHERE id = 1 LIMIT 1`
-    );
-
-    if (exists.length === 0) {
-      // إنشاء السجل لأول مرة
-      await db.query(
-        `
-        INSERT INTO settings
-        (id, commission_income_account, courier_commission_account, transfer_guarantee_account, currency_exchange_account)
-        VALUES (1, ?, ?, ?, ?)
-        `,
-        [
-          commission_income_account || null,
-          courier_commission_account || null,
-          transfer_guarantee_account || null,
-          currency_exchange_account || null,
-        ]
+      // نأخذ الحسابات الفرعية فقط
+      const subs = (res.list || []).filter(
+        (a: Account) => a.parent_id !== null
       );
-    } else {
-      // تحديث السجل الموجود
-      await db.query(
-        `
-        UPDATE settings SET
-          commission_income_account = ?,
-          courier_commission_account = ?,
-          transfer_guarantee_account = ?,
-          currency_exchange_account = ?
-        WHERE id = 1
-        `,
-        [
-          commission_income_account || null,
-          courier_commission_account || null,
-          transfer_guarantee_account || null,
-          currency_exchange_account || null,
-        ]
-      );
+
+      setAccounts(subs);
+
+      // جلب الإعدادات المحفوظة
+      const s = await api.get("/settings/transit-accounts");
+      const data = s.data?.data || {};
+
+      setCommissionIncome(data.commission_income_account || "");
+      setCourierCommission(data.courier_commission_account || "");
+      setTransferGuarantee(data.transfer_guarantee_account || "");
+      setCurrencyExchange(data.currency_exchange_account || "");
+    })();
+  }, []);
+
+  const save = async () => {
+    const payload = {
+      commission_income_account: commissionIncome || null,
+      courier_commission_account: courierCommission || null,
+      transfer_guarantee_account: transferGuarantee || null,
+      currency_exchange_account: currencyExchange || null,
+    };
+
+    try {
+      await api.post("/settings/transit-accounts", payload);
+      alert("تم حفظ الإعدادات بنجاح");
+    } catch {
+      alert("فشل حفظ الإعدادات");
     }
+  };
 
-    res.json({ success: true });
-  } catch (err) {
-    console.error("SAVE TRANSIT SETTINGS ERROR:", err);
-    res.status(500).json({ success: false });
-  }
-});
+  const renderSelect = (
+    label: string,
+    value: number | "",
+    setValue: (v: any) => void
+  ) => (
+    <div className="space-y-1">
+      <label className="text-sm text-gray-600">{label}</label>
+      <select
+        className="input w-full"
+        value={value}
+        onChange={(e) =>
+          setValue(e.target.value ? Number(e.target.value) : "")
+        }
+      >
+        <option value="">اختر حساب</option>
+        {accounts.map((a) => (
+          <option key={a.id} value={a.id}>
+            {a.name_ar}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
 
-export default router;
+  return (
+    <div className="space-y-6" dir="rtl">
+      <h2 className="text-lg font-bold text-green-700">
+        الحسابات الوسيطة (Transit)
+      </h2>
+
+      <div className="grid grid-cols-2 gap-4">
+        {renderSelect("حساب وسيط إيرادات العمولات", commissionIncome, setCommissionIncome)}
+        {renderSelect("حساب وسيط عمولات الموصلين", courierCommission, setCourierCommission)}
+        {renderSelect("حساب وسيط اعتماد الحوالات", transferGuarantee, setTransferGuarantee)}
+        {renderSelect("حساب وسيط مصارفة العملة", currencyExchange, setCurrencyExchange)}
+      </div>
+
+      <div className="flex justify-end">
+        <button
+          onClick={save}
+          className="bg-green-600 text-white px-6 py-2 rounded"
+        >
+          حفظ الإعدادات
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default TransitAccountsSettings;
