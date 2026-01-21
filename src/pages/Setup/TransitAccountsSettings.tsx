@@ -4,6 +4,7 @@ import api from "../../services/api";
 type Account = {
   id: number;
   name_ar: string;
+  parent_id?: number | null;
 };
 
 const TransitAccountsSettings = () => {
@@ -14,23 +15,27 @@ const TransitAccountsSettings = () => {
   const [transferGuarantee, setTransferGuarantee] = useState<number | "">("");
   const [currencyExchange, setCurrencyExchange] = useState<number | "">("");
 
-useEffect(() => {
-  (async () => {
-    const accRes = await api.get("/accounts/list");
-    setAccounts(accRes.data?.list || []);
+  useEffect(() => {
+    (async () => {
+      const res = await (api as any).accounts.getAccounts();
 
-    const setRes = await api.get("/settings/transit-accounts");
-    const s = setRes.data?.data;
+      // نأخذ الحسابات الفرعية فقط
+      const subs = (res.list || []).filter(
+        (a: Account) => a.parent_id !== null
+      );
 
-    if (s) {
-      setCommissionIncome(s.commission_income_account || "");
-      setCourierCommission(s.courier_commission_account || "");
-      setTransferGuarantee(s.transfer_guarantee_account || "");
-      setCurrencyExchange(s.currency_exchange_account || "");
-    }
-  })();
-}, []);
+      setAccounts(subs);
 
+      // جلب الإعدادات المحفوظة
+      const s = await api.get("/settings/transit-accounts");
+      const data = s.data?.data || {};
+
+      setCommissionIncome(data.commission_income_account || "");
+      setCourierCommission(data.courier_commission_account || "");
+      setTransferGuarantee(data.transfer_guarantee_account || "");
+      setCurrencyExchange(data.currency_exchange_account || "");
+    })();
+  }, []);
 
   const save = async () => {
     const payload = {
@@ -41,7 +46,7 @@ useEffect(() => {
     };
 
     try {
-      await (api as any).transitAccounts.save(payload);
+      await api.post("/settings/transit-accounts", payload);
       alert("تم حفظ الإعدادات بنجاح");
     } catch {
       alert("فشل حفظ الإعدادات");
@@ -51,7 +56,7 @@ useEffect(() => {
   const renderSelect = (
     label: string,
     value: number | "",
-    setValue: (v: number | "") => void
+    setValue: (v: any) => void
   ) => (
     <div className="space-y-1">
       <label className="text-sm text-gray-600">{label}</label>
@@ -79,26 +84,10 @@ useEffect(() => {
       </h2>
 
       <div className="grid grid-cols-2 gap-4">
-        {renderSelect(
-          "حساب وسيط إيرادات العمولات",
-          commissionIncome,
-          setCommissionIncome
-        )}
-        {renderSelect(
-          "حساب وسيط عمولات الموصلين",
-          courierCommission,
-          setCourierCommission
-        )}
-        {renderSelect(
-          "حساب وسيط اعتماد الحوالات",
-          transferGuarantee,
-          setTransferGuarantee
-        )}
-        {renderSelect(
-          "حساب وسيط مصارفة العملة",
-          currencyExchange,
-          setCurrencyExchange
-        )}
+        {renderSelect("حساب وسيط إيرادات العمولات", commissionIncome, setCommissionIncome)}
+        {renderSelect("حساب وسيط عمولات الموصلين", courierCommission, setCourierCommission)}
+        {renderSelect("حساب وسيط اعتماد الحوالات", transferGuarantee, setTransferGuarantee)}
+        {renderSelect("حساب وسيط مصارفة العملة", currencyExchange, setCurrencyExchange)}
       </div>
 
       <div className="flex justify-end">
@@ -109,14 +98,6 @@ useEffect(() => {
           حفظ الإعدادات
         </button>
       </div>
-
-      <style>{`
-        .input {
-          padding: 10px;
-          border-radius: 8px;
-          border: 1px solid #ccc;
-        }
-      `}</style>
     </div>
   );
 };
