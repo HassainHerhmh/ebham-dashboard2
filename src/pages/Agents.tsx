@@ -215,7 +215,7 @@ const resetPassword = async (agentId: number) => {
             <td className="px-4 py-2">{a.name}</td>
             <td className="px-4 py-2">{a.phone || "-"}</td>
 
-{user?.is_admin === 1 && (
+{(user?.is_admin_branch || user?.role === "admin") && (
   <td className="px-4 py-2">
     {a.branch_name || "-"}
   </td>
@@ -320,7 +320,7 @@ const resetPassword = async (agentId: number) => {
   )}
 
   {/* اختيار الفرع – يظهر فقط لإدارة الفروع */}
-{user?.is_admin === 1 && (
+{(user?.is_admin_branch || user?.role === "admin") && (
   <select
   className="border p-2 rounded w-full"
   value={branchId}
