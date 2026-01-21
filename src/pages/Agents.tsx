@@ -252,83 +252,81 @@ const Agents: React.FC = () => {
               {editingAgent ? "تعديل وكيل" : "إضافة وكيل"}
             </h2>
 
-            <form onSubmit={saveAgent} className="grid grid-cols-2 gap-3">
-              <input
-                className="border p-2 rounded col-span-2"
-                placeholder="اسم الوكيل"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-              />
+         <form onSubmit={saveAgent} className="space-y-3">
+  <input
+    className="border p-2 rounded w-full"
+    placeholder="اسم الوكيل"
+    value={name}
+    onChange={(e) => setName(e.target.value)}
+    required
+  />
 
-              <input
-                className="border p-2 rounded"
-                placeholder="رقم الجوال"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-              />
+  <input
+    className="border p-2 rounded w-full"
+    placeholder="البريد الإلكتروني"
+    value={email}
+    onChange={(e) => setEmail(e.target.value)}
+  />
 
-              <input
-                className="border p-2 rounded"
-                placeholder="البريد الإلكتروني"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
+  <input
+    className="border p-2 rounded w-full"
+    placeholder="رقم الجوال"
+    value={phone}
+    onChange={(e) => setPhone(e.target.value)}
+  />
 
-              <input
-                className="border p-2 rounded col-span-2"
-                placeholder="العنوان"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-              />
+  {!editingAgent && (
+    <input
+      type="password"
+      className="border p-2 rounded w-full"
+      placeholder="كلمة المرور"
+      value={password}
+      onChange={(e) => setPassword(e.target.value)}
+      required
+    />
+  )}
 
-              {user?.is_admin_branch && (
-                <select
-                  className="border p-2 rounded col-span-2"
-                  value={branchId}
-                  onChange={(e) =>
-                    e.target.value
-                      ? setBranchId(Number(e.target.value))
-                      : setBranchId("")
-                  }
-                  required
-                >
-                  <option value="">اختر الفرع</option>
-                  {branches.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.name}
-                    </option>
-                  ))}
-                </select>
-              )}
+  {/* اختيار الفرع – يظهر فقط لإدارة الفروع */}
+  {user?.is_admin_branch && (
+    <select
+      className="border p-2 rounded w-full"
+      value={branchId}
+      onChange={(e) => setBranchId(Number(e.target.value))}
+      required
+    >
+      <option value="">اختر الفرع</option>
+      {branches.map((b: any) => (
+        <option key={b.id} value={b.id}>
+          {b.name}
+        </option>
+      ))}
+    </select>
+  )}
 
-              {!editingAgent && (
-                <input
-                  type="password"
-                  className="border p-2 rounded col-span-2"
-                  placeholder="كلمة المرور"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-              )}
+  <input
+    className="border p-2 rounded w-full"
+    placeholder="العنوان"
+    value={address}
+    onChange={(e) => setAddress(e.target.value)}
+  />
 
-              <div className="col-span-2 flex justify-end gap-2 pt-2">
-                <button
-                  type="submit"
-                  className="bg-green-600 text-white px-4 py-2 rounded"
-                >
-                  حفظ
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="bg-gray-400 text-white px-4 py-2 rounded"
-                >
-                  إلغاء
-                </button>
-              </div>
-            </form>
+  <div className="flex justify-end gap-2 pt-2">
+    <button
+      type="submit"
+      className="bg-green-600 text-white px-4 py-2 rounded"
+    >
+      حفظ
+    </button>
+    <button
+      type="button"
+      onClick={() => setIsModalOpen(false)}
+      className="bg-gray-400 text-white px-4 py-2 rounded"
+    >
+      إلغاء
+    </button>
+  </div>
+</form>
+
           </div>
         </div>
       )}
