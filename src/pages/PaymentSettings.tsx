@@ -47,15 +47,7 @@ const SortableRow: React.FC<SortableRowProps> = ({ method, children }) => {
     transition,
   };
 
-  const [accounts, setAccounts] = useState<any[]>([]);
 
-useEffect(() => {
-  loadMethods();
-  api.accounts.getAccounts().then((res) => {
-    const list = res?.list || res?.data?.list || [];
-    setAccounts(list.filter((a: any) => a.parent_id));
-  });
-}, []);
 
 
   return (
@@ -86,6 +78,16 @@ useEffect(() => {
 ========================= */
 const PaymentSettings: React.FC = () => {
   const [methods, setMethods] = useState<PaymentMethod[]>([]);
+const [accounts, setAccounts] = useState<any[]>([]);
+
+useEffect(() => {
+  loadMethods();
+
+  api.accounts.getAccounts().then((res) => {
+    const list = res?.list || res?.data?.list || [];
+    setAccounts(list.filter((a: any) => a.parent_id));
+  });
+}, []);
 
 
   // الإضافة / التعديل
