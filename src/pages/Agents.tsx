@@ -51,17 +51,18 @@ const Agents: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    fetchAgents();
+ useEffect(() => {
+  fetchAgents();
 
-    // جلب الفروع فقط لفرع الإدارة
-    if (user?.is_admin_branch) {
-      (async () => {
-        const res = await api.branches.getAll();
-        setBranches(res.branches || []);
-      })();
-    }
-  }, []);
+  if (user?.is_admin_branch) {
+    api.get("/branches").then((res) => {
+      setBranches(res.data?.list || []);
+    });
+  } else {
+    setBranchId(user?.branch_id);
+  }
+}, []);
+
 
   /* =========================
      Open Modals
@@ -288,19 +289,20 @@ const Agents: React.FC = () => {
 
   {/* اختيار الفرع – يظهر فقط لإدارة الفروع */}
   {user?.is_admin_branch && (
-    <select
-      className="border p-2 rounded w-full"
-      value={branchId}
-      onChange={(e) => setBranchId(Number(e.target.value))}
-      required
-    >
-      <option value="">اختر الفرع</option>
-      {branches.map((b: any) => (
-        <option key={b.id} value={b.id}>
-          {b.name}
-        </option>
-      ))}
-    </select>
+   <select
+  className="border p-2 rounded w-full"
+  value={branchId}
+  onChange={(e) => setBranchId(Number(e.target.value))}
+  required
+>
+  <option value="">اختر الفرع</option>
+  {branches.map((b: any) => (
+    <option key={b.id} value={b.id}>
+      {b.name}
+    </option>
+  ))}
+</select>
+
   )}
 
   <input
