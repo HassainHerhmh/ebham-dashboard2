@@ -136,17 +136,11 @@ if (user?.is_admin === 1) {
     }
   };
 
-  const resetPassword = async (id: number) => {
-  const newPass = prompt("أدخل كلمة المرور الجديدة:");
-  if (!newPass) return;
-
-  try {
-    await api.agents.resetPassword(id, { password: newPass });
-    alert("✅ تم تغيير كلمة المرور");
-  } catch {
-    alert("❌ فشل تغيير كلمة المرور");
-  }
+const resetPassword = async (agentId: number) => {
+  const res = await api.agents.resetPassword(agentId);
+  alert(`كلمة المرور الجديدة: ${res.password}`);
 };
+
 
 
   /* =========================
