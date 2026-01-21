@@ -235,7 +235,8 @@ const handleDelete = async (id: number) => {
     <th className="p-3 text-center">طريقة احتساب العمولة</th>
     <th className="p-3 text-center">النسبة / المبلغ</th>
     <th className="p-3 text-center">فترة العقد</th>
-    <th className="p-3 text-center">إجراءات</th>
+   <th className="p-3 text-center w-[120px]">إجراءات</th>
+
   </tr>
 </thead>
 
@@ -253,20 +254,22 @@ const handleDelete = async (id: number) => {
         {r.commission_value}
         {r.commission_type === "percent" ? "%" : ` ${r.currency_code || ""}`}
       </td>
-      <td className="p-3 text-center">
-        {String(r.contract_start).slice(0, 10)} →{" "}
-        {String(r.contract_end).slice(0, 10)}
-      </td>
-      <td className="p-3 text-center">
-        <div className="flex gap-2 justify-center">
-          <button className="px-3 py-1 rounded bg-blue-600 text-white">
-            تعديل
-          </button>
-          <button className="px-3 py-1 rounded bg-red-600 text-white">
-            حذف
-          </button>
-        </div>
-      </td>
+    <td className="p-3 text-center whitespace-nowrap">
+  {String(r.contract_start).slice(0, 10)} →{" "}
+  {String(r.contract_end).slice(0, 10)}
+</td>
+
+   <td className="p-3 text-center w-[120px]">
+  <div className="flex gap-2 justify-center">
+    <button className="px-3 py-1 rounded bg-blue-600 text-white">
+      تعديل
+    </button>
+    <button className="px-3 py-1 rounded bg-red-600 text-white">
+      حذف
+    </button>
+  </div>
+</td>
+
     </tr>
   ))}
 </tbody>
