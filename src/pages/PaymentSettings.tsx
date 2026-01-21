@@ -254,39 +254,51 @@ const startEdit = (m: PaymentMethod) => {
           strategy={verticalListSortingStrategy}
         >
           <table className="w-full border">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="w-8"></th>
-                <th>الشركة</th>
-                <th>رقم الحساب</th>
-                <th>صاحب الحساب</th>
-                <th>العنوان</th>
-                <th>الحالة</th>
-                <th>إجراءات</th>
-              </tr>
-            </thead>
-            <tbody>
-              {methods.map((m) => (
-                <SortableRow key={m.id} method={m}>
-                  <td>{m.company}</td>
-                  <td>{m.account_number}</td>
-                  <td>{m.owner_name}</td>
-                  <td>{m.address}</td>
-                  <td>{m.is_active === 1 ? "مفعّلة" : "معطّلة"}</td>
-                  <td className="flex gap-2 items-center">
-                    <button
-                      onClick={() => startEdit(m)}
-                      className="text-blue-600 hover:underline"
-                    >
-                      تعديل
-                    </button>
+          <thead className="bg-gray-100">
+  <tr>
+    <th className="w-8"></th>
+    <th>الشركة</th>
+    <th>رقم الحساب</th>
+    <th>صاحب الحساب</th>
+    <th>العنوان</th>
+    <th>الحساب المحاسبي</th> {/* جديد */}
+    <th>الحالة</th>
+    <th>إجراءات</th>
+  </tr>
+</thead>
 
-                    <button
-                      onClick={() => deleteMethod(m.id)}
-                      className="text-red-600 hover:underline"
-                    >
-                      حذف
-                    </button>
+     <tbody>
+  {methods.map((m) => {
+    const acc = accounts.find((a: any) => a.id === m.account_id);
+
+    return (
+      <SortableRow key={m.id} method={m}>
+        <td>{m.company}</td>
+        <td>{m.account_number}</td>
+        <td>{m.owner_name}</td>
+        <td>{m.address}</td>
+
+        {/* الحساب المحاسبي */}
+        <td className="text-sm text-gray-700">
+          {acc ? (acc.name_ar || acc.name) : "-"}
+        </td>
+
+        <td>{m.is_active === 1 ? "مفعّلة" : "معطّلة"}</td>
+
+        <td className="flex gap-2 items-center">
+          <button
+            onClick={() => startEdit(m)}
+            className="text-blue-600 hover:underline"
+          >
+            تعديل
+          </button>
+
+          <button
+            onClick={() => deleteMethod(m.id)}
+            className="text-red-600 hover:underline"
+          >
+            حذف
+          </button>
 
                     <button
                       onClick={() => toggleActive(m)}
