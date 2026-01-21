@@ -61,6 +61,7 @@ const [contractStart, setContractStart] = useState("");
 const [contractEnd, setContractEnd] = useState("");
 const [agentGroups, setAgentGroups] = useState<Group[]>([]);
 const [captainGroups, setCaptainGroups] = useState<Group[]>([]);
+const [editingId, setEditingId] = useState<number | null>(null);
 
 
   const [captains, setCaptains] = useState<Captain[]>([]);
@@ -121,7 +122,7 @@ const handleAdd = async () => {
     return;
   }
 
-  await api.agentInfo.add({
+  const payload = {
     account_type: accountType,
     account_id: Number(agentId),
     group_id: groupId ? Number(groupId) : null,
@@ -135,8 +136,18 @@ const handleAdd = async () => {
       ? Number(commissionAccountId)
       : null,
     currency_id: currencyId ? Number(currencyId) : null,
-  });
+  };
 
+  if (editingId) {
+    // تعديل
+    await api.agentInfo.update(editingId, payload);
+  } else {
+    // إضافة جديدة
+    await api.agentInfo.add(payload);
+  }
+
+  // إعادة تعيين الحالات
+  setEditingId(null);
   setShowModal(false);
   setAgentId("");
   setGroupId("");
@@ -146,14 +157,43 @@ const handleAdd = async () => {
   setCurrencyId("");
   setContractStart("");
   setContractEnd("");
+
   loadData();
 };
+
 
 
   const filtered = rows.filter((r) =>
     r.agent_name.includes(search)
   );
 
+   const handleEdit = (row: AgentInfoRow) => {
+  // افتح نفس المودال مع تعبئة القيم
+  setShowModal(true);
+
+  setAccountType((row as any).account_type || "agent");
+  setAgentId(String((row as any).account_id || ""));
+  setGroupId(String((row as any).group_id || ""));
+  setCommissionType(row.commission_type);
+  setCommission(String(row.commission_value || 0));
+  setAgentAccountId(String((row as any).agent_account_id || ""));
+  setCommissionAccountId(String((row as any).commission_account_id || ""));
+  setCurrencyId(String((row as any).currency_id || ""));
+  setContractStart((row as any).contract_start || "");
+  setContractEnd((row as any).contract_end || "");
+
+  // خزّن المعرف للتعديل
+  setEditingId(row.id);
+};
+
+const handleDelete = async (id: number) => {
+  if (!confirm("هل أنت متأكد من الحذف؟")) return;
+  await api.agentInfo.delete(id);
+  loadData();
+};
+
+
+  
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -177,7 +217,7 @@ const handleAdd = async () => {
 
       <div className="bg-white rounded shadow overflow-hidden">
         <table className="w-full text-right">
-         <thead className="bg-gray-100">
+        <thead className="bg-gray-100">
   <tr>
     <th className="p-3">#</th>
     <th className="p-3">الوكيل</th>
@@ -185,8 +225,10 @@ const handleAdd = async () => {
     <th className="p-3">حساب الوكيل / الموصل</th>
     <th className="p-3">طريقة احتساب العمولة</th>
     <th className="p-3">النسبة / المبلغ</th>
+    <th className="p-3">إجراءات</th>
   </tr>
 </thead>
+
 
 <tbody>
   {filtered.map((r, i) => (
@@ -206,9 +248,28 @@ const handleAdd = async () => {
           ? "%"
           : ` ${r.currency_code || ""}`}
       </td>
+
+      <td className="p-3">
+        <div className="flex gap-2 justify-center">
+          <button
+            className="px-3 py-1 rounded bg-blue-600 text-white"
+            onClick={() => handleEdit(r)}
+          >
+            تعديل
+          </button>
+
+          <button
+            className="px-3 py-1 rounded bg-red-600 text-white"
+            onClick={() => handleDelete(r.id)}
+          >
+            حذف
+          </button>
+        </div>
+      </td>
     </tr>
   ))}
 </tbody>
+
         </table>
       </div>
 
