@@ -71,7 +71,7 @@ const loadData = async () => {
       api.agents.getAgents(),        // الوكلاء
       api.captains.getAll(),         // الكباتن
       api.agentGroups.getGroups(),
-      api.accounts.getAll(),         // كل الحسابات
+    api.accounts.getAccounts(),       // كل الحسابات
       api.currencies.getAll(),       // العملات
     ]);
 
