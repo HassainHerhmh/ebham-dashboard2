@@ -179,30 +179,36 @@ const handleAdd = async () => {
         <table className="w-full text-right">
          <thead className="bg-gray-100">
   <tr>
+    <th className="p-3">#</th>
     <th className="p-3">الوكيل</th>
     <th className="p-3">المجموعة</th>
-    <th className="p-3">حساب الوكيل</th>
-    <th className="p-3">حساب العمولة</th>
-    <th className="p-3">العمولة %</th>
+    <th className="p-3">حساب الوكيل / الموصل</th>
+    <th className="p-3">طريقة احتساب العمولة</th>
+    <th className="p-3">النسبة / المبلغ</th>
   </tr>
 </thead>
 
 <tbody>
-  {filtered.map((r) => (
+  {filtered.map((r, i) => (
     <tr key={r.id} className="border-t">
+      <td className="p-3">{i + 1}</td>
       <td className="p-3">{r.agent_name}</td>
       <td className="p-3">{r.group_name || "-"}</td>
       <td className="p-3">{r.agent_account_name || "-"}</td>
-      <td className="p-3">{r.commission_account_name || "-"}</td>
+
+      <td className="p-3">
+        {r.commission_type === "percent" ? "نسبة مئوية" : "مبلغ ثابت"}
+      </td>
+
       <td className="p-3">
         {r.commission_value}
-        {r.commission_type === "percent" ? "%" : ` ${r.currency_code || ""}`}
+        {r.commission_type === "percent"
+          ? "%"
+          : ` ${r.currency_code || ""}`}
       </td>
     </tr>
   ))}
 </tbody>
-
-
         </table>
       </div>
 
