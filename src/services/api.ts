@@ -1008,6 +1008,20 @@ export const executeExchange = async (data: {
     (await api.post("/settings/transit-accounts", data)).data,
 };
 
+/*===========================
+مجموعة الوكلاء
+=========================*/
+
+(api as any).agentGroups = {
+  getGroups: async () =>
+    (await api.get("/agent-groups")).data,
+
+  addGroup: async (data: { name: string; code: number }) =>
+    (await api.post("/agent-groups", data)).data,
+
+  deleteGroup: async (id: number) =>
+    (await api.delete(`/agent-groups/${id}`)).data,
+};
 
 
 export default api;
