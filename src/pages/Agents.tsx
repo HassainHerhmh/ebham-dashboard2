@@ -199,9 +199,10 @@ const resetPassword = async (agentId: number) => {
           <th className="px-4 py-3">الاسم</th>
           <th className="px-4 py-3">الجوال</th>
 
-          {user?.is_admin === 1 && (
-            <th className="px-4 py-3">الفرع</th>
-          )}
+         {(user?.is_admin_branch || user?.role === "admin") && (
+  <th className="px-4 py-3">الفرع</th>
+)}
+
 
           <th className="px-4 py-3">الحالة</th>
           <th className="px-4 py-3 text-center">إجراءات</th>
