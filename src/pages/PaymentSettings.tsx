@@ -21,6 +21,7 @@ interface PaymentMethod {
   address: string;
   is_active: number; // 1 | 0
   sort_order: number;
+   account_id: number | null;
 }
 
 interface PaymentMethodLog {
@@ -45,6 +46,17 @@ const SortableRow: React.FC<SortableRowProps> = ({ method, children }) => {
     transform: CSS.Transform.toString(transform),
     transition,
   };
+
+  const [accounts, setAccounts] = useState<any[]>([]);
+
+useEffect(() => {
+  loadMethods();
+  api.accounts.getAccounts().then((res) => {
+    const list = res?.list || res?.data?.list || [];
+    setAccounts(list.filter((a: any) => a.parent_id));
+  });
+}, []);
+
 
   return (
     <tr
@@ -83,6 +95,7 @@ const PaymentSettings: React.FC = () => {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [message, setMessage] = useState("");
+ const [accountId, setAccountId] = useState("");
 
   // سجل التغييرات
   const [logsOpen, setLogsOpen] = useState(false);
@@ -113,12 +126,14 @@ const PaymentSettings: React.FC = () => {
       return;
     }
 
-    const payload = {
-      company,
-      account_number: accountNumber,
-      owner_name: ownerName,
-      address,
-    };
+  const payload = {
+  company,
+  account_number: accountNumber,
+  owner_name: ownerName,
+  address,
+  account_id: accountId ? Number(accountId) : null,
+};
+
 
     const res = editingId
       ? await api.paymentMethods.update(editingId, payload)
@@ -147,14 +162,15 @@ const PaymentSettings: React.FC = () => {
   };
 
   /* ===== Edit ===== */
-  const startEdit = (m: PaymentMethod) => {
-    setEditingId(m.id);
-    setCompany(m.company);
-    setAccountNumber(m.account_number);
-    setOwnerName(m.owner_name);
-    setAddress(m.address);
-    setModalOpen(true);
-  };
+const startEdit = (m: PaymentMethod) => {
+  setEditingId(m.id);
+  setCompany(m.company);
+  setAccountNumber(m.account_number);
+  setOwnerName(m.owner_name);
+  setAddress(m.address);
+  setAccountId(String(m.account_id || ""));
+  setModalOpen(true);
+};
 
   /* ===== Toggle Active ===== */
   const toggleActive = async (m: PaymentMethod) => {
@@ -292,26 +308,75 @@ const PaymentSettings: React.FC = () => {
         </SortableContext>
       </DndContext>
 
-      {/* Modal الإضافة / التعديل */}
-      {modalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded w-full max-w-md space-y-3">
-            <h3 className="font-bold">
-              {editingId ? "تعديل طريقة الدفع" : "إضافة طريقة دفع"}
-            </h3>
+  {/* Modal الإضافة / التعديل */}
+{modalOpen && (
+  <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+    <div className="bg-white p-6 rounded w-full max-w-md space-y-3">
+      <h3 className="font-bold">
+        {editingId ? "تعديل طريقة الدفع" : "إضافة طريقة دفع"}
+      </h3>
 
-            <input className="border p-2 w-full rounded" placeholder="اسم الشركة" value={company} onChange={(e) => setCompany(e.target.value)} />
-            <input className="border p-2 w-full rounded" placeholder="رقم الحساب" value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} />
-            <input className="border p-2 w-full rounded" placeholder="اسم صاحب الحساب" value={ownerName} onChange={(e) => setOwnerName(e.target.value)} />
-            <input className="border p-2 w-full rounded" placeholder="العنوان" value={address} onChange={(e) => setAddress(e.target.value)} />
+      <input
+        className="border p-2 w-full rounded"
+        placeholder="اسم الشركة"
+        value={company}
+        onChange={(e) => setCompany(e.target.value)}
+      />
 
-            <div className="flex justify-end gap-2 pt-2">
-              <button onClick={() => setModalOpen(false)} className="bg-gray-400 text-white px-4 py-2 rounded">إلغاء</button>
-              <button onClick={saveMethod} className="bg-green-600 text-white px-4 py-2 rounded">حفظ</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <input
+        className="border p-2 w-full rounded"
+        placeholder="رقم الحساب"
+        value={accountNumber}
+        onChange={(e) => setAccountNumber(e.target.value)}
+      />
+
+      <input
+        className="border p-2 w-full rounded"
+        placeholder="اسم صاحب الحساب"
+        value={ownerName}
+        onChange={(e) => setOwnerName(e.target.value)}
+      />
+
+      <input
+        className="border p-2 w-full rounded"
+        placeholder="العنوان"
+        value={address}
+        onChange={(e) => setAddress(e.target.value)}
+      />
+
+      {/* اختيار الحساب المحاسبي */}
+      <select
+        className="border p-2 w-full rounded"
+        value={accountId}
+        onChange={(e) => setAccountId(e.target.value)}
+      >
+        <option value="">اختر الحساب المحاسبي</option>
+        {accounts.map((a: any) => (
+          <option key={a.id} value={a.id}>
+            {a.name_ar || a.name}
+          </option>
+        ))}
+      </select>
+
+      <div className="flex justify-end gap-2 pt-2">
+        <button
+          onClick={() => setModalOpen(false)}
+          className="bg-gray-400 text-white px-4 py-2 rounded"
+        >
+          إلغاء
+        </button>
+
+        <button
+          onClick={saveMethod}
+          className="bg-green-600 text-white px-4 py-2 rounded"
+        >
+          حفظ
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
 
       {/* Modal سجل التغييرات */}
       {logsOpen && (
