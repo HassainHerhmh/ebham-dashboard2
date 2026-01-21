@@ -59,6 +59,8 @@ const [accountType, setAccountType] = useState<"agent" | "captain">("agent");
 const [commissionType, setCommissionType] = useState<"percent" | "fixed">("percent");
 const [contractStart, setContractStart] = useState("");
 const [contractEnd, setContractEnd] = useState("");
+const [agentGroups, setAgentGroups] = useState<Group[]>([]);
+const [captainGroups, setCaptainGroups] = useState<Group[]>([]);
 
 
   const [captains, setCaptains] = useState<Captain[]>([]);
@@ -73,24 +75,26 @@ const loadData = async () => {
       info,
       agentsData,
       captainsData,
-      groupsData,
+      agentGroupsData,
+      captainGroupsData,
       accountsRes,
       currenciesData,
     ] = await Promise.all([
       api.agentInfo.getAll(),
       api.agents.getAgents(),
       api.captains.getAll(),
-      api.agentGroups.getGroups(),
+      api.agentGroups.getGroups(),     // مجموعات الوكلاء
+      api.captainGroups.getGroups(),   // مجموعات الكباتن
       api.accounts.getAccounts(),
       api.currencies.getAll(),
     ]);
 
     setRows(info || []);
-
-    // هنا التصحيح
     setAgents(agentsData?.agents || []);
     setCaptains(captainsData || []);
-    setGroups(groupsData || []);
+
+    setAgentGroups(agentGroupsData || []);
+    setCaptainGroups(captainGroupsData || []);
 
     const list = accountsRes?.list || [];
     setAccounts(list.filter((a: any) => a.parent_id));
@@ -259,18 +263,20 @@ const handleAdd = async () => {
 </select>
 
 
-  <select
-    className="w-full p-3 rounded"
-    value={groupId}
-    onChange={(e) => setGroupId(e.target.value)}
-  >
-    <option value="">اختر المجموعة</option>
-    {groups.map((g) => (
-      <option key={g.id} value={g.id}>
-        {g.name}
-      </option>
-    ))}
-  </select>
+<select
+  className="w-full p-3 rounded"
+  value={groupId}
+  onChange={(e) => setGroupId(e.target.value)}
+>
+  <option value="">اختر المجموعة</option>
+
+  {(accountType === "agent" ? agentGroups : captainGroups).map((g) => (
+    <option key={g.id} value={g.id}>
+      {g.name || (g as any).name_ar}
+    </option>
+  ))}
+</select>
+
 </div>
 
 {/* نوع العمولة */}
