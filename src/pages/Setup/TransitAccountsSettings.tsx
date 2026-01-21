@@ -4,6 +4,7 @@ import api from "../../services/api";
 type Account = {
   id: number;
   name_ar: string;
+  parent_id?: number | null;
 };
 
 const TransitAccountsSettings = () => {
@@ -16,18 +17,23 @@ const TransitAccountsSettings = () => {
 
   useEffect(() => {
     (async () => {
-      const res = await api.get("/accounts/list");
-      setAccounts(res.data?.list || []);
-    })();
+      const res = await (api as any).accounts.getAccounts();
 
-    // جلب القيم المحفوظة
-    (async () => {
-      const res = await api.get("/settings/transit-accounts");
-      const d = res.data?.data || {};
-      setCommissionIncome(d.commission_income_account || "");
-      setCourierCommission(d.courier_commission_account || "");
-      setTransferGuarantee(d.transfer_guarantee_account || "");
-      setCurrencyExchange(d.currency_exchange_account || "");
+      // نأخذ الحسابات الفرعية فقط
+      const subs = (res.list || []).filter(
+        (a: Account) => a.parent_id !== null
+      );
+
+      setAccounts(subs);
+
+      // جلب الإعدادات المحفوظة
+      const s = await api.get("/settings/transit-accounts");
+      const data = s.data?.data || {};
+
+      setCommissionIncome(data.commission_income_account || "");
+      setCourierCommission(data.courier_commission_account || "");
+      setTransferGuarantee(data.transfer_guarantee_account || "");
+      setCurrencyExchange(data.currency_exchange_account || "");
     })();
   }, []);
 
@@ -47,22 +53,18 @@ const TransitAccountsSettings = () => {
     }
   };
 
-  const Field = ({
-    label,
-    value,
-    onChange,
-  }: {
-    label: string;
-    value: number | "";
-    onChange: (v: number | "") => void;
-  }) => (
-    <div className="bg-white border rounded-xl p-4 space-y-2 shadow-sm">
-      <div className="text-sm font-semibold text-gray-700">{label}</div>
+  const renderSelect = (
+    label: string,
+    value: number | "",
+    setValue: (v: any) => void
+  ) => (
+    <div className="space-y-1">
+      <label className="text-sm text-gray-600">{label}</label>
       <select
-        className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+        className="input w-full"
         value={value}
         onChange={(e) =>
-          e.target.value ? onChange(Number(e.target.value)) : onChange("")
+          setValue(e.target.value ? Number(e.target.value) : "")
         }
       >
         <option value="">اختر حساب</option>
