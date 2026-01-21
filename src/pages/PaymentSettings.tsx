@@ -267,7 +267,7 @@ const startEdit = (m: PaymentMethod) => {
   </tr>
 </thead>
 
-     <tbody>
+<tbody>
   {methods.map((m) => {
     const acc = accounts.find((a: any) => a.id === m.account_id);
 
@@ -278,7 +278,6 @@ const startEdit = (m: PaymentMethod) => {
         <td>{m.owner_name}</td>
         <td>{m.address}</td>
 
-        {/* الحساب المحاسبي */}
         <td className="text-sm text-gray-700">
           {acc ? (acc.name_ar || acc.name) : "-"}
         </td>
@@ -300,27 +299,29 @@ const startEdit = (m: PaymentMethod) => {
             حذف
           </button>
 
-                    <button
-                      onClick={() => toggleActive(m)}
-                      className={`w-8 h-8 flex items-center justify-center rounded ${
-                        m.is_active
-                          ? "bg-red-100 text-red-600"
-                          : "bg-green-100 text-green-600"
-                      }`}
-                    >
-                      {m.is_active ? "⛔" : "✅"}
-                    </button>
+          <button
+            onClick={() => toggleActive(m)}
+            className={`w-8 h-8 flex items-center justify-center rounded ${
+              m.is_active
+                ? "bg-red-100 text-red-600"
+                : "bg-green-100 text-green-600"
+            }`}
+          >
+            {m.is_active ? "⛔" : "✅"}
+          </button>
 
-                    <button
-                      onClick={() => openLogs(m.id)}
-                      className="w-8 h-8 flex items-center justify-center rounded bg-gray-100 text-gray-700"
-                    >
-                      👁️
-                    </button>
-                  </td>
-                </SortableRow>
-              ))}
-            </tbody>
+          <button
+            onClick={() => openLogs(m.id)}
+            className="w-8 h-8 flex items-center justify-center rounded bg-gray-100 text-gray-700"
+          >
+            👁️
+          </button>
+        </td>
+      </SortableRow>
+    );
+  })}
+</tbody>
+
           </table>
         </SortableContext>
       </DndContext>
