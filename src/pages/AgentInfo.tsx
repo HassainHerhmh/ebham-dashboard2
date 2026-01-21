@@ -79,31 +79,28 @@ const loadData = async () => {
     ] = await Promise.all([
       api.agentInfo.getAll(),
       api.agents.getAgents(),
-       api.captains.getAll(),   
+      api.captains.getAll(),
       api.agentGroups.getGroups(),
       api.accounts.getAccounts(),
       api.currencies.getAll(),
     ]);
 
-    console.log("agentsData", agentsData);
-    console.log("captainsData", captainsData);
-    console.log("groupsData", groupsData);
-    console.log("accountsRes", accountsRes);
-    console.log("currenciesData", currenciesData);
+    setRows(info || []);
 
-    setRows(info?.data || []);
-    setAgents(agentsData?.data || []);
-    setCaptains(captainsData?.data || []);
-    setGroups(groupsData?.data || []);
+    // هنا التصحيح
+    setAgents(agentsData?.agents || []);
+    setCaptains(captainsData || []);
+    setGroups(groupsData || []);
 
-    const list = accountsRes?.list || accountsRes?.data?.list || [];
+    const list = accountsRes?.list || [];
     setAccounts(list.filter((a: any) => a.parent_id));
 
-    setCurrencies(currenciesData?.data || []);
+    setCurrencies(currenciesData?.currencies || []);
   } catch (e) {
     console.error("AgentInfo loadData error:", e);
   }
 };
+
 
 
   useEffect(() => {
@@ -238,9 +235,10 @@ const handleAdd = async () => {
 
 {(accountType === "agent" ? agents : captains).map((a: any) => (
   <option key={a.id} value={a.id}>
-    {a.name}
+    {a.name || a.name_ar}
   </option>
 ))}
+
 
 </select>
 
@@ -252,11 +250,12 @@ const handleAdd = async () => {
   onChange={(e) => setAgentAccountId(e.target.value)}
 >
   <option value="">اختر حساب الوكيل / الموصل</option>
-  {accounts.map((a) => (
-    <option key={a.id} value={a.id}>
-      {a.name}
-    </option>
-  ))}
+ {accounts.map((a: any) => (
+  <option key={a.id} value={a.id}>
+    {a.name || a.name_ar}
+  </option>
+))}
+
 </select>
 
 
