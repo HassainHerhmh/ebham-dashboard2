@@ -1060,4 +1060,22 @@ export const executeExchange = async (data: {
     (await api.post("/agents/login", { phone, password })).data,
 };
 
+/* =========================
+   AGENT INFO (العمولات)
+========================= */
+(api as any).agentInfo = {
+  getAll: async () =>
+    (await api.get("/agent-info")).data,
+
+  add: async (data: any) =>
+    (await api.post("/agent-info", data)).data,
+
+  update: async (id: number, data: any) =>
+    (await api.put(`/agent-info/${id}`, data)).data,
+
+  delete: async (id: number) =>
+    (await api.delete(`/agent-info/${id}`)).data,
+};
+
+
 export default api;
