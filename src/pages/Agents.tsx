@@ -103,15 +103,16 @@ useEffect(() => {
       return;
     }
 
-    const payload: any = { name, email, phone, address };
+const payload: any = { name, email, phone, address };
 
-    if (user?.is_admin_branch) {
-      if (!branchId) {
-        alert("❌ اختر الفرع");
-        return;
-      }
-      payload.branch_id = branchId;
-    }
+if (user?.is_admin === 1) {
+  if (!branchId) {
+    alert("❌ اختر الفرع");
+    return;
+  }
+  payload.branch_id = branchId;
+}
+
 
     if (!editingAgent && !password) {
       alert("❌ كلمة المرور مطلوبة عند الإضافة");
