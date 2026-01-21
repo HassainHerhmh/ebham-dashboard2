@@ -287,7 +287,7 @@ useEffect(() => {
   )}
 
   {/* اختيار الفرع – يظهر فقط لإدارة الفروع */}
-{user?.is_admin === 1 && (
+{user?.is_admin === 0 && (
   <select
     className="border p-2 rounded w-full"
     value={branchId}
