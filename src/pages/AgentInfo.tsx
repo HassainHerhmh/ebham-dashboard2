@@ -153,7 +153,7 @@ const loadData = async () => {
       ========================= */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <div className="bg-[#e9efe6] rounded-xl w-[420px] p-6 space-y-4">
+          <div className="bg-[#e9efe6] rounded-xl w-full max-w-2xl mx-4 p-6 space-y-4">
 
             <h2 className="text-xl font-bold text-right">إضافة وكيل</h2>
 
