@@ -20,7 +20,7 @@ type Guarantee = {
   amount: number;
 };
 
-const CustomerGuarantee = () => {
+const PaymentsCash = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [list, setList] = useState<Guarantee[]>([]);
@@ -219,4 +219,4 @@ const CustomerGuarantee = () => {
   );
 };
 
-export default CustomerGuarantee;
+export default PaymentsCash;
