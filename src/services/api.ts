@@ -349,45 +349,80 @@ export const deleteRestaurant = async (id: number) => {
 };
 
 /* =========================
-   PAYMENT METHODS
+   PAYMENT CHANNELS
 ========================= */
-(api as any).paymentMethods = {
-  // جلب جميع طرق الدفع (للإدارة)
-  getAll: async () =>
-    (await api.get("/payment-methods")).data.methods,
+(api as any).payments = {
+  // =====================
+  // 🔵 الدفع الإلكتروني
+  // =====================
+  electronic: {
+    getAll: async () =>
+      (await api.get("/payments/electronic")).data.list,
 
-  // جلب الطرق المفعّلة فقط (للطلبات)
-  getActive: async () =>
-    (await api.get("/payment-methods/active")).data.methods,
+    add: async (data: any) =>
+      (await api.post("/payments/electronic", data)).data,
 
-  // إضافة طريقة دفع
-  add: async (data: any) =>
-    (await api.post("/payment-methods", data)).data,
+    update: async (id: number, data: any) =>
+      (await api.put(`/payments/electronic/${id}`, data)).data,
 
-  // تعديل طريقة دفع
-  update: async (id: number, data: any) =>
-    (await api.put(`/payment-methods/${id}`, data)).data,
+    remove: async (id: number) =>
+      (await api.delete(`/payments/electronic/${id}`)).data,
 
-  // حذف طريقة دفع
-  remove: async (id: number) =>
-    (await api.delete(`/payment-methods/${id}`)).data,
+    toggle: async (id: number, is_active: boolean | number) =>
+      (await api.patch(`/payments/electronic/${id}/toggle`, { is_active }))
+        .data,
+  },
 
-  // تفعيل / تعطيل
-  toggle: async (id: number, is_active: boolean | number) =>
-    (await api.patch(`/payment-methods/${id}/toggle`, { is_active })).data,
+  // =====================
+  // 🏦 الإيداعات البنكية
+  // =====================
+  banks: {
+    getAll: async () =>
+      (await api.get("/payments/banks")).data.list,
 
-  // إعادة ترتيب
-  reorder: async (orders: { id: number; sort_order: number }[]) =>
-    (await api.post("/payment-methods/reorder", { orders })).data,
+    add: async (data: any) =>
+      (await api.post("/payments/banks", data)).data,
 
-  // جلب سجل التغييرات
-  getLogs: async (id: number, days?: number) =>
-    (
-      await api.get(`/payment-methods/${id}/logs`, {
-        params: days ? { days } : {},
-      })
-    ).data.logs,
+    update: async (id: number, data: any) =>
+      (await api.put(`/payments/banks/${id}`, data)).data,
+
+    remove: async (id: number) =>
+      (await api.delete(`/payments/banks/${id}`)).data,
+
+    toggle: async (id: number, is_active: boolean | number) =>
+      (await api.patch(`/payments/banks/${id}/toggle`, { is_active })).data,
+  },
+
+  // =====================
+  // 👛 الدفع من الرصيد
+  // =====================
+  wallet: {
+    getAll: async () =>
+      (await api.get("/customer-guarantees")).data.list,
+
+    add: async (data: any) =>
+      (await api.post("/customer-guarantees", data)).data,
+
+    update: async (id: number, data: any) =>
+      (await api.put(`/customer-guarantees/${id}`, data)).data,
+
+    remove: async (id: number) =>
+      (await api.delete(`/customer-guarantees/${id}`)).data,
+  },
+
+  // =====================
+  // 🚚 الدفع عند الاستلام
+  // =====================
+  cod: {
+    // فقط تفعيل / إيقاف (من جدول settings مثلاً)
+    getStatus: async () =>
+      (await api.get("/payments/cod")).data,
+
+    setStatus: async (enabled: boolean) =>
+      (await api.post("/payments/cod", { enabled })).data,
+  },
 };
+
 
 /* ===============================
    🟢 جلب الأحياء
