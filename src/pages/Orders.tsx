@@ -71,6 +71,20 @@ const [cancelReason, setCancelReason] = useState("");
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedOrderDetails, setSelectedOrderDetails] =
     useState<OrderDetails | null>(null);
+const paymentMethod = (selectedOrderDetails as any)?.payment_method;
+const depositorName = (selectedOrderDetails as any)?.depositor_name;
+const referenceNo = (selectedOrderDetails as any)?.reference_no;
+const attachments = (selectedOrderDetails as any)?.attachments || [];
+
+const paymentMethodLabelMap: any = {
+  cod: "الدفع عند الاستلام",
+  bank: "إيداع بنكي",
+  wallet: "الدفع من الرصيد",
+  electronic: "دفع إلكتروني",
+};
+
+const paymentMethodLabel =
+  paymentMethodLabelMap[paymentMethod] || "غير محدد";
 
   // ========= إضافة طلب =========
   const [showAddOrderModal, setShowAddOrderModal] = useState(false);
@@ -528,14 +542,7 @@ const visibleOrders = filterByTab(orders);
   win.print();
 };
 
-const paymentMethodLabelMap: any = {
-  cod: "الدفع عند الاستلام",
-  bank: "إيداع بنكي",
-  wallet: "الدفع من الرصيد",
-  electronic: "دفع إلكتروني",
-};
 
-const paymentMethodLabel = paymentMethodLabelMap[paymentMethod] || "غير محدد";
 
   return (
     <>
