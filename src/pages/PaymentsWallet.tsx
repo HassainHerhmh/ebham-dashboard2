@@ -12,6 +12,16 @@ type Account = {
   parent_id?: number | null;
 };
 
+type CashBox = {
+  id: number;
+  name: string;
+};
+
+type Bank = {
+  id: number;
+  name: string;
+};
+
 type Guarantee = {
   id: number;
   customer_id: number;
@@ -25,6 +35,8 @@ type Guarantee = {
 const PaymentsWallet: React.FC = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
+  const [cashBoxes, setCashBoxes] = useState<CashBox[]>([]);
+  const [banks, setBanks] = useState<Bank[]>([]);
   const [list, setList] = useState<Guarantee[]>([]);
 
   const [showModal, setShowModal] = useState(false);
@@ -34,14 +46,17 @@ const PaymentsWallet: React.FC = () => {
     customer_id: "",
     type: "cash" as "cash" | "bank" | "account",
     account_id: "",
+    source_id: "",
     amount: "",
   });
 
   const loadAll = async () => {
-    const [c1, c2, c3] = await Promise.all([
+    const [c1, c2, c3, c4, c5] = await Promise.all([
       api.get("/customers"),
       (api as any).accounts.getAccounts(),
       api.get("/customer-guarantees"),
+      api.get("/cash-boxes"),
+      api.get("/banks"),
     ]);
 
     setCustomers(c1.data?.customers || []);
@@ -51,6 +66,8 @@ const PaymentsWallet: React.FC = () => {
     );
     setAccounts(subs);
 
+    setCashBoxes(c4.data?.list || []);
+    setBanks(c5.data?.list || []);
     setList(c3.data?.list || []);
   };
 
@@ -74,15 +91,16 @@ const PaymentsWallet: React.FC = () => {
       return;
     }
 
+    if (form.type !== "account" && !form.source_id) {
+      alert("اختر المصدر");
+      return;
+    }
+
     const payload = {
       customer_id: Number(form.customer_id),
       type: form.type,
-      account_id:
-        form.type === "account"
-          ? Number(form.account_id)
-          : form.account_id
-          ? Number(form.account_id)
-          : null,
+      account_id: form.type === "account" ? Number(form.account_id) : null,
+      source_id: form.type !== "account" ? Number(form.source_id) : null,
       amount: form.type === "account" ? null : Number(form.amount),
     };
 
@@ -98,25 +116,9 @@ const PaymentsWallet: React.FC = () => {
       customer_id: "",
       type: "cash",
       account_id: "",
+      source_id: "",
       amount: "",
     });
-    loadAll();
-  };
-
-  const startEdit = (g: Guarantee) => {
-    setEditId(g.id);
-    setForm({
-      customer_id: String(g.customer_id),
-      type: g.type,
-      account_id: g.account_id ? String(g.account_id) : "",
-      amount: g.amount ? String(g.amount) : "",
-    });
-    setShowModal(true);
-  };
-
-  const remove = async (id: number) => {
-    if (!window.confirm("هل أنت متأكد من الحذف؟")) return;
-    await api.delete(`/customer-guarantees/${id}`);
     loadAll();
   };
 
@@ -131,6 +133,7 @@ const PaymentsWallet: React.FC = () => {
               customer_id: "",
               type: "cash",
               account_id: "",
+              source_id: "",
               amount: "",
             });
             setShowModal(true);
@@ -141,66 +144,10 @@ const PaymentsWallet: React.FC = () => {
         </button>
       </div>
 
-      <div className="bg-white rounded shadow overflow-x-auto">
-        <table className="w-full text-center border">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="border p-2">العميل</th>
-              <th className="border p-2">النوع</th>
-              <th className="border p-2">الحساب</th>
-              <th className="border p-2">المبلغ</th>
-              <th className="border p-2">إجراءات</th>
-            </tr>
-          </thead>
-          <tbody>
-            {list.length ? (
-              list.map((g) => (
-                <tr key={g.id}>
-                  <td className="border p-2">{g.customer_name}</td>
-                  <td className="border p-2">
-                    {g.type === "cash"
-                      ? "نقدي"
-                      : g.type === "bank"
-                      ? "بنكي"
-                      : "حساب مباشر"}
-                  </td>
-                  <td className="border p-2">{g.account_name || "-"}</td>
-                  <td className="border p-2">
-                    {g.amount !== null ? g.amount : "-"}
-                  </td>
-                  <td className="border p-2 space-x-2">
-                    <button
-                      onClick={() => startEdit(g)}
-                      className="text-blue-600"
-                    >
-                      تعديل
-                    </button>
-                    <button
-                      onClick={() => remove(g.id)}
-                      className="text-red-600"
-                    >
-                      حذف
-                    </button>
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={5} className="p-6 text-gray-400">
-                  لا توجد بيانات
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-
       {showModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded w-[420px] space-y-3">
-            <h3 className="font-bold text-center">
-              {editId ? "تعديل تأمين" : "إضافة تأمين"}
-            </h3>
+            <h3 className="font-bold text-center">إضافة تأمين</h3>
 
             <select
               className="border p-2 w-full rounded"
@@ -223,7 +170,12 @@ const PaymentsWallet: React.FC = () => {
                   type="radio"
                   checked={form.type === "cash"}
                   onChange={() =>
-                    setForm({ ...form, type: "cash", account_id: "" })
+                    setForm({
+                      ...form,
+                      type: "cash",
+                      account_id: "",
+                      source_id: "",
+                    })
                   }
                 />{" "}
                 نقدي
@@ -233,7 +185,12 @@ const PaymentsWallet: React.FC = () => {
                   type="radio"
                   checked={form.type === "bank"}
                   onChange={() =>
-                    setForm({ ...form, type: "bank", account_id: "" })
+                    setForm({
+                      ...form,
+                      type: "bank",
+                      account_id: "",
+                      source_id: "",
+                    })
                   }
                 />{" "}
                 بنكي
@@ -243,7 +200,12 @@ const PaymentsWallet: React.FC = () => {
                   type="radio"
                   checked={form.type === "account"}
                   onChange={() =>
-                    setForm({ ...form, type: "account", amount: "" })
+                    setForm({
+                      ...form,
+                      type: "account",
+                      source_id: "",
+                      amount: "",
+                    })
                   }
                 />{" "}
                 حساب مباشر
@@ -262,6 +224,40 @@ const PaymentsWallet: React.FC = () => {
                 {accounts.map((a) => (
                   <option key={a.id} value={a.id}>
                     {a.name_ar}
+                  </option>
+                ))}
+              </select>
+            )}
+
+            {form.type === "cash" && (
+              <select
+                className="border p-2 w-full rounded"
+                value={form.source_id}
+                onChange={(e) =>
+                  setForm({ ...form, source_id: e.target.value })
+                }
+              >
+                <option value="">اختر الصندوق</option>
+                {cashBoxes.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            )}
+
+            {form.type === "bank" && (
+              <select
+                className="border p-2 w-full rounded"
+                value={form.source_id}
+                onChange={(e) =>
+                  setForm({ ...form, source_id: e.target.value })
+                }
+              >
+                <option value="">اختر البنك</option>
+                {banks.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name}
                   </option>
                 ))}
               </select>
