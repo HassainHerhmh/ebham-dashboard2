@@ -233,6 +233,18 @@ const handleSubmit = async (e: React.FormEvent) => {
     r.name.toLowerCase().includes(searchText.toLowerCase())
   );
 
+
+   const [agents, setAgents] = useState<any[]>([]);
+const [selectedAgent, setSelectedAgent] = useState<number | "">("");
+
+useEffect(() => {
+  api.get("/agents").then((res) => {
+    const list = Array.isArray(res.data?.agents) ? res.data.agents : [];
+    setAgents(list);
+  });
+}, []);
+
+  
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -374,7 +386,21 @@ const handleSubmit = async (e: React.FormEvent) => {
                   </option>
                 ))}
               </select>
+         <select
+  value={selectedAgent}
+  onChange={(e) => setSelectedAgent(Number(e.target.value))}
+  className="border rounded-lg px-3 py-2 w-full"
+  required
+>
+  <option value="">اختر الوكيل</option>
+  {agents.map((a) => (
+    <option key={a.id} value={a.id}>
+      {a.name}
+    </option>
+  ))}
+</select>
 
+              
               <input
                 type="text"
                 placeholder="العنوان"
