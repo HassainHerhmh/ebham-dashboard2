@@ -87,18 +87,28 @@ setCurrencies(c6.data?.currencies || []);
       return;
     }
 
-await api.post("/customer-guarantees", {
-  customer_id: Number(selectedCustomerId),
-  type: createType,
-  account_id: selectedAccountId || null,
-});
+const createGuarantee = async () => {
+  if (!selectedCustomerId) {
+    alert("اختر العميل");
+    return;
+  }
 
+  await api.post("/customer-guarantees", {
+    customer_id: Number(selectedCustomerId),
+    type: createType,
+    account_id: selectedAccountId || null,
 
-    setShowCreateModal(false);
-    setSelectedCustomerId("");
-    setCreateType("cash");
-    loadAll();
-  };
+    // هذه هي الإضافة المهمة
+    source_id: selectedAccountId || null, // صندوق أو بنك
+    currency_id: currencyId || null,
+    rate: isLocalCurrency ? 1 : Number(rate),
+    amount: amount ? Number(amount) : null,
+  });
+
+  setShowCreateModal(false);
+  resetForm();
+  loadAll();
+};
 
   const addAmount = async () => {
     if (!addAmountCustomerId || !amount) {
