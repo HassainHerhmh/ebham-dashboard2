@@ -14,6 +14,8 @@ const TransitAccountsSettings = () => {
   const [courierCommission, setCourierCommission] = useState<number | "">("");
   const [transferGuarantee, setTransferGuarantee] = useState<number | "">("");
   const [currencyExchange, setCurrencyExchange] = useState<number | "">("");
+  const [customerGuarantee, setCustomerGuarantee] = useState<number | "">("");
+
 
 
 
@@ -37,6 +39,8 @@ useEffect(() => {
     setCourierCommission(d.courier_commission_account || "");
     setTransferGuarantee(d.transfer_guarantee_account || "");
     setCurrencyExchange(d.currency_exchange_account || "");
+    setCustomerGuarantee(d.customer_guarantee_account || "");
+
   })();
 }, []);
 
@@ -46,6 +50,7 @@ useEffect(() => {
       courier_commission_account: courierCommission || null,
       transfer_guarantee_account: transferGuarantee || null,
       currency_exchange_account: currencyExchange || null,
+        customer_guarantee_account: customerGuarantee || null, // 🆕
     };
 
     try {
@@ -110,6 +115,11 @@ useEffect(() => {
           label="حساب وسيط مصارفة العملة"
           value={currencyExchange}
           onChange={setCurrencyExchange}
+        />
+        <Field
+        label="حساب وسيط تأمين العملاء"
+        value={customerGuarantee}
+        onChange={setCustomerGuarantee}
         />
       </div>
 
