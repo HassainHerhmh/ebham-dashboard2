@@ -9,6 +9,7 @@ type Customer = {
 type Account = {
   id: number;
   name_ar: string;
+  parent_id?: number | null;
 };
 
 type Guarantee = {
@@ -20,7 +21,7 @@ type Guarantee = {
   amount: number;
 };
 
-const PaymentsCash = () => {
+const PaymentsCash: React.FC = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [list, setList] = useState<Guarantee[]>([]);
@@ -43,7 +44,9 @@ const PaymentsCash = () => {
 
     setCustomers(c1.data?.customers || []);
 
-    const subs = (c2.list || []).filter((a: any) => a.parent_id !== null);
+    const subs = (c2.list || []).filter(
+      (a: Account) => a.parent_id !== null
+    );
     setAccounts(subs);
 
     setList(c3.data?.list || []);
@@ -77,7 +80,7 @@ const PaymentsCash = () => {
     loadAll();
   };
 
-  const edit = (g: Guarantee) => {
+  const startEdit = (g: Guarantee) => {
     setEditId(g.id);
     setForm({
       customer_id: String(g.customer_id),
@@ -88,36 +91,35 @@ const PaymentsCash = () => {
   };
 
   const remove = async (id: number) => {
-    if (!window.confirm("هل أنت متأكد؟")) return;
+    if (!window.confirm("هل أنت متأكد من الحذف؟")) return;
     await api.delete(`/customer-guarantees/${id}`);
     loadAll();
   };
 
   return (
-    <div className="space-y-4" dir="rtl">
-      <h2 className="text-xl font-bold text-green-700">تأمين العملاء</h2>
-
-      <div className="flex justify-end">
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h2 className="text-lg font-bold">تأمين العملاء (الدفع النقدي)</h2>
         <button
           onClick={() => {
             setEditId(null);
             setForm({ customer_id: "", account_id: "", amount: "" });
             setShowModal(true);
           }}
-          className="bg-green-700 text-white px-4 py-2 rounded"
+          className="bg-green-600 text-white px-4 py-2 rounded"
         >
           ➕ إضافة
         </button>
       </div>
 
       <div className="bg-white rounded shadow overflow-x-auto">
-        <table className="w-full text-sm text-center border-collapse">
-          <thead className="bg-green-600 text-white">
+        <table className="w-full text-center border">
+          <thead className="bg-gray-100">
             <tr>
               <th className="border p-2">العميل</th>
               <th className="border p-2">الحساب المحاسبي</th>
-              <th className="border p-2">مبلغ التأمين</th>
-              <th className="border p-2">الإجراءات</th>
+              <th className="border p-2">المبلغ</th>
+              <th className="border p-2">إجراءات</th>
             </tr>
           </thead>
           <tbody>
@@ -125,29 +127,27 @@ const PaymentsCash = () => {
               list.map((g) => (
                 <tr key={g.id}>
                   <td className="border p-2">{g.customer_name}</td>
-                  <td className="border p-2">
-                    {g.account_name || "— (حساب وسيط)"}
-                  </td>
+                  <td className="border p-2">{g.account_name || "-"}</td>
                   <td className="border p-2">{g.amount}</td>
                   <td className="border p-2 space-x-2">
                     <button
-                      onClick={() => edit(g)}
+                      onClick={() => startEdit(g)}
                       className="text-blue-600"
                     >
-                      ✏️
+                      تعديل
                     </button>
                     <button
                       onClick={() => remove(g.id)}
                       className="text-red-600"
                     >
-                      🗑️
+                      حذف
                     </button>
                   </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan={4} className="py-6 text-gray-400">
+                <td colSpan={4} className="p-6 text-gray-400">
                   لا توجد بيانات
                 </td>
               </tr>
@@ -158,8 +158,8 @@ const PaymentsCash = () => {
 
       {showModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-[#eef4ee] p-6 rounded w-[420px] space-y-3">
-            <h3 className="text-lg font-bold text-center">
+          <div className="bg-white p-6 rounded w-[420px] space-y-3">
+            <h3 className="font-bold text-center">
               {editId ? "تعديل تأمين" : "إضافة تأمين"}
             </h3>
 
@@ -185,7 +185,7 @@ const PaymentsCash = () => {
                 setForm({ ...form, account_id: e.target.value })
               }
             >
-              <option value="">بدون حساب (حساب وسيط)</option>
+              <option value="">حساب وسيط (اختياري)</option>
               {accounts.map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.name_ar}
@@ -196,18 +196,18 @@ const PaymentsCash = () => {
             <input
               type="number"
               className="border p-2 w-full rounded"
-              placeholder="مبلغ التأمين"
+              placeholder="المبلغ"
               value={form.amount}
               onChange={(e) =>
                 setForm({ ...form, amount: e.target.value })
               }
             />
 
-            <div className="flex justify-between pt-3">
+            <div className="flex justify-between pt-2">
               <button onClick={() => setShowModal(false)}>إلغاء</button>
               <button
                 onClick={save}
-                className="bg-green-700 text-white px-4 py-2 rounded"
+                className="bg-green-600 text-white px-4 py-2 rounded"
               >
                 حفظ
               </button>
