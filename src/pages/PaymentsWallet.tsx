@@ -13,7 +13,10 @@ type GuaranteeRow = {
   type: "cash" | "bank" | "account";
   account_name: string | null;
   balance: number;
+  created_by_name?: string;
+  branch_name?: string;
 };
+
 
 type Account = {
   id: number;
