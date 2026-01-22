@@ -285,6 +285,7 @@ useEffect(() => {
                 <th>العنوان</th>
                 <th>الهاتف</th>
                 <th>الفئات</th>
+                  <th>الوكيل</th>
                 <th>الصورة</th>
                 <th>الخريطة</th>
                 <th>الإجراءات</th>
@@ -299,6 +300,8 @@ useEffect(() => {
                   <td>{r.address}</td>
                   <td>{r.phone}</td>
                   <td>{r.categories || "-"}</td>
+                  <td>{r.agent_name || "-"}</td>
+
                   <td>
                     {r.image_url && (
                       <img src={r.image_url} alt={r.name} className="w-16 h-16 object-cover rounded" />
