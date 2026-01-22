@@ -30,11 +30,11 @@ export function hasPermission(
       ? user.role.toLowerCase()
       : user.role?.name?.toLowerCase?.();
 
-  // 🟢 مؤقتًا: الأدمن له كل الصلاحيات
-  if (role === "admin") {
+  // اعتبر كل الأدوار الإدارية لها صلاحية
+  if (role === "admin" || role === "superadmin" || role === "owner") {
     return true;
   }
 
-  // لاحقًا سنعتمد على user.permissions
-  return false;
+  // مؤقتًا: اسمح لباقي المستخدمين بكل شيء حتى نربط permissions لاحقًا
+  return true;
 }
