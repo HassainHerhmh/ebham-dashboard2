@@ -66,7 +66,7 @@ const BankDeposits: React.FC = () => {
   const [accountId, setAccountId] = useState("");
 
   const loadMethods = async () => {
-    const res = await api.banks.getAll(); // API خاص بالبنوك
+    const res = await api.payments.banks.getAll(); // API خاص بالبنوك
     const list = res?.methods || res || [];
     setMethods(list.map((m: any) => ({ ...m, is_active: Number(m.is_active) })));
   };
@@ -89,9 +89,9 @@ const BankDeposits: React.FC = () => {
     };
 
     if (editingId) {
-      await api.banks.update(editingId, payload);
+      await api.payments.banks.update(editingId, payload);
     } else {
-      await api.banks.add(payload);
+      await api.payments.banks.add(payload);
     }
 
     resetForm();
