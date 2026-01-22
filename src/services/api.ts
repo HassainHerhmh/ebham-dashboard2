@@ -378,22 +378,22 @@ export const deleteRestaurant = async (id: number) => {
   // =====================
   banks: {
     getAll: async () =>
-      (await api.get("/payments/banks")).data.list,
+      (await api.get("/payments")).data.list,
 
     add: async (data: any) =>
-      (await api.post("/payments/banks", data)).data,
+      (await api.post("/payments", data)).data,
 
     update: async (id: number, data: any) =>
-      (await api.put(`/payments/banks/${id}`, data)).data,
+      (await api.put(`/payments/${id}`, data)).data,
 
     remove: async (id: number) =>
-      (await api.delete(`/payments/banks/${id}`)).data,
+      (await api.delete(`/payments/${id}`)).data,
 
     toggle: async (id: number, is_active: boolean | number) =>
-      (await api.patch(`/payments/banks/${id}/toggle`, { is_active })).data,
+      (await api.patch(`/payments/${id}/toggle`, { is_active })).data,
 
       reorder: async (orders: any[]) =>
-    (await api.post("/payments/banks/reorder", { orders })).data,
+    (await api.post("/payments/reorder", { orders })).data,
     
   },
 
