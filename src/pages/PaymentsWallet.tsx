@@ -239,7 +239,7 @@ await api.post("/customer-guarantees/add-amount", {
     <option value="">اختر الصندوق</option>
     {cashBoxes.map((b) => (
       <option key={b.id} value={b.id}>
-         {a.name_ar}
+          {b.name_ar}
       </option>
     ))}
   </select>
@@ -254,7 +254,7 @@ await api.post("/customer-guarantees/add-amount", {
     <option value="">اختر البنك</option>
     {banks.map((b) => (
       <option key={b.id} value={b.id}>
-         {a.name_ar}
+            {b.name_ar}
       </option>
     ))}
   </select>
