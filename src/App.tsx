@@ -114,7 +114,7 @@ const App: React.FC = () => {
                     <Route path="/users" element={<ProtectedRoute section="users"><Users /></ProtectedRoute>} />             
                    <Route path="/payments/electronic"element={<ProtectedRoute section="payments"><PaymentsElectronic /></ProtectedRoute>}/>
                    <Route path="/payments/banks"element={<ProtectedRoute section="payments"><PaymentsBanks /></ProtectedRoute>}/>
-                     <Route path="/payments/payments-cash" element={ <ProtectedRoute section="settings"><PaymentsCash/></ProtectedRoute>}/>
+                     <Route path="/payments/payments-cash" element={ <ProtectedRoute section="payments"><PaymentsCash/></ProtectedRoute>}/>
 
 
 
