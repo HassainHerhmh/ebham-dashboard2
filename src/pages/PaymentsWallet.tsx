@@ -81,11 +81,7 @@ setCurrencies(c6.data?.currencies || []);
   loadAll();
 }, []);
 
-  const createGuarantee = async () => {
-    if (!selectedCustomerId) {
-      alert("اختر العميل");
-      return;
-    }
+ 
 
 const createGuarantee = async () => {
   if (!selectedCustomerId) {
