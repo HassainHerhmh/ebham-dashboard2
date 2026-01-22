@@ -25,7 +25,7 @@ import DeliveryFeesSettings from "./pages/DeliveryFeesSettings";
 import Neighborhoods from "./pages/Neighborhoods";
 import PaymentsElectronic from "./pages/PaymentsElectronic";
 import PaymentsBanks from "./pages/PaymentsBanks";
-import PaymentsBanks from "./pages/CustomerGuarantee";
+import PaymentsBanks from "./pages/PaymentsCash";
 
 // الوكلاء
 import Agents from "./pages/Agents";
