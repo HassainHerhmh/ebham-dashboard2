@@ -15,12 +15,31 @@ type GuaranteeRow = {
   balance: number;
 };
 
+type Account = {
+  id: number;
+  name_ar: string;
+  parent_id?: number | null;
+};
+
+type Currency = {
+  id: number;
+  name_ar: string;
+  exchange_rate?: number;
+  is_local?: number;
+};
+
 const PaymentsWallet: React.FC = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [list, setList] = useState<GuaranteeRow[]>([]);
  const [cashBoxes, setCashBoxes] = useState<any[]>([]);
 const [banks, setBanks] = useState<any[]>([]);
+const [selectedAccountId, setSelectedAccountId] = useState("");
+const [accounts, setAccounts] = useState<Account[]>([]);
+const [currencies, setCurrencies] = useState<Currency[]>([]);
 
+const [currencyId, setCurrencyId] = useState("");
+const [rate, setRate] = useState<any>(1);
+const [isLocalCurrency, setIsLocalCurrency] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showAddAmountModal, setShowAddAmountModal] = useState(false);
 
@@ -199,13 +218,11 @@ const loadAll = async () => {
       </div>
 
       {/* الحساب حسب النوع */}
-      {form.type === "cash" && (
+{createType === "cash" && (
   <select
     className="border p-2 w-full rounded"
-    value={form.source_id}
-    onChange={(e) =>
-      setForm({ ...form, source_id: e.target.value })
-    }
+    value={selectedAccountId}
+    onChange={(e) => setSelectedAccountId(e.target.value)}
   >
     <option value="">اختر الصندوق</option>
     {cashBoxes.map((b) => (
@@ -216,13 +233,11 @@ const loadAll = async () => {
   </select>
 )}
 
-{form.type === "bank" && (
+{createType === "bank" && (
   <select
     className="border p-2 w-full rounded"
-    value={form.source_id}
-    onChange={(e) =>
-      setForm({ ...form, source_id: e.target.value })
-    }
+    value={selectedAccountId}
+    onChange={(e) => setSelectedAccountId(e.target.value)}
   >
     <option value="">اختر البنك</option>
     {banks.map((b) => (
@@ -233,15 +248,21 @@ const loadAll = async () => {
   </select>
 )}
 
+{createType === "account" && (
+  <select
+    className="border p-2 w-full rounded"
+    value={selectedAccountId}
+    onChange={(e) => setSelectedAccountId(e.target.value)}
+  >
+    <option value="">اختر الحساب المحاسبي</option>
+    {accounts.map((a) => (
+      <option key={a.id} value={a.id}>
+        {a.name_ar}
+      </option>
+    ))}
+  </select>
+)}
 
-      {createType === "account" && (
-        <select className="border p-2 w-full rounded">
-          <option value="">اختر الحساب المحاسبي</option>
-          {accounts.map((a) => (
-            <option key={a.id} value={a.id}>{a.name_ar}</option>
-          ))}
-        </select>
-      )}
 
       {/* العملة */}
       <select
