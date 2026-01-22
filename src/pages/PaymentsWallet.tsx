@@ -69,6 +69,7 @@ const loadAll = async () => {
   );
   setAccounts(subs);
 
+  setList(c3.data?.list || []); 
   // هنا التعديل المهم
 setCashBoxes(c4.data?.cashBoxes || []);
 setBanks(c5.data?.banks || []);
