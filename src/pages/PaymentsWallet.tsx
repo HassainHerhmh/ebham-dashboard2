@@ -81,14 +81,12 @@ const loadAll = async () => {
       return;
     }
 
-   await api.post("/customer-guarantees", {
+await api.post("/customer-guarantees", {
   customer_id: Number(selectedCustomerId),
   type: createType,
-  source_id: selectedAccountId || null,
-  currency_id: currencyId || null,
-  rate: isLocalCurrency ? 1 : Number(rate),
-  amount: amount ? Number(amount) : null,
+  account_id: selectedAccountId || null,
 });
+
 
     setShowCreateModal(false);
     setSelectedCustomerId("");
@@ -102,13 +100,13 @@ const loadAll = async () => {
       return;
     }
 
-await api.post("/customer-guarantees", {
-  customer_id: Number(selectedCustomerId),
-  type: createType,
-  source_id: selectedAccountId || null,
-  currency_id: currencyId || null,
+await api.post("/customer-guarantees/add-amount", {
+  customer_id: Number(addAmountCustomerId),
+  type: addAmountType,              // cash | bank
+  source_id: selectedAccountId,     // صندوق أو بنك
+  currency_id: currencyId,
   rate: isLocalCurrency ? 1 : Number(rate),
-  amount: amount ? Number(amount) : null,
+  amount: Number(amount),
 });
 
 
