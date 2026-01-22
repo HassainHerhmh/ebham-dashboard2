@@ -69,10 +69,10 @@ const loadAll = async () => {
   );
   setAccounts(subs);
 
-  setList(c3.data?.list || []);
-  setCashBoxes(c4.data?.list || []);
-  setBanks(c5.data?.list || []);
-  setCurrencies(c6.data?.list || []); // <-- هنا
+  // هنا التعديل المهم
+  setCashBoxes(c4.data?.cashBoxes || []);
+  setBanks(c5.data?.list || c5.data?.banks || []);
+  setCurrencies(c6.data?.list || []);
 };
 
   useEffect(() => {
