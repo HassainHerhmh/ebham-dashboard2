@@ -23,6 +23,8 @@ import Products from "./pages/Products";
 import Users from "./pages/Users";
 import DeliveryFeesSettings from "./pages/DeliveryFeesSettings";
 import Neighborhoods from "./pages/Neighborhoods";
+import PaymentsElectronic from "./pages/PaymentsElectronic";
+import PaymentsBanks from "./pages/PaymentsBanks";
 
 // الوكلاء
 import Agents from "./pages/Agents";
@@ -107,7 +109,10 @@ const App: React.FC = () => {
                     <Route path="/marketing" element={<ProtectedRoute section="marketing"><Marketing /></ProtectedRoute>} />
                     <Route path="/reports" element={<ProtectedRoute section="reports"><Reports /></ProtectedRoute>} />
                     <Route path="/neighborhoods" element={<ProtectedRoute section="neighborhoods"><Neighborhoods /></ProtectedRoute>} />
-                    <Route path="/users" element={<ProtectedRoute section="users"><Users /></ProtectedRoute>} />
+                    <Route path="/users" element={<ProtectedRoute section="users"><Users /></ProtectedRoute>} />             
+                   <Route path="/payments/electronic"element={<ProtectedRoute section="payments"><PaymentsElectronic /></ProtectedRoute>}/>
+                   <Route path="/payments/banks"element={<ProtectedRoute section="payments"><PaymentsBanks /></ProtectedRoute>}/>
+
 
                     {/* الحسابات */}
                     <Route
