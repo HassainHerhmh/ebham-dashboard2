@@ -161,6 +161,10 @@ const handleSubmit = async (e: React.FormEvent) => {
 
   if (mapUrl) data.append("map_url", mapUrl);
 
+   if (selectedAgent) {
+    data.append("agent_id", String(selectedAgent)); // 👈 هذا هو المهم
+  }
+  
   if (file) data.append("image", file);
 
     const headers =
@@ -195,6 +199,7 @@ const handleSubmit = async (e: React.FormEvent) => {
     setSelectedType(r.type_id || "");
     setSelectedBranch(r.branch_id || "");
     setPreview(r.image_url || null);
+    setSelectedAgent(r.agent_id || "");
     setFile(null);
 
     setLatitude(r.latitude ? String(r.latitude) : "");
