@@ -115,10 +115,10 @@ const createGuarantee = async () => {
       return;
     }
 
-await api.post("/customer-guarantees/add-amount", {
+await api.post("/customer-guarantees", {
   customer_id: Number(addAmountCustomerId),
-  type: addAmountType,              // cash | bank
-  source_id: selectedAccountId,     // صندوق أو بنك
+  type: addAmountType,
+  source_id: selectedAccountId,
   currency_id: currencyId,
   rate: isLocalCurrency ? 1 : Number(rate),
   amount: Number(amount),
