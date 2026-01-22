@@ -48,10 +48,13 @@ const CashBoxes: React.FC = () => {
   /* =========================
      Load Data
   ========================= */
-  const loadCashBoxes = async () => {
-    const res = await api.get("/cash-boxes", { params: { search } });
-    if (res.data.success) setCashBoxes(res.data.cashBoxes);
-  };
+ const loadCashBoxes = async () => {
+  const res = await api.get("/cash-boxes", { params: { search } });
+  if (res.data.success) {
+    setCashBoxes(res.data.list || res.data.cashBoxes || []);
+  }
+};
+
 
   const loadGroups = async () => {
     const res = await api.get("/cashbox-groups");
