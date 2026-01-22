@@ -391,6 +391,10 @@ export const deleteRestaurant = async (id: number) => {
 
     toggle: async (id: number, is_active: boolean | number) =>
       (await api.patch(`/payments/banks/${id}/toggle`, { is_active })).data,
+
+      reorder: async (orders: any[]) =>
+    (await api.post("/payments/banks/reorder", { orders })).data,
+    
   },
 
   // =====================
