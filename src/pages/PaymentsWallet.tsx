@@ -53,12 +53,13 @@ const [isLocalCurrency, setIsLocalCurrency] = useState(true);
   const [amount, setAmount] = useState("");
 
 const loadAll = async () => {
-  const [c1, c2, c3, c4, c5] = await Promise.all([
+  const [c1, c2, c3, c4, c5, c6] = await Promise.all([
     api.get("/customers"),
     (api as any).accounts.getAccounts(),
     api.get("/customer-guarantees"),
-    api.get("/cash-boxes"),   // الصناديق
-    api.get("/banks"),        // البنوك
+    api.get("/cash-boxes"),
+    api.get("/banks"),
+    api.get("/currencies"), // <-- أضف هذا
   ]);
 
   setCustomers(c1.data?.customers || []);
@@ -71,6 +72,7 @@ const loadAll = async () => {
   setList(c3.data?.list || []);
   setCashBoxes(c4.data?.list || []);
   setBanks(c5.data?.list || []);
+  setCurrencies(c6.data?.list || []); // <-- هنا
 };
 
   const createGuarantee = async () => {
@@ -79,10 +81,14 @@ const loadAll = async () => {
       return;
     }
 
-    await api.post("/customer-guarantees", {
-      customer_id: Number(selectedCustomerId),
-      type: createType,
-    });
+   await api.post("/customer-guarantees", {
+  customer_id: Number(selectedCustomerId),
+  type: createType,
+  source_id: selectedAccountId || null,
+  currency_id: currencyId || null,
+  rate: isLocalCurrency ? 1 : Number(rate),
+  amount: amount ? Number(amount) : null,
+});
 
     setShowCreateModal(false);
     setSelectedCustomerId("");
@@ -96,11 +102,15 @@ const loadAll = async () => {
       return;
     }
 
-    await api.post("/customer-guarantees/add-amount", {
-      customer_id: Number(addAmountCustomerId),
-      type: addAmountType,
-      amount: Number(amount),
-    });
+await api.post("/customer-guarantees", {
+  customer_id: Number(selectedCustomerId),
+  type: createType,
+  source_id: selectedAccountId || null,
+  currency_id: currencyId || null,
+  rate: isLocalCurrency ? 1 : Number(rate),
+  amount: amount ? Number(amount) : null,
+});
+
 
     setShowAddAmountModal(false);
     setAddAmountCustomerId("");
