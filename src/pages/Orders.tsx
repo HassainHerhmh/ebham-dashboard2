@@ -528,6 +528,14 @@ const visibleOrders = filterByTab(orders);
   win.print();
 };
 
+const paymentMethodLabelMap: any = {
+  cod: "الدفع عند الاستلام",
+  bank: "إيداع بنكي",
+  wallet: "الدفع من الرصيد",
+  electronic: "دفع إلكتروني",
+};
+
+const paymentMethodLabel = paymentMethodLabelMap[paymentMethod] || "غير محدد";
 
   return (
     <>
