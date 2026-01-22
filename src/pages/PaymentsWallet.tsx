@@ -75,6 +75,10 @@ const loadAll = async () => {
   setCurrencies(c6.data?.list || []); // <-- هنا
 };
 
+  useEffect(() => {
+  loadAll();
+}, []);
+
   const createGuarantee = async () => {
     if (!selectedCustomerId) {
       alert("اختر العميل");
