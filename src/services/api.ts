@@ -376,24 +376,26 @@ export const deleteRestaurant = async (id: number) => {
   // =====================
   // 🏦 الإيداعات البنكية
   // =====================
-  banks: {
-    getAll: async () =>
-      (await api.get("/payments/banks")).data.list,
+ banks: {
+  getAll: async () =>
+    (await api.get("/payments/banks")).data.methods,
 
-    add: async (data: any) =>
-      (await api.post("/payments/banks", data)).data,
+  add: async (data: any) =>
+    (await api.post("/payments/banks", data)).data,
 
-    update: async (id: number, data: any) =>
-      (await api.put(`/payments/banks/${id}`, data)).data,
+  update: async (id: number, data: any) =>
+    (await api.put(`/payments/banks/${id}`, data)).data,
 
-    remove: async (id: number) =>
-      (await api.delete(`/payments/banks/${id}`)).data,
+  remove: async (id: number) =>
+    (await api.delete(`/payments/banks/${id}`)).data,
 
-    toggle: async (id: number, is_active: boolean | number) =>
-      (await api.patch(`/payments/banks/${id}/toggle`, { is_active })).data,
+  toggle: async (id: number, is_active: boolean | number) =>
+    (await api.patch(`/payments/banks/${id}/toggle`, { is_active })).data,
 
-      reorder: async (orders: any[]) =>
+  reorder: async (orders: any[]) =>
     (await api.post("/payments/banks/reorder", { orders })).data,
+
+
     
   },
 
