@@ -17,6 +17,9 @@ interface Restaurant {
   schedule?: ScheduleItem[];
   branch_id?: number;
   branch_name?: string;
+
+    agent_id?: number;      // 👈
+  agent_name?: string; 
 }
 
 interface Category {
@@ -225,6 +228,8 @@ const handleSubmit = async (e: React.FormEvent) => {
     setSelectedCategories([]);
     setSelectedType("");
     setSelectedBranch("");
+    setSelectedAgent("");
+
     setLatitude("");
     setLongitude("");
     setStoreSchedule(daysOfWeek.map((day) => ({ day, start: "", end: "", closed: false })));
