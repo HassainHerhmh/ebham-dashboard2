@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import api from "../../services/api";
 
 type Customer = {
   id: number;
@@ -17,7 +18,8 @@ type Guarantee = {
   customer_name: string;
   account_id: number | null;
   account_name: string | null;
-  amount: number;
+  amount: number | null;
+  type: "cash" | "bank" | "account";
 };
 
 const PaymentsWallet: React.FC = () => {
@@ -30,6 +32,7 @@ const PaymentsWallet: React.FC = () => {
 
   const [form, setForm] = useState({
     customer_id: "",
+    type: "cash" as "cash" | "bank" | "account",
     account_id: "",
     amount: "",
   });
@@ -56,15 +59,31 @@ const PaymentsWallet: React.FC = () => {
   }, []);
 
   const save = async () => {
-    if (!form.customer_id || !form.amount) {
-      alert("العميل والمبلغ مطلوبان");
+    if (!form.customer_id) {
+      alert("اختر العميل");
+      return;
+    }
+
+    if (form.type !== "account" && !form.amount) {
+      alert("المبلغ مطلوب");
+      return;
+    }
+
+    if (form.type === "account" && !form.account_id) {
+      alert("اختر الحساب المحاسبي");
       return;
     }
 
     const payload = {
       customer_id: Number(form.customer_id),
-      account_id: form.account_id ? Number(form.account_id) : null,
-      amount: Number(form.amount),
+      type: form.type,
+      account_id:
+        form.type === "account"
+          ? Number(form.account_id)
+          : form.account_id
+          ? Number(form.account_id)
+          : null,
+      amount: form.type === "account" ? null : Number(form.amount),
     };
 
     if (editId) {
@@ -75,7 +94,12 @@ const PaymentsWallet: React.FC = () => {
 
     setShowModal(false);
     setEditId(null);
-    setForm({ customer_id: "", account_id: "", amount: "" });
+    setForm({
+      customer_id: "",
+      type: "cash",
+      account_id: "",
+      amount: "",
+    });
     loadAll();
   };
 
@@ -83,8 +107,9 @@ const PaymentsWallet: React.FC = () => {
     setEditId(g.id);
     setForm({
       customer_id: String(g.customer_id),
+      type: g.type,
       account_id: g.account_id ? String(g.account_id) : "",
-      amount: String(g.amount),
+      amount: g.amount ? String(g.amount) : "",
     });
     setShowModal(true);
   };
@@ -98,11 +123,16 @@ const PaymentsWallet: React.FC = () => {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h2 className="text-lg font-bold">تأمين العملاء (الدفع النقدي)</h2>
+        <h2 className="text-lg font-bold">تأمين العملاء (الدفع من الرصيد)</h2>
         <button
           onClick={() => {
             setEditId(null);
-            setForm({ customer_id: "", account_id: "", amount: "" });
+            setForm({
+              customer_id: "",
+              type: "cash",
+              account_id: "",
+              amount: "",
+            });
             setShowModal(true);
           }}
           className="bg-green-600 text-white px-4 py-2 rounded"
@@ -116,7 +146,8 @@ const PaymentsWallet: React.FC = () => {
           <thead className="bg-gray-100">
             <tr>
               <th className="border p-2">العميل</th>
-              <th className="border p-2">الحساب المحاسبي</th>
+              <th className="border p-2">النوع</th>
+              <th className="border p-2">الحساب</th>
               <th className="border p-2">المبلغ</th>
               <th className="border p-2">إجراءات</th>
             </tr>
@@ -126,8 +157,17 @@ const PaymentsWallet: React.FC = () => {
               list.map((g) => (
                 <tr key={g.id}>
                   <td className="border p-2">{g.customer_name}</td>
+                  <td className="border p-2">
+                    {g.type === "cash"
+                      ? "نقدي"
+                      : g.type === "bank"
+                      ? "بنكي"
+                      : "حساب مباشر"}
+                  </td>
                   <td className="border p-2">{g.account_name || "-"}</td>
-                  <td className="border p-2">{g.amount}</td>
+                  <td className="border p-2">
+                    {g.amount !== null ? g.amount : "-"}
+                  </td>
                   <td className="border p-2 space-x-2">
                     <button
                       onClick={() => startEdit(g)}
@@ -146,7 +186,7 @@ const PaymentsWallet: React.FC = () => {
               ))
             ) : (
               <tr>
-                <td colSpan={4} className="p-6 text-gray-400">
+                <td colSpan={5} className="p-6 text-gray-400">
                   لا توجد بيانات
                 </td>
               </tr>
@@ -177,30 +217,67 @@ const PaymentsWallet: React.FC = () => {
               ))}
             </select>
 
-            <select
-              className="border p-2 w-full rounded"
-              value={form.account_id}
-              onChange={(e) =>
-                setForm({ ...form, account_id: e.target.value })
-              }
-            >
-              <option value="">حساب وسيط (اختياري)</option>
-              {accounts.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.name_ar}
-                </option>
-              ))}
-            </select>
+            <div className="flex gap-4 justify-center">
+              <label>
+                <input
+                  type="radio"
+                  checked={form.type === "cash"}
+                  onChange={() =>
+                    setForm({ ...form, type: "cash", account_id: "" })
+                  }
+                />{" "}
+                نقدي
+              </label>
+              <label>
+                <input
+                  type="radio"
+                  checked={form.type === "bank"}
+                  onChange={() =>
+                    setForm({ ...form, type: "bank", account_id: "" })
+                  }
+                />{" "}
+                بنكي
+              </label>
+              <label>
+                <input
+                  type="radio"
+                  checked={form.type === "account"}
+                  onChange={() =>
+                    setForm({ ...form, type: "account", amount: "" })
+                  }
+                />{" "}
+                حساب مباشر
+              </label>
+            </div>
 
-            <input
-              type="number"
-              className="border p-2 w-full rounded"
-              placeholder="المبلغ"
-              value={form.amount}
-              onChange={(e) =>
-                setForm({ ...form, amount: e.target.value })
-              }
-            />
+            {form.type === "account" && (
+              <select
+                className="border p-2 w-full rounded"
+                value={form.account_id}
+                onChange={(e) =>
+                  setForm({ ...form, account_id: e.target.value })
+                }
+              >
+                <option value="">اختر الحساب المحاسبي</option>
+                {accounts.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.name_ar}
+                  </option>
+                ))}
+              </select>
+            )}
+
+            {form.type !== "account" && (
+              <input
+                type="number"
+                className="border p-2 w-full rounded"
+                placeholder="المبلغ"
+                value={form.amount}
+                onChange={(e) =>
+                  setForm({ ...form, amount: e.target.value })
+                }
+              />
+            )}
 
             <div className="flex justify-between pt-2">
               <button onClick={() => setShowModal(false)}>إلغاء</button>
