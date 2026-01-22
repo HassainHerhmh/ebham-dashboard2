@@ -176,38 +176,43 @@ const closeCreate = () => {
 
       <div className="bg-white rounded shadow overflow-x-auto">
         <table className="w-full text-center border">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="border p-2">العميل</th>
-              <th className="border p-2">النوع</th>
-              <th className="border p-2">الحساب</th>
-              <th className="border p-2">الرصيد الحالي</th>
-            </tr>
-          </thead>
-          <tbody>
-            {list.length ? (
-              list.map((g) => (
-                <tr key={g.id}>
-                  <td className="border p-2">{g.customer_name}</td>
-                  <td className="border p-2">
-                    {g.type === "cash"
-                      ? "نقدي"
-                      : g.type === "bank"
-                      ? "بنكي"
-                      : "حساب مباشر"}
-                  </td>
-                  <td className="border p-2">{g.account_name || "-"}</td>
-                  <td className="border p-2">{g.balance}</td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={4} className="p-6 text-gray-400">
-                  لا توجد بيانات
-                </td>
-              </tr>
-            )}
-          </tbody>
+         <thead className="bg-gray-100">
+  <tr>
+    <th className="border p-2">العميل</th>
+    <th className="border p-2">النوع</th>
+    <th className="border p-2">الحساب</th>
+    <th className="border p-2">الرصيد الحالي</th>
+    <th className="border p-2">المستخدم</th>
+    <th className="border p-2">الفرع</th>
+  </tr>
+</thead>
+<tbody>
+  {list.length ? (
+    list.map((g) => (
+      <tr key={g.id}>
+        <td className="border p-2">{g.customer_name}</td>
+        <td className="border p-2">
+          {g.type === "cash"
+            ? "نقدي"
+            : g.type === "bank"
+            ? "بنكي"
+            : "حساب مباشر"}
+        </td>
+        <td className="border p-2">{g.account_name || "-"}</td>
+        <td className="border p-2">{g.balance}</td>
+        <td className="border p-2">{g.created_by_name || "-"}</td>
+        <td className="border p-2">{g.branch_name || "-"}</td>
+      </tr>
+    ))
+  ) : (
+    <tr>
+      <td colSpan={6} className="p-6 text-gray-400">
+        لا توجد بيانات
+      </td>
+    </tr>
+  )}
+</tbody>
+
         </table>
       </div>
 {/* إنشاء حساب تأمين */}
