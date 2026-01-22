@@ -313,49 +313,64 @@ const closeCreate = () => {
 )}
 
 
-      {/* العملة */}
-      <select
-        className="border p-2 w-full rounded"
-        value={currencyId}
-        onChange={(e) => setCurrencyId(e.target.value)}
-      >
-        <option value="">اختر العملة</option>
-        {currencies.map((c) => (
-          <option key={c.id} value={c.id}>
-            {c.name_ar}
-          </option>
-        ))}
-      </select>
+     {/* العملة + السعر + المبلغ (تظهر فقط للنقدي / البنكي) */}
+{createType !== "account" && (
+  <>
+    {/* العملة */}
+    <select
+      className="border p-2 w-full rounded"
+      value={currencyId}
+      onChange={(e) => {
+        const id = e.target.value;
+        setCurrencyId(id);
 
-      {/* سعر الصرف */}
-      {!isLocalCurrency && (
-        <input
-          type="number"
-          className="border p-2 w-full rounded"
-          placeholder="سعر الصرف"
-          value={rate}
-          onChange={(e) => setRate(e.target.value)}
-        />
-      )}
+        const cur = currencies.find((c) => String(c.id) === id);
+        if (cur) {
+          setRate(cur.exchange_rate || 1);
+          setIsLocalCurrency(!!cur.is_local);
+        }
+      }}
+    >
+      <option value="">اختر العملة</option>
+      {currencies.map((c) => (
+        <option key={c.id} value={c.id}>
+          {c.name_ar}
+        </option>
+      ))}
+    </select>
 
-      {/* المبلغ */}
+    {/* سعر الصرف */}
+    {!isLocalCurrency && (
       <input
         type="number"
         className="border p-2 w-full rounded"
-        placeholder="المبلغ بعملة العميل"
-        value={amount}
-        onChange={(e) => setAmount(e.target.value)}
+        placeholder="سعر الصرف"
+        value={rate}
+        onChange={(e) => setRate(e.target.value)}
       />
+    )}
 
-      <div className="flex justify-between pt-2">
-        <button onClick={() => setShowCreateModal(false)}>إلغاء</button>
-        <button
-          onClick={createGuarantee}
-          className="bg-blue-600 text-white px-4 py-2 rounded"
-        >
-          حفظ
-        </button>
-      </div>
+    {/* المبلغ */}
+    <input
+      type="number"
+      className="border p-2 w-full rounded"
+      placeholder="المبلغ بعملة العميل"
+      value={amount}
+      onChange={(e) => setAmount(e.target.value)}
+    />
+  </>
+)}
+
+<div className="flex justify-between pt-2">
+  <button onClick={() => setShowCreateModal(false)}>إلغاء</button>
+  <button
+    onClick={createGuarantee}
+    className="bg-blue-600 text-white px-4 py-2 rounded"
+  >
+    حفظ
+  </button>
+</div>
+
     </div>
   </div>
 )}
