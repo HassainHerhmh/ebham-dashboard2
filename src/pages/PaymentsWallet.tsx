@@ -455,35 +455,47 @@ const closeCreate = () => {
         ))}
       </select>
 
-      {/* سعر الصرف */}
-      {!isLocalCurrency && (
-        <input
-          type="number"
-          className="border p-2 w-full rounded"
-          placeholder="سعر الصرف"
-          value={rate}
-          onChange={(e) => setRate(e.target.value)}
-        />
-      )}
+{/* سعر الصرف */}
+{!isLocalCurrency && (
+  <input
+    type="number"
+    className="border p-2 w-full rounded"
+    placeholder="سعر الصرف"
+    value={rate}
+    onChange={(e) => setRate(e.target.value)}
+  />
+)}
 
-      {/* المبلغ بعملة العميل */}
-      <input
-        type="number"
-        className="border p-2 w-full rounded"
-        placeholder="المبلغ بعملة العميل"
-        value={amount}
-        onChange={(e) => setAmount(e.target.value)}
-      />
+{/* المبلغ بعملة العميل */}
+<input
+  type="number"
+  className="border p-2 w-full rounded"
+  placeholder="المبلغ بعملة العميل"
+  value={amount}
+  onChange={(e) => setAmount(e.target.value)}
+/>
 
-      <div className="flex justify-between pt-2">
-        <button onClick={() => setShowAddAmountModal(false)}>إلغاء</button>
-        <button
-          onClick={addAmount}
-          className="bg-green-600 text-white px-4 py-2 rounded"
-        >
-          إضافة
-        </button>
-      </div>
+{/* المعادل بالعملة المحلية (عرض فقط) */}
+{currencyId && !isLocalCurrency && amount && rate && (
+  <div className="bg-gray-100 p-2 rounded text-sm text-gray-700 text-center">
+    ما يعادله بالعملة المحلية:
+    <strong className="mx-2">
+      {(Number(amount) * Number(rate)).toLocaleString()}
+    </strong>
+    ريال يمني
+  </div>
+)}
+
+<div className="flex justify-between pt-2">
+  <button onClick={() => setShowAddAmountModal(false)}>إلغاء</button>
+  <button
+    onClick={addAmount}
+    className="bg-green-600 text-white px-4 py-2 rounded"
+  >
+    إضافة
+  </button>
+</div>
+
     </div>
   </div>
 )}
