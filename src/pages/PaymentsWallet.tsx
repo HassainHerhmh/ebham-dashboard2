@@ -121,6 +121,27 @@ await api.post("/customer-guarantees/add-amount", {
     loadAll();
   };
 
+  const resetForm = () => {
+  setSelectedCustomerId("");
+  setSelectedAccountId("");
+  setCurrencyId("");
+  setAmount("");
+  setRate(1);
+  setIsLocalCurrency(true);
+  setCreateType("cash");
+};
+
+const openCreate = () => {
+  resetForm();
+  setShowCreateModal(true);
+};
+
+const closeCreate = () => {
+  setShowCreateModal(false);
+  resetForm();
+};
+
+  
   const eligibleForAdd = list.filter(
     (x) => x.type === "cash" || x.type === "bank"
   );
