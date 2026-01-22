@@ -25,6 +25,7 @@ import DeliveryFeesSettings from "./pages/DeliveryFeesSettings";
 import Neighborhoods from "./pages/Neighborhoods";
 import PaymentsElectronic from "./pages/PaymentsElectronic";
 import PaymentsBanks from "./pages/PaymentsBanks";
+import PaymentsBanks from "./pages/CustomerGuarantee";
 
 // الوكلاء
 import Agents from "./pages/Agents";
@@ -112,6 +113,7 @@ const App: React.FC = () => {
                     <Route path="/users" element={<ProtectedRoute section="users"><Users /></ProtectedRoute>} />             
                    <Route path="/payments/electronic"element={<ProtectedRoute section="payments"><PaymentsElectronic /></ProtectedRoute>}/>
                    <Route path="/payments/banks"element={<ProtectedRoute section="payments"><PaymentsBanks /></ProtectedRoute>}/>
+                      <Route path="/payments/PaymentsCash"element={<ProtectedRoute section="Payments"><PaymentsCash /></ProtectedRoute>}/>
 
 
                     {/* الحسابات */}
