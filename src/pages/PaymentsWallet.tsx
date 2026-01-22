@@ -70,9 +70,10 @@ const loadAll = async () => {
   setAccounts(subs);
 
   // هنا التعديل المهم
-  setCashBoxes(c4.data?.cashBoxes || []);
-  setBanks(c5.data?.list || c5.data?.banks || []);
-  setCurrencies(c6.data?.list || []);
+setCashBoxes(c4.data?.cashBoxes || []);
+setBanks(c5.data?.banks || []);
+setCurrencies(c6.data?.currencies || []);
+
 };
 
   useEffect(() => {
