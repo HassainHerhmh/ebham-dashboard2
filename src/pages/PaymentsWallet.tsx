@@ -18,6 +18,8 @@ type GuaranteeRow = {
 const PaymentsWallet: React.FC = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [list, setList] = useState<GuaranteeRow[]>([]);
+ const [cashBoxes, setCashBoxes] = useState<any[]>([]);
+const [banks, setBanks] = useState<any[]>([]);
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showAddAmountModal, setShowAddAmountModal] = useState(false);
@@ -31,19 +33,26 @@ const PaymentsWallet: React.FC = () => {
   const [addAmountType, setAddAmountType] = useState<"cash" | "bank">("cash");
   const [amount, setAmount] = useState("");
 
-  const loadAll = async () => {
-    const [c1, c2] = await Promise.all([
-      api.get("/customers"),
-      api.get("/customer-guarantees"),
-    ]);
+const loadAll = async () => {
+  const [c1, c2, c3, c4, c5] = await Promise.all([
+    api.get("/customers"),
+    (api as any).accounts.getAccounts(),
+    api.get("/customer-guarantees"),
+    api.get("/cash-boxes"),   // الصناديق
+    api.get("/banks"),        // البنوك
+  ]);
 
-    setCustomers(c1.data?.customers || []);
-    setList(c2.data?.list || []);
-  };
+  setCustomers(c1.data?.customers || []);
 
-  useEffect(() => {
-    loadAll();
-  }, []);
+  const subs = (c2.list || []).filter(
+    (a: Account) => a.parent_id !== null
+  );
+  setAccounts(subs);
+
+  setList(c3.data?.list || []);
+  setCashBoxes(c4.data?.list || []);
+  setBanks(c5.data?.list || []);
+};
 
   const createGuarantee = async () => {
     if (!selectedCustomerId) {
@@ -190,23 +199,40 @@ const PaymentsWallet: React.FC = () => {
       </div>
 
       {/* الحساب حسب النوع */}
-      {createType === "cash" && (
-        <select className="border p-2 w-full rounded">
-          <option value="">اختر الصندوق</option>
-          {cashBoxes.map((a) => (
-            <option key={a.id} value={a.id}>{a.name_ar}</option>
-          ))}
-        </select>
-      )}
+      {form.type === "cash" && (
+  <select
+    className="border p-2 w-full rounded"
+    value={form.source_id}
+    onChange={(e) =>
+      setForm({ ...form, source_id: e.target.value })
+    }
+  >
+    <option value="">اختر الصندوق</option>
+    {cashBoxes.map((b) => (
+      <option key={b.id} value={b.id}>
+        {b.name}
+      </option>
+    ))}
+  </select>
+)}
 
-      {createType === "bank" && (
-        <select className="border p-2 w-full rounded">
-          <option value="">اختر البنك</option>
-          {banks.map((b) => (
-            <option key={b.id} value={b.id}>{b.name}</option>
-          ))}
-        </select>
-      )}
+{form.type === "bank" && (
+  <select
+    className="border p-2 w-full rounded"
+    value={form.source_id}
+    onChange={(e) =>
+      setForm({ ...form, source_id: e.target.value })
+    }
+  >
+    <option value="">اختر البنك</option>
+    {banks.map((b) => (
+      <option key={b.id} value={b.id}>
+        {b.name}
+      </option>
+    ))}
+  </select>
+)}
+
 
       {createType === "account" && (
         <select className="border p-2 w-full rounded">
