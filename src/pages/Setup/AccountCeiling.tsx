@@ -97,14 +97,15 @@ const AccountCeiling: React.FC = () => {
         }))
       );
 
-      setCurrencies(
-        extractList<Currency>(c4).map((c) => ({
-          id: Number(c.id),
-          code: c.code,
-          name_ar: c.name_ar,
-          symbol: c.symbol,
-        }))
-      );
+     setCurrencies(
+  (c4.data?.list || c4.data?.currencies || []).map((c: any) => ({
+    id: Number(c.id),
+    code: c.code,
+    name_ar: c.name_ar,
+    symbol: c.symbol,
+  }))
+);
+
     } catch (err) {
       console.error("LOAD ERROR:", err);
     }
