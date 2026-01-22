@@ -748,18 +748,50 @@ const visibleOrders = filterByTab(orders);
                 </div>
               ))}
 
-              <div className="border p-3 rounded mt-4 bg-gray-50">
-                <p>🧮 إجمالي المطاعم: {allRestaurantsTotal.toFixed(2)} ريال</p>
-                <p>📦 رسوم التوصيل: {delivery.toFixed(2)} ريال</p>
+               
+<div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+  {/* صندوق الإجماليات */}
+  <div className="border p-3 rounded bg-gray-50">
+    <p>🧮 إجمالي المطاعم: {allRestaurantsTotal.toFixed(2)} ريال</p>
+    <p>📦 رسوم التوصيل: {delivery.toFixed(2)} ريال</p>
 
-                {extraStore > 0 && (
-                  <p>🏪 رسوم المحل الإضافي: {extraStore.toFixed(2)} ريال</p>
-                )}
+    {extraStore > 0 && (
+      <p>🏪 رسوم المحل الإضافي: {extraStore.toFixed(2)} ريال</p>
+    )}
 
-                <p className="text-lg font-bold text-blue-600">
-                  💰 الإجمالي الكلي: {grandTotal.toFixed(2)} ريال
-                </p>
-              </div>
+    <p className="text-lg font-bold text-blue-600">
+      💰 الإجمالي الكلي: {grandTotal.toFixed(2)} ريال
+    </p>
+  </div>
+
+  {/* صندوق تفاصيل الدفع */}
+  <div className="border p-3 rounded bg-white">
+    <h4 className="font-bold mb-2">💳 تفاصيل الدفع</h4>
+
+    <p>طريقة الدفع: <strong>{paymentMethodLabel}</strong></p>
+
+    {(paymentMethod === "bank" || paymentMethod === "wallet") && (
+      <>
+        {depositorName && <p>اسم المودع: {depositorName}</p>}
+        {referenceNo && <p>رقم الحوالة: {referenceNo}</p>}
+
+        {attachments?.length > 0 && (
+          <div className="mt-2">
+            <p className="font-semibold">المرفقات:</p>
+            <div className="flex gap-2 mt-1">
+              {attachments.map((f: any, i: number) => (
+                <a key={i} href={f.url} target="_blank">
+                  <img src={f.thumb} className="w-16 h-16 rounded border" />
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+      </>
+    )}
+  </div>
+</div>
+
 
               {/* المطاعم المشاركة + بيانات العميل */}
               <div className="grid grid-cols-2 gap-3 mt-4">
