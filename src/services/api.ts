@@ -396,19 +396,22 @@ export const deleteRestaurant = async (id: number) => {
   // =====================
   // 👛 الدفع من الرصيد
   // =====================
-  wallet: {
-    getAll: async () =>
-      (await api.get("/customer-guarantees")).data.list,
+wallet: {
+  getAll: async () =>
+    (await api.get("/customer-guarantees")).data.list,
 
-    add: async (data: any) =>
-      (await api.post("/customer-guarantees", data)).data,
+  add: async (data: any) =>
+    (await api.post("/customer-guarantees", data)).data,
 
-    update: async (id: number, data: any) =>
-      (await api.put(`/customer-guarantees/${id}`, data)).data,
+  addAmount: async (data: any) =>
+    (await api.post("/customer-guarantees/add-amount", data)).data,
 
-    remove: async (id: number) =>
-      (await api.delete(`/customer-guarantees/${id}`)).data,
-  },
+  update: async (id: number, data: any) =>
+    (await api.put(`/customer-guarantees/${id}`, data)).data,
+
+  remove: async (id: number) =>
+    (await api.delete(`/customer-guarantees/${id}`)).data,
+},
 
   // =====================
   // 🚚 الدفع عند الاستلام
