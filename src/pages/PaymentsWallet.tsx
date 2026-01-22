@@ -141,124 +141,257 @@ const PaymentsWallet: React.FC = () => {
           </tbody>
         </table>
       </div>
+{/* إنشاء حساب تأمين */}
+{showCreateModal && (
+  <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+    <div className="bg-white p-6 rounded w-[420px] space-y-3">
+      <h3 className="font-bold text-center">إضافة حساب تأمين</h3>
 
-      {/* إنشاء حساب تأمين */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded w-[420px] space-y-3">
-            <h3 className="font-bold text-center">إضافة حساب تأمين</h3>
+      {/* العميل */}
+      <select
+        className="border p-2 w-full rounded"
+        value={selectedCustomerId}
+        onChange={(e) => setSelectedCustomerId(e.target.value)}
+      >
+        <option value="">اختر العميل</option>
+        {customers.map((c) => (
+          <option key={c.id} value={c.id}>
+            {c.name}
+          </option>
+        ))}
+      </select>
 
-            <select
-              className="border p-2 w-full rounded"
-              value={selectedCustomerId}
-              onChange={(e) => setSelectedCustomerId(e.target.value)}
-            >
-              <option value="">اختر العميل</option>
-              {customers.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
+      {/* نوع التأمين */}
+      <div className="flex gap-4 justify-center">
+        <label>
+          <input
+            type="radio"
+            checked={createType === "cash"}
+            onChange={() => setCreateType("cash")}
+          />{" "}
+          نقدي
+        </label>
+        <label>
+          <input
+            type="radio"
+            checked={createType === "bank"}
+            onChange={() => setCreateType("bank")}
+          />{" "}
+          بنكي
+        </label>
+        <label>
+          <input
+            type="radio"
+            checked={createType === "account"}
+            onChange={() => setCreateType("account")}
+          />{" "}
+          حساب مباشر
+        </label>
+      </div>
 
-            <div className="flex gap-4 justify-center">
-              <label>
-                <input
-                  type="radio"
-                  checked={createType === "cash"}
-                  onChange={() => setCreateType("cash")}
-                />{" "}
-                نقدي
-              </label>
-              <label>
-                <input
-                  type="radio"
-                  checked={createType === "bank"}
-                  onChange={() => setCreateType("bank")}
-                />{" "}
-                بنكي
-              </label>
-              <label>
-                <input
-                  type="radio"
-                  checked={createType === "account"}
-                  onChange={() => setCreateType("account")}
-                />{" "}
-                حساب مباشر
-              </label>
-            </div>
-
-            <div className="flex justify-between pt-2">
-              <button onClick={() => setShowCreateModal(false)}>إلغاء</button>
-              <button
-                onClick={createGuarantee}
-                className="bg-blue-600 text-white px-4 py-2 rounded"
-              >
-                حفظ
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* الحساب حسب النوع */}
+      {createType === "cash" && (
+        <select className="border p-2 w-full rounded">
+          <option value="">اختر الصندوق</option>
+          {cashBoxes.map((a) => (
+            <option key={a.id} value={a.id}>{a.name_ar}</option>
+          ))}
+        </select>
       )}
+
+      {createType === "bank" && (
+        <select className="border p-2 w-full rounded">
+          <option value="">اختر البنك</option>
+          {banks.map((b) => (
+            <option key={b.id} value={b.id}>{b.name}</option>
+          ))}
+        </select>
+      )}
+
+      {createType === "account" && (
+        <select className="border p-2 w-full rounded">
+          <option value="">اختر الحساب المحاسبي</option>
+          {accounts.map((a) => (
+            <option key={a.id} value={a.id}>{a.name_ar}</option>
+          ))}
+        </select>
+      )}
+
+      {/* العملة */}
+      <select
+        className="border p-2 w-full rounded"
+        value={currencyId}
+        onChange={(e) => setCurrencyId(e.target.value)}
+      >
+        <option value="">اختر العملة</option>
+        {currencies.map((c) => (
+          <option key={c.id} value={c.id}>
+            {c.name_ar}
+          </option>
+        ))}
+      </select>
+
+      {/* سعر الصرف */}
+      {!isLocalCurrency && (
+        <input
+          type="number"
+          className="border p-2 w-full rounded"
+          placeholder="سعر الصرف"
+          value={rate}
+          onChange={(e) => setRate(e.target.value)}
+        />
+      )}
+
+      {/* المبلغ */}
+      <input
+        type="number"
+        className="border p-2 w-full rounded"
+        placeholder="المبلغ بعملة العميل"
+        value={amount}
+        onChange={(e) => setAmount(e.target.value)}
+      />
+
+      <div className="flex justify-between pt-2">
+        <button onClick={() => setShowCreateModal(false)}>إلغاء</button>
+        <button
+          onClick={createGuarantee}
+          className="bg-blue-600 text-white px-4 py-2 rounded"
+        >
+          حفظ
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
 
       {/* إضافة مبلغ */}
       {showAddAmountModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded w-[420px] space-y-3">
-            <h3 className="font-bold text-center">إضافة تأمين</h3>
+  <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+    <div className="bg-white p-6 rounded w-[420px] space-y-3">
+      <h3 className="font-bold text-center">إضافة تأمين</h3>
 
-            <select
-              className="border p-2 w-full rounded"
-              value={addAmountCustomerId}
-              onChange={(e) => setAddAmountCustomerId(e.target.value)}
-            >
-              <option value="">اختر العميل</option>
-              {eligibleForAdd.map((c) => (
-                <option key={c.customer_id} value={c.customer_id}>
-                  {c.customer_name}
-                </option>
-              ))}
-            </select>
+      {/* العميل */}
+      <select
+        className="border p-2 w-full rounded"
+        value={addAmountCustomerId}
+        onChange={(e) => setAddAmountCustomerId(e.target.value)}
+      >
+        <option value="">اختر العميل</option>
+        {eligibleForAdd.map((c) => (
+          <option key={c.customer_id} value={c.customer_id}>
+            {c.customer_name}
+          </option>
+        ))}
+      </select>
 
-            <div className="flex gap-4 justify-center">
-              <label>
-                <input
-                  type="radio"
-                  checked={addAmountType === "cash"}
-                  onChange={() => setAddAmountType("cash")}
-                />{" "}
-                نقدي
-              </label>
-              <label>
-                <input
-                  type="radio"
-                  checked={addAmountType === "bank"}
-                  onChange={() => setAddAmountType("bank")}
-                />{" "}
-                بنكي
-              </label>
-            </div>
+      {/* النوع (فقط نقدي / بنكي) */}
+      <div className="flex gap-4 justify-center">
+        <label>
+          <input
+            type="radio"
+            checked={addAmountType === "cash"}
+            onChange={() => setAddAmountType("cash")}
+          />{" "}
+          نقدي
+        </label>
+        <label>
+          <input
+            type="radio"
+            checked={addAmountType === "bank"}
+            onChange={() => setAddAmountType("bank")}
+          />{" "}
+          بنكي
+        </label>
+      </div>
 
-            <input
-              type="number"
-              className="border p-2 w-full rounded"
-              placeholder="المبلغ"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-            />
-
-            <div className="flex justify-between pt-2">
-              <button onClick={() => setShowAddAmountModal(false)}>إلغاء</button>
-              <button
-                onClick={addAmount}
-                className="bg-green-600 text-white px-4 py-2 rounded"
-              >
-                إضافة
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* الحساب حسب النوع */}
+      {addAmountType === "cash" && (
+        <select
+          className="border p-2 w-full rounded"
+          value={selectedAccountId}
+          onChange={(e) => setSelectedAccountId(e.target.value)}
+        >
+          <option value="">اختر الصندوق</option>
+          {cashBoxes.map((a) => (
+            <option key={a.id} value={a.id}>
+              {a.name_ar}
+            </option>
+          ))}
+        </select>
       )}
+
+      {addAmountType === "bank" && (
+        <select
+          className="border p-2 w-full rounded"
+          value={selectedAccountId}
+          onChange={(e) => setSelectedAccountId(e.target.value)}
+        >
+          <option value="">اختر البنك</option>
+          {banks.map((b) => (
+            <option key={b.id} value={b.id}>
+              {b.name}
+            </option>
+          ))}
+        </select>
+      )}
+
+      {/* العملة */}
+      <select
+        className="border p-2 w-full rounded"
+        value={currencyId}
+        onChange={(e) => {
+          const id = e.target.value;
+          setCurrencyId(id);
+
+          const cur = currencies.find((c) => String(c.id) === id);
+          if (cur) {
+            setRate(cur.exchange_rate || 1);
+            setIsLocalCurrency(!!cur.is_local);
+          }
+        }}
+      >
+        <option value="">اختر العملة</option>
+        {currencies.map((c) => (
+          <option key={c.id} value={c.id}>
+            {c.name_ar}
+          </option>
+        ))}
+      </select>
+
+      {/* سعر الصرف */}
+      {!isLocalCurrency && (
+        <input
+          type="number"
+          className="border p-2 w-full rounded"
+          placeholder="سعر الصرف"
+          value={rate}
+          onChange={(e) => setRate(e.target.value)}
+        />
+      )}
+
+      {/* المبلغ بعملة العميل */}
+      <input
+        type="number"
+        className="border p-2 w-full rounded"
+        placeholder="المبلغ بعملة العميل"
+        value={amount}
+        onChange={(e) => setAmount(e.target.value)}
+      />
+
+      <div className="flex justify-between pt-2">
+        <button onClick={() => setShowAddAmountModal(false)}>إلغاء</button>
+        <button
+          onClick={addAmount}
+          className="bg-green-600 text-white px-4 py-2 rounded"
+        >
+          إضافة
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
     </div>
   );
 };
