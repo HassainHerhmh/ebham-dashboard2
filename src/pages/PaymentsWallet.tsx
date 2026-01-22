@@ -20,7 +20,7 @@ type Guarantee = {
   amount: number;
 };
 
-const PaymentsCash: React.FC = () => {
+const PaymentsWallet: React.FC = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [list, setList] = useState<Guarantee[]>([]);
@@ -218,4 +218,4 @@ const PaymentsCash: React.FC = () => {
   );
 };
 
-export default PaymentsCash;
+export default PaymentsWallet;
