@@ -159,6 +159,24 @@ const [banks, setBanks] = useState<any[]>([]);
     });
   }, []);
 
+useEffect(() => {
+  if (!showAddOrderModal) return;
+
+  // جلب البنوك
+  api.get("/banks").then((res) => {
+    setBanks(res.data?.banks || []);
+  });
+
+  // جلب رصيد العميل
+  if (selectedCustomer) {
+    api.get(`/wallet/${selectedCustomer.id}`).then((res) => {
+      setWalletBalance(res.data?.balance || 0);
+      setWalletAllowed(res.data?.allowed !== false);
+    });
+  }
+}, [showAddOrderModal, selectedCustomer]);
+
+   
   /* =====================
      أوامر الطلب
   ===================== */
@@ -391,21 +409,20 @@ const confirmCancelOrder = async () => {
     return alert("اختر البنك");
   }
 
-  const payload = {
-    customer_id: selectedCustomer.id,
-    address_id: selectedAddress.id,
-    gps_link: gpsLink,
-    payment_method: newOrderPaymentMethod,   // ✅ الصحيح
-    payment_source_id:
-      newOrderPaymentMethod === "bank" ? selectedBankId : null,
-    restaurants: groups.map((g) => ({
-      restaurant_id: g.restaurant.id,
-      products: g.items.map((i) => ({
-        product_id: i.id,
-        quantity: i.quantity,
-      })),
+ const payload = {
+  customer_id: selectedCustomer.id,
+  address_id: selectedAddress.id,
+  gps_link: gpsLink,
+  payment_method: newOrderPaymentMethod,
+  bank_id: newOrderPaymentMethod === "bank" ? selectedBankId : null,
+  restaurants: groups.map((g) => ({
+    restaurant_id: g.restaurant.id,
+    products: g.items.map((i) => ({
+      product_id: i.id,
+      quantity: i.quantity,
     })),
-  };
+  })),
+};
 
   await api.post("/orders", payload);
 
