@@ -70,10 +70,17 @@ const [accountId, setAccountId] = useState<number | "">("");
 
   
 useEffect(() => {
-  api.get("/accounts").then(res => {
-    setAccounts(res.data.accounts || res.data || []);
+  api.get("/accounts").then((res) => {
+    const list = Array.isArray(res.data?.accounts)
+      ? res.data.accounts
+      : Array.isArray(res.data)
+      ? res.data
+      : [];
+
+    setAccounts(list);
   });
 }, []);
+
 
   const startEditCaptain = (c: Captain) => {
     setEditId(c.id)
@@ -83,6 +90,7 @@ useEffect(() => {
     setPassword('')
     setConfirmPassword('')
     setVehicleType(c.vehicle_type)
+    setAccountId((c as any).account_id || "")  
     setVehicleNumber(c.vehicle_number || '')
     setStatus(c.status)
     setIsModalOpen(true)
