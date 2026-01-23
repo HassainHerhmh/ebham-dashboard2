@@ -73,7 +73,7 @@ const [cancelReason, setCancelReason] = useState("");
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedOrderDetails, setSelectedOrderDetails] =
     useState<OrderDetails | null>(null);
-const paymentMethod = (selectedOrderDetails as any)?.payment_method;
+
 const depositorName = (selectedOrderDetails as any)?.depositor_name;
 const referenceNo = (selectedOrderDetails as any)?.reference_no;
 const attachments = (selectedOrderDetails as any)?.attachments || [];
@@ -84,6 +84,7 @@ const paymentMethodLabelMap: any = {
   wallet: "الدفع من الرصيد",
   electronic: "دفع إلكتروني",
 };
+const paymentMethod = (selectedOrderDetails as any)?.payment_method;
 
 const paymentMethodLabel =
   paymentMethodLabelMap[paymentMethod] || "غير محدد";
@@ -100,6 +101,9 @@ const paymentMethodLabel =
 
   const printRef = useRef<HTMLDivElement>(null);
   const [paymentMethod, setPaymentMethod] = useState<
+  "cod" | "bank" | "electronic" | "wallet" | null
+>(null);
+const [newOrderPaymentMethod, setNewOrderPaymentMethod] = useState<
   "cod" | "bank" | "electronic" | "wallet" | null
 >(null);
 
@@ -385,13 +389,14 @@ const confirmCancelOrder = async () => {
       customer_id: selectedCustomer.id,
       address_id: selectedAddress.id,
       gps_link: gpsLink,
+      payment_method: paymentMethod,
+  bank_id: selectedBankId,
       restaurants: groups.map((g) => ({
         restaurant_id: g.restaurant.id,
         products: g.items.map((i) => ({
           product_id: i.id,
           quantity: i.quantity,
-             payment_method: paymentMethod,
-  bank_id: selectedBankId,
+
         })),
       })),
     };
@@ -976,19 +981,19 @@ const visibleOrders = filterByTab(orders);
         ].map((m) => (
           <button
             key={m.key}
-            onClick={() => setPaymentMethod(m.key as any)}
+            onClick={() => setNewOrderPaymentMethod(m.key as any)}
             className={`flex items-center gap-2 px-4 py-2 rounded border
               ${
-                paymentMethod === m.key
+                newOrderPaymentMethod  === m.key
                   ? "border-blue-600 bg-blue-50"
                   : "border-gray-300"
               }`}
           >
             <span
               className={`w-4 h-4 rounded-full border flex items-center justify-center
-                ${paymentMethod === m.key ? "border-blue-600" : "border-gray-400"}`}
+                ${newOrderPaymentMethod  === m.key ? "border-blue-600" : "border-gray-400"}`}
             >
-              {paymentMethod === m.key && (
+              {newOrderPaymentMethod  === m.key && (
                 <span className="w-2 h-2 rounded-full bg-blue-600" />
               )}
             </span>
@@ -997,7 +1002,7 @@ const visibleOrders = filterByTab(orders);
         ))}
       </div>
 
-      {paymentMethod === "bank" && (
+      {newOrderPaymentMethod  === "bank" && (
         <div className="border p-3 rounded bg-gray-50 mb-3">
           <h4 className="font-semibold mb-2">🏦 اختر البنك</h4>
           <select
@@ -1015,7 +1020,7 @@ const visibleOrders = filterByTab(orders);
         </div>
       )}
 
-      {paymentMethod === "electronic" && (
+      {newOrderPaymentMethod  === "electronic" && (
         <div className="border p-3 rounded bg-gray-50 mb-3">
           <h4 className="font-semibold mb-2">🌐 اختر بوابة الدفع</h4>
           <select className="border w-full p-2 rounded">
@@ -1024,7 +1029,7 @@ const visibleOrders = filterByTab(orders);
         </div>
       )}
 
-      {paymentMethod === "wallet" && (
+      {newOrderPaymentMethod  === "wallet" && (
         <div className="border p-3 rounded bg-gray-50 mb-3">
           <h4 className="font-semibold mb-2">👛 رصيدك</h4>
           <p>
