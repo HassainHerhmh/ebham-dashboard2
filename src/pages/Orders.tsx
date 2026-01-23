@@ -100,9 +100,7 @@ const paymentMethodLabel =
   const [currentRestaurant, setCurrentRestaurant] = useState<any>(null);
 
   const printRef = useRef<HTMLDivElement>(null);
-  const [paymentMethod, setPaymentMethod] = useState<
-  "cod" | "bank" | "electronic" | "wallet" | null
->(null);
+
 const [newOrderPaymentMethod, setNewOrderPaymentMethod] = useState<
   "cod" | "bank" | "electronic" | "wallet" | null
 >(null);
