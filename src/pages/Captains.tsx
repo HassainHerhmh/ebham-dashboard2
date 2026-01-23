@@ -68,9 +68,10 @@ const [accountId, setAccountId] = useState<number | "">("");
     fetchCaptains()
   }, [])
 
-  
 useEffect(() => {
   api.get("/accounts").then((res) => {
+    console.log("ACCOUNTS RAW:", res.data);
+
     const list = Array.isArray(res.data?.accounts)
       ? res.data.accounts
       : Array.isArray(res.data)
@@ -80,6 +81,7 @@ useEffect(() => {
     setAccounts(list);
   });
 }, []);
+
 
 
   const startEditCaptain = (c: Captain) => {
