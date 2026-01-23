@@ -72,15 +72,19 @@ useEffect(() => {
   api.get("/accounts").then((res) => {
     console.log("ACCOUNTS RAW:", res.data);
 
-    const list = Array.isArray(res.data?.accounts)
-      ? res.data.accounts
-      : Array.isArray(res.data)
-      ? res.data
+    const list = Array.isArray(res.data?.list)
+      ? res.data.list
       : [];
 
-    setAccounts(list);
+    // لو حاب تعرض فقط الحسابات الفرعية (غير الأب)
+    const leafAccounts = list.filter(
+      (a: any) => !a.has_children && !a.is_parent
+    );
+
+    setAccounts(leafAccounts);
   });
 }, []);
+
 
 
 
