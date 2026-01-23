@@ -166,12 +166,14 @@ useEffect(() => {
     setBanks(res.data?.methods || []);
   });
 
-  if (selectedCustomer) {
-    api.get(`/wallet/${selectedCustomer.id}`).then((res) => {
+if (selectedCustomer) {
+  api
+    .get(`/customer-guarantees/${selectedCustomer.id}/balance`)
+    .then((res) => {
       setWalletBalance(res.data?.balance || 0);
-      setWalletAllowed(res.data?.allowed !== false);
+      setWalletAllowed(res.data?.exists !== false);
     });
-  }
+}
 }, [showAddOrderModal, selectedCustomer]);
 
 
