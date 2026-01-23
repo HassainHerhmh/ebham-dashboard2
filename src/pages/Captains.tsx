@@ -167,45 +167,67 @@ useEffect(() => {
         ) : captains.length > 0 ? (
           <table className="w-full">
             <thead className="bg-gray-50">
-              <tr>
-                <th className="p-3">#</th>
-                <th className="p-3">الاسم</th>
-                <th className="p-3">الهاتف</th>
-                <th className="p-3">الفرع</th>
-                <th className="p-3">نوع المركبة</th>
-                <th className="p-3">رقم المركبة</th>
-                <th className="p-3">الحالة</th>
-                <th className="p-3">إجراءات</th>
-              </tr>
-            </thead>
-            <tbody>
-              {captains.map((c) => (
-                <tr key={c.id} className="border-t">
-                  <td className="p-3">#{c.id}</td>
-                  <td className="p-3">{c.name}</td>
-                  <td className="p-3">{c.phone}</td>
-                  <td className="p-3">{c.branch_name || '-'}</td>
-                  <td className="p-3">{c.vehicle_type}</td>
-                  <td className="p-3">{c.vehicle_number || '-'}</td>
-                  <td className="p-3">
-                    <select
-                      value={c.status}
-                      onChange={(e) => updateCaptainStatus(c.id, e.target.value)}
-                      className="border rounded px-2 py-1 text-sm"
-                    >
-                      <option value="available">متاح</option>
-                      <option value="busy">مشغول</option>
-                      <option value="offline">غير متصل</option>
-                      <option value="inactive">غير نشط</option>
-                    </select>
-                  </td>
-                  <td className="p-3 flex gap-2">
-                    <button onClick={() => startEditCaptain(c)} className="bg-blue-500 text-white px-2 rounded">تعديل</button>
-                    <button onClick={() => deleteCaptain(c.id)} className="bg-red-500 text-white px-2 rounded">حذف</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
+  <tr>
+    <th className="p-3">#</th>
+    <th className="p-3">الاسم</th>
+    <th className="p-3">الهاتف</th>
+    <th className="p-3">الفرع</th>
+    <th className="p-3">نوع المركبة</th>
+    <th className="p-3">رقم المركبة</th>
+    <th className="p-3">الحساب المحاسبي</th> {/* جديد */}
+    <th className="p-3">الحالة</th>
+    <th className="p-3">إجراءات</th>
+  </tr>
+</thead>
+
+<tbody>
+  {captains.map((c: any) => (
+    <tr key={c.id} className="border-t">
+      <td className="p-3">#{c.id}</td>
+      <td className="p-3">{c.name}</td>
+      <td className="p-3">{c.phone}</td>
+      <td className="p-3">{c.branch_name || '-'}</td>
+      <td className="p-3">{c.vehicle_type}</td>
+      <td className="p-3">{c.vehicle_number || '-'}</td>
+
+      {/* الحساب المحاسبي */}
+      <td className="p-3 text-sm text-gray-700">
+        {c.account_code
+          ? `${c.account_code} - ${c.account_name}`
+          : "—"}
+      </td>
+
+      <td className="p-3">
+        <select
+          value={c.status}
+          onChange={(e) => updateCaptainStatus(c.id, e.target.value)}
+          className="border rounded px-2 py-1 text-sm"
+        >
+          <option value="available">متاح</option>
+          <option value="busy">مشغول</option>
+          <option value="offline">غير متصل</option>
+          <option value="inactive">غير نشط</option>
+        </select>
+      </td>
+
+      <td className="p-3 flex gap-2">
+        <button
+          onClick={() => startEditCaptain(c)}
+          className="bg-blue-500 text-white px-2 rounded"
+        >
+          تعديل
+        </button>
+        <button
+          onClick={() => deleteCaptain(c.id)}
+          className="bg-red-500 text-white px-2 rounded"
+        >
+          حذف
+        </button>
+      </td>
+    </tr>
+  ))}
+</tbody>
+
           </table>
         ) : (
           <div className="p-6 text-center">🚫 لا يوجد كباتن</div>
