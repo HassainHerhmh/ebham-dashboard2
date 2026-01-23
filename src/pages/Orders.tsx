@@ -162,12 +162,10 @@ const [banks, setBanks] = useState<any[]>([]);
 useEffect(() => {
   if (!showAddOrderModal) return;
 
-  // جلب البنوك
-  api.get("/banks").then((res) => {
-    setBanks(res.data?.banks || []);
+  api.get("/payments/banks/active").then((res) => {
+    setBanks(res.data?.methods || []);
   });
 
-  // جلب رصيد العميل
   if (selectedCustomer) {
     api.get(`/wallet/${selectedCustomer.id}`).then((res) => {
       setWalletBalance(res.data?.balance || 0);
@@ -175,6 +173,9 @@ useEffect(() => {
     });
   }
 }, [showAddOrderModal, selectedCustomer]);
+
+
+
 
    
   /* =====================
@@ -1037,11 +1038,12 @@ const visibleOrders = filterByTab(orders);
             className="border w-full p-2 rounded"
           >
             <option value="">-- اختر البنك --</option>
-            {banks.map((b: any) => (
+{banks.map((b: any) => (
   <option key={b.id} value={b.id}>
-    {b.name_ar}
+    {b.company} - {b.account_number}
   </option>
 ))}
+
 
           </select>
         </div>
