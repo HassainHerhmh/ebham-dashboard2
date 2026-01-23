@@ -99,7 +99,14 @@ const paymentMethodLabel =
   const [currentRestaurant, setCurrentRestaurant] = useState<any>(null);
 
   const printRef = useRef<HTMLDivElement>(null);
+  const [paymentMethod, setPaymentMethod] = useState<
+  "cod" | "bank" | "electronic" | "wallet" | null
+>(null);
 
+const [selectedBankId, setSelectedBankId] = useState<number | null>(null);
+const [walletBalance, setWalletBalance] = useState<number>(0);
+const [walletAllowed, setWalletAllowed] = useState<boolean>(true);
+const [banks, setBanks] = useState<any[]>([]);
   /* =====================
      جلب البيانات
   ===================== */
@@ -383,6 +390,8 @@ const confirmCancelOrder = async () => {
         products: g.items.map((i) => ({
           product_id: i.id,
           quantity: i.quantity,
+             payment_method: paymentMethod,
+  bank_id: selectedBankId,
         })),
       })),
     };
@@ -953,16 +962,99 @@ const visibleOrders = filterByTab(orders);
         placeholder="🌍 رابط GPS"
         value={gpsLink}
         readOnly
-        className="border w-full p-2 mt-2 mb-2 rounded bg-gray-50"
+        className="border w-full p-2 mt-2 mb-3 rounded bg-gray-50"
       />
 
-      <label className="mt-3 block">🏪 اختر المطعم:</label>
-     <select
-  value={currentRestaurant?.id || ""}
-  onChange={(e) => selectRestaurant(Number(e.target.value))}
-  className="border w-full p-2 rounded"
->
+      {/* ===== طريقة الدفع (بعد GPS مباشرة) ===== */}
+      <h3 className="font-bold mb-2">💳 طريقة الدفع</h3>
+      <div className="flex gap-3 flex-wrap mb-3">
+        {[
+          { key: "cod", label: "الدفع عند الاستلام" },
+          { key: "bank", label: "إيداع بنكي" },
+          { key: "electronic", label: "دفع إلكتروني" },
+          { key: "wallet", label: "الدفع من رصيدي" },
+        ].map((m) => (
+          <button
+            key={m.key}
+            onClick={() => setPaymentMethod(m.key as any)}
+            className={`flex items-center gap-2 px-4 py-2 rounded border
+              ${
+                paymentMethod === m.key
+                  ? "border-blue-600 bg-blue-50"
+                  : "border-gray-300"
+              }`}
+          >
+            <span
+              className={`w-4 h-4 rounded-full border flex items-center justify-center
+                ${paymentMethod === m.key ? "border-blue-600" : "border-gray-400"}`}
+            >
+              {paymentMethod === m.key && (
+                <span className="w-2 h-2 rounded-full bg-blue-600" />
+              )}
+            </span>
+            {m.label}
+          </button>
+        ))}
+      </div>
 
+      {paymentMethod === "bank" && (
+        <div className="border p-3 rounded bg-gray-50 mb-3">
+          <h4 className="font-semibold mb-2">🏦 اختر البنك</h4>
+          <select
+            value={selectedBankId || ""}
+            onChange={(e) => setSelectedBankId(Number(e.target.value))}
+            className="border w-full p-2 rounded"
+          >
+            <option value="">-- اختر البنك --</option>
+            {banks.map((b: any) => (
+              <option key={b.id} value={b.id}>
+                {b.company} - {b.account_number}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {paymentMethod === "electronic" && (
+        <div className="border p-3 rounded bg-gray-50 mb-3">
+          <h4 className="font-semibold mb-2">🌐 اختر بوابة الدفع</h4>
+          <select className="border w-full p-2 rounded">
+            <option value="">-- اختر --</option>
+          </select>
+        </div>
+      )}
+
+      {paymentMethod === "wallet" && (
+        <div className="border p-3 rounded bg-gray-50 mb-3">
+          <h4 className="font-semibold mb-2">👛 رصيدك</h4>
+          <p>
+            الرصيد الحالي:{" "}
+            <strong className={walletBalance < 0 ? "text-red-600" : "text-green-600"}>
+              {walletBalance.toFixed(2)} ريال
+            </strong>
+          </p>
+
+          {!walletAllowed && (
+            <p className="text-red-600 mt-2">
+              ❌ لا يسمح بالسحب من هذا الحساب (تجاوز السقف)
+            </p>
+          )}
+
+          {walletAllowed && walletBalance < 0 && (
+            <p className="text-orange-600 mt-2">
+              ⚠️ الرصيد سالب لكن مسموح حسب إعدادات الحساب
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* ===== اختيار المطعم بعد الدفع ===== */}
+      <label className="mt-3 block">🏪 اختر المطعم:</label>
+      <select
+        value={currentRestaurant?.id || ""}
+        onChange={(e) => selectRestaurant(Number(e.target.value))}
+        className="border w-full p-2 rounded"
+      >
         <option value="">-- اختر --</option>
         {restaurants.map((r) => (
           <option key={r.id} value={r.id}>
