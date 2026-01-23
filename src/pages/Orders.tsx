@@ -1038,10 +1038,11 @@ const visibleOrders = filterByTab(orders);
           >
             <option value="">-- اختر البنك --</option>
             {banks.map((b: any) => (
-              <option key={b.id} value={b.id}>
-                {b.company} - {b.account_number}
-              </option>
-            ))}
+  <option key={b.id} value={b.id}>
+    {b.name_ar}
+  </option>
+))}
+
           </select>
         </div>
       )}
