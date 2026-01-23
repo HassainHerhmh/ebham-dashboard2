@@ -24,6 +24,8 @@ const Captains: React.FC = () => {
 
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editId, setEditId] = useState<number | null>(null)
+ const [accounts, setAccounts] = useState<any[]>([]);
+const [accountId, setAccountId] = useState<number | "">("");
 
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -66,6 +68,13 @@ const Captains: React.FC = () => {
     fetchCaptains()
   }, [])
 
+  
+useEffect(() => {
+  api.get("/accounts").then(res => {
+    setAccounts(res.data.accounts || res.data || []);
+  });
+}, []);
+
   const startEditCaptain = (c: Captain) => {
     setEditId(c.id)
     setName(c.name)
@@ -88,14 +97,16 @@ const Captains: React.FC = () => {
 
     try {
       const payload = {
-        name,
-        email,
-        phone,
-        password,
-        vehicle_type: vehicleType,
-        vehicle_number: vehicleNumber,
-        status
-      }
+  name,
+  email,
+  phone,
+  password: editId ? undefined : password,
+  vehicle_type: vehicleType,
+  vehicle_number: vehicleNumber,
+  status,
+  account_id: accountId,
+};
+
 
       if (editId) {
         await api.captains.updateCaptain(editId, payload)
@@ -231,6 +242,20 @@ const Captains: React.FC = () => {
 
               <input value={vehicleType} onChange={(e) => setVehicleType(e.target.value)} placeholder="نوع المركبة" className="border p-2 w-full" />
               <input value={vehicleNumber} onChange={(e) => setVehicleNumber(e.target.value)} placeholder="رقم المركبة" className="border p-2 w-full" />
+              
+               <select
+  value={accountId}
+  onChange={(e) => setAccountId(Number(e.target.value))}
+  className="border p-2 w-full"
+  required
+>
+  <option value="">— اختر الحساب المحاسبي —</option>
+  {accounts.map((a) => (
+    <option key={a.id} value={a.id}>
+      {a.code} - {a.name_ar}
+    </option>
+  ))}
+</select>
 
               <select value={status} onChange={(e) => setStatus(e.target.value)} className="border p-2 w-full">
                 <option value="available">متاح</option>
