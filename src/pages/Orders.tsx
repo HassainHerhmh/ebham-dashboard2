@@ -646,6 +646,7 @@ const visibleOrders = filterByTab(orders);
     <th className="px-2">المطعم</th>
     <th className="px-2">الكابتن</th>
     <th className="px-2">المبلغ</th>
+  <th className="px-2">نوع الدفع</th>
     <th className="px-2">الحالة</th>
     <th className="px-2">تفاصيل</th>
     <th className="px-2">تعيين كابتن</th>
@@ -665,7 +666,12 @@ const visibleOrders = filterByTab(orders);
       <td className="px-2">{o.customer_name}</td>
       <td className="px-2">{o.stores_count} مطعم</td>
       <td className="px-2">{o.captain_name || "لم يُعيّن"}</td>
-      <td className="px-2">{formatAmount(o.total_amount)}</td>
+     <td className="px-2">{formatAmount(o.total_amount)}</td>
+
+<td className="px-2">
+  {o.payment_method_label || "-"}
+</td>
+
 
       <td className="px-2">
         {o.status === "completed" || o.status === "cancelled" ? (
