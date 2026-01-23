@@ -378,35 +378,46 @@ const confirmCancelOrder = async () => {
     );
   };
 
-  const saveOrder = async () => {
-    if (!selectedCustomer || !selectedAddress || groups.length === 0) {
-      return alert("اكمل البيانات المطلوبة");
-    }
+ const saveOrder = async () => {
+  if (!selectedCustomer || !selectedAddress || groups.length === 0) {
+    return alert("اكمل البيانات المطلوبة");
+  }
 
-    const payload = {
-      customer_id: selectedCustomer.id,
-      address_id: selectedAddress.id,
-      gps_link: gpsLink,
-      payment_method: paymentMethod,
-  bank_id: selectedBankId,
-      restaurants: groups.map((g) => ({
-        restaurant_id: g.restaurant.id,
-        products: g.items.map((i) => ({
-          product_id: i.id,
-          quantity: i.quantity,
+  if (!newOrderPaymentMethod) {
+    return alert("اختر طريقة الدفع");
+  }
 
-        })),
+  if (newOrderPaymentMethod === "bank" && !selectedBankId) {
+    return alert("اختر البنك");
+  }
+
+  const payload = {
+    customer_id: selectedCustomer.id,
+    address_id: selectedAddress.id,
+    gps_link: gpsLink,
+    payment_method: newOrderPaymentMethod,   // ✅ الصحيح
+    payment_source_id:
+      newOrderPaymentMethod === "bank" ? selectedBankId : null,
+    restaurants: groups.map((g) => ({
+      restaurant_id: g.restaurant.id,
+      products: g.items.map((i) => ({
+        product_id: i.id,
+        quantity: i.quantity,
       })),
-    };
-
-    await api.post("/orders", payload);
-
-    alert("✅ تم إضافة الطلب");
-    setShowAddOrderModal(false);
-    setGroups([]);
-    setCurrentRestaurant(null);
-    fetchOrders();
+    })),
   };
+
+  await api.post("/orders", payload);
+
+  alert("✅ تم إضافة الطلب");
+  setShowAddOrderModal(false);
+  setGroups([]);
+  setCurrentRestaurant(null);
+  setNewOrderPaymentMethod(null);
+  setSelectedBankId(null);
+  fetchOrders();
+};
+
 // ========= تبويبات الحالات =========
 type OrderTab =
   | "pending"      // اعتماد
