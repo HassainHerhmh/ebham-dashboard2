@@ -415,50 +415,74 @@ if (res.success) {
       </tr>
     )}
 
-    {/* قائمة العمليات */}
-    {list.map((r: any) => (
-      <tr key={r.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-        <td className="border dark:border-gray-600 px-2 py-1">{r.journal_date?.slice(0, 10)}</td>
-        {/* تعريب نوع المستند هنا ✅ */}
+    
+  {/* 2. قائمة العمليات - الإصلاح هنا ✅ */}
+  {list.map((r: any) => (
+    <tr key={r.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors text-center">
+      {/* 1. التاريخ */}
+      <td className="border dark:border-gray-600 px-2 py-1 text-xs">
+        {r.journal_date?.slice(0, 10)}
+      </td>
+
+      {/* 2. المستند (تعريب كامل) */}
       <td className="border dark:border-gray-600 px-2 py-1">
         {r.reference_type === 'order' ? 'طلب توصيل' : 
          r.reference_type === 'journal' ? 'قيد يومي' : 
          r.reference_type === 'payment' ? 'سند صرف' : 
          r.reference_type || "-"}
       </td>
-        <td className="border dark:border-gray-600 px-2 py-1">{r.reference_type || "-"}</td>
-        <td className="border dark:border-gray-600 px-2 py-1">{r.reference_id || "-"}</td>
-        <td className="border dark:border-gray-600 px-2 py-1">{r.account_name}</td>
-        <td className="border dark:border-gray-600 px-2 py-1 text-red-600 dark:text-red-400">
-          {r.debit > 0 ? Number(r.debit).toFixed(2) : ""}
-        </td>
-        <td className="border dark:border-gray-600 px-2 py-1 text-green-600 dark:text-green-400">
-          {r.credit > 0 ? Number(r.credit).toFixed(2) : ""}
-        </td>
-        <td className="border dark:border-gray-600 px-2 py-1 font-medium">
-          {Math.abs(r.balance).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-        </td>
-        <td className={`border dark:border-gray-600 px-2 py-1 font-bold ${r.balance > 0 ? "text-red-500" : "text-green-500"}`}>
-          {r.balance > 0 ? "عليه" : "له"}
-        </td>
-        <td className="border dark:border-gray-600 px-2 py-1 text-right text-xs">{r.notes}</td>
-      </tr>
-    ))}
 
-    {/* صف الإجمالي النهائي */}
-    <tr className="bg-yellow-100 dark:bg-yellow-900/30 font-bold text-gray-900 dark:text-yellow-200">
-      <td colSpan={4} className="border dark:border-gray-600 px-2 py-2">الإجمالي النهائي</td>
-      <td className="border dark:border-gray-600 px-2 py-2 text-red-600 dark:text-red-400">{totalDebit.toFixed(2)}</td>
-      <td className="border dark:border-gray-600 px-2 py-2 text-green-600 dark:text-green-400">{totalCredit.toFixed(2)}</td>
-      <td className="border dark:border-gray-600 px-2 py-2 text-blue-700 dark:text-blue-300">
-        {Math.abs(finalBalance).toFixed(2)}
+      {/* 3. رقم المرجع (رقم الطلب أو السند) */}
+      <td className="border dark:border-gray-600 px-2 py-1">
+        {r.reference_id || "-"}
       </td>
-      <td className={`border dark:border-gray-600 px-2 py-2 ${finalBalance > 0 ? "text-red-600" : "text-green-600"}`}>
-        {finalBalance > 0 ? "إجمالي عليه" : "إجمالي له"}
+
+      {/* 4. الحساب */}
+      <td className="border dark:border-gray-600 px-2 py-1">
+        {r.account_name}
       </td>
-      <td className="border dark:border-gray-600 px-2 py-2"></td>
+
+      {/* 5. مدين (باللون الأحمر) */}
+      <td className="border dark:border-gray-600 px-2 py-1 text-red-600 dark:text-red-400">
+        {r.debit > 0 ? Number(r.debit).toFixed(2) : "0.00"}
+      </td>
+
+      {/* 6. دائن (باللون الأخضر) */}
+      <td className="border dark:border-gray-600 px-2 py-1 text-green-600 dark:text-green-400">
+        {r.credit > 0 ? Number(r.credit).toFixed(2) : "0.00"}
+      </td>
+
+      {/* 7. الرصيد (قيمة موجبة دائماً) */}
+      <td className="border dark:border-gray-600 px-2 py-1 font-medium text-blue-700 dark:text-blue-300">
+        {Math.abs(r.balance).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+      </td>
+
+      {/* 8. الحالة (بدلاً من الأرقام السالبة) */}
+      <td className={`border dark:border-gray-600 px-2 py-1 font-bold ${r.balance > 0 ? "text-red-500" : "text-green-500"}`}>
+        {r.balance > 0 ? "عليه" : "له"}
+      </td>
+
+      {/* 9. البيان */}
+      <td className="border dark:border-gray-600 px-2 py-1 text-right text-xs">
+        {r.notes}
+      </td>
     </tr>
-  </tbody>
+  ))}
+
+  {/* 3. صف الإجمالي النهائي - مصحح الترتيب ✅ */}
+  <tr className="bg-yellow-100 dark:bg-yellow-900/30 font-bold text-gray-900 dark:text-yellow-200 text-center">
+    <td colSpan={4} className="border dark:border-gray-600 px-2 py-2 text-left">الإجمالي النهائي</td>
+    <td className="border dark:border-gray-600 px-2 py-2 text-red-600 dark:text-red-400">{totalDebit.toFixed(2)}</td>
+    <td className="border dark:border-gray-600 px-2 py-2 text-green-600 dark:text-green-400">{totalCredit.toFixed(2)}</td>
+    <td className="border dark:border-gray-600 px-2 py-2 text-blue-700 dark:text-blue-300">
+      {Math.abs(finalBalance).toFixed(2)}
+    </td>
+    <td className={`border dark:border-gray-600 px-2 py-2 ${finalBalance > 0 ? "text-red-600" : "text-green-600"}`}>
+      {finalBalance > 0 ? "إجمالي عليه" : "إجمالي له"}
+    </td>
+    <td className="border dark:border-gray-600 px-2 py-2"></td>
+  </tr>
+</tbody>
 </table>
       </div>
     );
