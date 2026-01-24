@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Plus } from "lucide-react";
 import api from "../services/api";
 
+import { io } from "socket.io-client";
 /* =====================
    Interfaces
 ===================== */
@@ -50,6 +51,45 @@ interface OrderDetails {
 /* =====================
    Component
 ===================== */
+const socket = io("http://localhost:3000"); // عدّل حسب عنوان السيرفر
+
+function ToastNotifications() {
+  const [toasts, setToasts] = useState<any[]>([]);
+
+  useEffect(() => {
+    const handler = (data: any) => {
+      const id = Date.now();
+      setToasts((prev) => [...prev, { ...data, id }]);
+
+      setTimeout(() => {
+        setToasts((prev) => prev.filter((t) => t.id !== id));
+      }, 5000);
+    };
+
+    socket.on("notification", handler);
+    return () => socket.off("notification", handler);
+  }, []);
+
+  return (
+    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 space-y-2 w-[420px] pointer-events-none">
+      {toasts.map((t) => (
+        <div
+          key={t.id}
+          className="bg-white border shadow-lg rounded px-4 py-3 text-sm"
+        >
+          <div className="font-semibold">{t.message}</div>
+          {t.user && (
+            <div className="text-gray-500 text-xs mt-1">
+              بواسطة: {t.user}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+
 
 const Orders: React.FC = () => {
   // ========= الطلبات =========
@@ -490,6 +530,7 @@ const visibleOrders = filterByTab(orders);
 
 
 
+
   // ====================================
   //                JSX
   // ====================================
@@ -605,12 +646,16 @@ const visibleOrders = filterByTab(orders);
 
 
 
-  return (
-    <>
-      <div className="space-y-6">
-        {/* ===== رأس الصفحة ===== */}
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold">الطلبات</h1>
+return (
+  <>
+    {/* إشعارات أعلى الصفحة */}
+    <ToastNotifications />
+
+    <div className="space-y-6">
+      {/* ===== رأس الصفحة ===== */}
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">الطلبات</h1>
+
            <div className="flex gap-2 mb-4 flex-wrap">
   {[
     { key: "pending", label: "🟡 اعتماد" },
