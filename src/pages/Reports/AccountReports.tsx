@@ -429,6 +429,7 @@ if (res.success) {
         {r.reference_type === 'order' ? 'طلب توصيل' : 
          r.reference_type === 'journal' ? 'قيد يومي' : 
          r.reference_type === 'payment' ? 'سند صرف' : 
+           r.reference_type === 'receipt' ? 'سند قبض' : 
          r.reference_type || "-"}
       </td>
 
