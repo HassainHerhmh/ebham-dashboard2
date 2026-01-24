@@ -394,27 +394,7 @@ if (res.success) {
   </thead>
 
   <tbody className="bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200">
-    {/* الرصيد السابق */}
-    {reportMode === "detailed" && detailedType === "full" && opening !== 0 && (
-      <tr className="bg-gray-100 dark:bg-gray-700 font-semibold">
-        <td className="border dark:border-gray-600 px-2 py-1">
-          {["day", "from_start", "month"].includes(periodType) ? date : fromDate}
-        </td>
-        <td className="border dark:border-gray-600 px-2 py-1">-</td>
-        <td className="border dark:border-gray-600 px-2 py-1">-</td>
-        <td className="border dark:border-gray-600 px-2 py-1">رصيد سابق</td>
-        <td className="border dark:border-gray-600 px-2 py-1"></td>
-        <td className="border dark:border-gray-600 px-2 py-1"></td>
-        <td className="border dark:border-gray-600 px-2 py-1 text-blue-600 dark:text-blue-400">
-          {Math.abs(opening).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-        </td>
-        <td className="border dark:border-gray-600 px-2 py-1 font-bold">
-          {opening > 0 ? "مدين (عليه)" : "دائن (له)"}
-        </td>
-        <td className="border dark:border-gray-600 px-2 py-1">رصيد سابق </td>
-      </tr>
-    )}
-
+ 
     
   {/* 2. قائمة العمليات - الإصلاح هنا ✅ */}
   {list.map((r: any) => (
