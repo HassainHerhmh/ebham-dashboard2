@@ -356,7 +356,7 @@ if (res.success) {
       </div>
 
 {(() => {
-  // 1. تجميع البيانات حسب العملة
+  // 1. تقسيم العمليات حسب العملة
   const grouped = rows.reduce((acc: any, r: any) => {
     const key = r.currency_name || "غير محدد";
     if (!acc[key]) acc[key] = [];
@@ -365,10 +365,26 @@ if (res.success) {
   }, {});
 
   return Object.entries(grouped).map(([currencyName, list]: any) => {
-    // حساب الإجماليات بدقة لكل عملة
-    const totalDebit = list.reduce((s: number, r: any) => s + (Number(r.debit || 0)), 0);
-    const totalCredit = list.reduce((s: number, r: any) => s + (Number(r.credit || 0)), 0);
-    const finalBalance = totalDebit - totalCredit;
+    
+    // --- الحسابات البرمجية لضبط الإجماليات شاملة الرصيد السابق ---
+    let totalDebitSum = 0;
+    let totalCreditSum = 0;
+
+    list.forEach((r: any) => {
+      const isOpening = r.account_name === "رصيد سابق" || r.is_opening;
+      
+      if (isOpening) {
+        // إذا كان رصيد سابق: نوزعه حسب الحالة (موجب = مدين، سالب = دائن)
+        if (r.balance > 0) totalDebitSum += Math.abs(r.balance);
+        else if (r.balance < 0) totalCreditSum += Math.abs(r.balance);
+      } else {
+        // حركة عادية: نجمع المدين والدائن بشكل طبيعي
+        totalDebitSum += Number(r.debit || 0);
+        totalCreditSum += Number(r.credit || 0);
+      }
+    });
+
+    const finalBalanceSum = totalDebitSum - totalCreditSum;
 
     return (
       <div key={currencyName} className="mb-8">
@@ -391,26 +407,25 @@ if (res.success) {
 
           <tbody className="bg-white dark:bg-gray-800">
             {list.map((r: any, index: number) => {
-              // تحديد ما إذا كان السطر هو "رصيد سابق" قادم من السيرفر
               const isOpening = r.account_name === "رصيد سابق" || r.is_opening;
               
+              // تحديد القيم للعرض في الجدول
+              const displayDebit = isOpening ? (r.balance > 0 ? Math.abs(r.balance) : 0) : Number(r.debit || 0);
+              const displayCredit = isOpening ? (r.balance < 0 ? Math.abs(r.balance) : 0) : Number(r.credit || 0);
+
               return (
                 <tr key={index} className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 ${isOpening ? "bg-blue-50 dark:bg-blue-900/20 font-bold" : ""}`}>
                   <td className="border px-2 py-1 text-xs">{r.journal_date?.slice(0, 10)}</td>
-                  <td className="border px-2 py-1">
-                    {isOpening ? "-" : (referenceTranslations[r.reference_type] || r.reference_type)}
-                  </td>
+                  <td className="border px-2 py-1">{isOpening ? "-" : (referenceTranslations[r.reference_type] || r.reference_type)}</td>
                   <td className="border px-2 py-1">{isOpening ? "-" : (r.reference_id || "-")}</td>
                   <td className="border px-2 py-1">{r.account_name}</td>
                   
-                  {/* خانة مدين: تظهر القيمة إذا كان السطر مدين أو رصيد سابق موجب */}
+                  {/* عرض المبالغ في الخانات الصحيحة حتى للرصيد السابق */}
                   <td className="border px-2 py-1 text-red-600">
-                    {Number(r.debit) > 0 ? Number(r.debit).toFixed(2) : (isOpening && r.balance > 0 ? Math.abs(r.balance).toFixed(2) : "0.00")}
+                    {displayDebit > 0 ? displayDebit.toFixed(2) : "0.00"}
                   </td>
-                  
-                  {/* خانة دائن: تظهر القيمة إذا كان السطر دائن أو رصيد سابق سالب */}
                   <td className="border px-2 py-1 text-green-600">
-                    {Number(r.credit) > 0 ? Number(r.credit).toFixed(2) : (isOpening && r.balance < 0 ? Math.abs(r.balance).toFixed(2) : "0.00")}
+                    {displayCredit > 0 ? displayCredit.toFixed(2) : "0.00"}
                   </td>
 
                   <td className="border px-2 py-1 font-medium text-blue-700">
@@ -424,14 +439,14 @@ if (res.success) {
               );
             })}
 
-            {/* الإجمالي النهائي - يجمع كل ما سبق بما في ذلك الرصيد السابق القادم من السيرفر */}
+            {/* الإجمالي النهائي - الآن يجمع كل شيء بشكل صحيح */}
             <tr className="bg-yellow-100 dark:bg-yellow-900/30 font-bold">
-              <td colSpan={4} className="border px-2 py-2 text-left">الإجمالي النهائي</td>
-              <td className="border px-2 py-2 text-red-600">{totalDebit.toFixed(2)}</td>
-              <td className="border px-2 py-2 text-green-600">{totalCredit.toFixed(2)}</td>
-              <td className="border px-2 py-2 text-blue-700">{Math.abs(finalBalance).toFixed(2)}</td>
-              <td className={`border px-2 py-2 ${finalBalance > 0 ? "text-red-600" : "text-green-600"}`}>
-                {finalBalance > 0 ? "إجمالي عليه" : "إجمالي له"}
+              <td colSpan={4} className="border px-2 py-2 text-left text-blue-900 dark:text-blue-200">الإجمالي النهائي (شامل الرصيد السابق)</td>
+              <td className="border px-2 py-2 text-red-600">{totalDebitSum.toFixed(2)}</td>
+              <td className="border px-2 py-2 text-green-600">{totalCreditSum.toFixed(2)}</td>
+              <td className="border px-2 py-2 text-blue-700">{Math.abs(finalBalanceSum).toFixed(2)}</td>
+              <td className={`border px-2 py-2 ${finalBalanceSum > 0 ? "text-red-600" : "text-green-600"}`}>
+                {finalBalanceSum > 0 ? "إجمالي عليه" : "إجمالي له"}
               </td>
               <td className="border px-2 py-2"></td>
             </tr>
@@ -441,7 +456,6 @@ if (res.success) {
     );
   });
 })()}
-
 
       <style>{`
         .input { padding:10px; border-radius:8px; border:1px solid #ccc; }
