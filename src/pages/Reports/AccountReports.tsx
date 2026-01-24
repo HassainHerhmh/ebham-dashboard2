@@ -372,69 +372,81 @@ if (res.success) {
           {currencyName}
         </div>
 
-        <table className="w-full text-sm text-center border">
-          <thead className="bg-green-600 text-white">
-            <tr>
-              <th className="border px-2 py-1">التاريخ</th>
-              <th className="border px-2 py-1">المستند</th>
-              <th className="border px-2 py-1">رقمه</th>
-              <th className="border px-2 py-1">الحساب</th>
-              <th className="border px-2 py-1">مدين</th>
-              <th className="border px-2 py-1">دائن</th>
-              <th className="border px-2 py-1">الرصيد</th>
-              <th className="border px-2 py-1">البيان</th>
-            </tr>
-          </thead>
+      <table className="w-full text-sm text-center border dark:border-gray-700">
+  <thead className="bg-green-600 dark:bg-green-700 text-white">
+    <tr>
+      <th className="border dark:border-gray-600 px-2 py-2">التاريخ</th>
+      <th className="border dark:border-gray-600 px-2 py-2">المستند</th>
+      <th className="border dark:border-gray-600 px-2 py-2">رقم المرجع</th>
+      <th className="border dark:border-gray-600 px-2 py-2">الحساب</th>
+      <th className="border dark:border-gray-600 px-2 py-2">مدين</th>
+      <th className="border dark:border-gray-600 px-2 py-2">دائن</th>
+      <th className="border dark:border-gray-600 px-2 py-2">الرصيد</th>
+      <th className="border dark:border-gray-600 px-2 py-2">الحالة</th> {/* عمود الحالة الجديد */}
+      <th className="border dark:border-gray-600 px-2 py-2">البيان</th>
+    </tr>
+  </thead>
 
-          <tbody>
-            {reportMode === "detailed" &&
-              detailedType === "full" &&
-              opening !== 0 && (
-                <tr className="bg-gray-100 font-semibold">
-                  <td className="border px-2 py-1">
-                    {periodType === "day" ||
-                    periodType === "from_start" ||
-                    periodType === "month"
-                      ? date
-                      : fromDate}
-                  </td>
-                  <td className="border px-2 py-1"></td>
-                  <td className="border px-2 py-1"></td>
-                  <td className="border px-2 py-1">رصيد سابق</td>
-                  <td className="border px-2 py-1"></td>
-                  <td className="border px-2 py-1"></td>
-                  <td className="border px-2 py-1">
-                    {opening.toLocaleString(undefined, {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
-                  </td>
-                  <td className="border px-2 py-1">رصيد سابق</td>
-                </tr>
-              )}
+  <tbody className="bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200">
+    {/* الرصيد السابق */}
+    {reportMode === "detailed" && detailedType === "full" && opening !== 0 && (
+      <tr className="bg-gray-100 dark:bg-gray-700 font-semibold">
+        <td className="border dark:border-gray-600 px-2 py-1">
+          {["day", "from_start", "month"].includes(periodType) ? date : fromDate}
+        </td>
+        <td className="border dark:border-gray-600 px-2 py-1">-</td>
+        <td className="border dark:border-gray-600 px-2 py-1">-</td>
+        <td className="border dark:border-gray-600 px-2 py-1">رصيد سابق</td>
+        <td className="border dark:border-gray-600 px-2 py-1"></td>
+        <td className="border dark:border-gray-600 px-2 py-1"></td>
+        <td className="border dark:border-gray-600 px-2 py-1 text-blue-600 dark:text-blue-400">
+          {Math.abs(opening).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+        </td>
+        <td className="border dark:border-gray-600 px-2 py-1 font-bold">
+          {opening > 0 ? "مدين (عليه)" : "دائن (له)"}
+        </td>
+        <td className="border dark:border-gray-600 px-2 py-1">رصيد سابق مدور</td>
+      </tr>
+    )}
 
-            {list.map((r: any) => (
-              <tr key={r.id}>
-                <td className="border px-2 py-1">{r.journal_date?.slice(0, 10)}</td>
-                <td className="border px-2 py-1">{r.reference_type || "-"}</td>
-                <td className="border px-2 py-1">{r.reference_id || "-"}</td>
-                <td className="border px-2 py-1">{r.account_name}</td>
-                <td className="border px-2 py-1">{r.debit || ""}</td>
-                <td className="border px-2 py-1">{r.credit || ""}</td>
-                <td className="border px-2 py-1">{r.balance}</td>
-                <td className="border px-2 py-1">{r.notes}</td>
-              </tr>
-            ))}
+    {/* قائمة العمليات */}
+    {list.map((r: any) => (
+      <tr key={r.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+        <td className="border dark:border-gray-600 px-2 py-1">{r.journal_date?.slice(0, 10)}</td>
+        <td className="border dark:border-gray-600 px-2 py-1">{r.reference_type || "-"}</td>
+        <td className="border dark:border-gray-600 px-2 py-1">{r.reference_id || "-"}</td>
+        <td className="border dark:border-gray-600 px-2 py-1">{r.account_name}</td>
+        <td className="border dark:border-gray-600 px-2 py-1 text-red-600 dark:text-red-400">
+          {r.debit > 0 ? Number(r.debit).toFixed(2) : ""}
+        </td>
+        <td className="border dark:border-gray-600 px-2 py-1 text-green-600 dark:text-green-400">
+          {r.credit > 0 ? Number(r.credit).toFixed(2) : ""}
+        </td>
+        <td className="border dark:border-gray-600 px-2 py-1 font-medium">
+          {Math.abs(r.balance).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+        </td>
+        <td className={`border dark:border-gray-600 px-2 py-1 font-bold ${r.balance > 0 ? "text-red-500" : "text-green-500"}`}>
+          {r.balance > 0 ? "عليه" : "له"}
+        </td>
+        <td className="border dark:border-gray-600 px-2 py-1 text-right text-xs">{r.notes}</td>
+      </tr>
+    ))}
 
-            <tr className="bg-yellow-100 font-semibold">
-              <td colSpan={4} className="border px-2 py-1">الإجمالي</td>
-              <td className="border px-2 py-1">{totalDebit.toFixed(2)}</td>
-              <td className="border px-2 py-1">{totalCredit.toFixed(2)}</td>
-              <td className="border px-2 py-1">{finalBalance.toFixed(2)}</td>
-              <td className="border px-2 py-1"></td>
-            </tr>
-          </tbody>
-        </table>
+    {/* صف الإجمالي النهائي */}
+    <tr className="bg-yellow-100 dark:bg-yellow-900/30 font-bold text-gray-900 dark:text-yellow-200">
+      <td colSpan={4} className="border dark:border-gray-600 px-2 py-2">الإجمالي النهائي</td>
+      <td className="border dark:border-gray-600 px-2 py-2 text-red-600 dark:text-red-400">{totalDebit.toFixed(2)}</td>
+      <td className="border dark:border-gray-600 px-2 py-2 text-green-600 dark:text-green-400">{totalCredit.toFixed(2)}</td>
+      <td className="border dark:border-gray-600 px-2 py-2 text-blue-700 dark:text-blue-300">
+        {Math.abs(finalBalance).toFixed(2)}
+      </td>
+      <td className={`border dark:border-gray-600 px-2 py-2 ${finalBalance > 0 ? "text-red-600" : "text-green-600"}`}>
+        {finalBalance > 0 ? "إجمالي عليه" : "إجمالي له"}
+      </td>
+      <td className="border dark:border-gray-600 px-2 py-2"></td>
+    </tr>
+  </tbody>
+</table>
       </div>
     );
   });
