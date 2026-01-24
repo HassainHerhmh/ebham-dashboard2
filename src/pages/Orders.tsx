@@ -57,7 +57,7 @@ const Orders: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
 const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
-const isAdminBranch = currentUser?.is_admin_branch === 1;
+const isAdminBranch = !!currentUser?.is_admin_branch;
 
 const [cancelModalOpen, setCancelModalOpen] = useState(false);
 const [cancelOrderId, setCancelOrderId] = useState<number | null>(null);
