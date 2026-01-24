@@ -310,7 +310,7 @@ const confirmCancelOrder = async () => {
     if (!rest) return;
 
     setCurrentRestaurant(rest);
-
+};
     try {
       const catRes = await api.get(`/restaurants/${restaurantId}/categories`);
       const cats = Array.isArray(catRes.data?.categories)
