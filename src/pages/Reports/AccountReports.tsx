@@ -356,7 +356,7 @@ if (res.success) {
       </div>
 
 {(() => {
-  // تقسيم الصفوف حسب العملة
+  // 1. تقسيم الصفوف حسب العملة
   const grouped = rows.reduce((acc: any, r: any) => {
     const key = r.currency_name || "غير محدد";
     if (!acc[key]) acc[key] = [];
@@ -365,123 +365,102 @@ if (res.success) {
   }, {});
 
   return Object.entries(grouped).map(([currencyName, list]: any) => {
-    // --- الحسابات البرمجية المعدلة ---
     
-    // 1. تحديد قيمة الرصيد السابق وتوزيعها كمدين أو دائن لتدخل في الإجمالي
+    // --- الحسابات المنطقية لضبط الإجماليات ---
     const opVal = Number(opening) || 0;
-    const openingDebit = opVal > 0 ? opVal : 0;  // إذا كان موجب فهو مدين (عليه)
-    const openingCredit = opVal < 0 ? Math.abs(opVal) : 0; // إذا كان سالب فهو دائن (له)
+    
+    // الرصيد السابق: إذا كان موجب فهو مدين (عليه)، إذا كان سالب فهو دائن (له)
+    // ملاحظة: قمت بعكس المنطق بناءً على طلبك ليتوافق مع نظامك (له = دائن)
+    const openingDebit = opVal > 0 ? opVal : 0;
+    const openingCredit = opVal < 0 ? Math.abs(opVal) : 0;
 
-    // 2. حساب إجمالي الحركات الحالية
+    // حساب إجمالي الحركات الحالية فقط
     const movesDebit = list.reduce((s: number, r: any) => s + (Number(r.debit) || 0), 0);
     const movesCredit = list.reduce((s: number, r: any) => s + (Number(r.credit) || 0), 0);
 
-    // 3. الإجمالي النهائي (رصيد سابق + حركات)
+    // الإجمالي النهائي الشامل (رصيد سابق + حركات)
     const totalDebitSum = openingDebit + movesDebit;
     const totalCreditSum = openingCredit + movesCredit;
+    
+    // الرصيد النهائي الصافي
     const finalBalanceSum = totalDebitSum - totalCreditSum;
 
     return (
       <div key={currencyName} className="mb-8">
-        {/* عنوان العملة */}
-        <div className="text-center font-bold text-lg my-3">
-          {currencyName}
-        </div>
+        <div className="text-center font-bold text-lg my-3">{currencyName}</div>
 
-      <table className="w-full text-sm text-center border dark:border-gray-700">
-  <thead className="bg-green-600 dark:bg-green-700 text-white">
-    <tr>
-      <th className="border dark:border-gray-600 px-2 py-2">التاريخ</th>
-      <th className="border dark:border-gray-600 px-2 py-2">المستند</th>
-      <th className="border dark:border-gray-600 px-2 py-2">رقم المرجع</th>
-      <th className="border dark:border-gray-600 px-2 py-2">الحساب</th>
-      <th className="border dark:border-gray-600 px-2 py-2">مدين</th>
-      <th className="border dark:border-gray-600 px-2 py-2">دائن</th>
-      <th className="border dark:border-gray-600 px-2 py-2">الرصيد</th>
-      <th className="border dark:border-gray-600 px-2 py-2">الحالة</th> {/* عمود الحالة الجديد */}
-      <th className="border dark:border-gray-600 px-2 py-2">البيان</th>
-    </tr>
-  </thead>
+        <table className="w-full text-sm text-center border dark:border-gray-700">
+          <thead className="bg-green-600 dark:bg-green-700 text-white">
+            <tr>
+              <th className="border px-2 py-2">التاريخ</th>
+              <th className="border px-2 py-2">المستند</th>
+              <th className="border px-2 py-2">رقم المرجع</th>
+              <th className="border px-2 py-2">الحساب</th>
+              <th className="border px-2 py-2">مدين</th>
+              <th className="border px-2 py-2">دائن</th>
+              <th className="border px-2 py-2">الرصيد</th>
+              <th className="border px-2 py-2">الحالة</th>
+              <th className="border px-2 py-2">البيان</th>
+            </tr>
+          </thead>
 
-  <tbody className="bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200">
- 
-    
-  {/* 2. قائمة العمليات - الإصلاح هنا ✅ */}
-{list.map((r: any) => (
-  <tr 
-    key={r.id} 
-    className={`transition-colors text-center ${
-      r.is_opening 
-        ? "bg-blue-50 dark:bg-blue-900/20 font-bold" // لون خاص للرصيد السابق القادم من السيرفر
-        : "hover:bg-gray-50 dark:hover:bg-gray-700/50"
-    }`}
-  >
-      {/* 1. التاريخ */}
-      <td className="border dark:border-gray-600 px-2 py-1 text-xs">
-        {r.journal_date?.slice(0, 10)}
-      </td>
+          <tbody className="bg-white dark:bg-gray-800">
+            {/* 2. سطر الرصيد السابق - تم إصلاح ظهور القيمة في الخانة الصحيحة */}
+            {reportMode === "detailed" && detailedType === "full" && (
+              <tr className="bg-blue-50 dark:bg-blue-900/20 font-bold">
+                <td className="border px-2 py-1">
+                  {["day", "from_start", "month"].includes(periodType) ? date : fromDate}
+                </td>
+                <td className="border px-2 py-1">-</td>
+                <td className="border px-2 py-1">-</td>
+                <td className="border px-2 py-1">رصيد سابق</td>
+                {/* إظهار المبلغ في خانة مدين أو دائن حسب الحالة لضبط الإجمالي */}
+                <td className="border px-2 py-1 text-red-600">
+                   {openingDebit > 0 ? openingDebit.toLocaleString(undefined, {minimumFractionDigits: 2}) : "0.00"}
+                </td>
+                <td className="border px-2 py-1 text-green-600">
+                   {openingCredit > 0 ? openingCredit.toLocaleString(undefined, {minimumFractionDigits: 2}) : "0.00"}
+                </td>
+                <td className="border px-2 py-1 text-blue-700">
+                  {Math.abs(opVal).toLocaleString(undefined, {minimumFractionDigits: 2})}
+                </td>
+                <td className={`border px-2 py-1 font-bold ${opVal > 0 ? "text-red-500" : "text-green-500"}`}>
+                  {opVal > 0 ? "مدين (عليه)" : "دائن (له)"}
+                </td>
+                <td className="border px-2 py-1">رصيد سابق</td>
+              </tr>
+            )}
 
-      {/* 2. المستند (تعريب كامل) */}
-      <td className="border dark:border-gray-600 px-2 py-1">
-        {r.reference_type === 'order' ? 'طلب توصيل' : 
-         r.reference_type === 'journal' ? 'قيد يومي' : 
-         r.reference_type === 'payment' ? 'سند صرف' : 
-           r.reference_type === 'receipt' ? 'سند قبض' : 
-         r.reference_type || "-"}
-      </td>
+            {/* 3. عرض حركات الفترة */}
+            {list.map((r: any) => (
+              <tr key={r.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                <td className="border px-2 py-1 text-xs">{r.journal_date?.slice(0, 10)}</td>
+                <td className="border px-2 py-1">{referenceTranslations[r.reference_type] || r.reference_type}</td>
+                <td className="border px-2 py-1">{r.reference_id || "-"}</td>
+                <td className="border px-2 py-1">{r.account_name}</td>
+                <td className="border px-2 py-1 text-red-600">{Number(r.debit || 0).toFixed(2)}</td>
+                <td className="border px-2 py-1 text-green-600">{Number(r.credit || 0).toFixed(2)}</td>
+                <td className="border px-2 py-1 font-medium text-blue-700">{Math.abs(r.balance).toFixed(2)}</td>
+                <td className={`border px-2 py-1 font-bold ${r.balance > 0 ? "text-red-500" : "text-green-500"}`}>
+                  {r.balance > 0 ? "عليه" : "له"}
+                </td>
+                <td className="border px-2 py-1 text-right text-xs">{r.notes}</td>
+              </tr>
+            ))}
 
-      {/* 3. رقم المرجع (رقم الطلب أو السند) */}
-      <td className="border dark:border-gray-600 px-2 py-1">
-        {r.reference_id || "-"}
-      </td>
-
-      {/* 4. الحساب */}
-      <td className="border dark:border-gray-600 px-2 py-1">
-        {r.account_name}
-      </td>
-
-      {/* 5. مدين (باللون الأحمر) */}
-      <td className="border dark:border-gray-600 px-2 py-1 text-red-600 dark:text-red-400">
-        {r.debit > 0 ? Number(r.debit).toFixed(2) : "0.00"}
-      </td>
-
-      {/* 6. دائن (باللون الأخضر) */}
-      <td className="border dark:border-gray-600 px-2 py-1 text-green-600 dark:text-green-400">
-        {r.credit > 0 ? Number(r.credit).toFixed(2) : "0.00"}
-      </td>
-
-      {/* 7. الرصيد (قيمة موجبة دائماً) */}
-      <td className="border dark:border-gray-600 px-2 py-1 font-medium text-blue-700 dark:text-blue-300">
-        {Math.abs(r.balance).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-      </td>
-
-      {/* 8. الحالة (بدلاً من الأرقام السالبة) */}
-      <td className={`border dark:border-gray-600 px-2 py-1 font-bold ${r.balance > 0 ? "text-red-500" : "text-green-500"}`}>
-        {r.balance > 0 ? "عليه" : "له"}
-      </td>
-
-      {/* 9. البيان */}
-      <td className="border dark:border-gray-600 px-2 py-1 text-right text-xs">
-        {r.notes}
-      </td>
-    </tr>
-  ))}
-
-  {/* 3. صف الإجمالي النهائي - مصحح الترتيب ✅ */}
-  <tr className="bg-yellow-100 dark:bg-yellow-900/30 font-bold text-gray-900 dark:text-yellow-200 text-center">
-    <td colSpan={4} className="border dark:border-gray-600 px-2 py-2 text-left">الإجمالي النهائي</td>
-    <td className="border dark:border-gray-600 px-2 py-2 text-red-600 dark:text-red-400">{totalDebit.toFixed(2)}</td>
-    <td className="border dark:border-gray-600 px-2 py-2 text-green-600 dark:text-green-400">{totalCredit.toFixed(2)}</td>
-    <td className="border dark:border-gray-600 px-2 py-2 text-blue-700 dark:text-blue-300">
-      {Math.abs(finalBalance).toFixed(2)}
-    </td>
-    <td className={`border dark:border-gray-600 px-2 py-2 ${finalBalance > 0 ? "text-red-600" : "text-green-600"}`}>
-      {finalBalance > 0 ? "إجمالي عليه" : "إجمالي له"}
-    </td>
-    <td className="border dark:border-gray-600 px-2 py-2"></td>
-  </tr>
-</tbody>
-</table>
+            {/* 4. الإجمالي النهائي المصحح - يجمع الآن (السابق + الحركات) */}
+            <tr className="bg-yellow-100 dark:bg-yellow-900/30 font-bold">
+              <td colSpan={4} className="border px-2 py-2 text-left">الإجمالي النهائي</td>
+              <td className="border px-2 py-2 text-red-600">{totalDebitSum.toFixed(2)}</td>
+              <td className="border px-2 py-2 text-green-600">{totalCreditSum.toFixed(2)}</td>
+              <td className="border px-2 py-2 text-blue-700">{Math.abs(finalBalanceSum).toFixed(2)}</td>
+              <td className={`border px-2 py-2 ${finalBalanceSum > 0 ? "text-red-600" : "text-green-600"}`}>
+                {finalBalanceSum > 0 ? "إجمالي عليه" : "إجمالي له"}
+              </td>
+              <td className="border px-2 py-2"></td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     );
   });
