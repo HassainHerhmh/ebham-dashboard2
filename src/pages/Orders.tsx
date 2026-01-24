@@ -51,8 +51,9 @@ interface OrderDetails {
 /* =====================
    Component
 ===================== */
-const socket = io("http://localhost:8080"); // أو دومين الباك إند
- // عدّل حسب عنوان السيرفر
+// في Orders.tsx
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "http://localhost:8080";
+const socket = io(SOCKET_URL);
 
 function ToastNotifications() {
   const [toasts, setToasts] = useState<any[]>([]);
