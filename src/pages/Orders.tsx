@@ -1016,13 +1016,14 @@ const visibleOrders = filterByTab(orders);
   </option>
   
   {/* الفلترة هنا هي السر: نعرض فقط العناوين التي تتبع العميل المختار */}
-  {addresses
-    .filter((a) => a.customer_id === selectedCustomer?.id) // الفلترة حسب ID العميل
-    .map((a) => (
-      <option key={a.id} value={a.id}>
-        {`${a.neighborhood_name || "بدون حي"} - ${a.address || ""}`}
-      </option>
-    ))}
+{/* الفلترة المحسنة */}
+{addresses
+  .filter((a) => Number(a.customer_id) === Number(selectedCustomer?.id)) 
+  .map((a) => (
+    <option key={a.id} value={a.id}>
+      {`${a.neighborhood_name || "بدون حي"} - ${a.address || ""}`}
+    </option>
+  ))}
 </select>
        
       {/* ===== طريقة الدفع (بعد GPS مباشرة) ===== */}
