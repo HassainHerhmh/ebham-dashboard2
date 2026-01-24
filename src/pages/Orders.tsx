@@ -304,17 +304,6 @@ const confirmCancelOrder = async () => {
 
     if (!customer) return;
 
-    try {
-      const res = await api.get(`/customer-addresses?customer_id=${customer.id}`);
-      const list = Array.isArray(res.data?.addresses)
-        ? res.data.addresses
-        : [];
-      setAddresses(list);
-    } catch (err) {
-      console.error("خطأ في جلب عناوين العميل:", err);
-      setAddresses([]);
-    }
-  };
 
   const selectRestaurant = async (restaurantId: number) => {
     const rest = restaurants.find((r) => r.id === restaurantId);
