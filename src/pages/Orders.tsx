@@ -51,7 +51,7 @@ interface OrderDetails {
 /* =====================
    Component
 ===================== */
-const socket = io("http://localhost:3000"); // عدّل حسب عنوان السيرفر
+const socket = io("https://ebham-dashboard2.vercel.app"); // عدّل حسب عنوان السيرفر
 
 function ToastNotifications() {
   const [toasts, setToasts] = useState<any[]>([]);
