@@ -737,10 +737,10 @@ const visibleOrders = filterByTab(orders);
       <td className="px-2">{renderActions(o)}</td>
 
       {/* المستخدم: يظهر فقط بعد اعتماد الطلب */}
-      <td className="px-2 text-sm text-gray-700">
-        {o.status !== "pending" ? o.created_by_name || "—" : "—"}
-      </td>
-
+  {/* التعديل في جدول الطلبات بصفحة الـ React */}
+<td className="px-2 text-sm text-gray-700">
+  {o.status !== "pending" ? o.user_name || "—" : "—"}
+</td>
       {/* الفرع: يظهر فقط لفرع الإدارة */}
       {isAdminBranch && (
         <td className="px-2 text-sm text-gray-700">
