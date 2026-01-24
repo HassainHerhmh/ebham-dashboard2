@@ -109,6 +109,32 @@ const [selectedBankId, setSelectedBankId] = useState<number | null>(null);
 const [walletBalance, setWalletBalance] = useState<number>(0);
 const [walletAllowed, setWalletAllowed] = useState<boolean>(true);
 const [banks, setBanks] = useState<any[]>([]);
+
+   // عند اختيار عميل، نقوم بجلب عناوينه فقط
+  useEffect(() => {
+    if (selectedCustomer) {
+      // تفريغ العنوان المختار السابق عند تغيير العميل
+      setSelectedAddress(null);
+      setGpsLink("");
+      
+      // جلب عناوين العميل المختار فقط من السيرفر
+      fetchCustomerAddresses(selectedCustomer.id);
+    } else {
+      setAddresses([]);
+    }
+  }, [selectedCustomer]);
+
+  const fetchCustomerAddresses = async (customerId: number) => {
+    try {
+      // ملاحظة: تأكد من وجود هذا المسار في السيرفر أو استخدم المسار العام مع فلترة
+      const res = await api.get(`/customer-addresses/customer/${customerId}`);
+      if (res.data.success) {
+        setAddresses(res.data.addresses);
+      }
+    } catch (err) {
+      console.error("خطأ في جلب عناوين العميل:", err);
+    }
+  };
   /* =====================
      جلب البيانات
   ===================== */
@@ -962,48 +988,50 @@ const visibleOrders = filterByTab(orders);
     <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
       <h2 className="text-lg font-bold mb-4">➕ إضافة طلب جديد</h2>
 
-      <label>👤 اختر العميل:</label>
-      <select
-        onChange={(e) => selectCustomer(Number(e.target.value))}
-        className="border w-full p-2 rounded"
-      >
-        <option value="">-- اختر --</option>
-        {customers.map((c) => (
-          <option key={c.id} value={c.id}>
-            {c.name}
-          </option>
-        ))}
-      </select>
-      {selectedCustomer && <div className="mt-1">📞 {selectedCustomer.phone}</div>}
+       
+{/* اختر العميل */}
+<label className="block font-semibold mb-1">👤 اختر العميل:</label>
+<select
+  onChange={(e) => selectCustomer(Number(e.target.value))}
+  className="border w-full p-2 rounded mb-3 focus:ring-2 focus:ring-blue-500"
+>
+  <option value="">-- اختر العميل من القائمة --</option>
+  {customers.map((c) => (
+    <option key={c.id} value={c.id}>
+      {c.name} ({c.phone})
+    </option>
+  ))}
+</select>
 
-      <label className="mt-3 block">📍 اختر العنوان:</label>
-      <select
-        value={selectedAddress?.id || ""}
-        onChange={(e) => {
-          const addr = addresses.find((a) => a.id == e.target.value);
-          setSelectedAddress(addr || null);
-          if (addr?.gps_link) setGpsLink(addr.gps_link);
-          else if (addr?.latitude && addr?.longitude)
-            setGpsLink(`https://www.google.com/maps?q=${addr.latitude},${addr.longitude}`);
-          else setGpsLink("");
-        }}
-        className="border w-full p-2 mt-1 rounded"
-      >
-        <option value="">-- اختر --</option>
-        {addresses.map((a) => (
-          <option key={a.id} value={a.id}>
-            {`${a.district_name || a.neighborhood_name || "بدون حي"} - ${a.address || ""}`}
-          </option>
-        ))}
-      </select>
-
-      <input
-        type="text"
-        placeholder="🌍 رابط GPS"
-        value={gpsLink}
-        readOnly
-        className="border w-full p-2 mt-2 mb-3 rounded bg-gray-50"
-      />
+{/* اختر العنوان - سيعرض عناوين العميل المختار فقط */}
+<label className="block font-semibold mb-1">📍 اختر العنوان:</label>
+<select
+  value={selectedAddress?.id || ""}
+  onChange={(e) => {
+    const addr = addresses.find((a) => a.id == Number(e.target.value));
+    setSelectedAddress(addr || null);
+    
+    // تحديث رابط GPS تلقائياً
+    if (addr?.gps_link) {
+      setGpsLink(addr.gps_link);
+    } else if (addr?.latitude && addr?.longitude) {
+      setGpsLink(`https://www.google.com/maps?q=${addr.latitude},${addr.longitude}`);
+    } else {
+      setGpsLink("");
+    }
+  }}
+  className="border w-full p-2 rounded focus:ring-2 focus:ring-blue-500"
+  disabled={!selectedCustomer} // معطل حتى تختار عميل
+>
+  <option value="">
+    {selectedCustomer ? "-- اختر عنوان العميل --" : "⚠️ يرجى اختيار عميل أولاً"}
+  </option>
+  {addresses.map((a) => (
+    <option key={a.id} value={a.id}>
+      {`${a.district_name || a.neighborhood_name || "بدون حي"} - ${a.address || "بدون تفاصيل"}`}
+    </option>
+  ))}
+</select>
 
       {/* ===== طريقة الدفع (بعد GPS مباشرة) ===== */}
       <h3 className="font-bold mb-2">💳 طريقة الدفع</h3>
