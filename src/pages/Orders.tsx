@@ -59,6 +59,8 @@ function ToastNotifications() {
   const [toasts, setToasts] = useState<any[]>([]);
 
   useEffect(() => {
+    console.log("🔌 Trying socket connection to:", SOCKET_URL);
+
     const handler = (data: any) => {
       const id = Date.now();
       setToasts((prev) => [...prev, { ...data, id }]);
@@ -68,10 +70,23 @@ function ToastNotifications() {
       }, 5000);
     };
 
-    socket.on("notification", handler);
-    return () => socket.off("notification", handler);
-  }, []);
+    socket.on("connect", () => {
+      console.log("🟢 Socket connected with id:", socket.id);
+    });
 
+    socket.on("connect_error", (err) => {
+      console.error("🔴 Socket connection error:", err.message);
+    });
+
+    socket.on("notification", handler);
+
+    return () => {
+      socket.off("notification", handler);
+      socket.off("connect");
+      socket.off("connect_error");
+    };
+  }, []);
+   
   return (
     <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 space-y-2 w-[420px] pointer-events-none">
       {toasts.map((t) => (
