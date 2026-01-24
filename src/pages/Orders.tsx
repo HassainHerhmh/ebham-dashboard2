@@ -297,34 +297,35 @@ const confirmCancelOrder = async () => {
   const [showProductsModal, setShowProductsModal] = useState(false);
 
   const selectCustomer = async (customerId: number) => {
-    const customer = customers.find((c) => c.id === customerId);
-    setSelectedCustomer(customer);
-    setAddresses([]);
-    setSelectedAddress(null);
+  const customer = customers.find((c) => c.id === customerId);
+  setSelectedCustomer(customer);
+  setAddresses([]);
+  setSelectedAddress(null);
 
-    if (!customer) return;
-
-
-  const selectRestaurant = async (restaurantId: number) => {
-    const rest = restaurants.find((r) => r.id === restaurantId);
-    if (!rest) return;
-
-    setCurrentRestaurant(rest);
+  if (!customer) return;
 };
-    try {
-      const catRes = await api.get(`/restaurants/${restaurantId}/categories`);
-      const cats = Array.isArray(catRes.data?.categories)
-        ? catRes.data.categories
-        : [];
 
-      setRestaurantCategories(cats);
-      setSelectedCategory(cats.length ? cats[0].id : null);
-    } catch (err) {
-      console.error("خطأ في جلب الفئات:", err);
-      setRestaurantCategories([]);
-      setSelectedCategory(null);
-    }
-  };
+const selectRestaurant = async (restaurantId: number) => {
+  const rest = restaurants.find((r) => r.id === restaurantId);
+  if (!rest) return;
+
+  setCurrentRestaurant(rest);
+
+  try {
+    const catRes = await api.get(`/restaurants/${restaurantId}/categories`);
+    const cats = Array.isArray(catRes.data?.categories)
+      ? catRes.data.categories
+      : [];
+
+    setRestaurantCategories(cats);
+    setSelectedCategory(cats.length ? cats[0].id : null);
+  } catch (err) {
+    console.error("خطأ في جلب الفئات:", err);
+    setRestaurantCategories([]);
+    setSelectedCategory(null);
+  }
+};
+
 
   const openProductsModal = async () => {
     if (!currentRestaurant) return alert("اختر مطعم أولا");
