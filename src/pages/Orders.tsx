@@ -1003,36 +1003,39 @@ const visibleOrders = filterByTab(orders);
   ))}
 </select>
 
-{/* اختر العنوان - سيعرض عناوين العميل المختار فقط */}
-<label className="block font-semibold mb-1">📍 اختر العنوان:</label>
+{/* اختر العنوان - التعديل هنا */}
 <select
   value={selectedAddress?.id || ""}
   onChange={(e) => {
     const addr = addresses.find((a) => a.id == Number(e.target.value));
     setSelectedAddress(addr || null);
     
-    // تحديث رابط GPS تلقائياً
     if (addr?.gps_link) {
       setGpsLink(addr.gps_link);
     } else if (addr?.latitude && addr?.longitude) {
+      // تصحيح بسيط في رابط جوجل ماب
       setGpsLink(`https://www.google.com/maps?q=${addr.latitude},${addr.longitude}`);
     } else {
       setGpsLink("");
     }
   }}
   className="border w-full p-2 rounded focus:ring-2 focus:ring-blue-500"
-  disabled={!selectedCustomer} // معطل حتى تختار عميل
+  disabled={!selectedCustomer} 
 >
   <option value="">
     {selectedCustomer ? "-- اختر عنوان العميل --" : "⚠️ يرجى اختيار عميل أولاً"}
   </option>
-  {addresses.map((a) => (
-    <option key={a.id} value={a.id}>
-      {`${a.district_name || a.neighborhood_name || "بدون حي"} - ${a.address || "بدون تفاصيل"}`}
-    </option>
-  ))}
+  
+  {/* الفلترة هنا هي السر: نعرض فقط العناوين التي تتبع العميل المختار */}
+  {addresses
+    .filter((a) => a.customer_id === selectedCustomer?.id) // الفلترة حسب ID العميل
+    .map((a) => (
+      <option key={a.id} value={a.id}>
+        {`${a.neighborhood_name || "بدون حي"} - ${a.address || ""}`}
+      </option>
+    ))}
 </select>
-
+       
       {/* ===== طريقة الدفع (بعد GPS مباشرة) ===== */}
       <h3 className="font-bold mb-2">💳 طريقة الدفع</h3>
       <div className="flex gap-3 flex-wrap mb-3">
