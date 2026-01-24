@@ -648,18 +648,18 @@ const AddAddressModal = ({
           </select>
         )}
 
-        <select
-          className="border p-2 w-full mb-2"
-          value={district}
-          onChange={(e) => setDistrict(e.target.value)}
-        >
-          <option value="">اختر الحي</option>
-          {neighborhoods.map((n: any) => (
-            <option key={n.id} value={n.name}>
-              {n.name}
-            </option>
-          ))}
-        </select>
+    <select
+  className="border p-2 w-full mb-2"
+  value={district} 
+  onChange={(e) => setDistrict(e.target.value)}
+>
+  <option value="">اختر الحي</option>
+  {neighborhoods.map((n: any) => (
+    <option key={n.id} value={n.id}> {/* التأكد من إرسال الـ ID */}
+      {n.name}
+    </option>
+  ))}
+</select>
 
         <select
           className="border p-2 w-full mb-2"
