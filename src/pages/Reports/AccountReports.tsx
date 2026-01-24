@@ -355,7 +355,7 @@ if (res.success) {
         )}
       </div>
 
-   {(() => {
+{(() => {
   // تقسيم الصفوف حسب العملة
   const grouped = rows.reduce((acc: any, r: any) => {
     const key = r.currency_name || "غير محدد";
@@ -365,11 +365,21 @@ if (res.success) {
   }, {});
 
   return Object.entries(grouped).map(([currencyName, list]: any) => {
-    const totalDebit = list.reduce((s: number, r: any) => s + (Number(r.debit) || 0), 0);
-    const totalCredit = list.reduce((s: number, r: any) => s + (Number(r.credit) || 0), 0);
-    const finalBalance = Number(
-      ((Number(opening) || 0) + totalDebit - totalCredit).toFixed(2)
-    );
+    // --- الحسابات البرمجية المعدلة ---
+    
+    // 1. تحديد قيمة الرصيد السابق وتوزيعها كمدين أو دائن لتدخل في الإجمالي
+    const opVal = Number(opening) || 0;
+    const openingDebit = opVal > 0 ? opVal : 0;  // إذا كان موجب فهو مدين (عليه)
+    const openingCredit = opVal < 0 ? Math.abs(opVal) : 0; // إذا كان سالب فهو دائن (له)
+
+    // 2. حساب إجمالي الحركات الحالية
+    const movesDebit = list.reduce((s: number, r: any) => s + (Number(r.debit) || 0), 0);
+    const movesCredit = list.reduce((s: number, r: any) => s + (Number(r.credit) || 0), 0);
+
+    // 3. الإجمالي النهائي (رصيد سابق + حركات)
+    const totalDebitSum = openingDebit + movesDebit;
+    const totalCreditSum = openingCredit + movesCredit;
+    const finalBalanceSum = totalDebitSum - totalCreditSum;
 
     return (
       <div key={currencyName} className="mb-8">
