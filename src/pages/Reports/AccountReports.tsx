@@ -54,7 +54,13 @@ const AccountStatement: React.FC = () => {
   const [reportMode, setReportMode] = useState<ReportMode>("detailed");
 
   const [summaryType, setSummaryType] = useState("local");
-
+const referenceTranslations: { [key: string]: string } = {
+  'order': 'طلب توصيل',
+  'journal': 'قيد يومي',
+  'payment': 'سند صرف',
+  'receipt': 'سند قبض',
+  'opening': 'رصيد افتتاحي'
+};
 
 const totalDebit = rows.reduce(
   (s, r) => s + (Number(r.debit) || 0),
@@ -405,7 +411,7 @@ if (res.success) {
         <td className="border dark:border-gray-600 px-2 py-1 font-bold">
           {opening > 0 ? "مدين (عليه)" : "دائن (له)"}
         </td>
-        <td className="border dark:border-gray-600 px-2 py-1">رصيد سابق مدور</td>
+        <td className="border dark:border-gray-600 px-2 py-1">رصيد سابق </td>
       </tr>
     )}
 
@@ -413,6 +419,13 @@ if (res.success) {
     {list.map((r: any) => (
       <tr key={r.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
         <td className="border dark:border-gray-600 px-2 py-1">{r.journal_date?.slice(0, 10)}</td>
+        {/* تعريب نوع المستند هنا ✅ */}
+      <td className="border dark:border-gray-600 px-2 py-1">
+        {r.reference_type === 'order' ? 'طلب توصيل' : 
+         r.reference_type === 'journal' ? 'قيد يومي' : 
+         r.reference_type === 'payment' ? 'سند صرف' : 
+         r.reference_type || "-"}
+      </td>
         <td className="border dark:border-gray-600 px-2 py-1">{r.reference_type || "-"}</td>
         <td className="border dark:border-gray-600 px-2 py-1">{r.reference_id || "-"}</td>
         <td className="border dark:border-gray-600 px-2 py-1">{r.account_name}</td>
