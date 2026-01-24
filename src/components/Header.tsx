@@ -98,6 +98,18 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
                 </option>
               ))}
             </select>
+            {/* زر تشغيل/إيقاف الوضع الليلي */}
+        <button
+          onClick={() => setDarkMode(!darkMode)}
+          className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+          title={darkMode ? "تفعيل الوضع المضيء" : "تفعيل الوضع الليلي"}
+        >
+          {darkMode ? (
+            <SunIcon className="h-6 w-6 text-yellow-500" />
+          ) : (
+            <MoonIcon className="h-6 w-6 text-gray-600" />
+          )}
+        </button>
           )
         ) : (
           user?.branch_name && (
