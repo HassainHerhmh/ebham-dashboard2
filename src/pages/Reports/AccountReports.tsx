@@ -397,8 +397,15 @@ if (res.success) {
  
     
   {/* 2. قائمة العمليات - الإصلاح هنا ✅ */}
-  {list.map((r: any) => (
-    <tr key={r.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors text-center">
+{list.map((r: any) => (
+  <tr 
+    key={r.id} 
+    className={`transition-colors text-center ${
+      r.is_opening 
+        ? "bg-blue-50 dark:bg-blue-900/20 font-bold" // لون خاص للرصيد السابق القادم من السيرفر
+        : "hover:bg-gray-50 dark:hover:bg-gray-700/50"
+    }`}
+  >
       {/* 1. التاريخ */}
       <td className="border dark:border-gray-600 px-2 py-1 text-xs">
         {r.journal_date?.slice(0, 10)}
