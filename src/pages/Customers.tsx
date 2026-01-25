@@ -83,17 +83,19 @@ const [editAddress, setEditAddress] = useState<Address | null>(null);
     fetchCustomers();
   }, []);
 
-  const filteredCustomers = customers.filter(
-    (c) =>
-      c.name.toLowerCase().includes(searchCustomer.toLowerCase()) ||
-      c.phone.includes(searchCustomer)
-  );
+const filteredCustomers = customers.filter(
+  (c) =>
+    (c.name || "").toLowerCase().includes(searchCustomer.toLowerCase()) ||
+    (c.phone || "").includes(searchCustomer)
+);
 
-  const filteredAddresses = addresses.filter(
-    (a) =>
-      a.customer_name.toLowerCase().includes(searchAddress.toLowerCase()) ||
-      (a.address || "").toLowerCase().includes(searchAddress.toLowerCase())
-  );
+const filteredAddresses = addresses.filter(
+  (a) =>
+    (a.customer_name || "")
+      .toLowerCase()
+      .includes(searchAddress.toLowerCase()) ||
+    (a.address || "").toLowerCase().includes(searchAddress.toLowerCase())
+);
 
   // ===== Actions =====
   const openEditCustomer = (c: Customer) => {
