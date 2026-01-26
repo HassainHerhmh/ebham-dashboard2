@@ -963,6 +963,7 @@ return (
                   <div className="text-right font-bold">
                     إجمالي المطعم: {Number(r.total || 0).toFixed(2)} ريال
                   </div>
+                   
                 </div>
               ))}
 
@@ -1087,6 +1088,7 @@ return (
         </button>
       </div>
     </div>
+   </div>   
 )}
 
 {/* ===== مودال إضافة الطلب ===== */}
