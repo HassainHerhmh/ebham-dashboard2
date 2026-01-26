@@ -17,9 +17,11 @@ interface Restaurant {
   schedule?: ScheduleItem[];
   branch_id?: number;
   branch_name?: string;
+  agent_id?: number;
+  agent_name?: string;
 
-    agent_id?: number;      // 👈
-  agent_name?: string; 
+  is_active?: number;
+  delivery_time?: string;
 }
 
 interface Category {
@@ -165,8 +167,7 @@ const handleSubmit = async (e: React.FormEvent) => {
   data.append("type_id", String(selectedType));
   data.append("category_ids", JSON.stringify(selectedCategories));
   data.append("schedule", JSON.stringify(storeSchedule));
- data.append("delivery_time", deliveryTime);
- data.append("is_active", isActive ? 1 : 0);
+
 
   if (mapUrl) data.append("map_url", mapUrl);
 
@@ -175,6 +176,13 @@ const handleSubmit = async (e: React.FormEvent) => {
   }
   
   if (file) data.append("image", file);
+
+  const deliveryValue =
+  deliveryFrom && deliveryTo ? `${deliveryFrom}-${deliveryTo}` : "";
+
+data.append("delivery_time", deliveryValue);
+data.append("is_active", isActive ? 1 : 0);
+
 
     const headers =
       isAdminGeneral && selectedBranch ? { "x-branch-id": selectedBranch } : {};
@@ -191,65 +199,54 @@ const handleSubmit = async (e: React.FormEvent) => {
     fetchRestaurants();
   };
 
-  const handleEdit = (r: Restaurant) => {
-    setFormData({
-      id: r.id,
-      name: r.name,
-      address: r.address,
-      phone: r.phone,
-      image_url: r.image_url || "",
-    });
+ const handleEdit = (r: Restaurant) => {
+  setFormData({
+    id: r.id,
+    name: r.name,
+    address: r.address,
+    phone: r.phone,
+    image_url: r.image_url || "",
+  });
 
-    const categoryIds = r.category_ids
-      ? String(r.category_ids).split(",").map((id) => Number(id))
-      : [];
+  const categoryIds = r.category_ids
+    ? String(r.category_ids).split(",").map((id) => Number(id))
+    : [];
 
-    setSelectedCategories(categoryIds);
-    setSelectedType(r.type_id || "");
-    setSelectedBranch(r.branch_id || "");
-    setPreview(r.image_url || null);
-    setSelectedAgent(r.agent_id || "");
-    setFile(null);
+  setSelectedCategories(categoryIds);
+  setSelectedType(r.type_id || "");
+  setSelectedBranch(r.branch_id || "");
+  setPreview(r.image_url || null);
+  setSelectedAgent(r.agent_id || "");
+  setFile(null);
 
-    setLatitude(r.latitude ? String(r.latitude) : "");
-    setLongitude(r.longitude ? String(r.longitude) : "");
+  // 👇 الحالة الحقيقية
+  setIsActive(Boolean(r.is_active));
 
-    setStoreSchedule(
-      r.schedule
-        ? r.schedule.map((s) => ({
-            day: s.day,
-            start: s.start_time || s.start || "",
-            end: s.end_time || s.end || "",
-            closed: s.closed,
-          }))
-        : daysOfWeek.map((day) => ({ day, start: "", end: "", closed: false }))
-    );
+  // 👇 مدة التوصيل الحقيقية
+  if (r.delivery_time) {
+    const [from, to] = String(r.delivery_time).split("-");
+    setDeliveryFrom(from || "");
+    setDeliveryTo(to || "");
+    setDeliveryTime(r.delivery_time);
+  } else {
+    setDeliveryFrom("");
+    setDeliveryTo("");
+    setDeliveryTime("");
+  }
 
-    setEditMode(true);
-    setShowModal(true);
-  };
-
-const resetForm = () => {
-  setFormData({ id: 0, name: "", address: "", phone: "", image_url: "" });
-  setSelectedCategories([]);
-  setSelectedType("");
-  setSelectedBranch("");
-  setSelectedAgent("");
-
-  // 👇 هنا قيم افتراضية فقط
-  setDeliveryTime("");
-  setIsActive(true); // الافتراضي مفعل
-
-  setLatitude("");
-  setLongitude("");
   setStoreSchedule(
-    daysOfWeek.map((day) => ({ day, start: "", end: "", closed: false }))
+    r.schedule
+      ? r.schedule.map((s) => ({
+          day: s.day,
+          start: s.start_time || s.start || "",
+          end: s.end_time || s.end || "",
+          closed: s.closed,
+        }))
+      : daysOfWeek.map((day) => ({ day, start: "", end: "", closed: false }))
   );
 
-  setFile(null);
-  setPreview(null);
-  setEditMode(false);
-  setShowModal(false);
+  setEditMode(true);
+  setShowModal(true);
 };
 
 
