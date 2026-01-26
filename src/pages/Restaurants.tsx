@@ -201,7 +201,7 @@ const handleSubmit = async (e: React.FormEvent) => {
 
 
 
- const handleEdit = (r: Restaurant) => {
+const handleEdit = (r: Restaurant) => {
   setFormData({
     id: r.id,
     name: r.name,
@@ -221,10 +221,8 @@ const handleSubmit = async (e: React.FormEvent) => {
   setSelectedAgent(r.agent_id || "");
   setFile(null);
 
-  // 👇 الحالة الحقيقية
   setIsActive(Boolean(r.is_active));
 
-  // 👇 مدة التوصيل الحقيقية
   if (r.delivery_time) {
     const [from, to] = String(r.delivery_time).split("-");
     setDeliveryFrom(from || "");
@@ -250,6 +248,31 @@ const handleSubmit = async (e: React.FormEvent) => {
   setEditMode(true);
   setShowModal(true);
 };
+
+  const resetForm = () => {
+  setFormData({ id: 0, name: "", address: "", phone: "", image_url: "" });
+  setSelectedCategories([]);
+  setSelectedType("");
+  setSelectedBranch("");
+  setSelectedAgent("");
+
+  setDeliveryFrom("");
+  setDeliveryTo("");
+  setDeliveryTime("");
+  setIsActive(true);
+
+  setLatitude("");
+  setLongitude("");
+  setStoreSchedule(
+    daysOfWeek.map((day) => ({ day, start: "", end: "", closed: false }))
+  );
+
+  setFile(null);
+  setPreview(null);
+  setEditMode(false);
+  setShowModal(false);
+};
+
 
 
   const filteredRestaurants = restaurants.filter((r) =>
