@@ -563,14 +563,14 @@ useEffect(() => {
       className="border rounded-lg px-3 py-2 w-full"
     />
   </div>
+</div> {/* 👈 هذا الإغلاق كان ناقص */}
 
+{/* الصورة */}
+<div className="col-span-2 flex items-center gap-3">
+  <input type="file" accept="image/*" onChange={handleImageChange} />
+  {preview && <img src={preview} alt="معاينة" className="w-16 h-16 rounded" />}
+</div>
 
-      
-  {/* الصورة */}
-  <div className="col-span-2 flex items-center gap-3">
-    <input type="file" accept="image/*" onChange={handleImageChange} />
-    {preview && <img src={preview} alt="معاينة" className="w-16 h-16 rounded" />}
-  </div>
 
   {/* الأزرار */}
   <div className="flex gap-2 col-span-2">
