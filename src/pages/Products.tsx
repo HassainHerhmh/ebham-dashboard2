@@ -48,6 +48,11 @@ const Products: React.FC = () => {
   const [searchRestaurant, setSearchRestaurant] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
 
+  const [isAvailable, setIsAvailable] = useState(true);
+const [isParent, setIsParent] = useState(false);
+const [selectedChildren, setSelectedChildren] = useState<number[]>([]);
+
+
   /* ================= FETCH ================= */
 
   const buildHeaders = () => {
@@ -126,34 +131,53 @@ const Products: React.FC = () => {
   };
 
   /* ================= SUBMIT ================= */
+const handleSubmit = async (e: FormEvent) => {
+  e.preventDefault();
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+  if (!categoryIds.length) return alert("❌ اختر فئة واحدة على الأقل");
+  if (!restaurantId) return alert("❌ اختر المطعم");
+  if (!unitId) return alert("❌ اختر الوحدة");
 
-    if (!categoryIds.length) return alert("❌ اختر فئة واحدة على الأقل");
-    if (!restaurantId) return alert("❌ اختر المطعم");
-    if (!unitId) return alert("❌ اختر الوحدة");
+  // إذا المنتج ليس (أب) يجب إدخال سعر
+  if (!isParent && !price) {
+    return alert("❌ أدخل السعر أو اجعل المنتج (أب)");
+  }
 
-    const formData = new FormData();
-    formData.append("name", name);
-    formData.append("price", price);
-    formData.append("notes", notes);
-    formData.append("restaurant_id", restaurantId);
-    formData.append("unit_id", unitId);
-    formData.append("category_ids", JSON.stringify(categoryIds));
+  const formData = new FormData();
+  formData.append("name", name);
+  formData.append("price", isParent ? "" : price); // الأب بدون سعر
+  formData.append("notes", notes || "");
+  formData.append("restaurant_id", restaurantId);
+  formData.append("unit_id", unitId);
+  formData.append("category_ids", JSON.stringify(categoryIds));
 
-    if (image) formData.append("image", image);
+  // الحقول الجديدة
+  formData.append("is_available", isAvailable ? "1" : "0");
+  formData.append("is_parent", isParent ? "1" : "0");
+  formData.append("children", JSON.stringify(selectedChildren || []));
 
+  if (image) formData.append("image", image);
+
+  try {
     const res = editingId
-      ? await api.put(`/products/${editingId}`, formData)
-      : await api.post("/products", formData);
+      ? await api.put(`/products/${editingId}`, formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        })
+      : await api.post("/products", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
 
     if (res.data?.success) {
       resetForm();
       setShowForm(false);
       fetchProducts();
     }
-  };
+  } catch (err) {
+    console.error(err);
+    alert("❌ حدث خطأ أثناء الحفظ");
+  }
+};
+
 
   /* ================= DELETE ================= */
 
@@ -279,59 +303,158 @@ const Products: React.FC = () => {
 </table>
 
 
-      {showForm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
-          <form
-            onSubmit={handleSubmit}
-            className="bg-white p-6 rounded w-full max-w-md space-y-3"
-          >
-            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="الاسم" className="border w-full px-3 py-2" />
-            <input value={price} onChange={(e) => setPrice(e.target.value)} placeholder="السعر" className="border w-full px-3 py-2" />
-            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="ملاحظات" className="border w-full px-3 py-2" />
+  {showForm && (
+  <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
+    <form
+      onSubmit={handleSubmit}
+      className="bg-white p-6 rounded w-full max-w-md space-y-3"
+    >
+      <input
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="الاسم"
+        className="border w-full px-3 py-2"
+      />
 
-            <select value={restaurantId} onChange={(e) => setRestaurantId(e.target.value)} className="border w-full px-3 py-2">
-              <option value="">اختر المطعم</option>
-              {restaurants.map((r) => (
-                <option key={r.id} value={r.id}>{r.name}</option>
-              ))}
-            </select>
+      <input
+        value={price}
+        onChange={(e) => setPrice(e.target.value)}
+        placeholder="السعر"
+        className="border w-full px-3 py-2"
+        disabled={isParent}   // الأب بدون سعر
+      />
 
-            <div className="border p-3 rounded-lg max-h-40 overflow-y-auto">
-              <h4 className="font-semibold mb-2">الفئات</h4>
-              {categories.map((c) => (
-                <label key={c.id} className="flex items-center gap-2 mb-1 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={categoryIds.includes(String(c.id))}
-                    onChange={() => {
-                      const id = String(c.id);
-                      setCategoryIds((prev) =>
-                        prev.includes(id)
-                          ? prev.filter((x) => x !== id)
-                          : [...prev, id]
-                      );
-                    }}
-                  />
-                  <span>{c.name}</span>
-                </label>
-              ))}
-            </div>
+      <textarea
+        value={notes}
+        onChange={(e) => setNotes(e.target.value)}
+        placeholder="ملاحظات"
+        className="border w-full px-3 py-2"
+      />
 
-            <select value={unitId} onChange={(e) => setUnitId(e.target.value)} className="border w-full px-3 py-2">
-              <option value="">اختر الوحدة</option>
-              {units.map((u) => (
-                <option key={u.id} value={u.id}>{u.name}</option>
-              ))}
-            </select>
+      <select
+        value={restaurantId}
+        onChange={(e) => setRestaurantId(e.target.value)}
+        className="border w-full px-3 py-2"
+      >
+        <option value="">اختر المطعم</option>
+        {restaurants.map((r) => (
+          <option key={r.id} value={r.id}>{r.name}</option>
+        ))}
+      </select>
 
-            <input type="file" onChange={(e) => setImage(e.target.files?.[0] || null)} />
+      {/* متوفر / غير متوفر */}
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={() => setIsAvailable(true)}
+          className={`px-3 py-1 rounded w-full ${
+            isAvailable ? "bg-green-600 text-white" : "bg-gray-200"
+          }`}
+        >
+          متوفر
+        </button>
 
-            <div className="flex gap-2">
-              <button className="bg-blue-600 text-white px-4 py-2 rounded w-full">حفظ</button>
-              <button type="button" onClick={() => { resetForm(); setShowForm(false); }} className="bg-gray-400 text-white px-4 py-2 rounded w-full">إلغاء</button>
-            </div>
-          </form>
+        <button
+          type="button"
+          onClick={() => setIsAvailable(false)}
+          className={`px-3 py-1 rounded w-full ${
+            !isAvailable ? "bg-red-600 text-white" : "bg-gray-200"
+          }`}
+        >
+          غير متوفر
+        </button>
+      </div>
+
+      {/* هل المنتج أب */}
+      <label className="flex items-center gap-2 mt-2">
+        <input
+          type="checkbox"
+          checked={isParent}
+          onChange={(e) => {
+            setIsParent(e.target.checked);
+            if (!e.target.checked) setSelectedChildren([]);
+          }}
+        />
+        هذا المنتج أب
+      </label>
+
+      {/* اختيار الأبناء */}
+      {isParent && (
+        <div className="border p-3 rounded-lg max-h-40 overflow-y-auto">
+          <h4 className="font-semibold mb-2">اختر المنتجات التابعة لهذا الأب</h4>
+          {products.map((p: any) => (
+            <label key={p.id} className="flex items-center gap-2 mb-1">
+              <input
+                type="checkbox"
+                checked={selectedChildren.includes(p.id)}
+                onChange={() => {
+                  setSelectedChildren((prev) =>
+                    prev.includes(p.id)
+                      ? prev.filter((x) => x !== p.id)
+                      : [...prev, p.id]
+                  );
+                }}
+              />
+              <span>{p.name}</span>
+            </label>
+          ))}
         </div>
+      )}
+
+      {/* الفئات */}
+      <div className="border p-3 rounded-lg max-h-40 overflow-y-auto">
+        <h4 className="font-semibold mb-2">الفئات</h4>
+        {categories.map((c) => (
+          <label key={c.id} className="flex items-center gap-2 mb-1 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={categoryIds.includes(String(c.id))}
+              onChange={() => {
+                const id = String(c.id);
+                setCategoryIds((prev) =>
+                  prev.includes(id)
+                    ? prev.filter((x) => x !== id)
+                    : [...prev, id]
+                );
+              }}
+            />
+            <span>{c.name}</span>
+          </label>
+        ))}
+      </div>
+
+      <select
+        value={unitId}
+        onChange={(e) => setUnitId(e.target.value)}
+        className="border w-full px-3 py-2"
+      >
+        <option value="">اختر الوحدة</option>
+        {units.map((u) => (
+          <option key={u.id} value={u.id}>{u.name}</option>
+        ))}
+      </select>
+
+      <input type="file" onChange={(e) => setImage(e.target.files?.[0] || null)} />
+
+      <div className="flex gap-2">
+        <button className="bg-blue-600 text-white px-4 py-2 rounded w-full">
+          حفظ
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            resetForm();
+            setShowForm(false);
+          }}
+          className="bg-gray-400 text-white px-4 py-2 rounded w-full"
+        >
+          إلغاء
+        </button>
+      </div>
+    </form>
+  </div>
+)}
+
       )}
     </div>
   );
