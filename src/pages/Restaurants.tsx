@@ -379,15 +379,13 @@ useEffect(() => {
     <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-3">
 
   {/* الفرع + نوع المحل */}
-  {isAdminGeneral ? (
-  
-      
-    <select
-      value={selectedBranch}
-      onChange={(e) => setSelectedBranch(Number(e.target.value))}
-      className="border rounded-lg px-3 py-2 w-full col-span-1"
-      required
-    >
+{isAdminGeneral ? (
+  <select
+    value={selectedBranch}
+    onChange={(e) => setSelectedBranch(Number(e.target.value))}
+    className="border rounded-lg px-3 py-2 w-full col-span-1"
+    required
+  >
       <option value="">اختر الفرع</option>
       {branches.map((b) => (
         <option key={b.id} value={b.id}>{b.name}</option>
