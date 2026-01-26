@@ -168,22 +168,35 @@ const handleSubmit = async (e: React.FormEvent) => {
   data.append("category_ids", JSON.stringify(selectedCategories));
   data.append("schedule", JSON.stringify(storeSchedule));
 
+  const deliveryValue =
+    deliveryFrom && deliveryTo ? `${deliveryFrom}-${deliveryTo}` : "";
 
-     const deliveryValue =
-  deliveryFrom && deliveryTo ? `${deliveryFrom}-${deliveryTo}` : "";
-
-data.append("delivery_time", deliveryValue);
-data.append("is_active", isActive ? 1 : 0)
+  data.append("delivery_time", deliveryValue);
+  data.append("is_active", isActive ? "1" : "0");
 
   if (mapUrl) data.append("map_url", mapUrl);
 
-   if (selectedAgent) {
-    data.append("agent_id", String(selectedAgent)); // 👈 هذا هو المهم
+  if (selectedAgent) {
+    data.append("agent_id", String(selectedAgent));
   }
-  
+
   if (file) data.append("image", file);
 
-;
+  const headers =
+    isAdminGeneral && selectedBranch ? { "x-branch-id": selectedBranch } : {};
+
+  if (editMode) {
+    await api.put(`/restaurants/${formData.id}`, data, { headers });
+    alert("✅ تم تعديل المطعم");
+  } else {
+    await api.post(`/restaurants`, data, { headers });
+    alert("✅ تم إضافة المطعم");
+  }
+
+  resetForm();
+  fetchRestaurants();
+};
+
 
 
     const headers =
