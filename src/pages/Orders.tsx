@@ -48,6 +48,9 @@ interface OrderDetails {
   extra_store_fee?: number | string | null;
 }
 
+
+type DateFilter = "all" | "today" | "week";
+
 /* =====================
    Component
 ===================== */
@@ -119,6 +122,8 @@ const isAdminBranch = !!currentUser?.is_admin_branch;
 const [cancelModalOpen, setCancelModalOpen] = useState(false);
 const [cancelOrderId, setCancelOrderId] = useState<number | null>(null);
 const [cancelReason, setCancelReason] = useState("");
+
+const [dateFilter, setDateFilter] = useState<DateFilter>("all");
 
   // ========= الكباتن =========
   const [captains, setCaptains] = useState<Captain[]>([]);
@@ -337,6 +342,32 @@ const confirmCancelOrder = async () => {
   }
 };
 
+   const filterByDate = (list: Order[]) => {
+  const now = new Date();
+
+  switch (dateFilter) {
+    case "today":
+      return list.filter((o) => {
+        const d = new Date(o.created_at);
+        return (
+          d.getFullYear() === now.getFullYear() &&
+          d.getMonth() === now.getMonth() &&
+          d.getDate() === now.getDate()
+        );
+      });
+
+    case "week":
+      return list.filter((o) => {
+        const d = new Date(o.created_at);
+        const diff = now.getTime() - d.getTime();
+        return diff <= 7 * 24 * 60 * 60 * 1000;
+      });
+
+    default:
+      return list;
+  }
+};
+
   // ⬅️ هنا يتوقف الجزء الأول
   // ====================================
   //        إضافة طلب جديد (متعدد المطاعم)
@@ -543,7 +574,9 @@ const filterByTab = (list: Order[]) => {
   }
 };
 
-const visibleOrders = filterByTab(orders);
+const visibleOrders = filterByTab(filterByDate(orders));
+
+   
 
 
 
@@ -665,51 +698,74 @@ const visibleOrders = filterByTab(orders);
 
 return (
   <>
-    {/* إشعارات أعلى الصفحة */}
-    <ToastNotifications />
+{/* ===== رأس الصفحة ===== */}
+<div className="space-y-3">
+  <div className="flex justify-between items-center">
+    <h1 className="text-2xl font-bold">الطلبات</h1>
 
-    <div className="space-y-6">
-      {/* ===== رأس الصفحة ===== */}
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">الطلبات</h1>
+    <div className="flex gap-2">
+      <button
+        onClick={() => setShowAddOrderModal(true)}
+        className="bg-green-600 text-white px-4 py-2 rounded flex items-center gap-2"
+      >
+        <Plus className="w-4 h-4" /> إضافة طلب
+      </button>
 
-           <div className="flex gap-2 mb-4 flex-wrap">
-  {[
-    { key: "pending", label: "🟡 اعتماد" },
-    { key: "processing", label: "🔵 قيد المعالجة" },
-    { key: "ready", label: "🟢 جاهز" },
-    { key: "delivering", label: "🚚 قيد التوصيل" },
-    { key: "completed", label: "✅ مكتمل" },
-    { key: "cancelled", label: "❌ ملغي" },
-  ].map((t) => (
-    <button
-      key={t.key}
-      onClick={() => setActiveTab(t.key as OrderTab)}
-      className={`px-4 py-2 rounded ${
-        activeTab === t.key
-          ? "bg-blue-600 text-white"
-          : "bg-gray-200 text-gray-700"
-      }`}
-    >
-      {t.label}
-    </button>
-  ))}
+      <button
+        onClick={fetchOrders}
+        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+      >
+        🔄 تحديث
+      </button>
+    </div>
+  </div>
+
+  {/* تبويبات الحالات */}
+  <div className="flex gap-2 flex-wrap">
+    {[
+      { key: "pending", label: "🟡 اعتماد" },
+      { key: "processing", label: "🔵 قيد المعالجة" },
+      { key: "ready", label: "🟢 جاهز" },
+      { key: "delivering", label: "🚚 قيد التوصيل" },
+      { key: "completed", label: "✅ مكتمل" },
+      { key: "cancelled", label: "❌ ملغي" },
+    ].map((t) => (
+      <button
+        key={t.key}
+        onClick={() => setActiveTab(t.key as OrderTab)}
+        className={`px-4 py-2 rounded ${
+          activeTab === t.key
+            ? "bg-blue-600 text-white"
+            : "bg-gray-200 text-gray-700"
+        }`}
+      >
+        {t.label}
+      </button>
+    ))}
+  </div>
+
+  {/* فلترة زمنية */}
+  <div className="flex gap-2">
+    {[
+      { key: "all", label: "كل الطلبات" },
+      { key: "today", label: "اليوم" },
+      { key: "week", label: "هذا الأسبوع" },
+    ].map((t) => (
+      <button
+        key={t.key}
+        onClick={() => setDateFilter(t.key as DateFilter)}
+        className={`px-3 py-1 rounded text-sm ${
+          dateFilter === t.key
+            ? "bg-indigo-600 text-white"
+            : "bg-gray-200 text-gray-700"
+        }`}
+      >
+        {t.label}
+      </button>
+    ))}
+  </div>
 </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setShowAddOrderModal(true)}
-              className="bg-green-600 text-white px-4 py-2 rounded flex items-center gap-2"
-            >
-              <Plus className="w-4 h-4" /> إضافة طلب
-            </button>
-            <button
-              onClick={fetchOrders}
-              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-            >
-              🔄 تحديث
-            </button>
-          </div>
-        </div>
+
 
      {/* ===== جدول الطلبات ===== */}
 {loading ? (
