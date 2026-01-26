@@ -199,20 +199,7 @@ const handleSubmit = async (e: React.FormEvent) => {
 
 
 
-    const headers =
-      isAdminGeneral && selectedBranch ? { "x-branch-id": selectedBranch } : {};
 
-    if (editMode) {
-      await api.put(`/restaurants/${formData.id}`, data, { headers });
-      alert("✅ تم تعديل المطعم");
-    } else {
-      await api.post(`/restaurants`, data, { headers });
-      alert("✅ تم إضافة المطعم");
-    }
-
-    resetForm();
-    fetchRestaurants();
-  };
 
  const handleEdit = (r: Restaurant) => {
   setFormData({
