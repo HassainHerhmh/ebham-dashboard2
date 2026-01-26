@@ -47,7 +47,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   ];
 
   const deliveryGroup: MenuItem[] = [
-    { key: "restaurants", label: "المطاعم", path: "/restaurants" },
+    { key: "restaurants", label: "المحلات", path: "/restaurants" },
     { key: "products", label: "المنتجات", path: "/products" },
     { key: "categories", label: "الفئات", path: "/categories" },
     { key: "units", label: "الوحدات", path: "/units" },
