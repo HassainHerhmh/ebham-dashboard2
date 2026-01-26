@@ -587,14 +587,13 @@ useEffect(() => {
     </button>
   </div>
 
-</form>
-
+        </form>
+      </div>
     </div>
-  </div>
-)}
+  )}
 
-    </div>   {/* إغلاق الـ div الرئيسي للصفحة */}
-  );          {/* إغلاق return */}
-};            {/* إغلاق component */}
+</div>
+);
+};
 
 export default Restaurants;
