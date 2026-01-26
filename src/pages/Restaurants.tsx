@@ -64,6 +64,8 @@ const Restaurants: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [types, setTypes] = useState<TypeItem[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
+ const [deliveryTime, setDeliveryTime] = useState("");
+const [isActive, setIsActive] = useState(true);
 
   const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
   const [selectedType, setSelectedType] = useState<number | "">("");
@@ -509,6 +511,31 @@ useEffect(() => {
  />
 
 
+{/* مدة التوصيل */}
+<input
+  type="number"
+  placeholder="مدة التوصيل (بالدقائق)"
+  value={deliveryTime}
+  onChange={(e) => setDeliveryTime(e.target.value)}
+  className="border rounded-lg px-3 py-2 w-full"
+/>
+
+{/* حالة المطعم */}
+<div className="border rounded-lg px-3 py-2 w-full flex items-center justify-between">
+  <span className="font-medium">حالة المطعم</span>
+  <label className="flex items-center gap-2">
+    <span className={isActive ? "text-green-600" : "text-red-600"}>
+      {isActive ? "مفعل" : "غير مفعل"}
+    </span>
+    <input
+      type="checkbox"
+      checked={isActive}
+      onChange={(e) => setIsActive(e.target.checked)}
+      className="w-4 h-4"
+    />
+  </label>
+</div>
+              
               <input type="file" accept="image/*" onChange={handleImageChange} />
 
               {preview && (
