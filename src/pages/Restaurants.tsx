@@ -275,9 +275,14 @@ const handleEdit = (r: Restaurant) => {
 
 
 
-  const filteredRestaurants = restaurants.filter((r) =>
-    r.name.toLowerCase().includes(searchText.toLowerCase())
+const filteredRestaurants = restaurants.filter((r) => {
+  const q = searchText.toLowerCase();
+  return (
+    r.name.toLowerCase().includes(q) ||
+    (r.branch_name || "").toLowerCase().includes(q)
   );
+});
+
 
 
    const [agents, setAgents] = useState<any[]>([]);
@@ -305,13 +310,14 @@ useEffect(() => {
         </button>
       </div>
 
-      <input
-        type="text"
-        placeholder="بحث باسم المطعم..."
-        value={searchText}
-        onChange={(e) => setSearchText(e.target.value)}
-        className="border rounded-lg px-3 py-2 w-full max-w-md"
-      />
+   <input
+  type="text"
+  placeholder="بحث باسم المطعم أو الفرع..."
+  value={searchText}
+  onChange={(e) => setSearchText(e.target.value)}
+  className="border rounded-lg px-3 py-2 w-full max-w-md"
+/>
+
 
       <div className="bg-white rounded-xl shadow-lg overflow-hidden">
         {loading ? (
@@ -334,8 +340,13 @@ useEffect(() => {
   </tr>
 </thead>
 <tbody>
+
   {filteredRestaurants.map((r, index) => (
-    <tr key={r.id}>
+    <tr
+      key={r.id}
+      className="border-b border-gray-200 hover:bg-gray-50"
+    >
+
       <td>#{index + 1}</td>
       <td>{r.name}</td>
       <td>{r.branch_name || "-"}</td>
