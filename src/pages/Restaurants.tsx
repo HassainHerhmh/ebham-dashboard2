@@ -323,130 +323,132 @@ useEffect(() => {
 />
 
 
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-        {loading ? (
-          <div className="p-6 text-center">⏳ جاري التحميل...</div>
-) : (
+     <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+  {loading ? (
+    <div className="p-6 text-center">⏳ جاري التحميل...</div>
+  ) : (
+    <DragDropContext
+      onDragEnd={(result) => {
+        if (!result.destination) return;
 
-<DragDropContext
-  onDragEnd={(result) => {
-    if (!result.destination) return;
+        const items = Array.from(filteredRestaurants);
+        const [moved] = items.splice(result.source.index, 1);
+        items.splice(result.destination.index, 0, moved);
 
-    const items = Array.from(filteredRestaurants);
-    const [moved] = items.splice(result.source.index, 1);
-    items.splice(result.destination.index, 0, moved);
+        setRestaurants((prev) => {
+          const ids = new Set(items.map((x) => x.id));
+          const rest = prev.filter((x) => !ids.has(x.id));
+          return [...items, ...rest];
+        });
 
-    setRestaurants((prev) => {
-      const ids = new Set(items.map((x) => x.id));
-      const rest = prev.filter((x) => !ids.has(x.id));
-      return [...items, ...rest];
-    });
+        api.post("/restaurants/reorder", {
+          order: items.map((r, i) => ({ id: r.id, sort_order: i + 1 })),
+        });
+      }}
+    >
+      <table className="w-full text-center">
+        <thead className="bg-gray-50">
+          <tr>
+            <th>#</th>
+            <th>الاسم</th>
+            <th>الفرع</th>
+            <th>العنوان</th>
+            <th>الهاتف</th>
+            <th>الفئات</th>
+            <th>الوكيل</th>
+            <th>الحالة</th>
+            <th>الصورة</th>
+            <th>الخريطة</th>
+            <th>الإجراءات</th>
+          </tr>
+        </thead>
 
-    api.post("/restaurants/reorder", {
-      order: items.map((r, i) => ({ id: r.id, sort_order: i + 1 })),
-    });
-  }}
->
-  <table className="w-full text-center">
-    <thead className="bg-gray-50">
-      <tr>
-        <th>#</th>
-        <th>الاسم</th>
-        <th>الفرع</th>
-        <th>العنوان</th>
-        <th>الهاتف</th>
-        <th>الفئات</th>
-        <th>الوكيل</th>
-        <th>الحالة</th>
-        <th>الصورة</th>
-        <th>الخريطة</th>
-        <th>الإجراءات</th>
-      </tr>
-    </thead>
-
-    <Droppable droppableId="restaurants">
-      {(provided) => (
-        <tbody ref={provided.innerRef} {...provided.droppableProps}>
-          {filteredRestaurants.map((r, index) => (
-            <Draggable key={r.id} draggableId={String(r.id)} index={index}>
-              {(prov) => (
-                <tr
-                  ref={prov.innerRef}
-                  {...prov.draggableProps}
-                  className="border-b border-gray-200 hover:bg-gray-50"
-                >
-                  <td className="flex items-center gap-2 justify-center">
-                    <span>#{index + 1}</span>
-                    <span
-                      {...prov.dragHandleProps}
-                      className="cursor-move text-gray-400 hover:text-gray-700"
+        <Droppable droppableId="restaurants">
+          {(provided) => (
+            <tbody ref={provided.innerRef} {...provided.droppableProps}>
+              {filteredRestaurants.map((r, index) => (
+                <Draggable key={r.id} draggableId={String(r.id)} index={index}>
+                  {(prov) => (
+                    <tr
+                      ref={prov.innerRef}
+                      {...prov.draggableProps}
+                      className="border-b border-gray-200 hover:bg-gray-50"
                     >
-                      <GripVertical size={16} />
-                    </span>
-                  </td>
+                      <td className="flex items-center gap-2 justify-center">
+                        <span>#{index + 1}</span>
+                        <span
+                          {...prov.dragHandleProps}
+                          className="cursor-move text-gray-400 hover:text-gray-700"
+                        >
+                          <GripVertical size={16} />
+                        </span>
+                      </td>
 
-                  <td>{r.name}</td>
-                  <td>{r.branch_name || "-"}</td>
-                  <td>{r.address}</td>
-                  <td>{r.phone}</td>
-                  <td>{r.categories || "-"}</td>
-                  <td>{r.agent_name || "-"}</td>
+                      <td>{r.name}</td>
+                      <td>{r.branch_name || "-"}</td>
+                      <td>{r.address}</td>
+                      <td>{r.phone}</td>
+                      <td>{r.categories || "-"}</td>
+                      <td>{r.agent_name || "-"}</td>
 
-                  <td>
-                    <span
-                      className={`px-2 py-1 rounded text-sm font-medium ${
-                        r.is_active
-                          ? "bg-green-100 text-green-700"
-                          : "bg-red-100 text-red-700"
-                      }`}
-                    >
-                      {r.is_active ? "مفعل" : "غير مفعل"}
-                    </span>
-                  </td>
+                      <td>
+                        <span
+                          className={`px-2 py-1 rounded text-sm font-medium ${
+                            r.is_active
+                              ? "bg-green-100 text-green-700"
+                              : "bg-red-100 text-red-700"
+                          }`}
+                        >
+                          {r.is_active ? "مفعل" : "غير مفعل"}
+                        </span>
+                      </td>
 
-                  <td>
-                    {r.image_url && (
-                      <img
-                        src={r.image_url}
-                        alt={r.name}
-                        className="w-16 h-16 object-cover rounded"
-                      />
-                    )}
-                  </td>
+                      <td>
+                        {r.image_url && (
+                          <img
+                            src={r.image_url}
+                            alt={r.name}
+                            className="w-16 h-16 object-cover rounded"
+                          />
+                        )}
+                      </td>
 
-                  <td>
-                    {r.map_url ? (
-                      <a
-                        href={r.map_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 underline"
-                      >
-                        GPS
-                      </a>
-                    ) : (
-                      "-"
-                    )}
-                  </td>
+                      <td>
+                        {r.map_url ? (
+                          <a
+                            href={r.map_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 underline"
+                          >
+                            GPS
+                          </a>
+                        ) : (
+                          "-"
+                        )}
+                      </td>
 
-                  <td className="flex gap-2 justify-center">
-                    <button onClick={() => handleEdit(r)} className="text-blue-600">
-                      <Edit3 />
-                    </button>
-                    <button className="text-red-600">
-                      <Trash2 />
-                    </button>
-                  </td>
-                </tr>
-              )}
-            </Draggable>
-          ))}
-          {provided.placeholder}
-        </tbody>
-      )}
-    </Droppable>
-  </table>
-</DragDropContext>
+                      <td className="flex gap-2 justify-center">
+                        <button onClick={() => handleEdit(r)} className="text-blue-600">
+                          <Edit3 />
+                        </button>
+                        <button className="text-red-600">
+                          <Trash2 />
+                        </button>
+                      </td>
+                    </tr>
+                  )}
+                </Draggable>
+              ))}
+              {provided.placeholder}
+            </tbody>
+          )}
+        </Droppable>
+      </table>
+    </DragDropContext>
+  )}
+</div>
+
 
 
 
