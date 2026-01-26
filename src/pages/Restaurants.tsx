@@ -440,14 +440,15 @@ useEffect(() => {
                     <Trash2 />
                   </button>
                 </td>
-              </tr>
-            )}
-          </Draggable>
-        ))}
-        {provided.placeholder}
-      </tbody>
-    )}
-  </Droppable>
+             </tr>
+              )}
+            </Draggable>
+          ))}
+          {provided.placeholder}
+        </tbody>
+      )}
+    </Droppable>
+  </table>
 </DragDropContext>
 
 
