@@ -66,6 +66,8 @@ const Restaurants: React.FC = () => {
   const [branches, setBranches] = useState<Branch[]>([]);
  const [deliveryTime, setDeliveryTime] = useState("");
 const [isActive, setIsActive] = useState(true);
+const [deliveryFrom, setDeliveryFrom] = useState("");
+const [deliveryTo, setDeliveryTo] = useState("");
 
   const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
   const [selectedType, setSelectedType] = useState<number | "">("");
