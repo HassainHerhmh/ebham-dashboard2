@@ -544,6 +544,28 @@ useEffect(() => {
     </label>
   </div>
 
+{/* مدة التوصيل */}
+<div className="border p-3 rounded-lg col-span-2">
+  <h3 className="font-semibold mb-2">مدة التوصيل (بالدقائق)</h3>
+  <div className="flex gap-2">
+    <input
+      type="number"
+      placeholder="من"
+      value={deliveryFrom}
+      onChange={(e) => setDeliveryFrom(e.target.value)}
+      className="border rounded-lg px-3 py-2 w-full"
+    />
+    <input
+      type="number"
+      placeholder="إلى"
+      value={deliveryTo}
+      onChange={(e) => setDeliveryTo(e.target.value)}
+      className="border rounded-lg px-3 py-2 w-full"
+    />
+  </div>
+</div>
+
+      
   {/* الصورة */}
   <div className="col-span-2 flex items-center gap-3">
     <input type="file" accept="image/*" onChange={handleImageChange} />
