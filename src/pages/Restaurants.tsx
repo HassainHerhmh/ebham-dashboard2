@@ -376,226 +376,192 @@ useEffect(() => {
         )}
       </div>
 
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-lg overflow-y-auto max-h-screen">
-            <div className="flex justify-between mb-4">
-              <h2 className="text-xl font-bold">{editMode ? "تعديل" : "إضافة"}</h2>
-              <button onClick={resetForm}><X /></button>
-            </div>
+    <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-3">
 
-            <form onSubmit={handleSubmit} className="space-y-3">
-              {isAdminGeneral ? (
-                <select
-                  value={selectedBranch}
-                  onChange={(e) => setSelectedBranch(Number(e.target.value))}
-                  className="border rounded-lg px-3 py-2 w-full"
-                  required
-                >
-                  <option value="">اختر الفرع</option>
-                  {branches.map((b) => (
-                    <option key={b.id} value={b.id}>{b.name}</option>
-                  ))}
-                </select>
-              ) : (
-                <input
-                  type="text"
-                  value={user.branch_name || ""}
-                  disabled
-                  className="border rounded-lg px-3 py-2 w-full bg-gray-100"
-                />
-              )}
-
-              <input
-                type="text"
-                placeholder="اسم المطعم"
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-                required
-                className="border rounded-lg px-3 py-2 w-full"
-              />
-
-              <select
-                value={selectedType}
-                onChange={(e) => setSelectedType(Number(e.target.value))}
-                required
-                className="border rounded-lg px-3 py-2 w-full"
-              >
-                <option value="">اختر نوع المحل</option>
-                {types.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name}
-                  </option>
-                ))}
-              </select>
-         <select
-  value={selectedAgent}
-  onChange={(e) => setSelectedAgent(Number(e.target.value))}
-  className="border rounded-lg px-3 py-2 w-full"
-  required
->
-  <option value="">اختر الوكيل</option>
-  {agents.map((a) => (
-    <option key={a.id} value={a.id}>
-      {a.name}
-    </option>
-  ))}
-</select>
-
-              
-              <input
-                type="text"
-                placeholder="العنوان"
-                value={formData.address}
-                onChange={(e) =>
-                  setFormData({ ...formData, address: e.target.value })
-                }
-                className="border rounded-lg px-3 py-2 w-full"
-              />
-
-              <input
-                type="text"
-                placeholder="الهاتف"
-                value={formData.phone}
-                onChange={(e) =>
-                  setFormData({ ...formData, phone: e.target.value })
-                }
-                className="border rounded-lg px-3 py-2 w-full"
-              />
-
-              <div className="border p-3 rounded-lg max-h-32 overflow-y-auto">
-                <h3 className="font-semibold mb-2">الفئات</h3>
-                {categories.map((c) => (
-                  <label key={c.id} className="flex items-center gap-2 mb-1">
-                    <input
-                      type="checkbox"
-                      checked={selectedCategories.includes(c.id)}
-                      onChange={() => toggleCategory(c.id)}
-                    />
-                    {c.name}
-                  </label>
-                ))}
-              </div>
-
-              <div className="border p-3 rounded-lg">
-                <h3 className="font-semibold mb-2">🕐 جدول التوقيت</h3>
-                {storeSchedule.map((dayItem, index) => (
-                  <div key={dayItem.day} className="flex items-center gap-2 mb-2">
-                    <label className="w-20">{dayItem.day}</label>
-                    {dayItem.closed ? (
-                      <span className="text-red-600 font-medium">مغلق</span>
-                    ) : (
-                      <>
-                        <input
-                          type="time"
-                          value={dayItem.start}
-                          onChange={(e) => {
-                            const copy = [...storeSchedule];
-                            copy[index].start = e.target.value;
-                            setStoreSchedule(copy);
-                          }}
-                          className="border px-2 py-1 rounded"
-                        />
-                        <span>-</span>
-                        <input
-                          type="time"
-                          value={dayItem.end}
-                          onChange={(e) => {
-                            const copy = [...storeSchedule];
-                            copy[index].end = e.target.value;
-                            setStoreSchedule(copy);
-                          }}
-                          className="border px-2 py-1 rounded"
-                        />
-                      </>
-                    )}
-                    <label className="flex items-center gap-1">
-                      <input
-                        type="checkbox"
-                        checked={dayItem.closed}
-                        onChange={(e) => {
-                          const copy = [...storeSchedule];
-                          copy[index].closed = e.target.checked;
-                          if (e.target.checked) {
-                            copy[index].start = "";
-                            copy[index].end = "";
-                          }
-                          setStoreSchedule(copy);
-                        }}
-                      />
-                      مغلق
-                    </label>
-                  </div>
-                ))}
-              </div>
-
-        <input
-  type="text"
-  placeholder="رابط الموقع من Google Maps"
-  value={mapUrl}
-  onChange={(e) => setMapUrl(e.target.value)}
-  className="border rounded-lg px-3 py-2 w-full"
- />
-
-
-{/* مدة التوصيل */}
-<div className="flex gap-2">
-  <input
-    type="number"
-    placeholder="من (دقيقة)"
-    value={deliveryFrom}
-    onChange={(e) => setDeliveryFrom(e.target.value)}
-    className="border rounded-lg px-3 py-2 w-full"
-  />
-  <input
-    type="number"
-    placeholder="إلى (دقيقة)"
-    value={deliveryTo}
-    onChange={(e) => setDeliveryTo(e.target.value)}
-    className="border rounded-lg px-3 py-2 w-full"
-  />
-</div>
-
-{/* حالة المطعم */}
-<div className="border rounded-lg px-3 py-2 w-full flex items-center justify-between">
-  <span className="font-medium">حالة المطعم</span>
-  <label className="flex items-center gap-2">
-    <span className={isActive ? "text-green-600" : "text-red-600"}>
-      {isActive ? "مفعل" : "غير مفعل"}
-    </span>
+  {/* الفرع + نوع المحل */}
+  {isAdminGeneral ? (
+    <select
+      value={selectedBranch}
+      onChange={(e) => setSelectedBranch(Number(e.target.value))}
+      className="border rounded-lg px-3 py-2 w-full col-span-1"
+      required
+    >
+      <option value="">اختر الفرع</option>
+      {branches.map((b) => (
+        <option key={b.id} value={b.id}>{b.name}</option>
+      ))}
+    </select>
+  ) : (
     <input
-      type="checkbox"
-      checked={isActive}
-      onChange={(e) => setIsActive(e.target.checked)}
-      className="w-4 h-4"
+      type="text"
+      value={user.branch_name || ""}
+      disabled
+      className="border rounded-lg px-3 py-2 w-full bg-gray-100 col-span-1"
     />
-  </label>
-</div>
-              
-              <input type="file" accept="image/*" onChange={handleImageChange} />
+  )}
 
-              {preview && (
-                <img src={preview} alt="معاينة" className="w-16 h-16 rounded" />
-              )}
+  <select
+    value={selectedType}
+    onChange={(e) => setSelectedType(Number(e.target.value))}
+    required
+    className="border rounded-lg px-3 py-2 w-full col-span-1"
+  >
+    <option value="">اختر نوع المحل</option>
+    {types.map((t) => (
+      <option key={t.id} value={t.id}>{t.name}</option>
+    ))}
+  </select>
 
-              <div className="flex gap-2">
-                <button
-                  type="submit"
-                  className="flex-1 bg-blue-600 text-white px-4 py-2 rounded"
-                >
-                  حفظ
-                </button>
-                <button
-                  type="button"
-                  onClick={resetForm}
-                  className="flex-1 bg-gray-400 text-white px-4 py-2 rounded"
-                >
-                  إلغاء
-                </button>
-              </div>
-            </form>
+  {/* الوكيل كامل العرض */}
+  <select
+    value={selectedAgent}
+    onChange={(e) => setSelectedAgent(Number(e.target.value))}
+    className="border rounded-lg px-3 py-2 w-full col-span-2"
+    required
+  >
+    <option value="">اختر الوكيل</option>
+    {agents.map((a) => (
+      <option key={a.id} value={a.id}>{a.name}</option>
+    ))}
+  </select>
+
+  {/* اسم المطعم */}
+  <input
+    type="text"
+    placeholder="اسم المطعم"
+    value={formData.name}
+    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+    required
+    className="border rounded-lg px-3 py-2 w-full col-span-2"
+  />
+
+  {/* العنوان + الهاتف */}
+  <input
+    type="text"
+    placeholder="العنوان"
+    value={formData.address}
+    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+    className="border rounded-lg px-3 py-2 w-full col-span-1"
+  />
+
+  <input
+    type="text"
+    placeholder="الهاتف"
+    value={formData.phone}
+    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+    className="border rounded-lg px-3 py-2 w-full col-span-1"
+  />
+
+  {/* الفئات */}
+  <div className="border p-3 rounded-lg max-h-32 overflow-y-auto col-span-2">
+    <h3 className="font-semibold mb-2">الفئات</h3>
+    {categories.map((c) => (
+      <label key={c.id} className="flex items-center gap-2 mb-1">
+        <input
+          type="checkbox"
+          checked={selectedCategories.includes(c.id)}
+          onChange={() => toggleCategory(c.id)}
+        />
+        {c.name}
+      </label>
+    ))}
+  </div>
+
+  {/* جدول التوقيت */}
+  <div className="border p-3 rounded-lg col-span-2">
+    <h3 className="font-semibold mb-2">🕐 جدول التوقيت</h3>
+    {storeSchedule.map((dayItem, index) => (
+      <div key={dayItem.day} className="flex items-center gap-2 mb-2">
+        <label className="w-20">{dayItem.day}</label>
+        {dayItem.closed ? (
+          <span className="text-red-600 font-medium">مغلق</span>
+        ) : (
+          <>
+            <input
+              type="time"
+              value={dayItem.start}
+              onChange={(e) => {
+                const copy = [...storeSchedule];
+                copy[index].start = e.target.value;
+                setStoreSchedule(copy);
+              }}
+              className="border px-2 py-1 rounded"
+            />
+            <span>-</span>
+            <input
+              type="time"
+              value={dayItem.end}
+              onChange={(e) => {
+                const copy = [...storeSchedule];
+                copy[index].end = e.target.value;
+                setStoreSchedule(copy);
+              }}
+              className="border px-2 py-1 rounded"
+            />
+          </>
+        )}
+        <label className="flex items-center gap-1">
+          <input
+            type="checkbox"
+            checked={dayItem.closed}
+            onChange={(e) => {
+              const copy = [...storeSchedule];
+              copy[index].closed = e.target.checked;
+              if (e.target.checked) {
+                copy[index].start = "";
+                copy[index].end = "";
+              }
+              setStoreSchedule(copy);
+            }}
+          />
+          مغلق
+        </label>
+      </div>
+    ))}
+  </div>
+
+  {/* رابط الموقع + حالة المطعم */}
+  <input
+    type="text"
+    placeholder="رابط الموقع من Google Maps"
+    value={mapUrl}
+    onChange={(e) => setMapUrl(e.target.value)}
+    className="border rounded-lg px-3 py-2 w-full col-span-1"
+  />
+
+  <div className="border rounded-lg px-3 py-2 w-full flex items-center justify-between col-span-1">
+    <span className="font-medium">حالة المطعم</span>
+    <label className="flex items-center gap-2">
+      <span className={isActive ? "text-green-600" : "text-red-600"}>
+        {isActive ? "مفعل" : "غير مفعل"}
+      </span>
+      <input
+        type="checkbox"
+        checked={isActive}
+        onChange={(e) => setIsActive(e.target.checked)}
+        className="w-4 h-4"
+      />
+    </label>
+  </div>
+
+  {/* الصورة */}
+  <div className="col-span-2 flex items-center gap-3">
+    <input type="file" accept="image/*" onChange={handleImageChange} />
+    {preview && <img src={preview} alt="معاينة" className="w-16 h-16 rounded" />}
+  </div>
+
+  {/* الأزرار */}
+  <div className="flex gap-2 col-span-2">
+    <button type="submit" className="flex-1 bg-blue-600 text-white px-4 py-2 rounded">
+      حفظ
+    </button>
+    <button type="button" onClick={resetForm} className="flex-1 bg-gray-400 text-white px-4 py-2 rounded">
+      إلغاء
+    </button>
+  </div>
+
+</form>
+
           </div>
         </div>
       )}
