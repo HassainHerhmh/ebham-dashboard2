@@ -593,7 +593,4 @@ useEffect(() => {
   </div>
 )}
 
-  );
-};
-
 export default Restaurants;
