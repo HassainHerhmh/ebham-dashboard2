@@ -229,24 +229,29 @@ const handleSubmit = async (e: React.FormEvent) => {
     setShowModal(true);
   };
 
-  const resetForm = () => {
-    setFormData({ id: 0, name: "", address: "", phone: "", image_url: "" });
-    setSelectedCategories([]);
-    setSelectedType("");
-    setSelectedBranch("");
-    setSelectedAgent("");
-  // 👇 الجديد
-  setDeliveryTime(r.delivery_time || "");
-  setIsActive(!!r.is_active);
-    
-    setLatitude("");
-    setLongitude("");
-    setStoreSchedule(daysOfWeek.map((day) => ({ day, start: "", end: "", closed: false })));
-    setFile(null);
-    setPreview(null);
-    setEditMode(false);
-    setShowModal(false);
-  };
+const resetForm = () => {
+  setFormData({ id: 0, name: "", address: "", phone: "", image_url: "" });
+  setSelectedCategories([]);
+  setSelectedType("");
+  setSelectedBranch("");
+  setSelectedAgent("");
+
+  // 👇 هنا قيم افتراضية فقط
+  setDeliveryTime("");
+  setIsActive(true); // الافتراضي مفعل
+
+  setLatitude("");
+  setLongitude("");
+  setStoreSchedule(
+    daysOfWeek.map((day) => ({ day, start: "", end: "", closed: false }))
+  );
+
+  setFile(null);
+  setPreview(null);
+  setEditMode(false);
+  setShowModal(false);
+};
+
 
   const filteredRestaurants = restaurants.filter((r) =>
     r.name.toLowerCase().includes(searchText.toLowerCase())
