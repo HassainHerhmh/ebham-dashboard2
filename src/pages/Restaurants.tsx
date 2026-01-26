@@ -169,6 +169,12 @@ const handleSubmit = async (e: React.FormEvent) => {
   data.append("schedule", JSON.stringify(storeSchedule));
 
 
+     const deliveryValue =
+  deliveryFrom && deliveryTo ? `${deliveryFrom}-${deliveryTo}` : "";
+
+data.append("delivery_time", deliveryValue);
+data.append("is_active", isActive ? 1 : 0)
+
   if (mapUrl) data.append("map_url", mapUrl);
 
    if (selectedAgent) {
@@ -177,11 +183,7 @@ const handleSubmit = async (e: React.FormEvent) => {
   
   if (file) data.append("image", file);
 
-  const deliveryValue =
-  deliveryFrom && deliveryTo ? `${deliveryFrom}-${deliveryTo}` : "";
-
-data.append("delivery_time", deliveryValue);
-data.append("is_active", isActive ? 1 : 0);
+;
 
 
     const headers =
