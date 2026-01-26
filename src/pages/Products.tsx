@@ -13,7 +13,14 @@ interface Product {
   unit_name?: string;
   restaurant_id?: number;
   restaurant_name?: string;
+
+  // 🆕 أضف هذه
+  branch_name?: string;
+  is_available?: boolean;
+  is_parent?: boolean;
+  children_count?: number;
 }
+
 
 interface Restaurant { id: number; name: string }
 interface Category { id: number; name: string }
@@ -47,6 +54,9 @@ const Products: React.FC = () => {
   const [searchName, setSearchName] = useState("");
   const [searchRestaurant, setSearchRestaurant] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
+const [childrenModalOpen, setChildrenModalOpen] = useState(false);
+const [parentProduct, setParentProduct] = useState<any>(null);
+const [children, setChildren] = useState<any[]>([]);
 
   const [isAvailable, setIsAvailable] = useState(true);
 const [isParent, setIsParent] = useState(false);
@@ -92,6 +102,15 @@ const [selectedChildren, setSelectedChildren] = useState<number[]>([]);
     setCategories(Array.isArray(data) ? data : data.categories || []);
   };
 
+  const openChildrenModal = async (parent: any) => {
+  setParentProduct(parent);
+  const res = await api.get(`/products/${parent.id}/children`);
+  setChildren(res.data?.children || []);
+  setChildrenModalOpen(true);
+};
+
+
+  
   const fetchUnits = async () => {
     const res = await api.get("/units");
     const data = res.data;
@@ -118,17 +137,21 @@ const [selectedChildren, setSelectedChildren] = useState<number[]>([]);
 
   /* ================= RESET ================= */
 
-  const resetForm = () => {
-    setEditingId(null);
-    setName("");
-    setPrice("");
-    setNotes("");
-    setRestaurantId("");
-    setCategoryIds([]);
-    setUnitId("");
-    setImage(null);
-    setPreview(null);
-  };
+ const resetForm = () => {
+  setEditingId(null);
+  setName("");
+  setPrice("");
+  setNotes("");
+  setRestaurantId("");
+  setCategoryIds([]);
+  setUnitId("");
+  setImage(null);
+  setPreview(null);
+  setIsAvailable(true);
+  setIsParent(false);
+  setSelectedChildren([]);
+};
+
 
   /* ================= SUBMIT ================= */
 const handleSubmit = async (e: FormEvent) => {
@@ -191,22 +214,27 @@ const handleSubmit = async (e: FormEvent) => {
 
   /* ================= EDIT ================= */
 
-  const handleEdit = (p: Product) => {
-    setEditingId(p.id);
-    setName(p.name);
-    setPrice(String(p.price));
-    setNotes(p.notes || "");
-    setRestaurantId(p.restaurant_id?.toString() || "");
-    setUnitId(p.unit_id?.toString() || "");
+ const handleEdit = (p: Product) => {
+  setEditingId(p.id);
+  setName(p.name);
+  setPrice(String(p.price || ""));
+  setNotes(p.notes || "");
+  setRestaurantId(p.restaurant_id?.toString() || "");
+  setUnitId(p.unit_id?.toString() || "");
 
-    const ids = p.category_ids
-      ? String(p.category_ids).split(",").map((x) => x.trim())
-      : [];
-    setCategoryIds(ids);
+  const ids = p.category_ids
+    ? String(p.category_ids).split(",").map((x) => x.trim())
+    : [];
+  setCategoryIds(ids);
 
-    setPreview(p.image_url || null);
-    setShowForm(true);
-  };
+  setIsAvailable(!!p.is_available);
+  setIsParent(!!p.is_parent);
+  setSelectedChildren([]); // سيتم جلبهم من السيرفر إذا كان أب
+
+  setPreview(p.image_url || null);
+  setShowForm(true);
+};
+
 
   /* ================= FILTER ================= */
 
@@ -267,42 +295,134 @@ const handleSubmit = async (e: FormEvent) => {
       </div>
 
      <table className="w-full text-center border">
-  <thead className="bg-gray-50">
-    <tr>
-      <th>#</th>
-      <th>الاسم</th>
-      <th>الفئات</th>
-      <th>المطعم</th>
-      <th>الفرع</th> {/* 🆕 */}
-      <th>الوحدة</th>
-      <th>السعر</th>
-      <th>خيارات</th>
+<thead className="bg-gray-50">
+  <tr>
+    <th>#</th>
+    <th>الاسم</th>
+    <th>الفئات</th>
+    <th>المطعم</th>
+    <th>الفرع</th>
+    <th>الوحدة</th>
+    <th>السعر</th>
+    <th>الحالة</th>      {/* 🆕 */}
+    <th>الأب</th>        {/* 🆕 */}
+    <th>خيارات</th>
+  </tr>
+</thead>
+
+<tbody>
+  {filteredProducts.map((p, i) => (
+    <tr key={p.id} className="border-t">
+      <td>{i + 1}</td>
+      <td>{p.name}</td>
+      <td>{p.categories || "-"}</td>
+      <td>{p.restaurant_name || "-"}</td>
+      <td>{p.branch_name || "-"}</td>
+      <td>{p.unit_name || "-"}</td>
+      <td>{p.is_parent ? "—" : p.price}</td>
+
+      {/* الحالة */}
+      <td>
+        <span
+          className={`px-2 py-1 rounded text-xs ${
+            p.is_available ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+          }`}
+        >
+          {p.is_available ? "متوفر" : "غير متوفر"}
+        </span>
+      </td>
+
+      {/* الأب */}
+      <td>
+        {p.is_parent && p.children_count > 0 ? (
+          <button
+            onClick={() => openChildrenModal(p)}
+            className="text-indigo-600 underline text-sm"
+          >
+            عرض الأبناء ({p.children_count})
+          </button>
+        ) : (
+          "—"
+        )}
+      </td>
+
+      <td className="flex gap-2 justify-center">
+        <button onClick={() => handleEdit(p)} className="text-blue-600">
+          تعديل
+        </button>
+        <button onClick={() => handleDelete(p.id)} className="text-red-600">
+          حذف
+        </button>
+      </td>
     </tr>
-  </thead>
-  <tbody>
-    {filteredProducts.map((p, i) => (
-      <tr key={p.id} className="border-t">
-        <td>{i + 1}</td>
-        <td>{p.name}</td>
-        <td>{p.categories || "-"}</td>
-        <td>{p.restaurant_name || "-"}</td>
-        <td>{p.branch_name || "-"}</td> {/* 🆕 */}
-        <td>{p.unit_name || "-"}</td>
-        <td>{p.price}</td>
-        <td className="flex gap-2 justify-center">
-          <button onClick={() => handleEdit(p)} className="text-blue-600">
-            تعديل
-          </button>
-          <button onClick={() => handleDelete(p.id)} className="text-red-600">
-            حذف
-          </button>
-        </td>
-      </tr>
-    ))}
-  </tbody>
+  ))}
+</tbody>
+
 </table>
 
 
+{childrenModalOpen && (
+  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div className="bg-white p-6 rounded w-full max-w-4xl">
+      <h3 className="text-lg font-bold mb-3">
+        أبناء المنتج: {parentProduct?.name}
+      </h3>
+
+      <table className="w-full text-center border">
+        <thead className="bg-gray-50">
+          <tr>
+            <th>#</th>
+            <th>الاسم</th>
+            <th>السعر</th>
+            <th>المطعم</th>
+            <th>الفئة</th>
+            <th>الحالة</th>
+            <th>إجراءات</th>
+          </tr>
+        </thead>
+        <tbody>
+          {children.map((c: any, i: number) => (
+            <tr key={c.id} className="border-t">
+              <td>{i + 1}</td>
+              <td>{c.name}</td>
+              <td>{c.price}</td>
+              <td>{c.restaurant_name}</td>
+              <td>{c.categories}</td>
+              <td>
+                <span
+                  className={`px-2 py-1 rounded text-xs ${
+                    c.is_available ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+                  }`}
+                >
+                  {c.is_available ? "متوفر" : "غير متوفر"}
+                </span>
+              </td>
+              <td className="flex gap-2 justify-center">
+                <button onClick={() => handleEdit(c)} className="text-blue-600">
+                  تعديل
+                </button>
+                <button onClick={() => handleDelete(c.id)} className="text-red-600">
+                  حذف
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      <div className="mt-4 text-right">
+        <button
+          onClick={() => setChildrenModalOpen(false)}
+          className="bg-gray-400 text-white px-4 py-2 rounded"
+        >
+          إغلاق
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+      
   {showForm && (
   <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
     <form
