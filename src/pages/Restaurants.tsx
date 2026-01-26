@@ -376,16 +376,21 @@ useEffect(() => {
         )}
       </div>
 
-    <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-3">
 
   {/* الفرع + نوع المحل */}
-{isAdminGeneral ? (
-  <select
-    value={selectedBranch}
-    onChange={(e) => setSelectedBranch(Number(e.target.value))}
-    className="border rounded-lg px-3 py-2 w-full col-span-1"
-    required
-  >
+{showModal && (
+  <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+    <div className="bg-white rounded-xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+      
+      <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-3">
+
+          {isAdminGeneral ? (
+          <select
+            value={selectedBranch}
+            onChange={(e) => setSelectedBranch(Number(e.target.value))}
+            className="border rounded-lg px-3 py-2 w-full col-span-1"
+            required
+          >
       <option value="">اختر الفرع</option>
       {branches.map((b) => (
         <option key={b.id} value={b.id}>{b.name}</option>
@@ -583,8 +588,11 @@ useEffect(() => {
   </div>
 
 </form>
-    
+
     </div>
+  </div>
+)}
+
   );
 };
 
