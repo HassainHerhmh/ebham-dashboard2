@@ -593,4 +593,8 @@ useEffect(() => {
   </div>
 )}
 
+    </div>   {/* إغلاق الـ div الرئيسي للصفحة */}
+  );          {/* إغلاق return */}
+};            {/* إغلاق component */}
+
 export default Restaurants;
