@@ -165,6 +165,8 @@ const handleSubmit = async (e: React.FormEvent) => {
   data.append("type_id", String(selectedType));
   data.append("category_ids", JSON.stringify(selectedCategories));
   data.append("schedule", JSON.stringify(storeSchedule));
+ data.append("delivery_time", deliveryTime);
+ data.append("is_active", isActive ? 1 : 0);
 
   if (mapUrl) data.append("map_url", mapUrl);
 
@@ -233,7 +235,10 @@ const handleSubmit = async (e: React.FormEvent) => {
     setSelectedType("");
     setSelectedBranch("");
     setSelectedAgent("");
-
+  // 👇 الجديد
+  setDeliveryTime(r.delivery_time || "");
+  setIsActive(!!r.is_active);
+    
     setLatitude("");
     setLongitude("");
     setStoreSchedule(daysOfWeek.map((day) => ({ day, start: "", end: "", closed: false })));
