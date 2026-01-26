@@ -285,35 +285,52 @@ useEffect(() => {
         ) : (
           <table className="w-full text-center">
             <thead className="bg-gray-50">
-              <tr>
-                <th>#</th>
-                <th>الاسم</th>
-                <th>الفرع</th>
-                <th>العنوان</th>
-                <th>الهاتف</th>
-                <th>الفئات</th>
-                  <th>الوكيل</th>
-                <th>الصورة</th>
-                <th>الخريطة</th>
-                <th>الإجراءات</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredRestaurants.map((r, index) => (
-                <tr key={r.id}>
-                  <td>#{index + 1}</td>
-                  <td>{r.name}</td>
-                  <td>{r.branch_name || "-"}</td>
-                  <td>{r.address}</td>
-                  <td>{r.phone}</td>
-                  <td>{r.categories || "-"}</td>
-                  <td>{r.agent_name || "-"}</td>
+  <tr>
+    <th>#</th>
+    <th>الاسم</th>
+    <th>الفرع</th>
+    <th>العنوان</th>
+    <th>الهاتف</th>
+    <th>الفئات</th>
+    <th>الوكيل</th>
+    <th>الحالة</th> {/* 👈 جديد */}
+    <th>الصورة</th>
+    <th>الخريطة</th>
+    <th>الإجراءات</th>
+  </tr>
+</thead>
+<tbody>
+  {filteredRestaurants.map((r, index) => (
+    <tr key={r.id}>
+      <td>#{index + 1}</td>
+      <td>{r.name}</td>
+      <td>{r.branch_name || "-"}</td>
+      <td>{r.address}</td>
+      <td>{r.phone}</td>
+      <td>{r.categories || "-"}</td>
+      <td>{r.agent_name || "-"}</td>
 
-                  <td>
-                    {r.image_url && (
-                      <img src={r.image_url} alt={r.name} className="w-16 h-16 object-cover rounded" />
-                    )}
-                  </td>
+      {/* 👇 حالة المطعم */}
+      <td>
+        <span
+          className={`px-2 py-1 rounded text-sm font-medium ${
+            r.is_active ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+          }`}
+        >
+          {r.is_active ? "مفعل" : "غير مفعل"}
+        </span>
+      </td>
+
+      <td>
+        {r.image_url && (
+          <img
+            src={r.image_url}
+            alt={r.name}
+            className="w-16 h-16 object-cover rounded"
+          />
+        )}
+      </td>
+
                   
                                     <td>
                           {r.map_url ? (
