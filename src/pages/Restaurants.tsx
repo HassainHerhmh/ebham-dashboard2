@@ -529,13 +529,22 @@ useEffect(() => {
 
 
 {/* مدة التوصيل */}
-<input
-  type="number"
-  placeholder="مدة التوصيل (بالدقائق)"
-  value={deliveryTime}
-  onChange={(e) => setDeliveryTime(e.target.value)}
-  className="border rounded-lg px-3 py-2 w-full"
-/>
+<div className="flex gap-2">
+  <input
+    type="number"
+    placeholder="من (دقيقة)"
+    value={deliveryFrom}
+    onChange={(e) => setDeliveryFrom(e.target.value)}
+    className="border rounded-lg px-3 py-2 w-full"
+  />
+  <input
+    type="number"
+    placeholder="إلى (دقيقة)"
+    value={deliveryTo}
+    onChange={(e) => setDeliveryTo(e.target.value)}
+    className="border rounded-lg px-3 py-2 w-full"
+  />
+</div>
 
 {/* حالة المطعم */}
 <div className="border rounded-lg px-3 py-2 w-full flex items-center justify-between">
