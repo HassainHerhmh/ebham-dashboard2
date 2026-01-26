@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { Store, Plus, X, Trash2, Edit3 } from "lucide-react";
 import api from "../services/api";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import { GripVertical } from "lucide-react";
+
+
 
 interface Restaurant {
   id: number;
@@ -339,75 +343,113 @@ useEffect(() => {
     <th>الإجراءات</th>
   </tr>
 </thead>
-<tbody>
+<DragDropContext
+  onDragEnd={(result) => {
+    if (!result.destination) return;
 
-  {filteredRestaurants.map((r, index) => (
-    <tr
-      key={r.id}
-      className="border-b border-gray-200 hover:bg-gray-50"
-    >
+    const items = Array.from(filteredRestaurants);
+    const [moved] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, moved);
 
-      <td>#{index + 1}</td>
-      <td>{r.name}</td>
-      <td>{r.branch_name || "-"}</td>
-      <td>{r.address}</td>
-      <td>{r.phone}</td>
-      <td>{r.categories || "-"}</td>
-      <td>{r.agent_name || "-"}</td>
+    // حدّث العرض فورًا
+    setRestaurants((prev) => {
+      // نحافظ على بقية العناصر غير المعروضة (إن وُجد فلتر)
+      const ids = new Set(items.map((x) => x.id));
+      const rest = prev.filter((x) => !ids.has(x.id));
+      return [...items, ...rest];
+    });
 
-      {/* 👇 حالة المطعم */}
-      <td>
-        <span
-          className={`px-2 py-1 rounded text-sm font-medium ${
-            r.is_active ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-          }`}
-        >
-          {r.is_active ? "مفعل" : "غير مفعل"}
-        </span>
-      </td>
+    // أرسل الترتيب للسيرفر (اختياري الآن – يمكنك تنفيذه لاحقًا)
+    api.post("/restaurants/reorder", {
+      order: items.map((r, i) => ({ id: r.id, sort_order: i + 1 })),
+    });
+  }}
+>
+  <Droppable droppableId="restaurants">
+    {(provided) => (
+      <tbody ref={provided.innerRef} {...provided.droppableProps}>
+        {filteredRestaurants.map((r, index) => (
+          <Draggable key={r.id} draggableId={String(r.id)} index={index}>
+            {(prov) => (
+              <tr
+                ref={prov.innerRef}
+                {...prov.draggableProps}
+                className="border-b border-gray-200 hover:bg-gray-50"
+              >
+                <td className="flex items-center gap-2 justify-center">
+                  <span>#{index + 1}</span>
+                  <span
+                    {...prov.dragHandleProps}
+                    className="cursor-move text-gray-400 hover:text-gray-700"
+                    title="اسحب للترتيب"
+                  >
+                    <GripVertical size={16} />
+                  </span>
+                </td>
 
-      <td>
-        {r.image_url && (
-          <img
-            src={r.image_url}
-            alt={r.name}
-            className="w-16 h-16 object-cover rounded"
-          />
-        )}
-      </td>
+                <td>{r.name}</td>
+                <td>{r.branch_name || "-"}</td>
+                <td>{r.address}</td>
+                <td>{r.phone}</td>
+                <td>{r.categories || "-"}</td>
+                <td>{r.agent_name || "-"}</td>
 
-                  
-                                    <td>
-                          {r.map_url ? (
-                             <a
-                       href={r.map_url}
-                        target="_blank"
-                       rel="noopener noreferrer"
+                {/* حالة المطعم */}
+                <td>
+                  <span
+                    className={`px-2 py-1 rounded text-sm font-medium ${
+                      r.is_active
+                        ? "bg-green-100 text-green-700"
+                        : "bg-red-100 text-red-700"
+                    }`}
+                  >
+                    {r.is_active ? "مفعل" : "غير مفعل"}
+                  </span>
+                </td>
+
+                <td>
+                  {r.image_url && (
+                    <img
+                      src={r.image_url}
+                      alt={r.name}
+                      className="w-16 h-16 object-cover rounded"
+                    />
+                  )}
+                </td>
+
+                <td>
+                  {r.map_url ? (
+                    <a
+                      href={r.map_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="text-blue-600 underline"
-                       >
+                    >
                       GPS
-                     </a>
-                       ) : (
-                         "-"
-                         )}
-                   </td>
-                  
-                  <td className="flex gap-2 justify-center">
-                    <button onClick={() => handleEdit(r)} className="text-blue-600">
-                      <Edit3 />
-                    </button>
-                    <button className="text-red-600">
-                      <Trash2 />
-                    </button>
-                  </td>
+                    </a>
+                  ) : (
+                    "-"
+                  )}
+                </td>
 
+                <td className="flex gap-2 justify-center">
+                  <button onClick={() => handleEdit(r)} className="text-blue-600">
+                    <Edit3 />
+                  </button>
+                  <button className="text-red-600">
+                    <Trash2 />
+                  </button>
+                </td>
+              </tr>
+            )}
+          </Draggable>
+        ))}
+        {provided.placeholder}
+      </tbody>
+    )}
+  </Droppable>
+</DragDropContext>
 
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
 
 
   {/* الفرع + نوع المحل */}
