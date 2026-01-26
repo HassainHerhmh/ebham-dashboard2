@@ -455,7 +455,6 @@ const handleSubmit = async (e: FormEvent) => {
   </div>
 )}
 
-      )}
     </div>
   );
 };
