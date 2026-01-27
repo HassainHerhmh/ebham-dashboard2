@@ -74,6 +74,7 @@ const Restaurants: React.FC = () => {
 const [isActive, setIsActive] = useState(true);
 const [deliveryFrom, setDeliveryFrom] = useState("");
 const [deliveryTo, setDeliveryTo] = useState("");
+const [imageUrl, setImageUrl] = useState("");
 
   const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
   const [selectedType, setSelectedType] = useState<number | "">("");
@@ -648,9 +649,23 @@ useEffect(() => {
 
 {/* الصورة */}
 <div className="col-span-2 flex items-center gap-3">
-  <input type="file" accept="image/*" onChange={handleImageChange} />
-  {preview && <img src={preview} alt="معاينة" className="w-16 h-16 rounded" />}
+  <input
+    type="text"
+    placeholder="الصق رابط الصورة هنا"
+    className="border rounded-lg px-3 py-2 w-full"
+    value={imageUrl}
+    onChange={(e) => setImageUrl(e.target.value)}
+  />
+
+  {imageUrl && (
+    <img
+      src={imageUrl}
+      alt="معاينة"
+      className="w-16 h-16 rounded object-cover border"
+    />
+  )}
 </div>
+
 
 
   {/* الأزرار */}
