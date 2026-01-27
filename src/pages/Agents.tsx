@@ -113,6 +113,10 @@ const openEditModal = (agent: Agent) => {
 
 const payload: any = { name, email, phone, address };
 
+ if (imageUrl) {
+    payload.image_url = imageUrl; // 👈 أضف هذا السطر
+  }
+    
 if (user?.is_admin === 1) {
   if (!branchId) {
     alert("❌ اختر الفرع");
