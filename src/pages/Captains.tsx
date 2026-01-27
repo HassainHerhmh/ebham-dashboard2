@@ -15,6 +15,7 @@ interface Captain {
   deliveries_count?: number | string | null
   created_at: string
   branch_name?: string | null
+    image_url?: string | null
 }
 
 const Captains: React.FC = () => {
@@ -259,6 +260,34 @@ const payload = {
         )}
       </div>
 
+   {previewImage && (
+  <div
+    className="fixed inset-0 bg-black/70 flex items-center justify-center z-50"
+    onClick={() => setPreviewImage(null)}
+  >
+    <div
+      className="bg-white p-4 rounded-lg max-w-3xl max-h-[90vh]"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <img
+        src={previewImage}
+        alt="معاينة"
+        className="max-w-full max-h-[80vh] object-contain rounded"
+      />
+
+      <div className="text-center mt-3">
+        <button
+          onClick={() => setPreviewImage(null)}
+          className="bg-gray-500 text-white px-4 py-2 rounded"
+        >
+          إغلاق
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+      
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg w-full max-w-lg">
@@ -342,34 +371,11 @@ const payload = {
               </div>
             </form>
           </div>
-        </div>
+          </div>
       )}
-      
-{previewImage && (
-  <div
-    className="fixed inset-0 bg-black/70 flex items-center justify-center z-50"
-    onClick={() => setPreviewImage(null)}
-  >
-    <div
-      className="bg-white p-4 rounded-lg max-w-3xl max-h-[90vh]"
-      onClick={(e) => e.stopPropagation()}
-    >
-      <img
-        src={previewImage}
-        alt="معاينة"
-        className="max-w-full max-h-[80vh] object-contain rounded"
-      />
-
-      <div className="text-center mt-3">
-        <button
-          onClick={() => setPreviewImage(null)}
-          className="bg-gray-500 text-white px-4 py-2 rounded"
-        >
-          إغلاق
-        </button>
-      </div>
     </div>
-  </div>
-)}
+  );
+}
+
 
 export default Captains
