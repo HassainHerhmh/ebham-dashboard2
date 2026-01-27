@@ -186,6 +186,8 @@ const handleSubmit = async (e: React.FormEvent) => {
   }
 
   if (file) data.append("image", file);
+  if (imageUrl) data.append("image_url", imageUrl);
+
 
   const headers =
     isAdminGeneral && selectedBranch ? { "x-branch-id": selectedBranch } : {};
@@ -214,6 +216,8 @@ const handleEdit = (r: Restaurant) => {
     phone: r.phone,
     image_url: r.image_url || "",
   });
+
+    setImageUrl(r.image_url || ""); 
 
   const categoryIds = r.category_ids
     ? String(r.category_ids).split(",").map((id) => Number(id))
