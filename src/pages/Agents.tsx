@@ -25,6 +25,8 @@ const Agents: React.FC = () => {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
+  const [imageUrl, setImageUrl] = useState("");
+
 
   // modal
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -74,16 +76,18 @@ useEffect(() => {
     setIsModalOpen(true);
   };
 
-  const openEditModal = (agent: Agent) => {
-    setEditingAgent(agent);
-    setName(agent.name);
-    setEmail(agent.email || "");
-    setPhone(agent.phone || "");
-    setAddress(agent.address || "");
-    setBranchId(agent.branch_id || "");
-    setPassword("");
-    setIsModalOpen(true);
-  };
+const openEditModal = (agent: Agent) => {
+  setEditingAgent(agent);
+  setName(agent.name);
+  setEmail(agent.email || "");
+  setPhone(agent.phone || "");
+  setAddress(agent.address || "");
+  setBranchId(agent.branch_id || "");
+  setPassword("");
+  setImageUrl((agent as any).image_url || "");
+  setIsModalOpen(true);
+};
+
 
   const resetForm = () => {
     setName("");
@@ -92,6 +96,8 @@ useEffect(() => {
     setAddress("");
     setPassword("");
     setBranchId("");
+    setImageUrl("");
+
   };
 
   /* =========================
@@ -203,7 +209,7 @@ const resetPassword = async (agentId: number) => {
   <th className="px-4 py-3">الفرع</th>
 )}
 
-
+           <th className="px-4 py-3">الشعار</th>
           <th className="px-4 py-3">الحالة</th>
           <th className="px-4 py-3 text-center">إجراءات</th>
         </tr>
@@ -222,6 +228,16 @@ const resetPassword = async (agentId: number) => {
   </td>
 )}
 
+           <td className="px-4 py-2">
+  {(a as any).image_url ? (
+    <img
+      src={(a as any).image_url}
+      className="w-10 h-10 rounded-full object-cover"
+    />
+  ) : (
+    "-"
+  )}
+</td>
 
             <td className="px-4 py-2">
               {a.is_active ? (
@@ -349,6 +365,21 @@ const resetPassword = async (agentId: number) => {
     value={address}
     onChange={(e) => setAddress(e.target.value)}
   />
+<input
+  type="text"
+  placeholder="رابط شعار الوكيل"
+  value={imageUrl}
+  onChange={(e) => setImageUrl(e.target.value)}
+  className="border p-2 rounded w-full"
+/>
+
+{imageUrl && (
+  <img
+    src={imageUrl}
+    alt="معاينة"
+    className="w-20 h-20 object-cover rounded border"
+  />
+)}
 
   <div className="flex justify-end gap-2 pt-2">
     <button
