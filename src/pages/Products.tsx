@@ -354,7 +354,7 @@ if (imageUrl) data.append("image_url", imageUrl);
       <td>
   <div className="text-xs text-gray-400">{r.image_url}</div>
 
-  {r.image_url && (
+  {p.image_url && (
     <img
       src={r.image_url}
       alt={r.name}
