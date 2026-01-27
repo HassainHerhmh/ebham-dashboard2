@@ -356,8 +356,8 @@ if (imageUrl) data.append("image_url", imageUrl);
 
   {p.image_url && (
     <img
-      src={r.image_url}
-      alt={r.name}
+      src={p.image_url}
+      alt={p.name}
       className="w-16 h-16 object-cover rounded"
     />
   )}
