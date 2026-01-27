@@ -151,16 +151,20 @@ const startEditType = (t: TypeItem) => {
                   <td className="p-3">#{t.id}</td>
                   <td className="p-3">{t.name}</td>
                   <td className="p-3">
-                    {t.image_url ? (
-                   <img
-  src={`${BASE_URL}${t.image_url}`}
-  alt={t.name}
-  className="w-16 h-16 object-cover rounded mx-auto"
-/>
+  {t.image_url ? (
+  <img
+    src={
+      t.image_url.startsWith("http")
+        ? t.image_url
+        : `${BASE_URL}${t.image_url}`
+    }
+    alt={t.name}
+    className="w-16 h-16 object-cover rounded mx-auto"
+  />
+) : (
+  "-"
+)}
 
-                    ) : (
-                      "-"
-                    )}
                   </td>
                   <td className="p-3">{t.sort_order ?? 0}</td>
                   <td className="p-3 flex gap-2 justify-center">
