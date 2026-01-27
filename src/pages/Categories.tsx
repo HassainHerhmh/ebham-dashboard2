@@ -261,10 +261,11 @@ const SidebarForm: React.FC<SidebarProps> = ({
   iconUrl,
   setIconUrl,
   image,
-  setImage={setImage}
-  imageUrl={imageUrl}
-  setImageUrl={setImageUrl}
+  setImage,
+  imageUrl,
+  setImageUrl,
 }) => {
+
 
   return (
     <>
