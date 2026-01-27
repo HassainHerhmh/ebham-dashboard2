@@ -404,15 +404,18 @@ useEffect(() => {
                         </span>
                       </td>
 
-                      <td>
-                        {r.image_url && (
-                          <img
-                            src={r.image_url}
-                            alt={r.name}
-                            className="w-16 h-16 object-cover rounded"
-                          />
-                        )}
-                      </td>
+               <td>
+  <div className="text-xs text-gray-400">{r.image_url}</div>
+
+  {r.image_url && (
+    <img
+      src={r.image_url}
+      alt={r.name}
+      className="w-16 h-16 object-cover rounded"
+    />
+  )}
+</td>
+
 
                       <td>
                         {r.map_url ? (
