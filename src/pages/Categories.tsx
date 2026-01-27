@@ -17,6 +17,7 @@ const Categories: React.FC = () => {
   const [description, setDescription] = useState("");
   const [iconUrl, setIconUrl] = useState("");
   const [image, setImage] = useState<File | null>(null);
+const [imageUrl, setImageUrl] = useState("");
 
   // تعديل
   const [editId, setEditId] = useState<number | null>(null);
@@ -24,7 +25,7 @@ const Categories: React.FC = () => {
   const [editDescription, setEditDescription] = useState("");
   const [editIcon, setEditIcon] = useState("");
   const [editImage, setEditImage] = useState<File | null>(null);
-
+ const [editImageUrl, setEditImageUrl] = useState("");
   // حالات
   const [isAddSidebarOpen, setIsAddSidebarOpen] = useState(false);
   const [isEditSidebarOpen, setIsEditSidebarOpen] = useState(false);
@@ -50,6 +51,8 @@ const handleAdd = async (e: FormEvent) => {
   formData.append("description", description);
   formData.append("icon_url", iconUrl);
   if (image) formData.append("image", image);
+  if (imageUrl) formData.append("image_url", imageUrl);
+
 
   const res = await api.post("/categories", formData, {
     headers: { "Content-Type": "multipart/form-data" },
@@ -63,6 +66,9 @@ const handleAdd = async (e: FormEvent) => {
     setImage(null);
     setIsAddSidebarOpen(false);
     fetchCategories();
+    setImageUrl("");
+
+
   }
 };
 
@@ -86,7 +92,8 @@ const handleUpdate = async (e: FormEvent) => {
   formData.append("description", editDescription);
   formData.append("icon_url", editIcon);
   if (editImage) formData.append("image", editImage);
-
+ if (editImageUrl) formData.append("image_url", editImageUrl);
+  
   const res = await api.put(`/categories/${editId}`, formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
@@ -100,6 +107,8 @@ const handleUpdate = async (e: FormEvent) => {
     setEditImage(null);
     setIsEditSidebarOpen(false);
     fetchCategories();
+   setEditImageUrl(cat.image_url || "");
+
   }
 };
 
@@ -142,10 +151,14 @@ const handleUpdate = async (e: FormEvent) => {
                   "-"
                 )}
               </td>
-             <td className="border p-2 text-center">
+<td className="border p-2 text-center">
   {cat.image_url || (cat as any).image ? (
     <img
-      src={`http://localhost:5000${cat.image_url || (cat as any).image}`}
+      src={
+        (cat.image_url || (cat as any).image)?.startsWith("http")
+          ? (cat.image_url || (cat as any).image)
+          : `http://localhost:5000${cat.image_url || (cat as any).image}`
+      }
       alt={cat.name}
       width={60}
       height={60}
@@ -155,6 +168,7 @@ const handleUpdate = async (e: FormEvent) => {
     "بدون صورة"
   )}
 </td>
+
  
               <td className="border p-2 text-center flex gap-2 justify-center">
                 <button
@@ -231,6 +245,9 @@ interface SidebarProps {
   setIconUrl: (val: string) => void;
   image: File | null;
   setImage: (val: File | null) => void;
+
+    imageUrl: string;
+  setImageUrl: (val: string) => void;
 }
 
 const SidebarForm: React.FC<SidebarProps> = ({
@@ -244,7 +261,9 @@ const SidebarForm: React.FC<SidebarProps> = ({
   iconUrl,
   setIconUrl,
   image,
-  setImage,
+  setImage={setImage}
+  imageUrl={imageUrl}
+  setImageUrl={setImageUrl}
 }) => {
 
   return (
@@ -274,19 +293,29 @@ const SidebarForm: React.FC<SidebarProps> = ({
               className="border p-2 rounded w-full"
               rows={3}
             ></textarea>
-            <input
-              type="text"
-              placeholder="رابط الأيقونة"
-              value={iconUrl}
-              onChange={(e) => setIconUrl(e.target.value)}
-              className="border p-2 rounded w-full"
-            />
-            <input
-              type="file"
-              onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                setImage(e.target.files ? e.target.files[0] : null)
-              }
-            />
+        <input
+  type="text"
+  placeholder="رابط صورة الفئة"
+  value={imageUrl}
+  onChange={(e) => setImageUrl(e.target.value)}
+  className="border p-2 rounded w-full"
+/>
+
+{imageUrl && (
+  <img
+    src={imageUrl}
+    alt="معاينة"
+    className="w-20 h-20 object-cover rounded border"
+  />
+)}
+
+<input
+  type="file"
+  onChange={(e: ChangeEvent<HTMLInputElement>) =>
+    setImage(e.target.files ? e.target.files[0] : null)
+  }
+/>
+
             <button
               type="submit"
               className="bg-green-600 text-white px-4 py-2 rounded w-full hover:bg-green-700"
