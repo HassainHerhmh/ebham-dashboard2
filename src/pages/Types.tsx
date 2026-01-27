@@ -19,6 +19,7 @@ const Types: React.FC = () => {
   const [types, setTypes] = useState<TypeItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+const [imageUrl, setImageUrl] = useState("");
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
@@ -49,13 +50,14 @@ const Types: React.FC = () => {
     fetchTypes();
   }, []);
 
-  const startEditType = (t: TypeItem) => {
-    setEditId(t.id);
-    setName(t.name);
-    setSortOrder(t.sort_order || 0);
-    setImage(null);
-    setIsModalOpen(true);
-  };
+const startEditType = (t: TypeItem) => {
+  setEditId(t.id);
+  setName(t.name);
+  setSortOrder(t.sort_order || 0);
+  setImage(null);
+  setImageUrl(t.image_url || "");
+  setIsModalOpen(true);
+};
 
   const saveType = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,6 +65,7 @@ const Types: React.FC = () => {
     formData.append("name", name);
     formData.append("sort_order", String(sortOrder));
     if (image) formData.append("image", image);
+    if (imageUrl) formData.append("image_url", imageUrl);
 
     const method = editId ? "PUT" : "POST";
     const url = editId
@@ -79,6 +82,8 @@ const Types: React.FC = () => {
         setName("");
         setSortOrder(0);
         setImage(null);
+        setImageUrl("");
+
         fetchTypes();
       } else {
         alert(data.message || "❌ فشل الحفظ");
@@ -203,12 +208,22 @@ const Types: React.FC = () => {
                 placeholder="ترتيب العرض"
                 className="border p-2 w-full"
               />
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => setImage(e.target.files?.[0] || null)}
-                className="border p-2 w-full"
-              />
+           <input
+  type="text"
+  placeholder="رابط صورة النوع"
+  value={imageUrl}
+  onChange={(e) => setImageUrl(e.target.value)}
+  className="border p-2 w-full"
+/>
+
+{imageUrl && (
+  <img
+    src={imageUrl}
+    alt="معاينة"
+    className="w-20 h-20 object-cover rounded border mx-auto"
+  />
+
+
 
               <div className="flex justify-end gap-2">
                 <button
