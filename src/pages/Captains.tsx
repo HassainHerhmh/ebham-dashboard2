@@ -22,6 +22,9 @@ const Captains: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  const [imageUrl, setImageUrl] = useState("");
+const [previewImage, setPreviewImage] = useState<string | null>(null);
+
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editId, setEditId] = useState<number | null>(null)
  const [accounts, setAccounts] = useState<any[]>([]);
@@ -88,19 +91,21 @@ useEffect(() => {
 
 
 
-  const startEditCaptain = (c: Captain) => {
-    setEditId(c.id)
-    setName(c.name)
-    setEmail(c.email || '')
-    setPhone(c.phone)
-    setPassword('')
-    setConfirmPassword('')
-    setVehicleType(c.vehicle_type)
-    setAccountId((c as any).account_id || "")  
-    setVehicleNumber(c.vehicle_number || '')
-    setStatus(c.status)
-    setIsModalOpen(true)
-  }
+const startEditCaptain = (c: any) => {
+  setEditId(c.id);
+  setName(c.name);
+  setEmail(c.email || '');
+  setPhone(c.phone);
+  setPassword('');
+  setConfirmPassword('');
+  setVehicleType(c.vehicle_type);
+  setAccountId(c.account_id || "");
+  setVehicleNumber(c.vehicle_number || '');
+  setStatus(c.status);
+  setImageUrl(c.image_url || "");
+  setIsModalOpen(true);
+};
+
 
   const saveCaptain = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -110,7 +115,7 @@ useEffect(() => {
     }
 
     try {
-      const payload = {
+const payload = {
   name,
   email,
   phone,
@@ -119,6 +124,7 @@ useEffect(() => {
   vehicle_number: vehicleNumber,
   status,
   account_id: accountId,
+  image_url: imageUrl,
 };
 
 
@@ -181,6 +187,7 @@ useEffect(() => {
     <th className="p-3">نوع المركبة</th>
     <th className="p-3">رقم المركبة</th>
     <th className="p-3">الحساب المحاسبي</th> {/* جديد */}
+    <th className="p-3">الصورة</th>
     <th className="p-3">الحالة</th>
     <th className="p-3">إجراءات</th>
   </tr>
@@ -201,7 +208,19 @@ useEffect(() => {
         {c.account_code
           ? `${c.account_code} - ${c.account_name}`
           : "—"}
+        
       </td>
+<td className="p-3 text-center">
+  {c.image_url ? (
+    <img
+      src={c.image_url}
+      onClick={() => setPreviewImage(c.image_url)}
+      className="w-10 h-10 rounded-full object-cover mx-auto cursor-pointer"
+    />
+  ) : (
+    "—"
+  )}
+</td>
 
       <td className="p-3">
         <select
@@ -300,6 +319,23 @@ useEffect(() => {
                 <option value="inactive">غير نشط</option>
               </select>
 
+              <input
+  type="text"
+  placeholder="رابط صورة الكابتن"
+  value={imageUrl}
+  onChange={(e) => setImageUrl(e.target.value)}
+  className="border p-2 w-full"
+/>
+
+{imageUrl && (
+  <img
+    src={imageUrl}
+    alt="معاينة"
+    className="w-20 h-20 object-cover rounded border mx-auto"
+  />
+)}
+
+              
               <div className="flex justify-end gap-2">
                 <button type="button" onClick={() => setIsModalOpen(false)} className="bg-gray-400 text-white px-4 py-2 rounded">إلغاء</button>
                 <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded">حفظ</button>
@@ -308,8 +344,32 @@ useEffect(() => {
           </div>
         </div>
       )}
+      
+{previewImage && (
+  <div
+    className="fixed inset-0 bg-black/70 flex items-center justify-center z-50"
+    onClick={() => setPreviewImage(null)}
+  >
+    <div
+      className="bg-white p-4 rounded-lg max-w-3xl max-h-[90vh]"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <img
+        src={previewImage}
+        alt="معاينة"
+        className="max-w-full max-h-[80vh] object-contain rounded"
+      />
+
+      <div className="text-center mt-3">
+        <button
+          onClick={() => setPreviewImage(null)}
+          className="bg-gray-500 text-white px-4 py-2 rounded"
+        >
+          إغلاق
+        </button>
+      </div>
     </div>
-  )
-}
+  </div>
+)}
 
 export default Captains
