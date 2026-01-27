@@ -180,7 +180,8 @@ const handleSubmit = async (e: FormEvent) => {
   formData.append("is_parent", isParent ? "1" : "0");
   formData.append("children", JSON.stringify(selectedChildren || []));
 
-  if (image) formData.append("image", image);
+if (imageUrl) data.append("image_url", imageUrl);
+
 
   try {
     const res = editingId
@@ -222,6 +223,7 @@ const handleSubmit = async (e: FormEvent) => {
   setNotes(p.notes || "");
   setRestaurantId(p.restaurant_id?.toString() || "");
   setUnitId(p.unit_id?.toString() || "");
+     setImageUrl(r.image_url || ""); 
 
   const ids = p.category_ids
     ? String(p.category_ids).split(",").map((x) => x.trim())
@@ -307,7 +309,9 @@ const handleSubmit = async (e: FormEvent) => {
     <th>السعر</th>
     <th>الحالة</th>      {/* 🆕 */}
     <th>الأب</th>        {/* 🆕 */}
+    <th>الصورة</th>
     <th>خيارات</th>
+     
   </tr>
 </thead>
 
@@ -347,6 +351,19 @@ const handleSubmit = async (e: FormEvent) => {
         )}
       </td>
 
+      <td>
+  <div className="text-xs text-gray-400">{r.image_url}</div>
+
+  {r.image_url && (
+    <img
+      src={r.image_url}
+      alt={r.name}
+      className="w-16 h-16 object-cover rounded"
+    />
+  )}
+</td>
+
+      
       <td className="flex gap-2 justify-center">
         <button onClick={() => handleEdit(p)} className="text-blue-600">
           تعديل
