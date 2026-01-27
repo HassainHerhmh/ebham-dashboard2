@@ -180,7 +180,8 @@ const handleSubmit = async (e: FormEvent) => {
   formData.append("is_parent", isParent ? "1" : "0");
   formData.append("children", JSON.stringify(selectedChildren || []));
 
-if (imageUrl) data.append("image_url", imageUrl);
+if (imageUrl) formData.append("image_url", imageUrl);
+
 
 
   try {
@@ -223,7 +224,7 @@ if (imageUrl) data.append("image_url", imageUrl);
   setNotes(p.notes || "");
   setRestaurantId(p.restaurant_id?.toString() || "");
   setUnitId(p.unit_id?.toString() || "");
-     setImageUrl(r.image_url || ""); 
+     setImageUrl(p.image_url || ""); 
 
   const ids = p.category_ids
     ? String(p.category_ids).split(",").map((x) => x.trim())
