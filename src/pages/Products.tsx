@@ -50,6 +50,7 @@ const Products: React.FC = () => {
   const [image, setImage] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [imageUrl, setImageUrl] = useState("");
 
   const [searchName, setSearchName] = useState("");
   const [searchRestaurant, setSearchRestaurant] = useState("");
@@ -554,7 +555,23 @@ const handleSubmit = async (e: FormEvent) => {
         ))}
       </select>
 
-      <input type="file" onChange={(e) => setImage(e.target.files?.[0] || null)} />
+<div className="col-span-2 flex items-center gap-3">
+  <input
+    type="text"
+    placeholder="الصق رابط الصورة هنا"
+    className="border rounded-lg px-3 py-2 w-full"
+    value={imageUrl}
+    onChange={(e) => setImageUrl(e.target.value)}
+  />
+
+  {imageUrl && (
+    <img
+      src={imageUrl}
+      alt="معاينة"
+      className="w-16 h-16 rounded object-cover border"
+    />
+  )}
+</div>
 
       <div className="flex gap-2">
         <button className="bg-blue-600 text-white px-4 py-2 rounded w-full">
