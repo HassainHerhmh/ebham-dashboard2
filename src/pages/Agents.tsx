@@ -26,6 +26,7 @@ const Agents: React.FC = () => {
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
   const [imageUrl, setImageUrl] = useState("");
+const [previewImage, setPreviewImage] = useState<string | null>(null);
 
 
   // modal
@@ -232,16 +233,18 @@ const resetPassword = async (agentId: number) => {
   </td>
 )}
 
-           <td className="px-4 py-2">
+<td className="px-4 py-2">
   {(a as any).image_url ? (
     <img
       src={(a as any).image_url}
-      className="w-10 h-10 rounded-full object-cover"
+      className="w-10 h-10 rounded-full object-cover cursor-pointer"
+      onClick={() => setPreviewImage((a as any).image_url)}
     />
   ) : (
     "-"
   )}
 </td>
+
 
             <td className="px-4 py-2">
               {a.is_active ? (
@@ -402,6 +405,34 @@ const resetPassword = async (agentId: number) => {
   </div>
 </form>
 
+          </div>
+        </div>
+      )}
+  
+      {/* معاينة الشعار */}
+      {previewImage && (
+        <div
+          className="fixed inset-0 bg-black/70 flex items-center justify-center z-50"
+          onClick={() => setPreviewImage(null)}
+        >
+          <div
+            className="bg-white p-4 rounded-lg max-w-3xl max-h-[90vh]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={previewImage}
+              alt="معاينة"
+              className="max-w-full max-h-[80vh] object-contain rounded"
+            />
+
+            <div className="text-center mt-3">
+              <button
+                onClick={() => setPreviewImage(null)}
+                className="bg-gray-500 text-white px-4 py-2 rounded"
+              >
+                إغلاق
+              </button>
+            </div>
           </div>
         </div>
       )}
