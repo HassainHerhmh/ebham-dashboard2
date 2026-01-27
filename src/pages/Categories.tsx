@@ -107,7 +107,8 @@ const handleUpdate = async (e: FormEvent) => {
     setEditImage(null);
     setIsEditSidebarOpen(false);
     fetchCategories();
-   setEditImageUrl(cat.image_url || "");
+  setEditImageUrl("");
+
 
   }
 };
@@ -209,6 +210,9 @@ const handleUpdate = async (e: FormEvent) => {
           setIconUrl={setIconUrl}
           image={image}
           setImage={setImage}
+          imageUrl={imageUrl}
+setImageUrl={setImageUrl}
+
         />
       )}
 
@@ -226,6 +230,9 @@ const handleUpdate = async (e: FormEvent) => {
           setIconUrl={setEditIcon}
           image={editImage}
           setImage={setEditImage}
+          imageUrl={editImageUrl}
+setImageUrl={setEditImageUrl}
+
         />
       )}
     </div>
