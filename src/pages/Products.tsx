@@ -353,7 +353,7 @@ if (imageUrl) formData.append("image_url", imageUrl);
       </td>
 
       <td>
-  <div className="text-xs text-gray-400">{p.image_url}</div>
+
 
   {p.image_url && (
     <img
