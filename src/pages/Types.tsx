@@ -223,7 +223,7 @@ const startEditType = (t: TypeItem) => {
     className="w-20 h-20 object-cover rounded border mx-auto"
   />
 
-
+)}
 
               <div className="flex justify-end gap-2">
                 <button
