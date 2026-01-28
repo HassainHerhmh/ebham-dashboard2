@@ -552,23 +552,29 @@ if (imageUrl) formData.append("image_url", imageUrl);
       {/* الفئات */}
       <div className="border p-3 rounded-lg max-h-40 overflow-y-auto">
         <h4 className="font-semibold mb-2">الفئات</h4>
-        {categories.map((c) => (
-          <label key={c.id} className="flex items-center gap-2 mb-1 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={categoryIds.includes(String(c.id))}
-              onChange={() => {
-                const id = String(c.id);
-                setCategoryIds((prev) =>
-                  prev.includes(id)
-                    ? prev.filter((x) => x !== id)
-                    : [...prev, id]
-                );
-              }}
-            />
-            <span>{c.name}</span>
-          </label>
-        ))}
+      {categories.map((c) => {
+  const id = String(c.id);
+
+  return (
+    <label key={c.id} className="flex items-center gap-2 mb-1 cursor-pointer">
+      <input
+        type="checkbox"
+        checked={categoryIds.includes(id)}
+        onChange={() => {
+          setCategoryIds((prev) => {
+            const clean = Array.from(new Set(prev.map(String)));
+
+            return clean.includes(id)
+              ? clean.filter((x) => x !== id)
+              : [...clean, id];
+          });
+        }}
+      />
+      <span>{c.name}</span>
+    </label>
+  );
+})}
+
       </div>
 
       <select
