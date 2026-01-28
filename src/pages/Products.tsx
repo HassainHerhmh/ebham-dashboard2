@@ -483,27 +483,28 @@ if (imageUrl) formData.append("image_url", imageUrl);
       </select>
 
       {/* متوفر / غير متوفر */}
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={() => setIsAvailable(true)}
-                  className="border w-full px-3 py-2 col-span-2" ${
-            isAvailable ? "bg-green-600 text-white" : "bg-gray-200"
-          }`}
-        >
-          متوفر
-        </button>
+      <div className="flex gap-2 col-span-2">
+  <button
+    type="button"
+    onClick={() => setIsAvailable(true)}
+    className={`w-full px-3 py-2 rounded ${
+      isAvailable ? "bg-green-600 text-white" : "bg-gray-200"
+    }`}
+  >
+    متوفر
+  </button>
 
-        <button
-          type="button"
-          onClick={() => setIsAvailable(false)}
-          className={`px-3 py-1 rounded w-full ${
-            !isAvailable ? "bg-red-600 text-white" : "bg-gray-200"
-          }`}
-        >
-          غير متوفر
-        </button>
-      </div>
+  <button
+    type="button"
+    onClick={() => setIsAvailable(false)}
+    className={`w-full px-3 py-2 rounded ${
+      !isAvailable ? "bg-red-600 text-white" : "bg-gray-200"
+    }`}
+  >
+    غير متوفر
+  </button>
+</div>
+
 
       {/* هل المنتج أب */}
       <label className="flex items-center gap-2 mt-2">
