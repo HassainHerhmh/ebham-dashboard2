@@ -217,14 +217,14 @@ if (imageUrl) formData.append("image_url", imageUrl);
 
   /* ================= EDIT ================= */
 
- const handleEdit = (p: Product) => {
+ const handleEdit = async (p: Product) => {
   setEditingId(p.id);
   setName(p.name);
   setPrice(String(p.price || ""));
   setNotes(p.notes || "");
   setRestaurantId(p.restaurant_id?.toString() || "");
   setUnitId(p.unit_id?.toString() || "");
-     setImageUrl(p.image_url || ""); 
+  setImageUrl(p.image_url || "");
 
   const ids = p.category_ids
     ? String(p.category_ids).split(",").map((x) => x.trim())
@@ -233,7 +233,14 @@ if (imageUrl) formData.append("image_url", imageUrl);
 
   setIsAvailable(!!p.is_available);
   setIsParent(!!p.is_parent);
-  setSelectedChildren([]); // سيتم جلبهم من السيرفر إذا كان أب
+
+  if (p.is_parent) {
+    const res = await api.get(`/products/${p.id}/children`);
+    const kids = res.data?.children || [];
+    setSelectedChildren(kids.map((k: any) => k.id));
+  } else {
+    setSelectedChildren([]);
+  }
 
   setPreview(p.image_url || null);
   setShowForm(true);
