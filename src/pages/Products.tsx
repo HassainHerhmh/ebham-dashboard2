@@ -444,10 +444,11 @@ if (imageUrl) formData.append("image_url", imageUrl);
       
   {showForm && (
   <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
-    <form
-      onSubmit={handleSubmit}
-      className="bg-white p-6 rounded w-full max-w-md space-y-3"
-    >
+  <form
+  onSubmit={handleSubmit}
+  className="bg-white p-6 rounded w-full max-w-2xl grid grid-cols-2 gap-3"
+>
+
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}
@@ -486,7 +487,7 @@ if (imageUrl) formData.append("image_url", imageUrl);
         <button
           type="button"
           onClick={() => setIsAvailable(true)}
-          className={`px-3 py-1 rounded w-full ${
+                  className="border w-full px-3 py-2 col-span-2" ${
             isAvailable ? "bg-green-600 text-white" : "bg-gray-200"
           }`}
         >
@@ -573,11 +574,11 @@ if (imageUrl) formData.append("image_url", imageUrl);
         ))}
       </select>
 
-<div className="col-span-2 flex items-center gap-3">
+<div          className="border w-full px-3 py-2 col-span-2">
   <input
     type="text"
     placeholder="الصق رابط الصورة هنا"
-    className="border rounded-lg px-3 py-2 w-full"
+             className="border w-full px-3 py-2 col-span-2"
     value={imageUrl}
     onChange={(e) => setImageUrl(e.target.value)}
   />
