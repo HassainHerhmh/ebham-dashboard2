@@ -119,7 +119,6 @@ const Customers: React.FC = () => {
     total: customers.length,
     online: customers.filter((c) => c.is_online === 1).length,
     activeToday: customers.filter((c) => {
-        // نفترض أن التاريخ يأتي بصيغة YYYY-MM-DD...
         const today = new Date().toISOString().slice(0, 10);
         return c.last_login && c.last_login.startsWith(today);
     }).length
@@ -206,12 +205,26 @@ const Customers: React.FC = () => {
       <div className="p-6 space-y-6 bg-gray-50 min-h-screen" dir="rtl">
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-2xl font-bold text-gray-800">📊 حالة العملاء والاتصال</h1>
-          <button
-            onClick={() => setIsStatusPageOpen(false)}
-            className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 transition flex items-center gap-2"
-          >
-            <span>↩️</span> رجوع للقائمة
-          </button>
+          
+          <div className="flex gap-2">
+            {/* زر التحديث الجديد */}
+            <button
+                onClick={fetchCustomers}
+                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition flex items-center gap-2 shadow"
+                disabled={loading}
+            >
+                <span className={loading ? "animate-spin" : ""}>🔄</span>
+                {loading ? "جاري التحديث..." : "تحديث البيانات"}
+            </button>
+
+            {/* زر الرجوع */}
+            <button
+                onClick={() => setIsStatusPageOpen(false)}
+                className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 transition flex items-center gap-2 shadow"
+            >
+                <span>↩️</span> رجوع للقائمة
+            </button>
+          </div>
         </div>
 
         {/* --- شريط الإحصائيات --- */}
@@ -339,10 +352,12 @@ const Customers: React.FC = () => {
 
                     {/* عمود حالة الحساب */}
                     <td className="p-3">
-                        {c.is_active === 1 ? (
-                             <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">نشط</span>
+                        {c.is_active === 0 ? (
+                             <span className="bg-red-100 text-red-800 text-xs px-2 py-1 rounded font-bold border border-red-200">🚫 معطل</span>
+                        ) : (c as any).is_logged_in === 1 ? (
+                             <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded font-bold border border-blue-200">✅ نشط</span>
                         ) : (
-                             <span className="bg-red-100 text-red-800 text-xs px-2 py-1 rounded">محظور</span>
+                             <span className="bg-gray-200 text-gray-600 text-xs px-2 py-1 rounded font-bold border border-gray-300">⚪ غير نشط</span>
                         )}
                     </td>
                   </tr>
