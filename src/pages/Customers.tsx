@@ -15,8 +15,9 @@ interface Customer {
   created_at?: string;
   branch_id?: number;
   branch_name?: string;
-  is_active?: number;
-  last_login?: string; // تمت إضافة هذا الحقل لعرض آخر دخول
+  is_active?: number; // 1: نشط, 0: محظور
+  last_login?: string; // تاريخ ووقت
+  is_online?: number; // 1: متصل, 0: غير متصل
 }
 
 interface Address {
@@ -63,10 +64,15 @@ const Customers: React.FC = () => {
   const [isEditAddressOpen, setIsEditAddressOpen] = useState(false);
   const [editAddress, setEditAddress] = useState<Address | null>(null);
 
-  // ===== Customer Status Page States (NEW) =====
+  // ===== Customer Status Page States (NEW & IMPROVED) =====
   const [isStatusPageOpen, setIsStatusPageOpen] = useState(false);
   const [statusSearchName, setStatusSearchName] = useState("");
-  const [statusFilterState, setStatusFilterState] = useState("all"); // all | active | inactive
+  
+  // 1. فلتر حالة الحساب (نشط / محظور)
+  const [filterAccountStatus, setFilterAccountStatus] = useState("all"); 
+  // 2. فلتر الاتصال (متصل / غير متصل)
+  const [filterConnection, setFilterConnection] = useState("all"); 
+  
   const [statusFilterDate, setStatusFilterDate] = useState("");
 
   const fetchBranches = async () => {
@@ -108,27 +114,42 @@ const Customers: React.FC = () => {
       (a.address || "").toLowerCase().includes(searchAddress.toLowerCase())
   );
 
-  // ===== فلتر صفحة حالة العملاء (NEW) =====
+  // ===== حساب الإحصائيات (Statistics Calculation) =====
+  const stats = {
+    total: customers.length,
+    online: customers.filter((c) => c.is_online === 1).length,
+    activeToday: customers.filter((c) => {
+        // نفترض أن التاريخ يأتي بصيغة YYYY-MM-DD...
+        const today = new Date().toISOString().slice(0, 10);
+        return c.last_login && c.last_login.startsWith(today);
+    }).length
+  };
+
+  // ===== فلتر صفحة حالة العملاء المطور =====
   const filteredStatusCustomers = customers.filter((c) => {
-    // 1. فلتر الاسم
+    // 1. بحث بالاسم
     const matchName = (c.name || "")
       .toLowerCase()
       .includes(statusSearchName.toLowerCase());
 
-    // 2. فلتر الحالة
-    let matchStatus = true;
-    if (statusFilterState === "active") matchStatus = c.is_active === 1;
-    if (statusFilterState === "inactive") matchStatus = c.is_active === 0;
+    // 2. فلتر حالة الحساب (نشط/محظور)
+    let matchAccount = true;
+    if (filterAccountStatus === "active") matchAccount = c.is_active === 1;
+    if (filterAccountStatus === "blocked") matchAccount = c.is_active === 0;
 
-    // 3. فلتر التاريخ (تاريخ آخر دخول)
+    // 3. فلتر الاتصال (متصل/غير متصل)
+    let matchConnection = true;
+    if (filterConnection === "online") matchConnection = c.is_online === 1;
+    if (filterConnection === "offline") matchConnection = c.is_online === 0;
+
+    // 4. فلتر التاريخ
     let matchDate = true;
     if (statusFilterDate) {
-      // نفترض أن التاريخ يأتي بصيغة YYYY-MM-DD HH:mm:ss أو ISO
-      const dateToCheck = c.last_login || c.created_at; // استخدام تاريخ الإنشاء كبديل إذا لم يوجد آخر دخول
+      const dateToCheck = c.last_login || c.created_at;
       matchDate = dateToCheck ? dateToCheck.startsWith(statusFilterDate) : false;
     }
 
-    return matchName && matchStatus && matchDate;
+    return matchName && matchAccount && matchConnection && matchDate;
   });
 
   // ===== Actions =====
@@ -178,107 +199,162 @@ const Customers: React.FC = () => {
   };
 
   // =========================================================
-  // عرض صفحة حالة العملاء (Render Status Page)
+  // عرض صفحة حالة العملاء (Status Page)
   // =========================================================
   if (isStatusPageOpen) {
     return (
-      <div className="p-6 space-y-6" dir="rtl">
+      <div className="p-6 space-y-6 bg-gray-50 min-h-screen" dir="rtl">
         <div className="flex justify-between items-center mb-4">
-          <h1 className="text-2xl font-bold">📊 حالة العملاء وتفاصيل الدخول</h1>
+          <h1 className="text-2xl font-bold text-gray-800">📊 حالة العملاء والاتصال</h1>
           <button
             onClick={() => setIsStatusPageOpen(false)}
-            className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition"
+            className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 transition flex items-center gap-2"
           >
-            ↩️ رجوع للقائمة الرئيسية
+            <span>↩️</span> رجوع للقائمة
           </button>
         </div>
 
-        {/* شريط الفلاتر */}
-        <div className="bg-white p-4 rounded shadow grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* --- شريط الإحصائيات (Statistics Cards) --- */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="bg-white p-4 rounded-lg shadow border-r-4 border-blue-500 flex justify-between items-center">
+                <div>
+                    <p className="text-gray-500 text-sm">إجمالي العملاء</p>
+                    <p className="text-2xl font-bold text-gray-800">{stats.total}</p>
+                </div>
+                <div className="text-3xl">👥</div>
+            </div>
+
+            <div className="bg-white p-4 rounded-lg shadow border-r-4 border-green-500 flex justify-between items-center">
+                <div>
+                    <p className="text-gray-500 text-sm">المتصلين الآن</p>
+                    <p className="text-2xl font-bold text-green-600">{stats.online}</p>
+                </div>
+                <div className="text-3xl relative">
+                    🟢
+                    <span className="absolute top-0 right-0 h-3 w-3 rounded-full bg-green-500 animate-ping"></span>
+                </div>
+            </div>
+
+            <div className="bg-white p-4 rounded-lg shadow border-r-4 border-purple-500 flex justify-between items-center">
+                <div>
+                    <p className="text-gray-500 text-sm">سجلوا دخول اليوم</p>
+                    <p className="text-2xl font-bold text-purple-600">{stats.activeToday}</p>
+                </div>
+                <div className="text-3xl">📅</div>
+            </div>
+        </div>
+
+        {/* --- شريط الفلاتر والبحث --- */}
+        <div className="bg-white p-5 rounded shadow-lg grid grid-cols-1 md:grid-cols-4 gap-4">
           {/* بحث بالاسم */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              اسم العميل
+            <label className="block text-xs font-bold text-gray-700 mb-1">
+              بحث بالاسم
             </label>
             <input
-              className="border p-2 rounded w-full"
-              placeholder="بحث بالاسم..."
+              className="border p-2 rounded w-full bg-gray-50 focus:bg-white transition"
+              placeholder="اكتب اسم العميل..."
               value={statusSearchName}
               onChange={(e) => setStatusSearchName(e.target.value)}
             />
           </div>
 
-          {/* فلتر الحالة */}
+          {/* فلتر حالة الاتصال (جديد) */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-xs font-bold text-gray-700 mb-1">
+              حالة الاتصال (Online)
+            </label>
+            <select
+              className="border p-2 rounded w-full bg-gray-50"
+              value={filterConnection}
+              onChange={(e) => setFilterConnection(e.target.value)}
+            >
+              <option value="all">الكل</option>
+              <option value="online">🟢 متصل الآن فقط</option>
+              <option value="offline">⚪ غير متصل</option>
+            </select>
+          </div>
+
+          {/* فلتر حالة الحساب (نشط/محظور) */}
+          <div>
+            <label className="block text-xs font-bold text-gray-700 mb-1">
               حالة الحساب
             </label>
             <select
-              className="border p-2 rounded w-full"
-              value={statusFilterState}
-              onChange={(e) => setStatusFilterState(e.target.value)}
+              className="border p-2 rounded w-full bg-gray-50"
+              value={filterAccountStatus}
+              onChange={(e) => setFilterAccountStatus(e.target.value)}
             >
               <option value="all">الكل</option>
-              <option value="active">✅ نشط</option>
-              <option value="inactive">❌ غير نشط</option>
+              <option value="active">✅ الحسابات النشطة</option>
+              <option value="blocked">🚫 الحسابات المحظورة</option>
             </select>
           </div>
 
           {/* فلتر التاريخ */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-xs font-bold text-gray-700 mb-1">
               تاريخ آخر دخول
             </label>
             <input
               type="date"
-              className="border p-2 rounded w-full"
+              className="border p-2 rounded w-full bg-gray-50"
               value={statusFilterDate}
               onChange={(e) => setStatusFilterDate(e.target.value)}
             />
           </div>
         </div>
 
-        {/* جدول حالة العملاء */}
-        <div className="bg-white rounded shadow overflow-auto">
+        {/* --- الجدول --- */}
+        <div className="bg-white rounded shadow overflow-hidden">
           <table className="w-full text-center">
-            <thead className="bg-gray-100">
+            <thead className="bg-gray-100 border-b">
               <tr>
-                <th className="p-3">#</th>
-                <th className="p-3">اسم العميل</th>
-                <th className="p-3">الحالة</th>
-                <th className="p-3">آخر دخول</th>
-                <th className="p-3">تاريخ التسجيل</th>
+                <th className="p-4 text-sm font-semibold text-gray-600">الاسم</th>
+                <th className="p-4 text-sm font-semibold text-gray-600">حالة الاتصال</th>
+                <th className="p-4 text-sm font-semibold text-gray-600">وقت آخر دخول</th>
+                <th className="p-4 text-sm font-semibold text-gray-600">حالة الحساب</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-gray-100">
               {filteredStatusCustomers.length > 0 ? (
                 filteredStatusCustomers.map((c) => (
-                  <tr key={c.id} className="border-b hover:bg-gray-50">
-                    <td className="p-3">{c.id}</td>
-                    <td className="p-3 font-medium">{c.name}</td>
+                  <tr key={c.id} className="hover:bg-blue-50 transition">
+                    <td className="p-3 font-medium text-gray-800">{c.name}</td>
+                    
+                    {/* عمود حالة الاتصال */}
                     <td className="p-3">
-                      {c.is_active === 1 ? (
-                        <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-bold">
-                          نشط
-                        </span>
+                      {c.is_online === 1 ? (
+                        <div className="flex items-center justify-center gap-2 bg-green-50 w-fit mx-auto px-3 py-1 rounded-full border border-green-200">
+                            <span className="relative flex h-2 w-2">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                            </span>
+                            <span className="text-green-700 font-bold text-xs">متصل</span>
+                        </div>
                       ) : (
-                        <span className="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-bold">
-                          غير نشط
-                        </span>
+                        <span className="text-gray-400 text-xs font-medium">غير متصل</span>
                       )}
                     </td>
-                    <td className="p-3 text-gray-600" dir="ltr">
-                      {c.last_login ? c.last_login : "لم يسجل دخول بعد"}
+
+                    <td className="p-3 text-gray-600 text-sm" dir="ltr">
+                      {c.last_login ? c.last_login : "-"}
                     </td>
-                    <td className="p-3 text-gray-500 text-sm">
-                      {c.created_at?.slice(0, 10)}
+
+                    {/* عمود حالة الحساب */}
+                    <td className="p-3">
+                        {c.is_active === 1 ? (
+                             <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">نشط</span>
+                        ) : (
+                             <span className="bg-red-100 text-red-800 text-xs px-2 py-1 rounded">محظور</span>
+                        )}
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={5} className="p-6 text-gray-500">
-                    لا توجد نتائج مطابقة للبحث
+                  <td colSpan={4} className="p-8 text-center text-gray-500">
+                    🔍 لا توجد نتائج مطابقة للفلاتر الحالية
                   </td>
                 </tr>
               )}
@@ -307,12 +383,11 @@ const Customers: React.FC = () => {
             ➕ إضافة عميل
           </button>
 
-          {/* زر حالة العملاء الجديد */}
           <button
             onClick={() => setIsStatusPageOpen(true)}
-            className="bg-purple-600 text-white px-4 py-2 rounded shadow hover:bg-purple-700 transition"
+            className="bg-purple-600 text-white px-4 py-2 rounded shadow hover:bg-purple-700 transition flex items-center gap-2"
           >
-            📊 حالة العملاء
+            <span>📊</span> حالة واتصال العملاء
           </button>
         </div>
 
@@ -329,7 +404,7 @@ const Customers: React.FC = () => {
 
       <input
         className="border p-2 rounded w-full"
-        placeholder="بحث عن عميل"
+        placeholder="بحث عن عميل..."
         value={searchCustomer}
         onChange={(e) => setSearchCustomer(e.target.value)}
       />
@@ -589,8 +664,7 @@ const Customers: React.FC = () => {
 
 export default Customers;
 
-/* ================= مودال إضافة عميل (كما هو) ================= */
-
+// ... (المودالات الأخرى تبقى كما هي: AddCustomerModal, AddAddressModal, EditAddressModal)
 const AddCustomerModal = ({ branches, isAdmin, onClose, onSaved }: any) => {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
