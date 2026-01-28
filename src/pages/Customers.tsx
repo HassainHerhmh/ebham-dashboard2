@@ -17,7 +17,7 @@ interface Customer {
   branch_name?: string;
   is_active?: number; // 1: نشط, 0: محظور
   last_login?: string; // تاريخ ووقت
-  is_online?: number; // 1: متصل, 0: غير متصل
+  is_online?: number; // 1: متصل (حسب النشاط), 0: غير متصل
 }
 
 interface Address {
@@ -64,7 +64,7 @@ const Customers: React.FC = () => {
   const [isEditAddressOpen, setIsEditAddressOpen] = useState(false);
   const [editAddress, setEditAddress] = useState<Address | null>(null);
 
-  // ===== Customer Status Page States (NEW & IMPROVED) =====
+  // ===== Customer Status Page States =====
   const [isStatusPageOpen, setIsStatusPageOpen] = useState(false);
   const [statusSearchName, setStatusSearchName] = useState("");
   
@@ -114,7 +114,7 @@ const Customers: React.FC = () => {
       (a.address || "").toLowerCase().includes(searchAddress.toLowerCase())
   );
 
-  // ===== حساب الإحصائيات (Statistics Calculation) =====
+  // ===== حساب الإحصائيات (Statistics) =====
   const stats = {
     total: customers.length,
     online: customers.filter((c) => c.is_online === 1).length,
@@ -125,7 +125,7 @@ const Customers: React.FC = () => {
     }).length
   };
 
-  // ===== فلتر صفحة حالة العملاء المطور =====
+  // ===== فلتر صفحة حالة العملاء =====
   const filteredStatusCustomers = customers.filter((c) => {
     // 1. بحث بالاسم
     const matchName = (c.name || "")
@@ -214,7 +214,7 @@ const Customers: React.FC = () => {
           </button>
         </div>
 
-        {/* --- شريط الإحصائيات (Statistics Cards) --- */}
+        {/* --- شريط الإحصائيات --- */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div className="bg-white p-4 rounded-lg shadow border-r-4 border-blue-500 flex justify-between items-center">
                 <div>
@@ -244,9 +244,8 @@ const Customers: React.FC = () => {
             </div>
         </div>
 
-        {/* --- شريط الفلاتر والبحث --- */}
+        {/* --- شريط الفلاتر --- */}
         <div className="bg-white p-5 rounded shadow-lg grid grid-cols-1 md:grid-cols-4 gap-4">
-          {/* بحث بالاسم */}
           <div>
             <label className="block text-xs font-bold text-gray-700 mb-1">
               بحث بالاسم
@@ -259,7 +258,6 @@ const Customers: React.FC = () => {
             />
           </div>
 
-          {/* فلتر حالة الاتصال (جديد) */}
           <div>
             <label className="block text-xs font-bold text-gray-700 mb-1">
               حالة الاتصال (Online)
@@ -275,7 +273,6 @@ const Customers: React.FC = () => {
             </select>
           </div>
 
-          {/* فلتر حالة الحساب (نشط/محظور) */}
           <div>
             <label className="block text-xs font-bold text-gray-700 mb-1">
               حالة الحساب
@@ -291,7 +288,6 @@ const Customers: React.FC = () => {
             </select>
           </div>
 
-          {/* فلتر التاريخ */}
           <div>
             <label className="block text-xs font-bold text-gray-700 mb-1">
               تاريخ آخر دخول
