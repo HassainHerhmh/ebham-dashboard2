@@ -16,6 +16,7 @@ interface Customer {
   branch_id?: number;
   branch_name?: string;
   is_active?: number;
+  last_login?: string; // تمت إضافة هذا الحقل لعرض آخر دخول
 }
 
 interface Address {
@@ -43,9 +44,11 @@ const Customers: React.FC = () => {
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // ===== Main Search States =====
   const [searchCustomer, setSearchCustomer] = useState("");
   const [searchAddress, setSearchAddress] = useState("");
 
+  // ===== Modal States =====
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
   const [isAddressesOpen, setIsAddressesOpen] = useState(false);
   const [isAddAddressOpen, setIsAddAddressOpen] = useState(false);
@@ -58,7 +61,13 @@ const Customers: React.FC = () => {
   const [editPhoneAlt, setEditPhoneAlt] = useState("");
   const [editEmail, setEditEmail] = useState("");
   const [isEditAddressOpen, setIsEditAddressOpen] = useState(false);
-const [editAddress, setEditAddress] = useState<Address | null>(null);
+  const [editAddress, setEditAddress] = useState<Address | null>(null);
+
+  // ===== Customer Status Page States (NEW) =====
+  const [isStatusPageOpen, setIsStatusPageOpen] = useState(false);
+  const [statusSearchName, setStatusSearchName] = useState("");
+  const [statusFilterState, setStatusFilterState] = useState("all"); // all | active | inactive
+  const [statusFilterDate, setStatusFilterDate] = useState("");
 
   const fetchBranches = async () => {
     if (!isAdmin) return;
@@ -83,19 +92,44 @@ const [editAddress, setEditAddress] = useState<Address | null>(null);
     fetchCustomers();
   }, []);
 
-const filteredCustomers = customers.filter(
-  (c) =>
-    (c.name || "").toLowerCase().includes(searchCustomer.toLowerCase()) ||
-    (c.phone || "").includes(searchCustomer)
-);
+  // فلتر الصفحة الرئيسية
+  const filteredCustomers = customers.filter(
+    (c) =>
+      (c.name || "").toLowerCase().includes(searchCustomer.toLowerCase()) ||
+      (c.phone || "").includes(searchCustomer)
+  );
 
-const filteredAddresses = addresses.filter(
-  (a) =>
-    (a.customer_name || "")
+  // فلتر صفحة العناوين
+  const filteredAddresses = addresses.filter(
+    (a) =>
+      (a.customer_name || "")
+        .toLowerCase()
+        .includes(searchAddress.toLowerCase()) ||
+      (a.address || "").toLowerCase().includes(searchAddress.toLowerCase())
+  );
+
+  // ===== فلتر صفحة حالة العملاء (NEW) =====
+  const filteredStatusCustomers = customers.filter((c) => {
+    // 1. فلتر الاسم
+    const matchName = (c.name || "")
       .toLowerCase()
-      .includes(searchAddress.toLowerCase()) ||
-    (a.address || "").toLowerCase().includes(searchAddress.toLowerCase())
-);
+      .includes(statusSearchName.toLowerCase());
+
+    // 2. فلتر الحالة
+    let matchStatus = true;
+    if (statusFilterState === "active") matchStatus = c.is_active === 1;
+    if (statusFilterState === "inactive") matchStatus = c.is_active === 0;
+
+    // 3. فلتر التاريخ (تاريخ آخر دخول)
+    let matchDate = true;
+    if (statusFilterDate) {
+      // نفترض أن التاريخ يأتي بصيغة YYYY-MM-DD HH:mm:ss أو ISO
+      const dateToCheck = c.last_login || c.created_at; // استخدام تاريخ الإنشاء كبديل إذا لم يوجد آخر دخول
+      matchDate = dateToCheck ? dateToCheck.startsWith(statusFilterDate) : false;
+    }
+
+    return matchName && matchStatus && matchDate;
+  });
 
   // ===== Actions =====
   const openEditCustomer = (c: Customer) => {
@@ -136,31 +170,158 @@ const filteredAddresses = addresses.filter(
   const handleResetPassword = async (id: number) => {
     if (!confirm("إعادة تعيين كلمة المرور؟")) return;
     const res = await api.post(`/customers/${id}/reset-password`);
-    alert(res.data?.password ? `كلمة المرور الجديدة: ${res.data.password}` : "تمت العملية");
+    alert(
+      res.data?.password
+        ? `كلمة المرور الجديدة: ${res.data.password}`
+        : "تمت العملية"
+    );
   };
 
-     
-  
+  // =========================================================
+  // عرض صفحة حالة العملاء (Render Status Page)
+  // =========================================================
+  if (isStatusPageOpen) {
+    return (
+      <div className="p-6 space-y-6" dir="rtl">
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-2xl font-bold">📊 حالة العملاء وتفاصيل الدخول</h1>
+          <button
+            onClick={() => setIsStatusPageOpen(false)}
+            className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition"
+          >
+            ↩️ رجوع للقائمة الرئيسية
+          </button>
+        </div>
+
+        {/* شريط الفلاتر */}
+        <div className="bg-white p-4 rounded shadow grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* بحث بالاسم */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              اسم العميل
+            </label>
+            <input
+              className="border p-2 rounded w-full"
+              placeholder="بحث بالاسم..."
+              value={statusSearchName}
+              onChange={(e) => setStatusSearchName(e.target.value)}
+            />
+          </div>
+
+          {/* فلتر الحالة */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              حالة الحساب
+            </label>
+            <select
+              className="border p-2 rounded w-full"
+              value={statusFilterState}
+              onChange={(e) => setStatusFilterState(e.target.value)}
+            >
+              <option value="all">الكل</option>
+              <option value="active">✅ نشط</option>
+              <option value="inactive">❌ غير نشط</option>
+            </select>
+          </div>
+
+          {/* فلتر التاريخ */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              تاريخ آخر دخول
+            </label>
+            <input
+              type="date"
+              className="border p-2 rounded w-full"
+              value={statusFilterDate}
+              onChange={(e) => setStatusFilterDate(e.target.value)}
+            />
+          </div>
+        </div>
+
+        {/* جدول حالة العملاء */}
+        <div className="bg-white rounded shadow overflow-auto">
+          <table className="w-full text-center">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="p-3">#</th>
+                <th className="p-3">اسم العميل</th>
+                <th className="p-3">الحالة</th>
+                <th className="p-3">آخر دخول</th>
+                <th className="p-3">تاريخ التسجيل</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredStatusCustomers.length > 0 ? (
+                filteredStatusCustomers.map((c) => (
+                  <tr key={c.id} className="border-b hover:bg-gray-50">
+                    <td className="p-3">{c.id}</td>
+                    <td className="p-3 font-medium">{c.name}</td>
+                    <td className="p-3">
+                      {c.is_active === 1 ? (
+                        <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-bold">
+                          نشط
+                        </span>
+                      ) : (
+                        <span className="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-bold">
+                          غير نشط
+                        </span>
+                      )}
+                    </td>
+                    <td className="p-3 text-gray-600" dir="ltr">
+                      {c.last_login ? c.last_login : "لم يسجل دخول بعد"}
+                    </td>
+                    <td className="p-3 text-gray-500 text-sm">
+                      {c.created_at?.slice(0, 10)}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={5} className="p-6 text-gray-500">
+                    لا توجد نتائج مطابقة للبحث
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  }
+
+  // =========================================================
+  // العرض الرئيسي (Main Render)
+  // =========================================================
   return (
     <div className="p-6 space-y-6" dir="rtl">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">📋 العملاء</h1>
       </div>
 
-      <div className="flex justify-between">
-        <button
-          onClick={() => setIsAddCustomerOpen(true)}
-          className="bg-green-600 text-white px-4 py-2 rounded"
-        >
-          ➕ إضافة عميل
-        </button>
+      <div className="flex justify-between gap-2 flex-wrap">
+        <div className="flex gap-2">
+          <button
+            onClick={() => setIsAddCustomerOpen(true)}
+            className="bg-green-600 text-white px-4 py-2 rounded shadow hover:bg-green-700 transition"
+          >
+            ➕ إضافة عميل
+          </button>
+
+          {/* زر حالة العملاء الجديد */}
+          <button
+            onClick={() => setIsStatusPageOpen(true)}
+            className="bg-purple-600 text-white px-4 py-2 rounded shadow hover:bg-purple-700 transition"
+          >
+            📊 حالة العملاء
+          </button>
+        </div>
 
         <button
           onClick={() => {
             fetchAddresses();
             setIsAddressesOpen(true);
           }}
-          className="bg-blue-600 text-white px-4 py-2 rounded"
+          className="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 transition"
         >
           📍 إدارة العناوين
         </button>
@@ -191,7 +352,11 @@ const filteredAddresses = addresses.filter(
             {filteredCustomers.map((c) => (
               <tr key={c.id} className="border-b">
                 <td>{c.id}</td>
-                <td className={c.is_active === 0 ? "text-gray-400 line-through" : ""}>
+                <td
+                  className={
+                    c.is_active === 0 ? "text-gray-400 line-through" : ""
+                  }
+                >
                   {c.name}
                 </td>
                 <td>{c.phone}</td>
@@ -199,7 +364,7 @@ const filteredAddresses = addresses.filter(
                 <td>{c.email || "-"}</td>
                 {isAdmin && <td>{c.branch_name || "-"}</td>}
                 <td>{c.created_at?.slice(0, 10)}</td>
-                <td className="space-x-1 space-x-reverse">
+                <td className="space-x-1 space-x-reverse py-2">
                   <button
                     onClick={() => openEditCustomer(c)}
                     className="bg-yellow-500 text-white px-2 py-1 rounded text-xs"
@@ -281,44 +446,42 @@ const filteredAddresses = addresses.filter(
                     <td>{a.latitude || "-"}</td>
                     <td>{a.longitude || "-"}</td>
                     <td>
-  {a.gps_link ? (
-    <a
-      href={a.gps_link}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="text-blue-600 underline"
-    >
-      GPS
-    </a>
-  ) : (
-    "-"
-  )}
-</td>
+                      {a.gps_link ? (
+                        <a
+                          href={a.gps_link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 underline"
+                        >
+                          GPS
+                        </a>
+                      ) : (
+                        "-"
+                      )}
+                    </td>
 
-<td className="flex gap-2 justify-center">
-  <button
-    onClick={() => {
-      setEditAddress(a);
-      setIsEditAddressOpen(true);
-    }}
-    className="text-blue-600"
-  >
-    تعديل
-  </button>
+                    <td className="flex gap-2 justify-center py-2">
+                      <button
+                        onClick={() => {
+                          setEditAddress(a);
+                          setIsEditAddressOpen(true);
+                        }}
+                        className="text-blue-600"
+                      >
+                        تعديل
+                      </button>
 
-  <button
-    onClick={async () => {
-      if (!confirm("حذف العنوان؟")) return;
-      await api.delete(`/customer-addresses/${a.id}`);
-      fetchAddresses();
-    }}
-    className="text-red-600"
-  >
-    حذف
-  </button>
-</td>
-
-
+                      <button
+                        onClick={async () => {
+                          if (!confirm("حذف العنوان؟")) return;
+                          await api.delete(`/customer-addresses/${a.id}`);
+                          fetchAddresses();
+                        }}
+                        className="text-red-600"
+                      >
+                        حذف
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -406,28 +569,27 @@ const filteredAddresses = addresses.filter(
           }}
         />
       )}
-                {isEditAddressOpen && editAddress && (
-  <EditAddressModal
-    address={editAddress}
-    onClose={() => {
-      setIsEditAddressOpen(false);
-      setEditAddress(null);
-    }}
-    onSaved={() => {
-      setIsEditAddressOpen(false);
-      setEditAddress(null);
-      fetchAddresses();
-    }}
-  />
-)}
-
+      {isEditAddressOpen && editAddress && (
+        <EditAddressModal
+          address={editAddress}
+          onClose={() => {
+            setIsEditAddressOpen(false);
+            setEditAddress(null);
+          }}
+          onSaved={() => {
+            setIsEditAddressOpen(false);
+            setEditAddress(null);
+            fetchAddresses();
+          }}
+        />
+      )}
     </div>
   );
 };
 
 export default Customers;
 
-/* ================= مودال إضافة عميل ================= */
+/* ================= مودال إضافة عميل (كما هو) ================= */
 
 const AddCustomerModal = ({ branches, isAdmin, onClose, onSaved }: any) => {
   const [name, setName] = useState("");
@@ -442,8 +604,7 @@ const AddCustomerModal = ({ branches, isAdmin, onClose, onSaved }: any) => {
     if (!name || !phone || !password || !confirmPassword)
       return alert("البيانات ناقصة");
 
-    if (password !== confirmPassword)
-      return alert("كلمة المرور غير متطابقة");
+    if (password !== confirmPassword) return alert("كلمة المرور غير متطابقة");
 
     const payload: any = {
       name,
@@ -547,8 +708,7 @@ const AddCustomerModal = ({ branches, isAdmin, onClose, onSaved }: any) => {
   );
 };
 
-
-/* ================= مودال إضافة عنوان ================= */
+/* ================= مودال إضافة عنوان (كما هو) ================= */
 
 const AddAddressModal = ({
   customers,
@@ -564,7 +724,9 @@ const AddAddressModal = ({
   const userBranchId = currentUser?.branch_id;
 
   const [customerId, setCustomerId] = useState("");
-  const [branchId, setBranchId] = useState(isAdmin ? "" : String(userBranchId || ""));
+  const [branchId, setBranchId] = useState(
+    isAdmin ? "" : String(userBranchId || "")
+  );
   const [neighborhoods, setNeighborhoods] = useState<any[]>([]);
   const [district, setDistrict] = useState("");
   const [address, setAddress] = useState("");
@@ -592,7 +754,10 @@ const AddAddressModal = ({
     setLng((45 + x / 10).toFixed(6));
   };
 
-  const gpsLink = lat && lng ? `https://www.google.com/maps?q=${lat},${lng}` : "";
+  const gpsLink =
+    lat && lng
+      ? `https://www.google.com/maps?q=${lat},${lng}`
+      : "";
 
   const handleSave = async () => {
     if (!customerId || !district) return alert("❌ البيانات ناقصة");
@@ -650,18 +815,20 @@ const AddAddressModal = ({
           </select>
         )}
 
-    <select
-  className="border p-2 w-full mb-2"
-  value={district} 
-  onChange={(e) => setDistrict(e.target.value)}
->
-  <option value="">اختر الحي</option>
-  {neighborhoods.map((n: any) => (
-    <option key={n.id} value={n.id}> {/* التأكد من إرسال الـ ID */}
-      {n.name}
-    </option>
-  ))}
-</select>
+        <select
+          className="border p-2 w-full mb-2"
+          value={district}
+          onChange={(e) => setDistrict(e.target.value)}
+        >
+          <option value="">اختر الحي</option>
+          {neighborhoods.map((n: any) => (
+            <option key={n.id} value={n.id}>
+              {" "}
+              {/* التأكد من إرسال الـ ID */}
+              {n.name}
+            </option>
+          ))}
+        </select>
 
         <select
           className="border p-2 w-full mb-2"
@@ -727,8 +894,7 @@ const AddAddressModal = ({
   );
 };
 
-
-/* ================= مودال تعديل عنوان ================= */
+/* ================= مودال تعديل عنوان (كما هو) ================= */
 
 const EditAddressModal = ({
   address,
@@ -744,7 +910,10 @@ const EditAddressModal = ({
   const [lat, setLat] = useState(address.latitude || "");
   const [lng, setLng] = useState(address.longitude || "");
 
-  const gpsLink = lat && lng ? `https://www.google.com/maps?q=${lat},${lng}` : "";
+  const gpsLink =
+    lat && lng
+      ? `https://www.google.com/maps?q=${lat},${lng}`
+      : "";
 
   const handleSave = async () => {
     await api.put(`/customer-addresses/${address.id}`, {
@@ -803,6 +972,7 @@ const EditAddressModal = ({
           <a
             href={gpsLink}
             target="_blank"
+            rel="noopener noreferrer"
             className="text-blue-600 underline text-sm"
           >
             فتح الموقع على الخريطة
@@ -819,4 +989,3 @@ const EditAddressModal = ({
     </div>
   );
 };
-
