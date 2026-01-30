@@ -23,7 +23,7 @@ interface Restaurant {
   branch_name?: string;
   agent_id?: number;
   agent_name?: string;
-
+display_type?: string;
   is_active?: number;
   delivery_time?: string;
 }
@@ -75,7 +75,7 @@ const [isActive, setIsActive] = useState(true);
 const [deliveryFrom, setDeliveryFrom] = useState("");
 const [deliveryTo, setDeliveryTo] = useState("");
 const [imageUrl, setImageUrl] = useState("");
-
+const [displayType, setDisplayType] = useState("product"); // "product" أو "manual"
   const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
   const [selectedType, setSelectedType] = useState<number | "">("");
   const [selectedBranch, setSelectedBranch] = useState<number | "">("");
@@ -170,6 +170,7 @@ const handleSubmit = async (e: React.FormEvent) => {
   data.append("address", formData.address);
   data.append("phone", formData.phone);
   data.append("type_id", String(selectedType));
+  data.append("display_type", displayType);
   data.append("category_ids", JSON.stringify(selectedCategories));
   data.append("schedule", JSON.stringify(storeSchedule));
 
@@ -218,7 +219,7 @@ const handleEdit = (r: Restaurant) => {
   });
 
     setImageUrl(r.image_url || ""); 
-
+       setDisplayType(r.display_type || "product"); // تعبئة القيمة عند التعديل
   const categoryIds = r.category_ids
     ? String(r.category_ids).split(",").map((id) => Number(id))
     : [];
@@ -264,7 +265,7 @@ const handleEdit = (r: Restaurant) => {
   setSelectedType("");
   setSelectedBranch("");
   setSelectedAgent("");
-
+setDisplayType("product"); // إعادة القيمة الافتراضية
   setDeliveryFrom("");
   setDeliveryTo("");
   setDeliveryTime("");
@@ -541,8 +542,11 @@ useEffect(() => {
     className="border rounded-lg px-3 py-2 w-full col-span-1"
   />
 
-  {/* الفئات */}
-  <div className="border p-3 rounded-lg max-h-32 overflow-y-auto col-span-2">
+{/* الفئات + نوع العرض */}
+<div className="grid grid-cols-2 gap-3 col-span-2">
+  
+  {/* مربع الفئات */}
+  <div className="border p-3 rounded-lg max-h-32 overflow-y-auto">
     <h3 className="font-semibold mb-2">الفئات</h3>
     {categories.map((c) => (
       <label key={c.id} className="flex items-center gap-2 mb-1">
@@ -555,6 +559,25 @@ useEffect(() => {
       </label>
     ))}
   </div>
+
+  {/* مربع نوع العرض */}
+  <div className="border p-3 rounded-lg">
+    <h3 className="font-semibold mb-2 text-blue-700">🛒 نوع العرض (طريقة الشراء)</h3>
+    <select
+      value={displayType}
+      onChange={(e) => setDisplayType(e.target.value)}
+      className="border rounded-lg px-3 py-2 w-full bg-blue-50 focus:ring-2 focus:ring-blue-500 outline-none"
+      required
+    >
+      <option value="product">شراء من قائمة المنتجات (أتمتة)</option>
+      <option value="manual">شراء يدوي (إضافة العميل يدوياً)</option>
+    </select>
+    <p className="text-[11px] text-gray-500 mt-2 italic">
+      * شراء يدوي: يستخدم للمحلات التي ليس لها قائمة أسعار ثابتة.
+    </p>
+  </div>
+
+</div>
 
   {/* جدول التوقيت */}
   <div className="border p-3 rounded-lg col-span-2">
