@@ -956,21 +956,62 @@ const Orders: React.FC = () => {
                 );
               })()}
             </div>
-            <div className="flex justify-end gap-3 p-4 border-t bg-gray-100">
-              <button
-                onClick={handlePrint}
-                className="bg-blue-600 text-white px-4 py-2 rounded"
-              >
-                🧾 طباعة الفاتورة
-              </button>
-              <button
-                onClick={() => setIsDetailsModalOpen(false)}
-                className="bg-gray-400 text-white px-4 py-2 rounded"
-              >
-                إغلاق
-              </button>
-            </div>
+      {/* ✅ تعديل التذييل (Footer) */}
+      <div className="flex justify-between items-center p-4 border-t bg-gray-100">
+        
+        {/* 1. القسم الأيمن: معلومات الحالة والمستخدم */}
+        <div className="text-sm">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="font-bold text-gray-700">الحالة:</span>
+            <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
+              selectedOrderDetails.status === 'completed' ? 'bg-green-100 text-green-700' :
+              selectedOrderDetails.status === 'cancelled' ? 'bg-red-100 text-red-700' :
+              'bg-blue-100 text-blue-700'
+            }`}>
+              {
+                {
+                  pending: "قيد الانتظار",
+                  confirmed: "مؤكد",
+                  preparing: "قيد التحضير",
+                  ready: "جاهز",
+                  delivering: "قيد التوصيل",
+                  completed: "مكتمل",
+                  cancelled: "ملغي"
+                }[selectedOrderDetails.status as string] || selectedOrderDetails.status
+              }
+            </span>
           </div>
+
+          {(selectedOrderDetails as any).user_name && (
+            <div className="text-gray-600 mb-1">
+              <span className="font-bold">المستخدم:</span> {(selectedOrderDetails as any).user_name}
+            </div>
+          )}
+
+          <div className="text-xs text-gray-500 dir-ltr">
+            🕒 {new Date((selectedOrderDetails as any).updated_at || new Date()).toLocaleString('en-US', {
+              hour: 'numeric', minute: 'numeric', hour12: true,
+              day: 'numeric', month: 'numeric' 
+            })}
+          </div>
+        </div>
+
+        {/* 2. القسم الأيسر: أزرار التحكم */}
+        <div className="flex gap-3">
+          <button
+            onClick={handlePrint}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+          >
+            🧾 طباعة الفاتورة
+          </button>
+          <button
+            onClick={() => setIsDetailsModalOpen(false)}
+            className="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500 transition"
+          >
+            إغلاق
+          </button>
+        </div>
+      </div>
         </div>
       )}
 
