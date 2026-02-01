@@ -280,10 +280,25 @@ const Orders: React.FC = () => {
     }
   };
 
-  const openDetailsModal = async (orderId: number) => {
+const openDetailsModal = async (orderId: number) => {
     try {
+      // 1. نبحث عن الطلب في القائمة الحالية (لأنها تحتوي على اسم المستخدم الصحيح)
+      const existingOrder = orders.find((o) => o.id === orderId);
+
+      // 2. نجلب التفاصيل من السيرفر
       const res = await api.orders.getOrderDetails(orderId);
-      setSelectedOrderDetails(res.order || res);
+      let details = res.order || res;
+
+      // 3. ندمج البيانات: نأخذ اسم المستخدم من القائمة إذا لم يكن موجوداً في التفاصيل
+      if (existingOrder) {
+        details = {
+          ...details,
+          user_name: details.user_name || existingOrder.user_name, // ✅ الإصلاح هنا
+          status: details.status || existingOrder.status, // ضمان وجود الحالة
+        };
+      }
+
+      setSelectedOrderDetails(details);
       setIsDetailsModalOpen(true);
     } catch (error) {
       console.error("❌ خطأ في جلب تفاصيل الطلب:", error);
@@ -986,10 +1001,14 @@ const Orders: React.FC = () => {
           </div>
 
           {(selectedOrderDetails as any).user_name && (
-            <div className="text-gray-600 mb-1">
-              <span className="font-bold">المستخدم:</span> {(selectedOrderDetails as any).user_name}
-            </div>
-          )}
+           {/* المستخدم (الذي قام بآخر تحديث) */}
+          <div className="text-sm text-gray-600">
+            <span className="font-bold">المستخدم: </span>
+            <span className="font-medium text-black">
+              {/* سيظهر الآن لأننا مررناه يدوياً من القائمة */}
+              {(selectedOrderDetails as any).user_name || "—"}
+            </span>
+          </div>
 
           <div className="text-xs text-gray-500 dir-ltr">
             🕒 {new Date((selectedOrderDetails as any).updated_at || new Date()).toLocaleString('en-US', {
