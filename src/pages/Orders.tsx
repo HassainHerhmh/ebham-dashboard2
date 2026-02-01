@@ -1011,84 +1011,72 @@ return (
 </div>
 
 
-              {/* المطاعم المشاركة + بيانات العميل */}
-              <div className="grid grid-cols-2 gap-3 mt-4">
-                <div className="border p-3 rounded">
-                  <h3 className="font-bold mb-2">🏪 المطاعم المشاركة</h3>
-                  {restaurants.map((r: any, i: number) => (
-                    <div key={i} className="mb-2 text-sm">
-                      <p>الاسم: {r.name}</p>
-                      <p>الهاتف: {r.phone}</p>
-
-                   {r.map_url && (
-                     <a
-                 href={r.map_url}
-                 target="_blank"
-                 rel="noopener noreferrer"
-                 className="text-blue-600 underline"
-                   >
-                 عرض على الخريطة 🌍
-               </a>
-                  )}
-
-
-                      <hr className="my-2" />
-                    </div>
-                  ))}
-                </div>
-
-            <div className="border p-3 rounded">
-  <h3 className="font-bold mb-1">👤 بيانات العميل</h3>
-  <p>الاسم: {selectedOrderDetails.customer_name}</p>
-  <p>الهاتف: {selectedOrderDetails.customer_phone}</p>
-
-  <p>
-    📍 العنوان:{" "}
-    <strong>
-      {selectedOrderDetails.neighborhood_name
-        ? `${selectedOrderDetails.neighborhood_name} - `
-        : ""}
-      {selectedOrderDetails.customer_address || "-"}
-    </strong>
-  </p>
-
-  {selectedOrderDetails.map_url && (
-    <p>
-      <a
-        href={selectedOrderDetails.map_url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-blue-600 underline"
-      >
-        عرض على الخريطة 🌍
-      </a>
-    </p>
-  )}
-</div>
-
-              </div>
-            </>
-          );
-        })()}
+ {/* المطاعم المشاركة + بيانات العميل والملاحظات */}
+<div className="grid grid-cols-2 gap-3 mt-4">
+  
+  {/* العمود الأول: المطاعم المشاركة */}
+  <div className="border p-3 rounded">
+    <h3 className="font-bold mb-2">🏪 المطاعم المشاركة</h3>
+    {restaurants.map((r: any, i: number) => (
+      <div key={i} className="mb-2 text-sm">
+        <p>الاسم: {r.name}</p>
+        <p>الهاتف: {r.phone}</p>
+        {r.map_url && (
+          <a
+            href={r.map_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 underline"
+          >
+            عرض على الخريطة 🌍
+          </a>
+        )}
+        <hr className="my-2" />
       </div>
+    ))}
+  </div>
 
-      <div className="flex justify-end gap-3 p-4 border-t bg-gray-100">
-        <button
-          onClick={handlePrint}
-          className="bg-blue-600 text-white px-4 py-2 rounded"
-        >
-          🧾 طباعة الفاتورة
-        </button>
-        <button
-          onClick={() => setIsDetailsModalOpen(false)}
-          className="bg-gray-400 text-white px-4 py-2 rounded"
-        >
-          إغلاق
-        </button>
-      </div>
+  {/* العمود الثاني: يحتوي على بيانات العميل وتحته الملاحظات */}
+  <div className="flex flex-col gap-3">
+    
+    {/* مربع بيانات العميل */}
+    <div className="border p-3 rounded">
+      <h3 className="font-bold mb-1">👤 بيانات العميل</h3>
+      <p>الاسم: {selectedOrderDetails.customer_name}</p>
+      <p>الهاتف: {selectedOrderDetails.customer_phone}</p>
+      <p>
+        📍 العنوان:{" "}
+        <strong>
+          {selectedOrderDetails.neighborhood_name
+            ? `${selectedOrderDetails.neighborhood_name} - `
+            : ""}
+          {selectedOrderDetails.customer_address || "-"}
+        </strong>
+      </p>
+      {selectedOrderDetails.map_url && (
+        <p>
+          <a
+            href={selectedOrderDetails.map_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 underline"
+          >
+            عرض على الخريطة 🌍
+          </a>
+        </p>
+      )}
     </div>
-   </div>   
-)}
+
+    {/* ✅ تم إضافة مربع ملاحظات الطلب هنا */}
+    <div className="border p-3 rounded bg-yellow-50">
+      <h3 className="font-bold mb-1">📝 ملاحظات الطلب</h3>
+      <p className="text-gray-700">
+        {selectedOrderDetails.notes || "لا توجد ملاحظات"}
+      </p>
+    </div>
+
+  </div>
+</div>
 
 {/* ===== مودال إضافة الطلب ===== */}
 {showAddOrderModal && (
