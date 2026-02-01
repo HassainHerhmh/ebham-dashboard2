@@ -1000,7 +1000,7 @@ const openDetailsModal = async (orderId: number) => {
             </span>
           </div>
 
-          {(selectedOrderDetails as any).user_name && (
+    
            {/* المستخدم (الذي قام بآخر تحديث) */}
           <div className="text-sm text-gray-600">
             <span className="font-bold">المستخدم: </span>
