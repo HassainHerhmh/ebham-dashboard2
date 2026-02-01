@@ -1010,9 +1010,12 @@ const Orders: React.FC = () => {
           >
             إغلاق
           </button>
-        </div>
-      )}
+             </div>
 
+      </div>
+    </div>
+  </div>
+)}
       {/* ===== مودال إضافة الطلب ===== */}
       {showAddOrderModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
