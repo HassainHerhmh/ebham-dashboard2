@@ -47,6 +47,9 @@ interface OrderDetails {
   reference_no?: string; // Add this
   attachments?: any[]; // Add this
   notes?: string; // Add this
+   status: string; 
+  user_name?: string; 
+  updated_at?: string;
 }
 
 type DateFilter = "all" | "today" | "week";
