@@ -1,86 +1,55 @@
 import React, { useEffect, useState } from "react";
-import api from "../services/api";
-
-interface Row {
-  order_date: string;
-  captain_name: string;
-  restaurant_name: string;
-  order_id: number;
-  total_amount: number;
-  restaurant_commission: number;
-  captain_commission: number;
-}
+import api from "../../services/api";
 
 const CommissionReport = () => {
-  const [rows, setRows] = useState<Row[]>([]);
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
-  const [loading, setLoading] = useState(false);
 
-  const loadData = async () => {
-    try {
-      setLoading(true);
+  const [summary, setSummary] = useState<any>(null);
+  const [orders, setOrders] = useState<any[]>([]);
+  const [captains, setCaptains] = useState<any[]>([]);
+  const [restaurants, setRestaurants] = useState<any[]>([]);
 
-      const res = await api.get(
-        `/reports/commissions?from=${from}&to=${to}`
-      );
+  const loadReport = async () => {
+    if (!from || !to) return alert("حدد الفترة");
 
-      setRows(res?.list || []);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
+    const [s, o, c, r] = await Promise.all([
+      api.get(`/api/reports/commissions/summary?from=${from}&to=${to}`),
+      api.get(`/api/reports/commissions?from=${from}&to=${to}`),
+      api.get(`/api/reports/commissions/captains?from=${from}&to=${to}`),
+      api.get(`/api/reports/commissions/restaurants?from=${from}&to=${to}`),
+    ]);
+
+    setSummary(s.data.summary);
+    setOrders(o.data.data);
+    setCaptains(c.data.data);
+    setRestaurants(r.data.data);
   };
-
-  useEffect(() => {
-    const today = new Date().toISOString().slice(0, 10);
-    setFrom(today);
-    setTo(today);
-  }, []);
-
-  /* ===== Totals ===== */
-  const totalOrders = rows.length;
-
-  const totalAmount = rows.reduce(
-    (s, r) => s + Number(r.total_amount || 0),
-    0
-  );
-
-  const totalRestaurant = rows.reduce(
-    (s, r) => s + Number(r.restaurant_commission || 0),
-    0
-  );
-
-  const totalCaptain = rows.reduce(
-    (s, r) => s + Number(r.captain_commission || 0),
-    0
-  );
 
   return (
     <div className="space-y-6">
 
       <h1 className="text-2xl font-bold">📊 تقرير العمولات</h1>
 
-      {/* الفلاتر */}
-      <div className="bg-white p-4 rounded shadow grid md:grid-cols-3 gap-4">
+      {/* فلترة */}
+      <div className="bg-white p-4 rounded shadow grid grid-cols-3 gap-4">
 
         <input
           type="date"
-          className="border p-2 rounded"
           value={from}
           onChange={(e) => setFrom(e.target.value)}
+          className="border p-2 rounded"
         />
 
         <input
           type="date"
-          className="border p-2 rounded"
           value={to}
           onChange={(e) => setTo(e.target.value)}
+          className="border p-2 rounded"
         />
 
         <button
-          onClick={loadData}
+          onClick={loadReport}
           className="bg-green-600 text-white rounded px-4"
         >
           عرض التقرير
@@ -88,87 +57,83 @@ const CommissionReport = () => {
 
       </div>
 
-      {/* الإحصائيات */}
-      <div className="grid md:grid-cols-4 gap-4">
+      {/* الملخص */}
+      {summary && (
+        <div className="grid grid-cols-3 gap-4">
 
-        <Stat title="عدد الطلبات" value={totalOrders} />
-
-        <Stat
-          title="إجمالي الطلبات"
-          value={totalAmount.toLocaleString()}
-        />
-
-        <Stat
-          title="عمولة المطاعم"
-          value={totalRestaurant.toLocaleString()}
-        />
-
-        <Stat
-          title="عمولة الكباتن"
-          value={totalCaptain.toLocaleString()}
-        />
-
-      </div>
-
-      {/* الجدول */}
-      <div className="bg-white rounded shadow overflow-x-auto">
-
-        <table className="w-full text-center">
-
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="p-3">التاريخ</th>
-              <th>الطلب</th>
-              <th>الكابتن</th>
-              <th>المطعم</th>
-              <th>قيمة الطلب</th>
-              <th>عمولة المطعم</th>
-              <th>عمولة الكابتن</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {rows.map((r, i) => (
-              <tr key={i} className="border-t">
-
-                <td className="p-2">{r.order_date}</td>
-                <td>{r.order_id}</td>
-                <td>{r.captain_name || "-"}</td>
-                <td>{r.restaurant_name || "-"}</td>
-
-                <td>{r.total_amount}</td>
-
-                <td className="text-green-700 font-bold">
-                  {r.restaurant_commission || 0}
-                </td>
-
-                <td className="text-blue-700 font-bold">
-                  {r.captain_commission || 0}
-                </td>
-
-              </tr>
-            ))}
-          </tbody>
-
-        </table>
-
-        {!rows.length && !loading && (
-          <div className="p-6 text-center text-gray-500">
-            لا توجد بيانات
+          <div className="bg-white p-4 rounded shadow">
+            <p>عدد الطلبات</p>
+            <h2 className="text-xl font-bold">{summary.total_orders}</h2>
           </div>
-        )}
 
-      </div>
+          <div className="bg-white p-4 rounded shadow">
+            <p>إجمالي المبيعات</p>
+            <h2 className="text-xl font-bold">
+              {Number(summary.total_sales).toLocaleString()}
+            </h2>
+          </div>
+
+          <div className="bg-white p-4 rounded shadow">
+            <p>إجمالي العمولات</p>
+            <h2 className="text-xl font-bold text-green-600">
+              {Number(summary.total_commissions).toLocaleString()}
+            </h2>
+          </div>
+
+        </div>
+      )}
+
+      {/* حسب الطلبات */}
+      <ReportTable title="حسب الطلبات" data={orders} />
+
+      {/* حسب الكباتن */}
+      <ReportTable title="حسب الكباتن" data={captains} />
+
+      {/* حسب المطاعم */}
+      <ReportTable title="حسب المطاعم" data={restaurants} />
+
     </div>
   );
 };
 
-/* ===== Card ===== */
-const Stat = ({ title, value }: any) => (
-  <div className="bg-white p-4 rounded shadow text-center">
-    <div className="text-sm text-gray-500">{title}</div>
-    <div className="text-xl font-bold">{value}</div>
-  </div>
-);
-
 export default CommissionReport;
+
+
+/* جدول عام */
+const ReportTable = ({ title, data }: any) => {
+  if (!data?.length) return null;
+
+  return (
+    <div className="bg-white rounded shadow overflow-hidden">
+
+      <h2 className="p-3 font-bold bg-gray-100">{title}</h2>
+
+      <table className="w-full text-center">
+
+        <thead className="bg-gray-50 border-b">
+          <tr>
+            {Object.keys(data[0]).map((k) => (
+              <th key={k} className="p-2 text-sm">{k}</th>
+            ))}
+          </tr>
+        </thead>
+
+        <tbody>
+          {data.map((r: any, i: number) => (
+            <tr key={i} className="border-t">
+
+              {Object.values(r).map((v: any, j) => (
+                <td key={j} className="p-2 text-sm">
+                  {v ?? "-"}
+                </td>
+              ))}
+
+            </tr>
+          ))}
+        </tbody>
+
+      </table>
+
+    </div>
+  );
+};
