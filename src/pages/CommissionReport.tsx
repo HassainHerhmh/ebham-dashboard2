@@ -21,9 +21,13 @@ const CommissionReport = () => {
     try {
       setLoading(true);
 
-      const res = await api.get(
-        `/reports/commissions?from=${from}&to=${to}`
-      );
+ const res = await api.get(
+  `/system-reports/commissions`,
+  {
+    params: { from, to }
+  }
+);
+
 
       setRows(res?.list || []);
     } catch (e) {
