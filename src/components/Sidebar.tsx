@@ -40,6 +40,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const [deliveryOpen, setDeliveryOpen] = useState(false);
   const [agentsOpen, setAgentsOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+const [reportsOpen, setReportsOpen] = useState(false);
 
   const areasGroup: MenuItem[] = [
     { key: "settings", label: "رسوم التوصيل", path: "/settings/delivery-fees" },
@@ -79,6 +80,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   // تحسين كلاسات الروابط لدعم الوضع الليلي
   const linkBase =
     "flex items-center gap-3 rounded-lg px-4 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700 transition-all duration-200";
+  const linkBaseSmall =
+  "flex items-center gap-2 rounded-md px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 transition-all";
+
   const activeClass = "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-semibold shadow-sm";
 
   return (
@@ -141,14 +145,43 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             </Link>
           )}
 
-          {/* التقارير */}
-          {canShow("reports") && (
-            <Link to="/reports" onClick={onClose}
-              className={`${linkBase} ${isPathActive("/reports") ? activeClass : ""}`}>
-              <BarChart3 size={18} />
-              <span>التقارير</span>
-            </Link>
-          )}
+         {/* التقارير */}
+{canShow("reports") && (
+  <div className="space-y-1">
+
+    {/* العنوان الرئيسي */}
+    <div
+      className={`${linkBase} cursor-pointer flex items-center justify-between`}
+    >
+      <div className="flex items-center gap-2">
+        <BarChart3 size={18} />
+        <span>التقارير</span>
+      </div>
+    </div>
+
+    {/* العناصر الفرعية */}
+    <div className="ml-6 space-y-1">
+
+      {/* تقرير العمولات */}
+      <Link
+        to="/reports/commissions"
+        onClick={onClose}
+        className={`${linkBaseSmall} ${
+          isPathActive("/reports/commissions") ? activeClass : ""
+        }`}
+      >
+        📊 تقرير العمولات
+      </Link>
+
+      {/* لاحقًا تضيف هنا تقارير ثانية */}
+      {/* 
+      <Link to="/reports/sales">تقرير المبيعات</Link> 
+      */}
+
+    </div>
+  </div>
+)}
+
 
           {/* القوائم المنسدلة */}
           
