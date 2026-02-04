@@ -315,63 +315,125 @@ const Customers: React.FC = () => {
         </div>
 
         {/* --- الجدول --- */}
-        <div className="bg-white rounded shadow overflow-hidden">
-          <table className="w-full text-center">
-            <thead className="bg-gray-100 border-b">
-              <tr>
-                <th className="p-4 text-sm font-semibold text-gray-600">الاسم</th>
-                <th className="p-4 text-sm font-semibold text-gray-600">حالة الاتصال</th>
-                <th className="p-4 text-sm font-semibold text-gray-600">وقت آخر دخول</th>
-                <th className="p-4 text-sm font-semibold text-gray-600">حالة الحساب</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {filteredStatusCustomers.length > 0 ? (
-                filteredStatusCustomers.map((c) => (
-                  <tr key={c.id} className="hover:bg-blue-50 transition">
-                    <td className="p-3 font-medium text-gray-800">{c.name}</td>
-                    
-                    {/* عمود حالة الاتصال */}
-                    <td className="p-3">
-                      {c.is_online === 1 ? (
-                        <div className="flex items-center justify-center gap-2 bg-green-50 w-fit mx-auto px-3 py-1 rounded-full border border-green-200">
-                            <span className="relative flex h-2 w-2">
-                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                              <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                            </span>
-                            <span className="text-green-700 font-bold text-xs">متصل</span>
-                        </div>
-                      ) : (
-                        <span className="text-gray-400 text-xs font-medium">غير متصل</span>
-                      )}
-                    </td>
+  {/* --- الجدول --- */}
+<div className="bg-white rounded shadow overflow-hidden">
+  <table className="w-full text-center">
+    <thead className="bg-gray-100 border-b">
+      <tr>
+        <th className="p-4 text-sm font-semibold text-gray-600">الاسم</th>
 
-                    <td className="p-3 text-gray-600 text-sm" dir="ltr">
-                      {c.last_login ? c.last_login : "-"}
-                    </td>
+        <th className="p-4 text-sm font-semibold text-gray-600">
+          حالة الاتصال
+        </th>
 
-                    {/* عمود حالة الحساب */}
-                    <td className="p-3">
-                        {c.is_active === 0 ? (
-                             <span className="bg-red-100 text-red-800 text-xs px-2 py-1 rounded font-bold border border-red-200">🚫 معطل</span>
-                        ) : (c as any).is_logged_in === 1 ? (
-                             <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded font-bold border border-blue-200">✅ نشط</span>
-                        ) : (
-                             <span className="bg-gray-200 text-gray-600 text-xs px-2 py-1 rounded font-bold border border-gray-300">⚪ غير نشط</span>
-                        )}
-                    </td>
-                  </tr>
-                ))
+        <th className="p-4 text-sm font-semibold text-gray-600">
+          وقت آخر دخول
+        </th>
+
+        {/* ✅ عدد الطلبات */}
+        <th className="p-4 text-sm font-semibold text-gray-600">
+          عدد الطلبات
+        </th>
+
+        {/* ✅ آخر طلب */}
+        <th className="p-4 text-sm font-semibold text-gray-600">
+          آخر طلب
+        </th>
+
+        {/* ✅ تاريخ التسجيل */}
+        <th className="p-4 text-sm font-semibold text-gray-600">
+          تاريخ التسجيل
+        </th>
+
+        <th className="p-4 text-sm font-semibold text-gray-600">
+          حالة الحساب
+        </th>
+      </tr>
+    </thead>
+
+    <tbody className="divide-y divide-gray-100">
+      {filteredStatusCustomers.length > 0 ? (
+        filteredStatusCustomers.map((c) => (
+          <tr key={c.id} className="hover:bg-blue-50 transition">
+
+            {/* الاسم */}
+            <td className="p-3 font-medium text-gray-800">
+              {c.name}
+            </td>
+
+            {/* حالة الاتصال */}
+            <td className="p-3">
+              {c.is_online === 1 ? (
+                <div className="flex items-center justify-center gap-2 bg-green-50 w-fit mx-auto px-3 py-1 rounded-full border border-green-200">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                  </span>
+                  <span className="text-green-700 font-bold text-xs">
+                    متصل
+                  </span>
+                </div>
               ) : (
-                <tr>
-                  <td colSpan={4} className="p-8 text-center text-gray-500">
-                    🔍 لا توجد نتائج مطابقة للفلاتر الحالية
-                  </td>
-                </tr>
+                <span className="text-gray-400 text-xs font-medium">
+                  غير متصل
+                </span>
               )}
-            </tbody>
-          </table>
-        </div>
+            </td>
+
+            {/* آخر دخول */}
+            <td className="p-3 text-gray-600 text-sm" dir="ltr">
+              {c.last_login || "-"}
+            </td>
+
+            {/* عدد الطلبات */}
+            <td className="p-3 font-bold text-orange-600">
+              {c.orders_count || 0}
+            </td>
+
+            {/* آخر طلب */}
+            <td className="p-3 text-gray-600 text-sm" dir="ltr">
+              {c.last_order_date
+                ? new Date(c.last_order_date).toLocaleDateString("en-GB")
+                : "-"}
+            </td>
+
+            {/* تاريخ التسجيل */}
+            <td className="p-3 text-gray-600 text-sm" dir="ltr">
+              {c.register_date
+                ? new Date(c.register_date).toLocaleDateString("en-GB")
+                : "-"}
+            </td>
+
+            {/* حالة الحساب */}
+            <td className="p-3">
+              {c.is_active === 0 ? (
+                <span className="bg-red-100 text-red-800 text-xs px-2 py-1 rounded font-bold border border-red-200">
+                  🚫 معطل
+                </span>
+              ) : (c as any).is_logged_in === 1 ? (
+                <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded font-bold border border-blue-200">
+                  ✅ نشط
+                </span>
+              ) : (
+                <span className="bg-gray-200 text-gray-600 text-xs px-2 py-1 rounded font-bold border border-gray-300">
+                  ⚪ غير نشط
+                </span>
+              )}
+            </td>
+
+          </tr>
+        ))
+      ) : (
+        <tr>
+          <td colSpan={7} className="p-8 text-center text-gray-500">
+            🔍 لا توجد نتائج مطابقة للفلاتر الحالية
+          </td>
+        </tr>
+      )}
+    </tbody>
+  </table>
+</div>
+
       </div>
     );
   }
