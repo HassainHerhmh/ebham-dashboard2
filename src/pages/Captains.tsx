@@ -28,8 +28,7 @@ const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editId, setEditId] = useState<number | null>(null)
- const [accounts, setAccounts] = useState<any[]>([]);
-const [accountId, setAccountId] = useState<number | "">("");
+
 
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -72,22 +71,7 @@ const [accountId, setAccountId] = useState<number | "">("");
     fetchCaptains()
   }, [])
 
-useEffect(() => {
-  api.get("/accounts").then((res) => {
-    console.log("ACCOUNTS RAW:", res.data);
 
-    const list = Array.isArray(res.data?.list)
-      ? res.data.list
-      : [];
-
-    // لو حاب تعرض فقط الحسابات الفرعية (غير الأب)
-    const leafAccounts = list.filter(
-      (a: any) => !a.has_children && !a.is_parent
-    );
-
-    setAccounts(leafAccounts);
-  });
-}, []);
 
 
 
@@ -100,7 +84,6 @@ const startEditCaptain = (c: any) => {
   setPassword('');
   setConfirmPassword('');
   setVehicleType(c.vehicle_type);
-  setAccountId(c.account_id || "");
   setVehicleNumber(c.vehicle_number || '');
   setStatus(c.status);
   setImageUrl(c.image_url || "");
@@ -124,7 +107,6 @@ const payload = {
   vehicle_type: vehicleType,
   vehicle_number: vehicleNumber,
   status,
-  account_id: accountId,
   image_url: imageUrl,
 };
 
@@ -187,7 +169,6 @@ const payload = {
     <th className="p-3">الفرع</th>
     <th className="p-3">نوع المركبة</th>
     <th className="p-3">رقم المركبة</th>
-    <th className="p-3">الحساب المحاسبي</th> {/* جديد */}
     <th className="p-3">الصورة</th>
     <th className="p-3">الحالة</th>
     <th className="p-3">إجراءات</th>
@@ -204,13 +185,7 @@ const payload = {
       <td className="p-3">{c.vehicle_type}</td>
       <td className="p-3">{c.vehicle_number || '-'}</td>
 
-      {/* الحساب المحاسبي */}
-      <td className="p-3 text-sm text-gray-700">
-        {c.account_code
-          ? `${c.account_code} - ${c.account_name}`
-          : "—"}
-        
-      </td>
+ 
 <td className="p-3 text-center">
   {c.image_url ? (
     <img
@@ -327,19 +302,7 @@ const payload = {
               <input value={vehicleType} onChange={(e) => setVehicleType(e.target.value)} placeholder="نوع المركبة" className="border p-2 w-full" />
               <input value={vehicleNumber} onChange={(e) => setVehicleNumber(e.target.value)} placeholder="رقم المركبة" className="border p-2 w-full" />
               
-               <select
-  value={accountId}
-  onChange={(e) => setAccountId(Number(e.target.value))}
-  className="border p-2 w-full"
-  required
->
-  <option value="">— اختر الحساب المحاسبي —</option>
-  {accounts.map((a) => (
-    <option key={a.id} value={a.id}>
-      {a.code} - {a.name_ar}
-    </option>
-  ))}
-</select>
+
 
               <select value={status} onChange={(e) => setStatus(e.target.value)} className="border p-2 w-full">
                 <option value="available">متاح</option>
