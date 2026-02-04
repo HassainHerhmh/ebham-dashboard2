@@ -962,12 +962,13 @@ const openDetailsModal = async (orderId: number) => {
                             </p>
                           )}
                         </div>
-                        <div className="border p-3 rounded bg-yellow-50">
-                          <h3 className="font-bold mb-1">📝 ملاحظات الطلب</h3>
-                          <p className="text-gray-700">
-                            {selectedOrderDetails.notes || "لا توجد ملاحظات"}
-                          </p>
-                        </div>
+                   <div className="border p-3 rounded bg-yellow-50">
+  <h3 className="font-bold mb-1">📝 ملاحظات الطلب</h3>
+  <p className="text-gray-700">
+    {selectedOrderDetails.note || "لا توجد ملاحظات"}
+  </p>
+</div>
+
                       </div>
                     </div>
                   </>
