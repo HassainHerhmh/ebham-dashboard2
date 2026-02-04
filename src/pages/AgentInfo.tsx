@@ -164,9 +164,12 @@ const handleAdd = async () => {
 
 
 
-  const filtered = rows.filter((r) =>
-    r.agent_name.includes(search)
-  );
+const filtered = rows.filter((r) =>
+  (r.agent_name || "")
+    .toLowerCase()
+    .includes(search.toLowerCase())
+);
+
 
   const handleEdit = (row: AgentInfoRow) => {
   setEditingId(row.id);
@@ -261,7 +264,10 @@ const handleDelete = async (id: number) => {
         {r.commission_type === "percent" ? "%" : ` ${r.currency_code || ""}`}
       </td>
     <td className="p-3 text-center whitespace-nowrap">
-  {String(r.contract_start).slice(0, 10)} →{" "}
+ {r.contract_start
+  ? String(r.contract_start).slice(0, 10)
+  : "-"}
+
   {String(r.contract_end).slice(0, 10)}
 </td>
 
