@@ -25,6 +25,7 @@ interface AgentInfoRow {
   agent_account_name: string | null;
   commission_account_name: string | null;
   currency_code: string | null;
+    branch_name: string | null;
 }
 
 
@@ -90,7 +91,7 @@ const loadData = async () => {
       api.currencies.getAll(),
     ]);
 
-    setRows(info || []);
+setRows(info?.list || []);
     setAgents(agentsData?.agents || []);
     setCaptains(captainsData || []);
 
@@ -230,6 +231,7 @@ const handleDelete = async (id: number) => {
   <tr>
     <th className="p-3 text-center">#</th>
     <th className="p-3 text-center">الوكيل</th>
+    <th className="p-3 text-center">الفرع</th>
     <th className="p-3 text-center">المجموعة</th>
     <th className="p-3 text-center">حساب الوكيل / الموصل</th>
     <th className="p-3 text-center">طريقة احتساب العمولة</th>
@@ -245,6 +247,10 @@ const handleDelete = async (id: number) => {
     <tr key={r.id} className="border-t">
       <td className="p-3 text-center">{i + 1}</td>
       <td className="p-3 text-center">{r.agent_name}</td>
+      <td className="p-3 text-center">
+  {r.branch_name || "-"}
+</td>
+
       <td className="p-3 text-center">{r.group_name || "-"}</td>
       <td className="p-3 text-center">{r.agent_account_name || "-"}</td>
       <td className="p-3 text-center">
