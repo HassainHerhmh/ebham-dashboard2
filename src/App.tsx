@@ -26,6 +26,8 @@ import Neighborhoods from "./pages/Neighborhoods";
 import PaymentsElectronic from "./pages/PaymentsElectronic";
 import PaymentsBanks from "./pages/PaymentsBanks";
 import PaymentsWallet from "./pages/PaymentsWallet";
+import CommissionReport from "./pages/CommissionReport";
+
 
 
 
@@ -116,6 +118,7 @@ const App: React.FC = () => {
                    <Route path="/payments/electronic"element={<ProtectedRoute section="payments"><PaymentsElectronic /></ProtectedRoute>}/>
                    <Route path="/payments/banks"element={<ProtectedRoute section="payments"><PaymentsBanks /></ProtectedRoute>}/>
                   <Route path="/payments/wallet"element={<ProtectedRoute section="payments"><PaymentsWallet /></ProtectedRoute>}/>
+                    <Route path="/reports/commissions" element={<CommissionReport />} />
 
 
 
