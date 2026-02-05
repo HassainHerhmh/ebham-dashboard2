@@ -294,7 +294,7 @@ if (state.target === "to") {
 
                   <td>{o.order_type}</td>
 
-                 {/* From */}
+{/* From */}
 <td>
   <button
     onClick={() => openMap(o.from_lat, o.from_lng)}
@@ -314,6 +314,9 @@ if (state.target === "to") {
     <MapPin size={14} />
     الموقع
   </button>
+</td>   {/* ✅ مهم جداً */}
+
+{/* Status */}
 <td>
   <span
     className={`px-2 py-1 rounded text-sm ${
