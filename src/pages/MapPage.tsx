@@ -1,16 +1,17 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
+import { Suspense } from "react";
+
+import { Geolocation } from "@capacitor/geolocation";
+
+
 import {
   MapContainer,
   TileLayer,
   Marker,
-  useMapEvents,
-  useMap,
-} from "react-leaflet";
-import { Geolocation } from "@capacitor/geolocation";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
+} from "../utils/leafletLoader";
+
 
 const BRAND_COLOR = "#fbbf24"; // أصفر
 
@@ -188,17 +189,22 @@ export default function MapPage() {
         </div>
       </div>
 
-      {/* Map */}
-      <MapContainer
-        center={pos}
-        zoom={14}
-        style={{ height: "100%", marginTop: HEADER_HEIGHT }}
-      >
-        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-        <Recenter pos={pos} />
-        <ClickHandler onPick={(lat, lng) => setPos([lat, lng])} />
-        <Marker position={pos} icon={markerIcon} />
-      </MapContainer>
+ {/* Map */}
+<Suspense fallback={<div className="p-6 text-center">⏳ جاري تحميل الخريطة...</div>}>
+
+  <MapContainer
+    center={pos}
+    zoom={14}
+    style={{ height: "100%", marginTop: HEADER_HEIGHT }}
+  >
+    <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+
+    <Marker position={pos} />
+
+  </MapContainer>
+
+</Suspense>
+
 
       {/* Bottom */}
       <div
