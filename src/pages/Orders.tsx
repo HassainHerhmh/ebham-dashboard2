@@ -740,7 +740,7 @@ const countByTab = (list: Order[]) => {
         </div>
 
         {/* فلترة زمنية */}
-        <div className="flex gap-2">
+<div className="flex gap-2 justify-center w-full">
           {[
             { key: "all", label: "كل الطلبات" },
             { key: "today", label: "اليوم" },
