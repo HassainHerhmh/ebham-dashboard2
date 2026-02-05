@@ -14,6 +14,10 @@ interface Order {
   stores_count: number;
   captain_name?: string;
   status: string;
+
+     order_type?: string;   // ✅ أضف
+  is_manual?: number;    // ✅ أضف
+
   total_amount?: number | string | null;
   delivery_fee?: number | string | null;
   extra_store_fee?: number | string | null;
