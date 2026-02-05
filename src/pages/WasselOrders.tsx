@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import api from "../services/api";
 import { Plus, Edit, MapPin, DollarSign } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
 
 /* ======================
    Types
@@ -44,19 +45,27 @@ const WasselOrders: React.FC = () => {
   const [editingOrder, setEditingOrder] = useState<WasselOrder | null>(null);
 const [customers, setCustomers] = useState<any[]>([]);
 const [addresses, setAddresses] = useState<any[]>([]);
+const navigate = useNavigate();
+const location = useLocation();
 
 const [fromMode, setFromMode] = useState<"saved" | "map">("saved");
 const [toMode, setToMode] = useState<"saved" | "map">("saved");
 
   /* Form */
-  const [form, setForm] = useState<any>({
-    order_type: "",
-    from_address: "",
-    to_address: "",
-    delivery_fee: "",
-    extra_fee: "",
-    notes: "",
-  });
+const [form, setForm] = useState<any>({
+  customer_id: "",
+  order_type: "",
+  from_address: "",
+  from_lat: null,
+  from_lng: null,
+  to_address: "",
+  to_lat: null,
+  to_lng: null,
+  delivery_fee: "",
+  extra_fee: "",
+  notes: "",
+});
+
 
   /* ======================
      Load Orders
@@ -166,6 +175,36 @@ const [toMode, setToMode] = useState<"saved" | "map">("saved");
   }
 }, [showModal]);
 
+useEffect(() => {
+  const state = location.state as any;
+
+  if (state?.from === "map") {
+    const url = `https://www.google.com/maps?q=${state.lat},${state.lng}`;
+
+if (state.target === "from") {
+  setForm((f) => ({
+    ...f,
+    from_address: url,
+    from_lat: state.lat,
+    from_lng: state.lng,
+  }));
+}
+
+
+if (state.target === "to") {
+  setForm((f) => ({
+    ...f,
+    to_address: url,
+    to_lat: state.lat,
+    to_lng: state.lng,
+  }));
+}
+
+
+    // تنظيف البيانات بعد الاستخدام
+    navigate(location.pathname, { replace: true });
+  }
+}, [location.state]);
 
   /* ======================
      JSX
@@ -229,41 +268,29 @@ const [toMode, setToMode] = useState<"saved" | "map">("saved");
 
                   <td>{o.order_type}</td>
 
-                  {/* From */}
-                  <td className="flex items-center justify-center gap-1">
+                 {/* From */}
+<td>
+  <button
+    onClick={() => openMap(o.from_lat, o.from_lng)}
+    className="text-blue-600 underline flex items-center gap-1 justify-center"
+  >
+    <MapPin size={14} />
+    الموقع
+  </button>
+</td>
 
-                    {o.from_address}
+{/* To */}
+<td>
+  <button
+    onClick={() => openMap(o.to_lat, o.to_lng)}
+    className="text-blue-600 underline flex items-center gap-1 justify-center"
+  >
+    <MapPin size={14} />
+    الموقع
+  </button>
+</td>
 
-                    {o.from_lat && (
-                      <button
-                        onClick={() =>
-                          openMap(o.from_lat, o.from_lng)
-                        }
-                        className="text-blue-600"
-                      >
-                        <MapPin size={16} />
-                      </button>
-                    )}
 
-                  </td>
-
-                  {/* To */}
-                  <td className="flex items-center justify-center gap-1">
-
-                    {o.to_address}
-
-                    {o.to_lat && (
-                      <button
-                        onClick={() =>
-                          openMap(o.to_lat, o.to_lng)
-                        }
-                        className="text-blue-600"
-                      >
-                        <MapPin size={16} />
-                      </button>
-                    )}
-
-                  </td>
 
                   {/* Fees */}
                   <td className="font-semibold text-green-700">
@@ -407,16 +434,18 @@ const [toMode, setToMode] = useState<"saved" | "map">("saved");
   )}
 
   {/* Map */}
-  {fromMode === "map" && (
-    <input
-      placeholder="رابط الموقع من Google Maps"
-      className="w-full p-2 border rounded"
-      value={form.from_address}
-      onChange={(e) =>
-        setForm({ ...form, from_address: e.target.value })
-      }
-    />
-  )}
+{fromMode === "map" && (
+  <button
+    onClick={() =>
+      navigate("/map-picker", {
+        state: { target: "from" },
+      })
+    }
+    className="w-full p-2 border rounded bg-blue-50 text-blue-700"
+  >
+    📍 اختر الموقع من الخريطة
+  </button>
+)}
 
 </div>
 
@@ -462,16 +491,19 @@ const [toMode, setToMode] = useState<"saved" | "map">("saved");
     </select>
   )}
 
-  {toMode === "map" && (
-    <input
-      placeholder="رابط الموقع من Google Maps"
-      className="w-full p-2 border rounded"
-      value={form.to_address}
-      onChange={(e) =>
-        setForm({ ...form, to_address: e.target.value })
-      }
-    />
-  )}
+{toMode === "map" && (
+  <button
+    onClick={() =>
+      navigate("/map-picker", {
+        state: { target: "to" },
+      })
+    }
+    className="w-full p-2 border rounded bg-blue-50 text-blue-700"
+  >
+    📍 اختر الموقع من الخريطة
+  </button>
+)}
+
 
 </div>
 
