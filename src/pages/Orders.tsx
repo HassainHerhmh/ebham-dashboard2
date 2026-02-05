@@ -549,6 +549,29 @@ type OrderTab =
   }
 };
 
+const countByTab = (list: Order[]) => {
+  return {
+    pending: list.filter((o) => o.status === "pending").length,
+
+    processing: list.filter(
+      (o) => o.status === "confirmed" || o.status === "preparing"
+    ).length,
+
+    ready: list.filter((o) => o.status === "ready").length,
+
+    delivering: list.filter((o) => o.status === "delivering").length,
+
+    completed: list.filter((o) => o.status === "completed").length,
+
+    cancelled: list.filter((o) => o.status === "cancelled").length,
+
+    wassel: list.filter((o) => o.order_type === "wassel").length,
+
+    manual: list.filter((o) => o.is_manual === 1).length,
+  };
+};
+   const counts = countByTab(orders); // أو list حسب اسم متغيرك
+
 
   const visibleOrders = filterByTab(filterByDate(orders));
 
@@ -683,15 +706,13 @@ type OrderTab =
 
         {/* تبويبات الحالات */}
         <div className="flex gap-2 flex-wrap">
- {[
+{[
   { key: "pending", label: "🟡 اعتماد" },
   { key: "processing", label: "🔵 قيد المعالجة" },
   { key: "ready", label: "🟢 جاهز" },
   { key: "delivering", label: "🚚 قيد التوصيل" },
   { key: "completed", label: "✅ مكتمل" },
   { key: "cancelled", label: "❌ ملغي" },
-
-  // 🆕 تبويبات إضافية
   { key: "wassel", label: "📦 طلبات وصل لي" },
   { key: "manual", label: "✍️ طلبات يدوية" },
 ].map((t) => (
@@ -704,9 +725,13 @@ type OrderTab =
         : "bg-gray-200 text-gray-700"
     }`}
   >
-    {t.label}
+    {t.label}{" "}
+    <span className="text-sm font-bold">
+      ({counts[t.key as keyof typeof counts] || 0})
+    </span>
   </button>
 ))}
+
 
         </div>
 
