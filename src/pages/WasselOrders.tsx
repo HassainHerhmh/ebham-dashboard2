@@ -11,7 +11,7 @@ interface WasselOrder {
 
   customer_name: string;
 
-  order_type: string;
+  order_type: string; 
 
   from_address: string;
   from_lat?: number;
