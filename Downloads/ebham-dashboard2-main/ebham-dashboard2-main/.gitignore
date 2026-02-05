@@ -1,0 +1,30 @@
+# Node
+node_modules/
+npm-debug.log*
+
+# Env
+.env
+
+# Logs
+*.log
+
+# Windows junk
+Thumbs.db
+desktop.ini
+NTUSER.*
+OneDrive/
+Favorites/
+Links/
+Music/
+Pictures/
+Saved Games/
+Searches/
+Videos/
+
+# System
+*.blf
+*.regtrans-ms
+
+# IDE
+.vscode/
+.idea/
