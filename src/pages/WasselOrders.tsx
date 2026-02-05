@@ -1,0 +1,410 @@
+import React, { useEffect, useState } from "react";
+import api from "../services/api";
+import { Plus, Edit, MapPin, DollarSign } from "lucide-react";
+
+/* ======================
+   Types
+====================== */
+
+interface WasselOrder {
+  id: number;
+
+  customer_name: string;
+
+  order_type: string;
+
+  from_address: string;
+  from_lat?: number;
+  from_lng?: number;
+
+  to_address: string;
+  to_lat?: number;
+  to_lng?: number;
+
+  delivery_fee: number;
+  extra_fee: number;
+
+  notes?: string;
+
+  status: string;
+
+  created_at: string;
+}
+
+/* ======================
+   Component
+====================== */
+
+const WasselOrders: React.FC = () => {
+  const [orders, setOrders] = useState<WasselOrder[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  /* Modal */
+  const [showModal, setShowModal] = useState(false);
+  const [editingOrder, setEditingOrder] = useState<WasselOrder | null>(null);
+
+  /* Form */
+  const [form, setForm] = useState<any>({
+    order_type: "",
+    from_address: "",
+    to_address: "",
+    delivery_fee: "",
+    extra_fee: "",
+    notes: "",
+  });
+
+  /* ======================
+     Load Orders
+  ====================== */
+
+  const loadOrders = async () => {
+    try {
+      setLoading(true);
+
+      const res = await api.get("/wassel-orders");
+
+      setOrders(res.data?.orders || []);
+
+    } catch (err) {
+      console.error("Load Wassel Orders Error:", err);
+      setOrders([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadOrders();
+  }, []);
+
+  /* ======================
+     Handlers
+  ====================== */
+
+  const openAdd = () => {
+    setEditingOrder(null);
+
+    setForm({
+      order_type: "",
+      from_address: "",
+      to_address: "",
+      delivery_fee: "",
+      extra_fee: "",
+      notes: "",
+    });
+
+    setShowModal(true);
+  };
+
+  const openEdit = (o: WasselOrder) => {
+    setEditingOrder(o);
+
+    setForm({
+      order_type: o.order_type,
+      from_address: o.from_address,
+      to_address: o.to_address,
+      delivery_fee: o.delivery_fee,
+      extra_fee: o.extra_fee,
+      notes: o.notes || "",
+    });
+
+    setShowModal(true);
+  };
+
+  const saveOrder = async () => {
+    try {
+      if (!form.order_type || !form.from_address || !form.to_address) {
+        return alert("أكمل البيانات");
+      }
+
+      const payload = {
+        ...form,
+        delivery_fee: Number(form.delivery_fee || 0),
+        extra_fee: Number(form.extra_fee || 0),
+      };
+
+      if (editingOrder) {
+        await api.put(`/wassel-orders/${editingOrder.id}`, payload);
+      } else {
+        await api.post("/wassel-orders", payload);
+      }
+
+      setShowModal(false);
+      loadOrders();
+
+    } catch (err) {
+      console.error("Save Error:", err);
+      alert("حصل خطأ");
+    }
+  };
+
+  const openMap = (lat?: number, lng?: number) => {
+    if (!lat || !lng) return;
+
+    window.open(
+      `https://www.google.com/maps?q=${lat},${lng}`,
+      "_blank"
+    );
+  };
+
+  /* ======================
+     JSX
+  ====================== */
+
+  return (
+    <div className="space-y-6">
+
+      {/* Header */}
+      <div className="flex justify-between items-center">
+
+        <h1 className="text-2xl font-bold">📦 طلبات وصل لي</h1>
+
+        <button
+          onClick={openAdd}
+          className="bg-green-600 text-white px-4 py-2 rounded flex items-center gap-2"
+        >
+          <Plus size={18} /> إضافة طلب
+        </button>
+
+      </div>
+
+      {/* Table */}
+      {loading ? (
+        <div className="p-6 text-center">⏳ جاري التحميل...</div>
+      ) : (
+        <div className="bg-white rounded shadow overflow-x-auto">
+
+          <table className="w-full text-center">
+
+            <thead className="bg-gray-100">
+              <tr>
+
+                <th>#</th>
+                <th>العميل</th>
+                <th>نوع الطلب</th>
+
+                <th>من</th>
+                <th>إلى</th>
+
+                <th>الرسوم</th>
+
+                <th>ملاحظات</th>
+
+                <th>الحالة</th>
+
+                <th>تحكم</th>
+
+              </tr>
+            </thead>
+
+            <tbody>
+
+              {orders.map((o, i) => (
+
+                <tr key={o.id} className="border-t">
+
+                  <td>{i + 1}</td>
+
+                  <td>{o.customer_name}</td>
+
+                  <td>{o.order_type}</td>
+
+                  {/* From */}
+                  <td className="flex items-center justify-center gap-1">
+
+                    {o.from_address}
+
+                    {o.from_lat && (
+                      <button
+                        onClick={() =>
+                          openMap(o.from_lat, o.from_lng)
+                        }
+                        className="text-blue-600"
+                      >
+                        <MapPin size={16} />
+                      </button>
+                    )}
+
+                  </td>
+
+                  {/* To */}
+                  <td className="flex items-center justify-center gap-1">
+
+                    {o.to_address}
+
+                    {o.to_lat && (
+                      <button
+                        onClick={() =>
+                          openMap(o.to_lat, o.to_lng)
+                        }
+                        className="text-blue-600"
+                      >
+                        <MapPin size={16} />
+                      </button>
+                    )}
+
+                  </td>
+
+                  {/* Fees */}
+                  <td className="font-semibold text-green-700">
+
+                    {Number(o.delivery_fee) +
+                      Number(o.extra_fee)} ريال
+
+                  </td>
+
+                  <td>{o.notes || "-"}</td>
+
+                  <td>
+                    <span
+                      className={`px-2 py-1 rounded text-sm ${
+                        o.status === "completed"
+                          ? "bg-green-100 text-green-700"
+                          : o.status === "cancelled"
+                          ? "bg-red-100 text-red-700"
+                          : "bg-blue-100 text-blue-700"
+                      }`}
+                    >
+                      {o.status}
+                    </span>
+                  </td>
+
+                  {/* Actions */}
+                  <td>
+
+                    <button
+                      onClick={() => openEdit(o)}
+                      className="text-blue-600 hover:underline flex items-center gap-1 justify-center"
+                    >
+                      <Edit size={14} /> تعديل
+                    </button>
+
+                  </td>
+
+                </tr>
+
+              ))}
+
+            </tbody>
+
+          </table>
+
+          {!orders.length && (
+            <div className="p-6 text-center text-gray-500">
+              لا توجد طلبات
+            </div>
+          )}
+
+        </div>
+      )}
+
+      {/* Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+
+          <div className="bg-white rounded-xl w-full max-w-xl p-6 space-y-4">
+
+            <h2 className="text-xl font-bold">
+              {editingOrder ? "✏️ تعديل طلب" : "➕ إضافة طلب"}
+            </h2>
+
+            {/* Order Type */}
+            <select
+              className="w-full p-2 border rounded"
+              value={form.order_type}
+              onChange={(e) =>
+                setForm({ ...form, order_type: e.target.value })
+              }
+            >
+              <option value="">اختر النوع</option>
+              <option value="كيكة">كيكة</option>
+              <option value="كرتون">كرتون</option>
+              <option value="مشوار">مشوار</option>
+              <option value="عائلي">مشوار عائلي</option>
+              <option value="أخرى">أخرى</option>
+            </select>
+
+            {/* From */}
+            <input
+              placeholder="من (العنوان)"
+              className="w-full p-2 border rounded"
+              value={form.from_address}
+              onChange={(e) =>
+                setForm({ ...form, from_address: e.target.value })
+              }
+            />
+
+            {/* To */}
+            <input
+              placeholder="إلى (العنوان)"
+              className="w-full p-2 border rounded"
+              value={form.to_address}
+              onChange={(e) =>
+                setForm({ ...form, to_address: e.target.value })
+              }
+            />
+
+            {/* Fees */}
+            <div className="grid grid-cols-2 gap-3">
+
+              <input
+                type="number"
+                placeholder="رسوم التوصيل"
+                className="p-2 border rounded"
+                value={form.delivery_fee}
+                onChange={(e) =>
+                  setForm({ ...form, delivery_fee: e.target.value })
+                }
+              />
+
+              <input
+                type="number"
+                placeholder="رسوم إضافية"
+                className="p-2 border rounded"
+                value={form.extra_fee}
+                onChange={(e) =>
+                  setForm({ ...form, extra_fee: e.target.value })
+                }
+              />
+
+            </div>
+
+            {/* Notes */}
+            <textarea
+              placeholder="ملاحظات"
+              className="w-full p-2 border rounded"
+              value={form.notes}
+              onChange={(e) =>
+                setForm({ ...form, notes: e.target.value })
+              }
+            />
+
+            {/* Buttons */}
+            <div className="flex justify-end gap-3 pt-3">
+
+              <button
+                onClick={() => setShowModal(false)}
+                className="px-4 py-2 bg-gray-400 text-white rounded"
+              >
+                إلغاء
+              </button>
+
+              <button
+                onClick={saveOrder}
+                className="px-4 py-2 bg-green-600 text-white rounded flex items-center gap-1"
+              >
+                <DollarSign size={16} />
+                حفظ
+              </button>
+
+            </div>
+
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+};
+
+export default WasselOrders;
