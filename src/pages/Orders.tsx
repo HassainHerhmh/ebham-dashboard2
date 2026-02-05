@@ -496,36 +496,59 @@ const openDetailsModal = async (orderId: number) => {
   };
 
   // ========= تبويبات الحالات =========
-  type OrderTab =
-    | "pending"
-    | "processing"
-    | "ready"
-    | "delivering"
-    | "completed"
-    | "cancelled";
+// ========= تبويبات الحالات =========
+type OrderTab =
+  | "pending"
+  | "processing"
+  | "ready"
+  | "delivering"
+  | "completed"
+  | "cancelled"
+  | "wassel"   // 🆕 طلبات وصل لي
+  | "manual";  // 🆕 طلبات يدوية
 
   const [activeTab, setActiveTab] = useState<OrderTab>("pending");
 
-  const filterByTab = (list: Order[]) => {
-    switch (activeTab) {
-      case "pending":
-        return list.filter((o) => o.status === "pending");
-      case "processing":
-        return list.filter(
-          (o) => o.status === "confirmed" || o.status === "preparing"
-        );
-      case "ready":
-        return list.filter((o) => o.status === "ready");
-      case "delivering":
-        return list.filter((o) => o.status === "delivering");
-      case "completed":
-        return list.filter((o) => o.status === "completed");
-      case "cancelled":
-        return list.filter((o) => o.status === "cancelled");
-      default:
-        return list;
-    }
-  };
+ const filterByTab = (list: Order[]) => {
+  switch (activeTab) {
+
+    case "pending":
+      return list.filter((o) => o.status === "pending");
+
+    case "processing":
+      return list.filter(
+        (o) => o.status === "confirmed" || o.status === "preparing"
+      );
+
+    case "ready":
+      return list.filter((o) => o.status === "ready");
+
+    case "delivering":
+      return list.filter((o) => o.status === "delivering");
+
+    case "completed":
+      return list.filter((o) => o.status === "completed");
+
+    case "cancelled":
+      return list.filter((o) => o.status === "cancelled");
+
+    /* 🆕 طلبات وصل لي */
+    case "wassel":
+      return list.filter(
+        (o) => o.order_type === "wassel"   // حسب عمودك في DB
+      );
+
+    /* 🆕 الطلبات اليدوية */
+    case "manual":
+      return list.filter(
+        (o) => o.is_manual === 1          // حسب عمودك في DB
+      );
+
+    default:
+      return list;
+  }
+};
+
 
   const visibleOrders = filterByTab(filterByDate(orders));
 
@@ -660,24 +683,31 @@ const openDetailsModal = async (orderId: number) => {
 
         {/* تبويبات الحالات */}
         <div className="flex gap-2 flex-wrap">
-          {[
-            { key: "pending", label: "🟡 اعتماد" },
-            { key: "processing", label: "🔵 قيد المعالجة" },
-            { key: "ready", label: "🟢 جاهز" },
-            { key: "delivering", label: "🚚 قيد التوصيل" },
-            { key: "completed", label: "✅ مكتمل" },
-            { key: "cancelled", label: "❌ ملغي" },
-          ].map((t) => (
-            <button
-              key={t.key}
-              onClick={() => setActiveTab(t.key as OrderTab)}
-              className={`px-4 py-2 rounded ${
-                activeTab === t.key ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-700"
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
+ {[
+  { key: "pending", label: "🟡 اعتماد" },
+  { key: "processing", label: "🔵 قيد المعالجة" },
+  { key: "ready", label: "🟢 جاهز" },
+  { key: "delivering", label: "🚚 قيد التوصيل" },
+  { key: "completed", label: "✅ مكتمل" },
+  { key: "cancelled", label: "❌ ملغي" },
+
+  // 🆕 تبويبات إضافية
+  { key: "wassel", label: "📦 طلبات وصل لي" },
+  { key: "manual", label: "✍️ طلبات يدوية" },
+].map((t) => (
+  <button
+    key={t.key}
+    onClick={() => setActiveTab(t.key as OrderTab)}
+    className={`px-4 py-2 rounded ${
+      activeTab === t.key
+        ? "bg-blue-600 text-white"
+        : "bg-gray-200 text-gray-700"
+    }`}
+  >
+    {t.label}
+  </button>
+))}
+
         </div>
 
         {/* فلترة زمنية */}
