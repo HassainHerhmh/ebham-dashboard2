@@ -494,7 +494,7 @@ const [toMode, setToMode] = useState<"saved" | "map">("saved");
                 setForm({ ...form, notes: e.target.value })
               }
             />
-
+</div>
             {/* Buttons */}
             <div className="flex justify-end gap-3 pt-3">
 
