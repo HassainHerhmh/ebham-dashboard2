@@ -69,23 +69,24 @@ export default function MapPage() {
   const HEADER_HEIGHT = 130;
 
   /* حفظ الموقع */
-  const handleSave = () => {
-    if (!name.trim()) {
-      setError("اكتب اسم العنوان");
-      return;
-    }
+const handleSave = () => {
+  if (!name.trim()) {
+    setError("اكتب اسم العنوان");
+    return;
+  }
 
-    // الرجوع للمودل مع البيانات
-    navigate(-1, {
-      state: {
-        from: "map",
-        target,
-        value: name,
-        lat: pos[0],
-        lng: pos[1],
-      },
-    });
-  };
+  navigate("/wassel-lee", {
+    replace: true,
+    state: {
+      from: "map",
+      target,
+      value: name,
+      lat: pos[0],
+      lng: pos[1],
+    },
+  });
+};
+
 
   /* البحث */
   const searchByName = async () => {
