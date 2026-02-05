@@ -95,18 +95,21 @@ const [form, setForm] = useState<any>({
      Handlers
   ====================== */
 
-  const openAdd = () => {
+const openAdd = () => {
   setEditingOrder(null);
 
   setForm({
     customer_id: "",
     order_type: "",
+
     from_address: "",
     from_lat: null,
     from_lng: null,
+
     to_address: "",
     to_lat: null,
     to_lng: null,
+
     delivery_fee: "",
     extra_fee: "",
     notes: "",
@@ -115,11 +118,13 @@ const [form, setForm] = useState<any>({
   setShowModal(true);
 };
 
+
 const openEdit = (o: WasselOrder) => {
   setEditingOrder(o);
 
   setForm({
     customer_id: (o as any).customer_id || "",
+
     order_type: o.order_type,
 
     from_address: o.from_address,
@@ -309,48 +314,20 @@ if (state.target === "to") {
     <MapPin size={14} />
     الموقع
   </button>
+<td>
+  <span
+    className={`px-2 py-1 rounded text-sm ${
+      o.status === "completed"
+        ? "bg-green-100 text-green-700"
+        : o.status === "cancelled"
+        ? "bg-red-100 text-red-700"
+        : "bg-blue-100 text-blue-700"
+    }`}
+  >
+    {o.status}
+  </span>
 </td>
 
-
-
-          {/* Fees */}
-<div className="grid grid-cols-2 gap-3">
-
-  <input
-    type="number"
-    placeholder="رسوم التوصيل"
-    className="p-2 border rounded"
-    value={form.delivery_fee}
-    onChange={(e) =>
-      setForm({ ...form, delivery_fee: e.target.value })
-    }
-  />
-
-  <input
-    type="number"
-    placeholder="رسوم إضافية"
-    className="p-2 border rounded"
-    value={form.extra_fee}
-    onChange={(e) =>
-      setForm({ ...form, extra_fee: e.target.value })
-    }
-  />
-
-</div>
-
-{/* Notes */}
-<textarea
-  placeholder="ملاحظات"
-  className="w-full p-2 border rounded"
-  value={form.notes}
-  onChange={(e) =>
-    setForm({ ...form, notes: e.target.value })
-  }
-/>
-
-                      {o.status}
-                    </span>
-                  </td>
 
                   {/* Actions */}
                   <td>
