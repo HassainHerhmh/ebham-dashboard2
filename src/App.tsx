@@ -28,6 +28,7 @@ import PaymentsBanks from "./pages/PaymentsBanks";
 import PaymentsWallet from "./pages/PaymentsWallet";
 import CommissionReport from "./pages/CommissionReport";
 
+import WasselOrders from "./pages/orders/WasselOrders";
 
 
 
@@ -103,6 +104,15 @@ const App: React.FC = () => {
                     />
 
                     <Route path="/orders" element={<ProtectedRoute section="orders"><Orders /></ProtectedRoute>} />
+                    
+<Route
+  path="/orders/wassel"
+  element={
+    <ProtectedRoute section="orders">
+      <WasselOrders />
+    </ProtectedRoute>
+  }
+/>
                     <Route path="/types" element={<ProtectedRoute section="types"><Types /></ProtectedRoute>} />
                     <Route path="/customers" element={<ProtectedRoute section="customers"><Customers /></ProtectedRoute>} />
                     <Route path="/restaurants" element={<ProtectedRoute section="restaurants"><Restaurants /></ProtectedRoute>} />
