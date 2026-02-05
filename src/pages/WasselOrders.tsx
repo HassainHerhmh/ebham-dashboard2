@@ -352,50 +352,235 @@ const WasselOrders: React.FC = () => {
         </div>
       )}
 
-      {/* Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl w-full max-w-xl p-6 space-y-4">
-            <h2 className="text-xl font-bold">
-              {editingOrder ? "✏️ تعديل طلب" : "➕ إضافة طلب"}
-            </h2>
+{/* Modal */}
+{showModal && (
+  <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
 
-            {/* Order Type */}
-            <select
-              className="w-full p-2 border rounded"
-              value={form.order_type}
-              onChange={(e) =>
-                setForm({ ...form, order_type: e.target.value })
-              }
-            >
-              <option value="">اختر النوع</option>
-              <option value="كيكة">كيكة</option>
-              <option value="كرتون">كرتون</option>
-              <option value="مشوار">مشوار</option>
-              <option value="عائلي">مشوار عائلي</option>
-              <option value="أخرى">أخرى</option>
-            </select>
+    <div className="bg-white rounded-xl w-full max-w-xl p-6 space-y-4">
 
-            {/* Buttons */}
-            <div className="flex justify-end gap-3 pt-3">
-              <button
-                onClick={() => setShowModal(false)}
-                className="px-4 py-2 bg-gray-400 text-white rounded"
-              >
-                إلغاء
-              </button>
+      <h2 className="text-xl font-bold">
+        {editingOrder ? "✏️ تعديل طلب" : "➕ إضافة طلب"}
+      </h2>
 
-              <button
-                onClick={saveOrder}
-                className="px-4 py-2 bg-green-600 text-white rounded flex items-center gap-1"
-              >
-                <DollarSign size={16} />
-                حفظ
-              </button>
-            </div>
-          </div>
+      {/* Order Type */}
+      <select
+        className="w-full p-2 border rounded"
+        value={form.order_type}
+        onChange={(e) =>
+          setForm({ ...form, order_type: e.target.value })
+        }
+      >
+        <option value="">اختر النوع</option>
+        <option value="كيكة">كيكة</option>
+        <option value="كرتون">كرتون</option>
+        <option value="مشوار">مشوار</option>
+        <option value="عائلي">مشوار عائلي</option>
+        <option value="أخرى">أخرى</option>
+      </select>
+
+      {/* Customer */}
+      <select
+        className="w-full p-2 border rounded"
+        value={form.customer_id}
+        onChange={(e) => {
+          const id = e.target.value;
+          setForm({ ...form, customer_id: id });
+          loadAddresses(id);
+        }}
+      >
+        <option value="">اختر العميل</option>
+
+        {customers.map((c) => (
+          <option key={c.id} value={c.id}>
+            {c.name} - {c.phone}
+          </option>
+        ))}
+      </select>
+
+      {/* From Address */}
+      <div className="space-y-2">
+
+        <div className="flex gap-2">
+          <button
+            onClick={() => setFromMode("saved")}
+            className={`px-3 py-1 rounded ${
+              fromMode === "saved"
+                ? "bg-blue-600 text-white"
+                : "bg-gray-200"
+            }`}
+          >
+            عناوين محفوظة
+          </button>
+
+          <button
+            onClick={() => setFromMode("map")}
+            className={`px-3 py-1 rounded ${
+              fromMode === "map"
+                ? "bg-blue-600 text-white"
+                : "bg-gray-200"
+            }`}
+          >
+            من الخريطة
+          </button>
         </div>
-      )}
+
+        {fromMode === "saved" && (
+          <select
+            className="w-full p-2 border rounded"
+            value={form.from_address}
+            onChange={(e) =>
+              setForm({ ...form, from_address: e.target.value })
+            }
+          >
+            <option value="">اختر عنوان</option>
+
+            {addresses.map((a) => (
+              <option key={a.id} value={a.map_url || a.address}>
+                {a.neighborhood_name} - {a.address}
+              </option>
+            ))}
+          </select>
+        )}
+
+        {fromMode === "map" && (
+          <button
+            onClick={() =>
+              navigate("/map-picker", {
+                state: {
+                  target: "from",
+                  returnTo: "/wassel-lee",
+                },
+              })
+            }
+            className="w-full p-2 border rounded bg-blue-50 text-blue-700"
+          >
+            📍 اختر الموقع من الخريطة
+          </button>
+        )}
+
+      </div>
+
+      {/* To Address */}
+      <div className="space-y-2">
+
+        <div className="flex gap-2">
+          <button
+            onClick={() => setToMode("saved")}
+            className={`px-3 py-1 rounded ${
+              toMode === "saved"
+                ? "bg-blue-600 text-white"
+                : "bg-gray-200"
+            }`}
+          >
+            عناوين محفوظة
+          </button>
+
+          <button
+            onClick={() => setToMode("map")}
+            className={`px-3 py-1 rounded ${
+              toMode === "map"
+                ? "bg-blue-600 text-white"
+                : "bg-gray-200"
+            }`}
+          >
+            من الخريطة
+          </button>
+        </div>
+
+        {toMode === "saved" && (
+          <select
+            className="w-full p-2 border rounded"
+            value={form.to_address}
+            onChange={(e) =>
+              setForm({ ...form, to_address: e.target.value })
+            }
+          >
+            <option value="">اختر عنوان</option>
+
+            {addresses.map((a) => (
+              <option key={a.id} value={a.map_url || a.address}>
+                {a.neighborhood_name} - {a.address}
+              </option>
+            ))}
+          </select>
+        )}
+
+        {toMode === "map" && (
+          <button
+            onClick={() =>
+              navigate("/map-picker", {
+                state: {
+                  target: "to",
+                  returnTo: "/wassel-lee",
+                },
+              })
+            }
+            className="w-full p-2 border rounded bg-blue-50 text-blue-700"
+          >
+            📍 اختر الموقع من الخريطة
+          </button>
+        )}
+
+      </div>
+
+      {/* Fees */}
+      <div className="grid grid-cols-2 gap-3">
+
+        <input
+          type="number"
+          placeholder="رسوم التوصيل"
+          className="p-2 border rounded"
+          value={form.delivery_fee}
+          onChange={(e) =>
+            setForm({ ...form, delivery_fee: e.target.value })
+          }
+        />
+
+        <input
+          type="number"
+          placeholder="رسوم إضافية"
+          className="p-2 border rounded"
+          value={form.extra_fee}
+          onChange={(e) =>
+            setForm({ ...form, extra_fee: e.target.value })
+          }
+        />
+
+        <textarea
+          placeholder="ملاحظات"
+          className="w-full p-2 border rounded col-span-2"
+          value={form.notes}
+          onChange={(e) =>
+            setForm({ ...form, notes: e.target.value })
+          }
+        />
+
+      </div>
+
+      {/* Buttons */}
+      <div className="flex justify-end gap-3 pt-3">
+
+        <button
+          onClick={() => setShowModal(false)}
+          className="px-4 py-2 bg-gray-400 text-white rounded"
+        >
+          إلغاء
+        </button>
+
+        <button
+          onClick={saveOrder}
+          className="px-4 py-2 bg-green-600 text-white rounded flex items-center gap-1"
+        >
+          <DollarSign size={16} />
+          حفظ
+        </button>
+
+      </div>
+
+    </div>
+  </div>
+)}
+
     </div>
   );
 };
