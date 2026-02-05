@@ -1,27 +1,31 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-
-import { Suspense } from "react";
-
-import { Geolocation } from "@capacitor/geolocation";
-
 
 import {
   MapContainer,
   TileLayer,
   Marker,
-} from "../utils/leafletLoader";
+  useMapEvents,
+} from "react-leaflet";
 
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
 
-const BRAND_COLOR = "#fbbf24"; // أصفر
+/* Fix marker icon */
+delete (L.Icon.Default.prototype as any)._getIconUrl;
 
-const markerIcon = new L.Icon({
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl:
+    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+  iconUrl:
+    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+  shadowUrl:
+    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
 
+const BRAND_COLOR = "#fbbf24";
+
+/* Click handler */
 function ClickHandler({
   onPick,
 }: {
@@ -32,32 +36,30 @@ function ClickHandler({
       onPick(e.latlng.lat, e.latlng.lng);
     },
   });
-  return null;
-}
 
-// لإعادة تمركز الخريطة عند تغير الإحداثيات
-function Recenter({ pos }: { pos: [number, number] }) {
-  const map = useMap();
-  useEffect(() => {
-    map.setView(pos, map.getZoom(), { animate: true });
-  }, [pos]);
   return null;
 }
 
 export default function MapPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const target = (location.state as any)?.target || "pickup";
 
-  const [pos, setPos] = useState<[number, number]>([15.3694, 44.1910]); // اليمن
+  const target = (location.state as any)?.target || "from";
+
+  const [pos, setPos] = useState<[number, number]>([
+    15.3694,
+    44.191,
+  ]);
+
   const [name, setName] = useState("");
   const [error, setError] = useState("");
 
   const HEADER_HEIGHT = 130;
 
+  /* Save */
   const handleSave = () => {
     if (!name.trim()) {
-      setError("يجب إدخال اسم العنوان قبل الحفظ");
+      setError("اكتب اسم العنوان");
       return;
     }
 
@@ -72,44 +74,60 @@ export default function MapPage() {
     });
   };
 
+  /* Search */
   const searchByName = async () => {
     if (!name.trim()) return;
+
     try {
       const r = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(
           name + " اليمن"
         )}`
       );
+
       const j = await r.json();
+
       if (j[0]) {
-        setPos([parseFloat(j[0].lat), parseFloat(j[0].lon)]);
+        setPos([
+          parseFloat(j[0].lat),
+          parseFloat(j[0].lon),
+        ]);
       }
     } catch {
-      setError("تعذر البحث عن الموقع");
+      setError("فشل البحث");
     }
   };
 
-  const goToMyLocation = async () => {
-    try {
-      const perm = await Geolocation.requestPermissions();
-      if (perm.location !== "granted") {
-        setError("يجب السماح للتطبيق بالوصول إلى الموقع");
-        return;
-      }
-
-      const p = await Geolocation.getCurrentPosition({
-        enableHighAccuracy: true,
-      });
-
-      setPos([p.coords.latitude, p.coords.longitude]);
-    } catch {
-      setError("تعذر تحديد موقعك الحالي");
+  /* My location */
+  const goToMyLocation = () => {
+    if (!navigator.geolocation) {
+      setError("المتصفح لا يدعم GPS");
+      return;
     }
+
+    navigator.geolocation.getCurrentPosition(
+      (p) => {
+        setPos([
+          p.coords.latitude,
+          p.coords.longitude,
+        ]);
+      },
+      () => {
+        setError("فشل تحديد الموقع");
+      },
+      { enableHighAccuracy: true }
+    );
   };
 
   return (
-    <div style={{ height: "100vh", direction: "rtl", position: "relative" }}>
-      {/* Header + Search */}
+    <div
+      style={{
+        height: "100vh",
+        direction: "rtl",
+        position: "relative",
+      }}
+    >
+      {/* Header */}
       <div
         style={{
           position: "fixed",
@@ -121,6 +139,7 @@ export default function MapPage() {
           padding: "22px 12px 12px",
         }}
       >
+        {/* Top bar */}
         <div
           style={{
             display: "flex",
@@ -146,17 +165,17 @@ export default function MapPage() {
             style={{
               flex: 1,
               textAlign: "center",
-              color: "#111",
               fontWeight: "bold",
               fontSize: 16,
             }}
           >
-            الموقع على الخريطة
+            اختر الموقع
           </div>
 
           <div style={{ width: 40 }} />
         </div>
 
+        {/* Search */}
         <div style={{ display: "flex", gap: 8 }}>
           <input
             value={name}
@@ -173,6 +192,7 @@ export default function MapPage() {
               outline: "none",
             }}
           />
+
           <button
             onClick={searchByName}
             style={{
@@ -180,7 +200,6 @@ export default function MapPage() {
               borderRadius: 12,
               border: "none",
               background: "#fff",
-              color: "#111",
               fontWeight: "bold",
             }}
           >
@@ -189,22 +208,33 @@ export default function MapPage() {
         </div>
       </div>
 
- {/* Map */}
-<Suspense fallback={<div className="p-6 text-center">⏳ جاري تحميل الخريطة...</div>}>
+      {/* Map */}
+      <Suspense
+        fallback={
+          <div className="p-6 text-center">
+            ⏳ تحميل الخريطة...
+          </div>
+        }
+      >
+        <MapContainer
+          center={pos}
+          zoom={14}
+          style={{
+            height: "100%",
+            marginTop: HEADER_HEIGHT,
+          }}
+        >
+          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
-  <MapContainer
-    center={pos}
-    zoom={14}
-    style={{ height: "100%", marginTop: HEADER_HEIGHT }}
-  >
-    <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+          <ClickHandler
+            onPick={(lat, lng) =>
+              setPos([lat, lng])
+            }
+          />
 
-    <Marker position={pos} />
-
-  </MapContainer>
-
-</Suspense>
-
+          <Marker position={pos} />
+        </MapContainer>
+      </Suspense>
 
       {/* Bottom */}
       <div
@@ -243,7 +273,6 @@ export default function MapPage() {
               borderRadius: 16,
               border: "none",
               background: BRAND_COLOR,
-              color: "#111",
               fontWeight: "bold",
             }}
           >
@@ -258,7 +287,6 @@ export default function MapPage() {
               borderRadius: 16,
               border: "1px solid #ddd",
               background: "#fff",
-              color: "#111",
               fontWeight: "bold",
             }}
           >
