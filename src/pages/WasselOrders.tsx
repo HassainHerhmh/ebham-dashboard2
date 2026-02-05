@@ -11,8 +11,9 @@ interface WasselOrder {
   id: number;
 
   customer_name: string;
+  customer_id?: number;
 
-  order_type: string; 
+  order_type: string;
 
   from_address: string;
   from_lat?: number;
@@ -43,29 +44,33 @@ const WasselOrders: React.FC = () => {
   /* Modal */
   const [showModal, setShowModal] = useState(false);
   const [editingOrder, setEditingOrder] = useState<WasselOrder | null>(null);
-const [customers, setCustomers] = useState<any[]>([]);
-const [addresses, setAddresses] = useState<any[]>([]);
-const navigate = useNavigate();
-const location = useLocation();
 
-const [fromMode, setFromMode] = useState<"saved" | "map">("saved");
-const [toMode, setToMode] = useState<"saved" | "map">("saved");
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [addresses, setAddresses] = useState<any[]>([]);
+
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const [fromMode, setFromMode] = useState<"saved" | "map">("saved");
+  const [toMode, setToMode] = useState<"saved" | "map">("saved");
 
   /* Form */
-const [form, setForm] = useState<any>({
-  customer_id: "",
-  order_type: "",
-  from_address: "",
-  from_lat: null,
-  from_lng: null,
-  to_address: "",
-  to_lat: null,
-  to_lng: null,
-  delivery_fee: "",
-  extra_fee: "",
-  notes: "",
-});
+  const [form, setForm] = useState<any>({
+    customer_id: "",
+    order_type: "",
 
+    from_address: "",
+    from_lat: null,
+    from_lng: null,
+
+    to_address: "",
+    to_lat: null,
+    to_lng: null,
+
+    delivery_fee: 0,
+    extra_fee: 0,
+    notes: "",
+  });
 
   /* ======================
      Load Orders
@@ -78,7 +83,6 @@ const [form, setForm] = useState<any>({
       const res = await api.get("/wassel-orders");
 
       setOrders(res.data?.orders || []);
-
     } catch (err) {
       console.error("Load Wassel Orders Error:", err);
       setOrders([]);
@@ -95,66 +99,63 @@ const [form, setForm] = useState<any>({
      Handlers
   ====================== */
 
-const openAdd = () => {
-  setEditingOrder(null);
+  const openAdd = () => {
+    setEditingOrder(null);
 
-  setForm({
-    customer_id: "",
-    order_type: "",
+    setForm({
+      customer_id: "",
+      order_type: "",
 
-    from_address: "",
-    from_lat: null,
-    from_lng: null,
+      from_address: "",
+      from_lat: null,
+      from_lng: null,
 
-    to_address: "",
-    to_lat: null,
-    to_lng: null,
+      to_address: "",
+      to_lat: null,
+      to_lng: null,
 
-    delivery_fee: "",
-    extra_fee: "",
-    notes: "",
-  });
+      delivery_fee: 0,
+      extra_fee: 0,
+      notes: "",
+    });
 
-  setShowModal(true);
-};
+    setShowModal(true);
+  };
 
+  const openEdit = (o: WasselOrder) => {
+    setEditingOrder(o);
 
-const openEdit = (o: WasselOrder) => {
-  setEditingOrder(o);
+    setForm({
+      customer_id: o.customer_id || "",
 
-  setForm({
-    customer_id: (o as any).customer_id || "",
+      order_type: o.order_type,
 
-    order_type: o.order_type,
+      from_address: o.from_address,
+      from_lat: o.from_lat || null,
+      from_lng: o.from_lng || null,
 
-    from_address: o.from_address,
-    from_lat: o.from_lat || null,
-    from_lng: o.from_lng || null,
+      to_address: o.to_address,
+      to_lat: o.to_lat || null,
+      to_lng: o.to_lng || null,
 
-    to_address: o.to_address,
-    to_lat: o.to_lat || null,
-    to_lng: o.to_lng || null,
+      delivery_fee: o.delivery_fee || 0,
+      extra_fee: o.extra_fee || 0,
+      notes: o.notes || "",
+    });
 
-    delivery_fee: o.delivery_fee,
-    extra_fee: o.extra_fee,
-    notes: o.notes || "",
-  });
-
-  setShowModal(true);
-};
-
+    setShowModal(true);
+  };
 
   const saveOrder = async () => {
     try {
-   if (
-  !form.customer_id ||
-  !form.order_type ||
-  !form.from_address ||
-  !form.to_address
-) {
-  return alert("أكمل جميع البيانات");
-}
-
+      if (
+        !form.customer_id ||
+        !form.order_type ||
+        !form.from_address ||
+        !form.to_address
+      ) {
+        return alert("أكمل جميع البيانات");
+      }
 
       const payload = {
         ...form,
@@ -170,7 +171,6 @@ const openEdit = (o: WasselOrder) => {
 
       setShowModal(false);
       loadOrders();
-
     } catch (err) {
       console.error("Save Error:", err);
       alert("حصل خطأ");
@@ -178,70 +178,62 @@ const openEdit = (o: WasselOrder) => {
   };
 
   const openMap = (lat?: number, lng?: number) => {
-    if (!lat || !lng) return;
+    if (lat == null || lng == null) {
+      return alert("لا يوجد موقع محفوظ");
+    }
 
-    window.open(
-      `https://www.google.com/maps?q=${lat},${lng}`,
-      "_blank"
-    );
+    window.open(`https://www.google.com/maps?q=${lat},${lng}`, "_blank");
   };
 
-   const loadAddresses = async (id: number) => {
-  const res = await api.get(`/customer-addresses/customer/${id}`);
-  setAddresses(res.data.addresses || []);
-};
+  const loadAddresses = async (id: number) => {
+    const res = await api.get(`/customer-addresses/customer/${id}`);
+    setAddresses(res.data.addresses || []);
+  };
 
+  useEffect(() => {
+    if (showModal) {
+      api.get("/customers").then((res) => {
+        setCustomers(res.data.customers || []);
+      });
+    }
+  }, [showModal]);
 
-   useEffect(() => {
-  if (showModal) {
-    api.get("/customers").then((res) => {
-      setCustomers(res.data.customers || []);
-    });
-  }
-}, [showModal]);
+  useEffect(() => {
+    const state = location.state as any;
 
-useEffect(() => {
-  const state = location.state as any;
+    if (state?.from === "map") {
+      const url = `https://www.google.com/maps?q=${state.lat},${state.lng}`;
 
-  if (state?.from === "map") {
-    const url = `https://www.google.com/maps?q=${state.lat},${state.lng}`;
+      if (state.target === "from") {
+        setForm((f: any) => ({
+          ...f,
+          from_address: url,
+          from_lat: state.lat,
+          from_lng: state.lng,
+        }));
+      }
 
-if (state.target === "from") {
-  setForm((f) => ({
-    ...f,
-    from_address: url,
-    from_lat: state.lat,
-    from_lng: state.lng,
-  }));
-}
+      if (state.target === "to") {
+        setForm((f: any) => ({
+          ...f,
+          to_address: url,
+          to_lat: state.lat,
+          to_lng: state.lng,
+        }));
+      }
 
-
-if (state.target === "to") {
-  setForm((f) => ({
-    ...f,
-    to_address: url,
-    to_lat: state.lat,
-    to_lng: state.lng,
-  }));
-}
-
-
-    // تنظيف البيانات بعد الاستخدام
-    navigate(location.pathname, { replace: true });
-  }
-}, [location, navigate]);
-
+      navigate(location.pathname, { replace: true });
+    }
+  }, [location, navigate]);
 
   /* ======================
      JSX
   ====================== */
 
   return (
-    <div className="space-y-6">
-
+    <div className="space-y-6" dir="rtl">
       {/* Header */}
       <div className="flex justify-between items-center">
-
         <h1 className="text-2xl font-bold">📦 طلبات وصل لي</h1>
 
         <button
@@ -250,7 +242,6 @@ if (state.target === "to") {
         >
           <Plus size={18} /> إضافة طلب
         </button>
-
       </div>
 
       {/* Table */}
@@ -258,98 +249,99 @@ if (state.target === "to") {
         <div className="p-6 text-center">⏳ جاري التحميل...</div>
       ) : (
         <div className="bg-white rounded shadow overflow-x-auto">
-
           <table className="w-full text-center">
-
             <thead className="bg-gray-100">
               <tr>
-
                 <th>#</th>
                 <th>العميل</th>
                 <th>نوع الطلب</th>
-
                 <th>من</th>
                 <th>إلى</th>
-
                 <th>الرسوم</th>
-
                 <th>ملاحظات</th>
-
                 <th>الحالة</th>
-
                 <th>تحكم</th>
-
               </tr>
             </thead>
 
             <tbody>
-
               {orders.map((o, i) => (
-
                 <tr key={o.id} className="border-t">
-
                   <td>{i + 1}</td>
 
                   <td>{o.customer_name}</td>
 
                   <td>{o.order_type}</td>
 
-{/* From */}
-<td>
-  <button
-    onClick={() => openMap(o.from_lat, o.from_lng)}
-    className="text-blue-600 underline flex items-center gap-1 justify-center"
-  >
-    <MapPin size={14} />
-    الموقع
-  </button>
-</td>
+                  {/* From */}
+                  <td>
+                    <button
+                      onClick={() => openMap(o.from_lat, o.from_lng)}
+                      className="text-blue-600 underline flex items-center gap-1 justify-center"
+                    >
+                      <MapPin size={14} />
+                      الموقع
+                    </button>
+                  </td>
 
-{/* To */}
-<td>
-  <button
-    onClick={() => openMap(o.to_lat, o.to_lng)}
-    className="text-blue-600 underline flex items-center gap-1 justify-center"
-  >
-    <MapPin size={14} />
-    الموقع
-  </button>
-</td>   {/* ✅ مهم جداً */}
+                  {/* To */}
+                  <td>
+                    <button
+                      onClick={() => openMap(o.to_lat, o.to_lng)}
+                      className="text-blue-600 underline flex items-center gap-1 justify-center"
+                    >
+                      <MapPin size={14} />
+                      الموقع
+                    </button>
+                  </td>
 
-{/* Status */}
-<td>
-  <span
-    className={`px-2 py-1 rounded text-sm ${
-      o.status === "completed"
-        ? "bg-green-100 text-green-700"
-        : o.status === "cancelled"
-        ? "bg-red-100 text-red-700"
-        : "bg-blue-100 text-blue-700"
-    }`}
-  >
-    {o.status}
-  </span>
-</td>
+                  {/* Fees */}
+                  <td className="text-sm space-y-1">
+                    <div>🚚 {o.delivery_fee} ر.ي</div>
+                    <div>➕ {o.extra_fee} ر.ي</div>
+                  </td>
 
+                  {/* Notes */}
+                  <td className="max-w-[200px] truncate">
+                    {o.notes || "-"}
+                  </td>
+
+                  {/* Status */}
+                  <td>
+                    <select
+                      value={o.status}
+                      onChange={async (e) => {
+                        await api.put(
+                          `/wassel-orders/status/${o.id}`,
+                          { status: e.target.value }
+                        );
+
+                        loadOrders();
+                      }}
+                      className="border rounded px-2 py-1 text-sm"
+                    >
+                      <option value="pending">قيد الانتظار</option>
+                      <option value="confirmed">مؤكد</option>
+                      <option value="preparing">قيد التحضير</option>
+                      <option value="ready">جاهز</option>
+                      <option value="delivering">قيد التوصيل</option>
+                      <option value="completed">مكتمل</option>
+                      <option value="cancelled">ملغي</option>
+                    </select>
+                  </td>
 
                   {/* Actions */}
                   <td>
-
                     <button
                       onClick={() => openEdit(o)}
                       className="text-blue-600 hover:underline flex items-center gap-1 justify-center"
                     >
                       <Edit size={14} /> تعديل
                     </button>
-
                   </td>
-
                 </tr>
-
               ))}
-
             </tbody>
-
           </table>
 
           {!orders.length && (
@@ -357,16 +349,13 @@ if (state.target === "to") {
               لا توجد طلبات
             </div>
           )}
-
         </div>
       )}
 
       {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-
           <div className="bg-white rounded-xl w-full max-w-xl p-6 space-y-4">
-
             <h2 className="text-xl font-bold">
               {editingOrder ? "✏️ تعديل طلب" : "➕ إضافة طلب"}
             </h2>
@@ -387,172 +376,8 @@ if (state.target === "to") {
               <option value="أخرى">أخرى</option>
             </select>
 
-            {/* Customer */}
-<select
-  className="w-full p-2 border rounded"
-  value={form.customer_id}
-  onChange={(e) => {
-    const id = e.target.value;
-    setForm({ ...form, customer_id: id });
-    loadAddresses(id);
-  }}
->
-  <option value="">اختر العميل</option>
-
-  {customers.map((c) => (
-    <option key={c.id} value={c.id}>
-      {c.name} - {c.phone}
-    </option>
-  ))}
-</select>
-
-             
-            {/* From Address */}
-<div className="space-y-2">
-
-  <div className="flex gap-2">
-    <button
-      onClick={() => setFromMode("saved")}
-      className={`px-3 py-1 rounded ${
-        fromMode === "saved" ? "bg-blue-600 text-white" : "bg-gray-200"
-      }`}
-    >
-      عناوين محفوظة
-    </button>
-
-    <button
-      onClick={() => setFromMode("map")}
-      className={`px-3 py-1 rounded ${
-        fromMode === "map" ? "bg-blue-600 text-white" : "bg-gray-200"
-      }`}
-    >
-      من الخريطة
-    </button>
-  </div>
-
-  {/* Saved */}
-  {fromMode === "saved" && (
-    <select
-      className="w-full p-2 border rounded"
-      value={form.from_address}
-      onChange={(e) =>
-        setForm({ ...form, from_address: e.target.value })
-      }
-    >
-      <option value="">اختر عنوان</option>
-
-      {addresses.map((a) => (
-        <option key={a.id} value={a.map_url || a.address}>
-          {a.neighborhood_name} - {a.address}
-        </option>
-      ))}
-    </select>
-  )}
-
-  {/* Map */}
-{fromMode === "map" && (
-  <button
-    onClick={() =>
-      navigate("/map-picker", {
-        state: {
-          target: "from",
-          returnTo: "/wassel-lee",
-        },
-      })
-    }
-    className="w-full p-2 border rounded bg-blue-50 text-blue-700"
-  >
-    📍 اختر الموقع من الخريطة
-  </button>
-)}
-
-</div>
-
-
-           {/* To Address */}
-<div className="space-y-2">
-
-  <div className="flex gap-2">
-    <button
-      onClick={() => setToMode("saved")}
-      className={`px-3 py-1 rounded ${
-        toMode === "saved" ? "bg-blue-600 text-white" : "bg-gray-200"
-      }`}
-    >
-      عناوين محفوظة
-    </button>
-
-    <button
-      onClick={() => setToMode("map")}
-      className={`px-3 py-1 rounded ${
-        toMode === "map" ? "bg-blue-600 text-white" : "bg-gray-200"
-      }`}
-    >
-      من الخريطة
-    </button>
-  </div>
-
-  {toMode === "saved" && (
-    <select
-      className="w-full p-2 border rounded"
-      value={form.to_address}
-      onChange={(e) =>
-        setForm({ ...form, to_address: e.target.value })
-      }
-    >
-      <option value="">اختر عنوان</option>
-
-      {addresses.map((a) => (
-        <option key={a.id} value={a.map_url || a.address}>
-          {a.neighborhood_name} - {a.address}
-        </option>
-      ))}
-    </select>
-  )}
-
-{toMode === "map" && (
-  <button
-    onClick={() =>
-      navigate("/map-picker", {
-        state: {
-          target: "to",
-          returnTo: "/wassel-lee",
-        },
-      })
-    }
-    className="w-full p-2 border rounded bg-blue-50 text-blue-700"
-  >
-    📍 اختر الموقع من الخريطة
-  </button>
-)}
-
-
-
-</div>
-
-             {/* Fees */} <div className="grid grid-cols-2 gap-3"> 
-                <input type="number" placeholder="رسوم التوصيل" className="p-2 border rounded" 
-                   value={form.delivery_fee} onChange={(e) => 
-   setForm({ ...form, delivery_fee: e.target.value }) } 
-                   /> 
-                
-                <input type="number" placeholder="رسوم إضافية" className="p-2 border rounded"
-                   value={form.extra_fee} onChange={(e) =>
-   setForm({ ...form, extra_fee: e.target.value }) }
-                   />
-            {/* Notes */}
-            <textarea
-              placeholder="ملاحظات"
-              className="w-full p-2 border rounded"
-              value={form.notes}
-              onChange={(e) =>
-                setForm({ ...form, notes: e.target.value })
-              }
-            />
-</div>
             {/* Buttons */}
             <div className="flex justify-end gap-3 pt-3">
-
               <button
                 onClick={() => setShowModal(false)}
                 className="px-4 py-2 bg-gray-400 text-white rounded"
@@ -567,13 +392,10 @@ if (state.target === "to") {
                 <DollarSign size={16} />
                 حفظ
               </button>
-
             </div>
-
           </div>
         </div>
       )}
-
     </div>
   );
 };
