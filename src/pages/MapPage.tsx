@@ -6,6 +6,7 @@ import {
   TileLayer,
   Marker,
   useMapEvents,
+  useMap,
 } from "react-leaflet";
 
 import "leaflet/dist/leaflet.css";
@@ -40,6 +41,17 @@ function ClickHandler({
   return null;
 }
 
+/* Recenter map */
+function Recenter({ pos }: { pos: [number, number] }) {
+  const map = useMap();
+
+  useEffect(() => {
+    map.setView(pos, 15, { animate: true });
+  }, [pos]);
+
+  return null;
+}
+
 export default function MapPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -53,6 +65,8 @@ export default function MapPage() {
 
   const [name, setName] = useState("");
   const [error, setError] = useState("");
+
+  const [suggestions, setSuggestions] = useState<any[]>([]);
 
   const HEADER_HEIGHT = 130;
 
@@ -74,14 +88,39 @@ export default function MapPage() {
     });
   };
 
-  /* Search */
+  /* Autocomplete */
+  const handleSearchChange = async (v: string) => {
+    setName(v);
+    setError("");
+
+    if (v.length < 3) {
+      setSuggestions([]);
+      return;
+    }
+
+    try {
+      const r = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&limit=5&q=${encodeURIComponent(
+          v + " اليمن"
+        )}`
+      );
+
+      const j = await r.json();
+
+      setSuggestions(j);
+    } catch {
+      setSuggestions([]);
+    }
+  };
+
+  /* Manual search */
   const searchByName = async () => {
     if (!name.trim()) return;
 
     try {
       const r = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(
-          name + " اليمن"
+          name
         )}`
       );
 
@@ -92,6 +131,8 @@ export default function MapPage() {
           parseFloat(j[0].lat),
           parseFloat(j[0].lon),
         ]);
+      } else {
+        setError("لم يتم العثور على موقع");
       }
     } catch {
       setError("فشل البحث");
@@ -106,16 +147,32 @@ export default function MapPage() {
     }
 
     navigator.geolocation.getCurrentPosition(
-      (p) => {
-        setPos([
-          p.coords.latitude,
-          p.coords.longitude,
-        ]);
+      async (p) => {
+        const lat = p.coords.latitude;
+        const lng = p.coords.longitude;
+
+        setPos([lat, lng]);
+
+        // Reverse geocoding
+        try {
+          const r = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
+          );
+
+          const j = await r.json();
+
+          if (j.display_name) {
+            setName(j.display_name);
+          }
+        } catch {}
       },
       () => {
-        setError("فشل تحديد الموقع");
+        setError("فعّل الموقع من إعدادات المتصفح");
       },
-      { enableHighAccuracy: true }
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+      }
     );
   };
 
@@ -176,35 +233,77 @@ export default function MapPage() {
         </div>
 
         {/* Search */}
-        <div style={{ display: "flex", gap: 8 }}>
-          <input
-            value={name}
-            onChange={(e) => {
-              setName(e.target.value);
-              setError("");
-            }}
-            placeholder="اسم العنوان"
-            style={{
-              flex: 1,
-              padding: 10,
-              borderRadius: 12,
-              border: "none",
-              outline: "none",
-            }}
-          />
+        <div style={{ position: "relative" }}>
+          <div style={{ display: "flex", gap: 8 }}>
+            <input
+              value={name}
+              onChange={(e) =>
+                handleSearchChange(e.target.value)
+              }
+              placeholder="اسم العنوان"
+              style={{
+                flex: 1,
+                padding: 10,
+                borderRadius: 12,
+                border: "none",
+                outline: "none",
+              }}
+            />
 
-          <button
-            onClick={searchByName}
-            style={{
-              padding: "0 14px",
-              borderRadius: 12,
-              border: "none",
-              background: "#fff",
-              fontWeight: "bold",
-            }}
-          >
-            🔍
-          </button>
+            <button
+              onClick={searchByName}
+              style={{
+                padding: "0 14px",
+                borderRadius: 12,
+                border: "none",
+                background: "#fff",
+                fontWeight: "bold",
+              }}
+            >
+              🔍
+            </button>
+          </div>
+
+          {/* Suggestions */}
+          {suggestions.length > 0 && (
+            <div
+              style={{
+                position: "absolute",
+                top: "100%",
+                left: 0,
+                right: 0,
+                background: "#fff",
+                borderRadius: 10,
+                marginTop: 4,
+                maxHeight: 180,
+                overflow: "auto",
+                boxShadow:
+                  "0 2px 8px rgba(0,0,0,.2)",
+              }}
+            >
+              {suggestions.map((s, i) => (
+                <div
+                  key={i}
+                  onClick={() => {
+                    setName(s.display_name);
+                    setPos([
+                      parseFloat(s.lat),
+                      parseFloat(s.lon),
+                    ]);
+                    setSuggestions([]);
+                  }}
+                  style={{
+                    padding: 8,
+                    cursor: "pointer",
+                    borderBottom:
+                      "1px solid #eee",
+                  }}
+                >
+                  {s.display_name}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -225,6 +324,8 @@ export default function MapPage() {
           }}
         >
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+
+          <Recenter pos={pos} />
 
           <ClickHandler
             onPick={(lat, lng) =>
