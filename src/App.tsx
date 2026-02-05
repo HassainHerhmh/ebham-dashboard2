@@ -28,7 +28,7 @@ import PaymentsBanks from "./pages/PaymentsBanks";
 import PaymentsWallet from "./pages/PaymentsWallet";
 import CommissionReport from "./pages/CommissionReport";
 
-import WasselOrders from "./pages/orders/WasselOrders";
+import WasselOrders from "./pages/WasselOrders";
 
 
 
