@@ -453,10 +453,13 @@ if (state.target === "to") {
 {fromMode === "map" && (
   <button
     onClick={() =>
-      navigate("/map-picker", {
-        state: { target: "from" },
-      })
-    }
+ navigate("/map-picker", {
+  state: {
+    target: "from",
+    returnTo: "/wassel-lee", // 👈 مسار الرجوع
+  },
+});
+
     className="w-full p-2 border rounded bg-blue-50 text-blue-700"
   >
     📍 اختر الموقع من الخريطة
@@ -510,10 +513,13 @@ if (state.target === "to") {
 {toMode === "map" && (
   <button
     onClick={() =>
-      navigate("/map-picker", {
-        state: { target: "to" },
-      })
-    }
+   navigate("/map-picker", {
+  state: {
+    target: "to",
+    returnTo: "/wassel-lee",
+  },
+});
+
     className="w-full p-2 border rounded bg-blue-50 text-blue-700"
   >
     📍 اختر الموقع من الخريطة
