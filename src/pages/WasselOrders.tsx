@@ -42,6 +42,11 @@ const WasselOrders: React.FC = () => {
   /* Modal */
   const [showModal, setShowModal] = useState(false);
   const [editingOrder, setEditingOrder] = useState<WasselOrder | null>(null);
+const [customers, setCustomers] = useState<any[]>([]);
+const [addresses, setAddresses] = useState<any[]>([]);
+
+const [fromMode, setFromMode] = useState<"saved" | "map">("saved");
+const [toMode, setToMode] = useState<"saved" | "map">("saved");
 
   /* Form */
   const [form, setForm] = useState<any>({
@@ -146,6 +151,21 @@ const WasselOrders: React.FC = () => {
       "_blank"
     );
   };
+
+   const loadAddresses = async (id: number) => {
+  const res = await api.get(`/customer-addresses/customer/${id}`);
+  setAddresses(res.data.addresses || []);
+};
+
+
+   useEffect(() => {
+  if (showModal) {
+    api.get("/customers").then((res) => {
+      setCustomers(res.data.customers || []);
+    });
+  }
+}, [showModal]);
+
 
   /* ======================
      JSX
@@ -324,50 +344,136 @@ const WasselOrders: React.FC = () => {
               <option value="أخرى">أخرى</option>
             </select>
 
-            {/* From */}
-            <input
-              placeholder="من (العنوان)"
-              className="w-full p-2 border rounded"
-              value={form.from_address}
-              onChange={(e) =>
-                setForm({ ...form, from_address: e.target.value })
-              }
-            />
+            {/* Customer */}
+<select
+  className="w-full p-2 border rounded"
+  value={form.customer_id}
+  onChange={(e) => {
+    const id = e.target.value;
+    setForm({ ...form, customer_id: id });
+    loadAddresses(id);
+  }}
+>
+  <option value="">اختر العميل</option>
 
-            {/* To */}
-            <input
-              placeholder="إلى (العنوان)"
-              className="w-full p-2 border rounded"
-              value={form.to_address}
-              onChange={(e) =>
-                setForm({ ...form, to_address: e.target.value })
-              }
-            />
+  {customers.map((c) => (
+    <option key={c.id} value={c.id}>
+      {c.name} - {c.phone}
+    </option>
+  ))}
+</select>
 
-            {/* Fees */}
-            <div className="grid grid-cols-2 gap-3">
+             
+            {/* From Address */}
+<div className="space-y-2">
 
-              <input
-                type="number"
-                placeholder="رسوم التوصيل"
-                className="p-2 border rounded"
-                value={form.delivery_fee}
-                onChange={(e) =>
-                  setForm({ ...form, delivery_fee: e.target.value })
-                }
-              />
+  <div className="flex gap-2">
+    <button
+      onClick={() => setFromMode("saved")}
+      className={`px-3 py-1 rounded ${
+        fromMode === "saved" ? "bg-blue-600 text-white" : "bg-gray-200"
+      }`}
+    >
+      عناوين محفوظة
+    </button>
 
-              <input
-                type="number"
-                placeholder="رسوم إضافية"
-                className="p-2 border rounded"
-                value={form.extra_fee}
-                onChange={(e) =>
-                  setForm({ ...form, extra_fee: e.target.value })
-                }
-              />
+    <button
+      onClick={() => setFromMode("map")}
+      className={`px-3 py-1 rounded ${
+        fromMode === "map" ? "bg-blue-600 text-white" : "bg-gray-200"
+      }`}
+    >
+      من الخريطة
+    </button>
+  </div>
 
-            </div>
+  {/* Saved */}
+  {fromMode === "saved" && (
+    <select
+      className="w-full p-2 border rounded"
+      value={form.from_address}
+      onChange={(e) =>
+        setForm({ ...form, from_address: e.target.value })
+      }
+    >
+      <option value="">اختر عنوان</option>
+
+      {addresses.map((a) => (
+        <option key={a.id} value={a.map_url || a.address}>
+          {a.neighborhood_name} - {a.address}
+        </option>
+      ))}
+    </select>
+  )}
+
+  {/* Map */}
+  {fromMode === "map" && (
+    <input
+      placeholder="رابط الموقع من Google Maps"
+      className="w-full p-2 border rounded"
+      value={form.from_address}
+      onChange={(e) =>
+        setForm({ ...form, from_address: e.target.value })
+      }
+    />
+  )}
+
+</div>
+
+
+           {/* To Address */}
+<div className="space-y-2">
+
+  <div className="flex gap-2">
+    <button
+      onClick={() => setToMode("saved")}
+      className={`px-3 py-1 rounded ${
+        toMode === "saved" ? "bg-blue-600 text-white" : "bg-gray-200"
+      }`}
+    >
+      عناوين محفوظة
+    </button>
+
+    <button
+      onClick={() => setToMode("map")}
+      className={`px-3 py-1 rounded ${
+        toMode === "map" ? "bg-blue-600 text-white" : "bg-gray-200"
+      }`}
+    >
+      من الخريطة
+    </button>
+  </div>
+
+  {toMode === "saved" && (
+    <select
+      className="w-full p-2 border rounded"
+      value={form.to_address}
+      onChange={(e) =>
+        setForm({ ...form, to_address: e.target.value })
+      }
+    >
+      <option value="">اختر عنوان</option>
+
+      {addresses.map((a) => (
+        <option key={a.id} value={a.map_url || a.address}>
+          {a.neighborhood_name} - {a.address}
+        </option>
+      ))}
+    </select>
+  )}
+
+  {toMode === "map" && (
+    <input
+      placeholder="رابط الموقع من Google Maps"
+      className="w-full p-2 border rounded"
+      value={form.to_address}
+      onChange={(e) =>
+        setForm({ ...form, to_address: e.target.value })
+      }
+    />
+  )}
+
+</div>
 
             {/* Notes */}
             <textarea
