@@ -96,40 +96,60 @@ const [form, setForm] = useState<any>({
   ====================== */
 
   const openAdd = () => {
-    setEditingOrder(null);
+  setEditingOrder(null);
 
-    setForm({
-      order_type: "",
-      from_address: "",
-      to_address: "",
-      delivery_fee: "",
-      extra_fee: "",
-      notes: "",
-    });
+  setForm({
+    customer_id: "",
+    order_type: "",
+    from_address: "",
+    from_lat: null,
+    from_lng: null,
+    to_address: "",
+    to_lat: null,
+    to_lng: null,
+    delivery_fee: "",
+    extra_fee: "",
+    notes: "",
+  });
 
-    setShowModal(true);
-  };
+  setShowModal(true);
+};
 
-  const openEdit = (o: WasselOrder) => {
-    setEditingOrder(o);
+const openEdit = (o: WasselOrder) => {
+  setEditingOrder(o);
 
-    setForm({
-      order_type: o.order_type,
-      from_address: o.from_address,
-      to_address: o.to_address,
-      delivery_fee: o.delivery_fee,
-      extra_fee: o.extra_fee,
-      notes: o.notes || "",
-    });
+  setForm({
+    customer_id: (o as any).customer_id || "",
+    order_type: o.order_type,
 
-    setShowModal(true);
-  };
+    from_address: o.from_address,
+    from_lat: o.from_lat || null,
+    from_lng: o.from_lng || null,
+
+    to_address: o.to_address,
+    to_lat: o.to_lat || null,
+    to_lng: o.to_lng || null,
+
+    delivery_fee: o.delivery_fee,
+    extra_fee: o.extra_fee,
+    notes: o.notes || "",
+  });
+
+  setShowModal(true);
+};
+
 
   const saveOrder = async () => {
     try {
-      if (!form.order_type || !form.from_address || !form.to_address) {
-        return alert("أكمل البيانات");
-      }
+   if (
+  !form.customer_id ||
+  !form.order_type ||
+  !form.from_address ||
+  !form.to_address
+) {
+  return alert("أكمل جميع البيانات");
+}
+
 
       const payload = {
         ...form,
@@ -204,7 +224,8 @@ if (state.target === "to") {
     // تنظيف البيانات بعد الاستخدام
     navigate(location.pathname, { replace: true });
   }
-}, [location.state]);
+}, [location, navigate]);
+
 
   /* ======================
      JSX
@@ -292,26 +313,41 @@ if (state.target === "to") {
 
 
 
-                  {/* Fees */}
-                  <td className="font-semibold text-green-700">
+          {/* Fees */}
+<div className="grid grid-cols-2 gap-3">
 
-                    {Number(o.delivery_fee) +
-                      Number(o.extra_fee)} ريال
+  <input
+    type="number"
+    placeholder="رسوم التوصيل"
+    className="p-2 border rounded"
+    value={form.delivery_fee}
+    onChange={(e) =>
+      setForm({ ...form, delivery_fee: e.target.value })
+    }
+  />
 
-                  </td>
+  <input
+    type="number"
+    placeholder="رسوم إضافية"
+    className="p-2 border rounded"
+    value={form.extra_fee}
+    onChange={(e) =>
+      setForm({ ...form, extra_fee: e.target.value })
+    }
+  />
 
-                  <td>{o.notes || "-"}</td>
+</div>
 
-                  <td>
-                    <span
-                      className={`px-2 py-1 rounded text-sm ${
-                        o.status === "completed"
-                          ? "bg-green-100 text-green-700"
-                          : o.status === "cancelled"
-                          ? "bg-red-100 text-red-700"
-                          : "bg-blue-100 text-blue-700"
-                      }`}
-                    >
+{/* Notes */}
+<textarea
+  placeholder="ملاحظات"
+  className="w-full p-2 border rounded"
+  value={form.notes}
+  onChange={(e) =>
+    setForm({ ...form, notes: e.target.value })
+  }
+/>
+
                       {o.status}
                     </span>
                   </td>
