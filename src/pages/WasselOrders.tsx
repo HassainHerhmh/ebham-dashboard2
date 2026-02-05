@@ -475,6 +475,16 @@ const [toMode, setToMode] = useState<"saved" | "map">("saved");
 
 </div>
 
+             {/* Fees */} <div className="grid grid-cols-2 gap-3"> 
+                <input type="number" placeholder="رسوم التوصيل" className="p-2 border rounded" 
+                   value={form.delivery_fee} onChange={(e) => 
+   setForm({ ...form, delivery_fee: e.target.value }) } 
+                   /> 
+                
+                <input type="number" placeholder="رسوم إضافية" className="p-2 border rounded"
+                   value={form.extra_fee} onChange={(e) =>
+   setForm({ ...form, extra_fee: e.target.value }) }
+                   />
             {/* Notes */}
             <textarea
               placeholder="ملاحظات"
