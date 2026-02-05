@@ -41,6 +41,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const [agentsOpen, setAgentsOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
 const [reportsOpen, setReportsOpen] = useState(false);
+const [ordersOpen, setOrdersOpen] = useState(false);
 
   const areasGroup: MenuItem[] = [
     { key: "settings", label: "رسوم التوصيل", path: "/settings/delivery-fees" },
@@ -126,60 +127,71 @@ const [reportsOpen, setReportsOpen] = useState(false);
               <span>العملاء</span>
             </Link>
           )}
-
-        {/* الطلبات */}
+{/* الطلبات */}
 {canShow("orders") && (
   <div className="space-y-1">
 
     {/* العنوان الرئيسي */}
     <div
+      onClick={() => setOrdersOpen(!ordersOpen)}
       className={`${linkBase} cursor-pointer flex items-center justify-between`}
     >
       <div className="flex items-center gap-2">
         <ClipboardList size={18} />
         <span>الطلبات</span>
       </div>
+
+      {/* السهم */}
+      {ordersOpen ? (
+        <ChevronUp size={18} />
+      ) : (
+        <ChevronDown size={18} />
+      )}
     </div>
 
     {/* العناصر الفرعية */}
-    <div className="ml-6 space-y-1">
+    {ordersOpen && (
+      <div className="ml-6 space-y-1">
 
-      {/* الطلبات العامة */}
-      <Link
-        to="/orders"
-        onClick={onClose}
-        className={`${linkBaseSmall} ${
-          isPathActive("/orders") ? activeClass : ""
-        }`}
-      >
-        📋 كل الطلبات
-      </Link>
+        {/* كل الطلبات */}
+        <Link
+          to="/orders"
+          onClick={onClose}
+          className={`${linkBaseSmall} ${
+            isPathActive("/orders") ? activeClass : ""
+          }`}
+        >
+          📋 كل الطلبات
+        </Link>
 
-      {/* طلبات وصل لي */}
-      <Link
-        to="/orders/wassel"
-        onClick={onClose}
-        className={`${linkBaseSmall} ${
-          isPathActive("/orders/wassel") ? activeClass : ""
-        }`}
-      >
-        📦 طلبات وصل لي
-      </Link>
+        {/* طلبات وصل لي */}
+        <Link
+          to="/orders/wassel"
+          onClick={onClose}
+          className={`${linkBaseSmall} ${
+            isPathActive("/orders/wassel") ? activeClass : ""
+          }`}
+        >
+          📦 طلبات وصل لي
+        </Link>
 
-      {/* الطلبات اليدوية */}
-      <Link
-        to="/orders/manual"
-        onClick={onClose}
-        className={`${linkBaseSmall} ${
-          isPathActive("/orders/manual") ? activeClass : ""
-        }`}
-      >
-        ✍️ طلبات يدوية
-      </Link>
+        {/* طلبات يدوية */}
+        <Link
+          to="/orders/manual"
+          onClick={onClose}
+          className={`${linkBaseSmall} ${
+            isPathActive("/orders/manual") ? activeClass : ""
+          }`}
+        >
+          ✍️ طلبات يدوية
+        </Link>
 
-    </div>
+      </div>
+    )}
+
   </div>
 )}
+
 
 
           {/* التسويق */}
