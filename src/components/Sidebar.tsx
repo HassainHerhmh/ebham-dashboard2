@@ -127,14 +127,60 @@ const [reportsOpen, setReportsOpen] = useState(false);
             </Link>
           )}
 
-          {/* الطلبات */}
-          {canShow("orders") && (
-            <Link to="/orders" onClick={onClose}
-              className={`${linkBase} ${isPathActive("/orders") ? activeClass : ""}`}>
-              <ClipboardList size={18} />
-              <span>الطلبات</span>
-            </Link>
-          )}
+        {/* الطلبات */}
+{canShow("orders") && (
+  <div className="space-y-1">
+
+    {/* العنوان الرئيسي */}
+    <div
+      className={`${linkBase} cursor-pointer flex items-center justify-between`}
+    >
+      <div className="flex items-center gap-2">
+        <ClipboardList size={18} />
+        <span>الطلبات</span>
+      </div>
+    </div>
+
+    {/* العناصر الفرعية */}
+    <div className="ml-6 space-y-1">
+
+      {/* الطلبات العامة */}
+      <Link
+        to="/orders"
+        onClick={onClose}
+        className={`${linkBaseSmall} ${
+          isPathActive("/orders") ? activeClass : ""
+        }`}
+      >
+        📋 كل الطلبات
+      </Link>
+
+      {/* طلبات وصل لي */}
+      <Link
+        to="/orders/wassel"
+        onClick={onClose}
+        className={`${linkBaseSmall} ${
+          isPathActive("/orders/wassel") ? activeClass : ""
+        }`}
+      >
+        📦 طلبات وصل لي
+      </Link>
+
+      {/* الطلبات اليدوية */}
+      <Link
+        to="/orders/manual"
+        onClick={onClose}
+        className={`${linkBaseSmall} ${
+          isPathActive("/orders/manual") ? activeClass : ""
+        }`}
+      >
+        ✍️ طلبات يدوية
+      </Link>
+
+    </div>
+  </div>
+)}
+
 
           {/* التسويق */}
           {canShow("marketing") && (
