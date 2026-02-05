@@ -75,10 +75,10 @@ const [ordersOpen, setOrdersOpen] = useState(false);
 
   const canShow = (key: string) => isAdmin || hasPermission(user, key, "view");
 
-  const isPathActive = (path: string) =>
-    path === "/"
-      ? location.pathname === "/"
-      : location.pathname === path || location.pathname.startsWith(path + "/");
+const isPathActive = (path: string) => {
+  return location.pathname === path;
+};
+
 
   // تحسين كلاسات الروابط لدعم الوضع الليلي
   const linkBase =
