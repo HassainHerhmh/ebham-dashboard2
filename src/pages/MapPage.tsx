@@ -58,26 +58,25 @@ export default function MapPage() {
 
   const target = (location.state as any)?.target || "from";
 
-  const [pos, setPos] = useState<[number, number]>([
-    15.3694,
-    44.191,
-  ]);
+  const [pos, setPos] = useState<[number, number]>([15.3694, 44.191]);
 
   const [name, setName] = useState("");
   const [error, setError] = useState("");
 
-  const [suggestions, setSuggestions] = useState<any[]>([]);
+  /* نوع الخريطة */
+  const [mapType, setMapType] = useState<"normal" | "sat">("normal");
 
   const HEADER_HEIGHT = 130;
 
-  /* Save */
+  /* حفظ الموقع */
   const handleSave = () => {
     if (!name.trim()) {
       setError("اكتب اسم العنوان");
       return;
     }
 
-    navigate("/wassel-lee", {
+    // الرجوع للمودل مع البيانات
+    navigate(-1, {
       state: {
         from: "map",
         target,
@@ -88,32 +87,7 @@ export default function MapPage() {
     });
   };
 
-  /* Autocomplete */
-  const handleSearchChange = async (v: string) => {
-    setName(v);
-    setError("");
-
-    if (v.length < 3) {
-      setSuggestions([]);
-      return;
-    }
-
-    try {
-      const r = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&limit=5&q=${encodeURIComponent(
-          v + " اليمن"
-        )}`
-      );
-
-      const j = await r.json();
-
-      setSuggestions(j);
-    } catch {
-      setSuggestions([]);
-    }
-  };
-
-  /* Manual search */
+  /* البحث */
   const searchByName = async () => {
     if (!name.trim()) return;
 
@@ -139,7 +113,7 @@ export default function MapPage() {
     }
   };
 
-  /* My location */
+  /* موقعي الحالي */
   const goToMyLocation = () => {
     if (!navigator.geolocation) {
       setError("المتصفح لا يدعم GPS");
@@ -153,7 +127,7 @@ export default function MapPage() {
 
         setPos([lat, lng]);
 
-        // Reverse geocoding
+        // جلب اسم العنوان
         try {
           const r = await fetch(
             `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
@@ -167,7 +141,7 @@ export default function MapPage() {
         } catch {}
       },
       () => {
-        setError("فعّل الموقع من إعدادات المتصفح");
+        setError("فعّل الموقع من الإعدادات");
       },
       {
         enableHighAccuracy: true,
@@ -196,11 +170,10 @@ export default function MapPage() {
           padding: "22px 12px 12px",
         }}
       >
-        {/* Top bar */}
+        {/* Top */}
         <div
           style={{
             display: "flex",
-            alignItems: "center",
             justifyContent: "space-between",
             marginBottom: 12,
           }}
@@ -212,20 +185,12 @@ export default function MapPage() {
               border: "none",
               borderRadius: 10,
               padding: "6px 10px",
-              fontSize: 16,
             }}
           >
             ←
           </button>
 
-          <div
-            style={{
-              flex: 1,
-              textAlign: "center",
-              fontWeight: "bold",
-              fontSize: 16,
-            }}
-          >
+          <div style={{ fontWeight: "bold" }}>
             اختر الموقع
           </div>
 
@@ -233,88 +198,38 @@ export default function MapPage() {
         </div>
 
         {/* Search */}
-        <div style={{ position: "relative" }}>
-          <div style={{ display: "flex", gap: 8 }}>
-            <input
-              value={name}
-              onChange={(e) =>
-                handleSearchChange(e.target.value)
-              }
-              placeholder="اسم العنوان"
-              style={{
-                flex: 1,
-                padding: 10,
-                borderRadius: 12,
-                border: "none",
-                outline: "none",
-              }}
-            />
+        <div style={{ display: "flex", gap: 8 }}>
+          <input
+            value={name}
+            onChange={(e) => {
+              setName(e.target.value);
+              setError("");
+            }}
+            placeholder="اسم العنوان"
+            style={{
+              flex: 1,
+              padding: 10,
+              borderRadius: 12,
+              border: "none",
+            }}
+          />
 
-            <button
-              onClick={searchByName}
-              style={{
-                padding: "0 14px",
-                borderRadius: 12,
-                border: "none",
-                background: "#fff",
-                fontWeight: "bold",
-              }}
-            >
-              🔍
-            </button>
-          </div>
-
-          {/* Suggestions */}
-          {suggestions.length > 0 && (
-            <div
-              style={{
-                position: "absolute",
-                top: "100%",
-                left: 0,
-                right: 0,
-                background: "#fff",
-                borderRadius: 10,
-                marginTop: 4,
-                maxHeight: 180,
-                overflow: "auto",
-                boxShadow:
-                  "0 2px 8px rgba(0,0,0,.2)",
-              }}
-            >
-              {suggestions.map((s, i) => (
-                <div
-                  key={i}
-                  onClick={() => {
-                    setName(s.display_name);
-                    setPos([
-                      parseFloat(s.lat),
-                      parseFloat(s.lon),
-                    ]);
-                    setSuggestions([]);
-                  }}
-                  style={{
-                    padding: 8,
-                    cursor: "pointer",
-                    borderBottom:
-                      "1px solid #eee",
-                  }}
-                >
-                  {s.display_name}
-                </div>
-              ))}
-            </div>
-          )}
+          <button
+            onClick={searchByName}
+            style={{
+              padding: "0 14px",
+              borderRadius: 12,
+              background: "#fff",
+              border: "none",
+            }}
+          >
+            🔍
+          </button>
         </div>
       </div>
 
       {/* Map */}
-      <Suspense
-        fallback={
-          <div className="p-6 text-center">
-            ⏳ تحميل الخريطة...
-          </div>
-        }
-      >
+      <Suspense fallback={<div>تحميل...</div>}>
         <MapContainer
           center={pos}
           zoom={14}
@@ -323,7 +238,15 @@ export default function MapPage() {
             marginTop: HEADER_HEIGHT,
           }}
         >
-          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+          {/* Normal */}
+          {mapType === "normal" && (
+            <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+          )}
+
+          {/* Satellite */}
+          {mapType === "sat" && (
+            <TileLayer url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}" />
+          )}
 
           <Recenter pos={pos} />
 
@@ -358,28 +281,37 @@ export default function MapPage() {
               padding: 8,
               borderRadius: 10,
               textAlign: "center",
-              fontSize: 13,
             }}
           >
             {error}
           </div>
         )}
 
+        {/* Buttons */}
         <div style={{ display: "flex", gap: 10 }}>
+
+          {/* Satellite toggle */}
           <button
-            onClick={handleSave}
+            onClick={() =>
+              setMapType(
+                mapType === "normal"
+                  ? "sat"
+                  : "normal"
+              )
+            }
             style={{
               flex: 1,
               padding: 12,
               borderRadius: 16,
-              border: "none",
-              background: BRAND_COLOR,
+              border: "1px solid #ddd",
+              background: "#fff",
               fontWeight: "bold",
             }}
           >
-            حفظ الموقع
+            🛰️ قمر صناعي
           </button>
 
+          {/* My location */}
           <button
             onClick={goToMyLocation}
             style={{
@@ -391,9 +323,23 @@ export default function MapPage() {
               fontWeight: "bold",
             }}
           >
-            موقعي الحالي
+            📍 موقعي
           </button>
         </div>
+
+        {/* Save */}
+        <button
+          onClick={handleSave}
+          style={{
+            padding: 14,
+            borderRadius: 16,
+            border: "none",
+            background: BRAND_COLOR,
+            fontWeight: "bold",
+          }}
+        >
+          حفظ الموقع
+        </button>
       </div>
     </div>
   );
