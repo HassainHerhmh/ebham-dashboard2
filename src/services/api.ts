@@ -1154,7 +1154,7 @@ export const executeExchange = async (data: {
 
   // إسناد كابتن (إذا كان السيرفر يستخدم راوت منفصل أو يستخدم update)
   assignCaptain: async (orderId: number, captainId: number) => 
-    (await api.put(`/wassel-orders/${orderId}`, { captain_id: captainId })).data,
+    (await api.post(`/wassel-orders/assign`, { orderId, captainId })).data,
 };
 
 export default api;
