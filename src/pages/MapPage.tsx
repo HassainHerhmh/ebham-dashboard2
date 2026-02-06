@@ -155,6 +155,12 @@ const handleSave = () => {
     );
   };
 
+useEffect(() => {
+  console.log("🗺️ Map opened");
+  console.log("User local:", localStorage.getItem("user"));
+}, []);
+
+  
   return (
     <div
       style={{
