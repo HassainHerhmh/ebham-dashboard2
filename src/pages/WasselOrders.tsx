@@ -167,11 +167,16 @@ const WasselOrders: React.FC = () => {
         return alert("أكمل جميع البيانات");
       }
 
-      const payload = {
-        ...form,
-        delivery_fee: Number(form.delivery_fee || 0),
-        extra_fee: Number(form.extra_fee || 0),
-      };
+    const payload = {
+  ...form,
+
+  from_address_id: form.from_address_id,
+  to_address_id: form.to_address_id,
+
+  delivery_fee: Number(form.delivery_fee || 0),
+  extra_fee: Number(form.extra_fee || 0),
+};
+
 
       if (editingOrder) {
         await api.put(`/wassel-orders/${editingOrder.id}`, payload);
