@@ -223,21 +223,30 @@ setForm({
     }
   }, [showModal]);
 
-  useEffect(() => {
+ useEffect(() => {
   const state = location.state as any;
 
   if (state?.from === "map") {
 
-    // ✅ إعادة فتح المودال
+    // إعادة فتح المودال
     if (state.reopenModal) {
       setShowModal(true);
     }
 
+    // ===== FROM =====
     if (state.target === "from") {
       setFromMode("map");
 
       setForm((f: any) => ({
         ...f,
+
+        // نحافظ على بيانات TO كما هي
+        to_address: f.to_address,
+        to_lat: f.to_lat,
+        to_lng: f.to_lng,
+        to_address_id: f.to_address_id,
+
+        // نحدّث FROM فقط
         from_address: state.value || "",
         from_lat: state.lat,
         from_lng: state.lng,
@@ -245,11 +254,20 @@ setForm({
       }));
     }
 
+    // ===== TO =====
     if (state.target === "to") {
       setToMode("map");
 
       setForm((f: any) => ({
         ...f,
+
+        // نحافظ على بيانات FROM كما هي
+        from_address: f.from_address,
+        from_lat: f.from_lat,
+        from_lng: f.from_lng,
+        from_address_id: f.from_address_id,
+
+        // نحدّث TO فقط
         to_address: state.value || "",
         to_lat: state.lat,
         to_lng: state.lng,
@@ -257,7 +275,7 @@ setForm({
       }));
     }
 
-    // تنظيف state
+    // تنظيف state بدون كسر البيانات
     navigate(location.pathname, { replace: true });
   }
 }, [location, navigate]);
