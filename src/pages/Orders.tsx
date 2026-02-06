@@ -508,8 +508,7 @@ type OrderTab =
   | "delivering"
   | "completed"
   | "cancelled"
-  | "wassel"   // 🆕 طلبات وصل لي
-  | "manual";  // 🆕 طلبات يدوية
+
 
   const [activeTab, setActiveTab] = useState<OrderTab>("pending");
 
@@ -536,17 +535,7 @@ type OrderTab =
     case "cancelled":
       return list.filter((o) => o.status === "cancelled");
 
-    /* 🆕 طلبات وصل لي */
-    case "wassel":
-      return list.filter(
-        (o) => o.order_type === "wassel"   // حسب عمودك في DB
-      );
 
-    /* 🆕 الطلبات اليدوية */
-    case "manual":
-      return list.filter(
-        (o) => o.is_manual === 1          // حسب عمودك في DB
-      );
 
     default:
       return list;
@@ -717,8 +706,7 @@ const countByTab = (list: Order[]) => {
   { key: "delivering", label: "🚚 قيد التوصيل" },
   { key: "completed", label: "✅ مكتمل" },
   { key: "cancelled", label: "❌ ملغي" },
-  { key: "wassel", label: "📦 طلبات وصل لي" },
-  { key: "manual", label: "✍️ طلبات يدوية" },
+
 ].map((t) => (
   <button
     key={t.key}
