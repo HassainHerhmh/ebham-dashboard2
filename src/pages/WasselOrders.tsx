@@ -226,60 +226,38 @@ setForm({
  useEffect(() => {
   const state = location.state as any;
 
-  if (state?.from === "map") {
+  if (!state || state.from !== "map") return;
 
-    // إعادة فتح المودال
-    if (state.reopenModal) {
-      setShowModal(true);
-    }
+  setShowModal(true); // تأكد أن المودال مفتوح
 
-    // ===== FROM =====
+  setForm((prev: any) => {
+    const updated = { ...prev };
+
     if (state.target === "from") {
       setFromMode("map");
 
-      setForm((f: any) => ({
-        ...f,
-
-        // نحافظ على بيانات TO كما هي
-        to_address: f.to_address,
-        to_lat: f.to_lat,
-        to_lng: f.to_lng,
-        to_address_id: f.to_address_id,
-
-        // نحدّث FROM فقط
-        from_address: state.value || "",
-        from_lat: state.lat,
-        from_lng: state.lng,
-        from_address_id: "",
-      }));
+      updated.from_address = state.value || "";
+      updated.from_lat = state.lat;
+      updated.from_lng = state.lng;
+      updated.from_address_id = "";
     }
 
-    // ===== TO =====
     if (state.target === "to") {
       setToMode("map");
 
-      setForm((f: any) => ({
-        ...f,
-
-        // نحافظ على بيانات FROM كما هي
-        from_address: f.from_address,
-        from_lat: f.from_lat,
-        from_lng: f.from_lng,
-        from_address_id: f.from_address_id,
-
-        // نحدّث TO فقط
-        to_address: state.value || "",
-        to_lat: state.lat,
-        to_lng: state.lng,
-        to_address_id: "",
-      }));
+      updated.to_address = state.value || "";
+      updated.to_lat = state.lat;
+      updated.to_lng = state.lng;
+      updated.to_address_id = "";
     }
 
-    // تنظيف state بدون كسر البيانات
-    navigate(location.pathname, { replace: true });
-  }
-}, [location, navigate]);
+    return updated;
+  });
 
+  // مسح state بعد الاستخدام
+  navigate(location.pathname, { replace: true });
+
+}, [location.key]); // مهم جداً
 
   /* ======================
      JSX
