@@ -82,17 +82,21 @@ const WasselOrders: React.FC = () => {
   notes: "",
 });
 
-   useEffect(() => {
+useEffect(() => {
+  if (!showModal) return;
+
+  // لو جاي من الخريطة لا نلمس الفورم
+  if ((location.state as any)?.from === "map") return;
+
   const draft = sessionStorage.getItem("wassel_form_draft");
 
-  if (draft && showModal) {
-    try {
-      const data = JSON.parse(draft);
+  if (!draft) return;
 
-      setForm(data);
-    } catch {}
-  }
-}, [showModal]);
+  try {
+    setForm(JSON.parse(draft));
+  } catch {}
+}, [showModal, location.state]);
+
 
 useEffect(() => {
   if (form.customer_id) {
@@ -244,41 +248,42 @@ setForm({
     }
   }, [showModal]);
 
- useEffect(() => {
+useEffect(() => {
   const state = location.state as any;
 
   if (!state || state.from !== "map") return;
 
-  setShowModal(true); // تأكد أن المودال مفتوح
+  setShowModal(true);
 
-  setForm((prev: any) => {
-    const updated = { ...prev };
+  setForm((prev: any) => ({
+    ...prev,
 
-    if (state.target === "from") {
-      setFromMode("map");
+    ...(state.target === "from"
+      ? {
+          from_address: state.value || "",
+          from_lat: state.lat,
+          from_lng: state.lng,
+          from_address_id: "",
+        }
+      : {}),
 
-      updated.from_address = state.value || "";
-      updated.from_lat = state.lat;
-      updated.from_lng = state.lng;
-      updated.from_address_id = "";
-    }
+    ...(state.target === "to"
+      ? {
+          to_address: state.value || "",
+          to_lat: state.lat,
+          to_lng: state.lng,
+          to_address_id: "",
+        }
+      : {}),
+  }));
 
-    if (state.target === "to") {
-      setToMode("map");
+  if (state.target === "from") setFromMode("map");
+  if (state.target === "to") setToMode("map");
 
-      updated.to_address = state.value || "";
-      updated.to_lat = state.lat;
-      updated.to_lng = state.lng;
-      updated.to_address_id = "";
-    }
-
-    return updated;
-  });
-
-  // مسح state بعد الاستخدام
   navigate(location.pathname, { replace: true });
+}, [location.key]);
 
-}, [location.key]); // مهم جداً
+
 
   /* ======================
      JSX
@@ -706,7 +711,10 @@ value={form.to_address_id}
       <div className="flex justify-end gap-3 pt-3">
 
         <button
-          onClick={() => setShowModal(false)}
+onClick={() => {
+  sessionStorage.removeItem("wassel_form_draft");
+  setShowModal(false);
+}}
           className="px-4 py-2 bg-gray-400 text-white rounded"
         >
           إلغاء
