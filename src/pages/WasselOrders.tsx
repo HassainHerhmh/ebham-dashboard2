@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import api from "../services/api";
-import { Plus, Edit, MapPin, DollarSign, UserCheck } from "lucide-react";
+import { Plus, Edit, MapPin, DollarSign, UserCheck, Truck } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 /* ======================
@@ -175,11 +175,11 @@ const WasselOrders: React.FC = () => {
     if (!selectedOrderId) return;
     try {
       await api.orders.assignCaptain(selectedOrderId, captainId);
-      await api.put(`/wassel-orders/status/${selectedOrderId}`, { status: "delivering" });
+      // ملاحظة: تم إزالة تحديث الحالة التلقائي بناءً على طلبك
       setIsCaptainModalOpen(false);
       loadOrders();
-      alert("✅ تم التعيين وبدء التوصيل");
-    } catch (e) { alert("تأكد من تحديث قاعدة البيانات لإضافة captain_id"); }
+      alert("✅ تم إسناد الكابتن للطلب");
+    } catch (e) { alert("حدث خطأ، تأكد من وجود عمود captain_id"); }
   };
 
   const updateOrderStatus = async (orderId: number, newStatus: string) => {
@@ -237,7 +237,15 @@ const WasselOrders: React.FC = () => {
 
   const renderActions = (o: WasselOrder) => {
     if (activeTab === "pending") return <button onClick={() => updateOrderStatus(o.id, "confirmed")} className="bg-green-600 text-white px-2 py-1 rounded text-xs">إعتماد</button>;
-    if (activeTab === "processing") return <button onClick={() => openCaptainModal(o.id)} className="bg-indigo-600 text-white px-2 py-1 rounded text-xs flex items-center gap-1 mx-auto"><UserCheck size={12}/> تعيين كابتن</button>;
+    
+    // التعديل هنا: إضافة زر قيد التوصيل بجانب الكابتن في مرحلة المعالجة
+    if (activeTab === "processing") return (
+      <div className="flex gap-1 justify-center">
+         <button onClick={() => openCaptainModal(o.id)} className="bg-indigo-600 text-white px-2 py-1 rounded text-xs flex items-center gap-1"><UserCheck size={12}/> كابتن</button>
+         <button onClick={() => updateOrderStatus(o.id, "delivering")} className="bg-orange-600 text-white px-2 py-1 rounded text-xs flex items-center gap-1"><Truck size={12}/> توصيل</button>
+      </div>
+    );
+
     if (activeTab === "delivering") return <button onClick={() => updateOrderStatus(o.id, "completed")} className="bg-green-600 text-white px-2 py-1 rounded text-xs">تم التسليم</button>;
     return "—";
   };
