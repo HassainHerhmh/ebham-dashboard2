@@ -140,10 +140,9 @@ const WasselOrders: React.FC = () => {
   const loadOrders = async () => {
     try {
       setLoading(true);
-      // استخدام المسار المباشر للتأكد من جلب البيانات كاملة
       const res = await api.get("/wassel-orders");
       setOrders(res.data?.orders || []);
-    } catch (e) { console.error("Load Orders Error:", e); } finally { setLoading(false); }
+    } catch (e) { console.error(e); } finally { setLoading(false); }
   };
 
   useEffect(() => {
@@ -173,24 +172,19 @@ const WasselOrders: React.FC = () => {
   const assignCaptain = async (captainId: number) => {
     if (!selectedOrderId) return;
     try {
-      // إرسال طلب الإسناد للمسار المخصص في السيرفر لضمان الحفظ
       const res = await api.post("/wassel-orders/assign", { orderId: selectedOrderId, captainId });
       if (res.data.success) {
-        alert("✅ تم إسناد الكابتن بنجاح");
         setIsCaptainModalOpen(false);
         loadOrders();
       }
-    } catch (e) { 
-      console.error("Assign Error:", e);
-      alert("حدث خطأ، تأكد من تحديث السيرفر وإضافة عمود captain_id"); 
-    }
+    } catch (e) { alert("حدث خطأ، تأكد من تحديث السيرفر"); }
   };
 
   const updateOrderStatus = async (orderId: number, newStatus: string) => {
     try {
       await api.put(`/wassel-orders/status/${orderId}`, { status: newStatus });
       loadOrders();
-    } catch (e) { console.error("Update Status Error:", e); }
+    } catch (e) {}
   };
 
   const openAdd = () => {
@@ -236,7 +230,7 @@ const WasselOrders: React.FC = () => {
       if (editingOrder) await api.put(`/wassel-orders/${editingOrder.id}`, payload);
       else await api.post("/wassel-orders", payload);
       setShowModal(false); loadOrders();
-    } catch (e) { console.error("Save Error:", e); }
+    } catch (e) {}
   };
 
   const renderActions = (o: WasselOrder) => {
@@ -262,10 +256,11 @@ const WasselOrders: React.FC = () => {
         </button>
       </div>
 
+      {/* الفلاتر */}
       <div className="bg-white p-4 rounded-xl shadow-sm space-y-4">
         <div className="flex gap-2 justify-center border-b pb-3">
           {[{k:"all",l:"الكل"}, {k:"today",l:"اليوم"}, {k:"week",l:"الأسبوع"}].map(t=>(
-            <button key={t.k} onClick={()=>setDateFilter(t.k as any)} className={`px-4 py-1 rounded-full text-sm font-medium ${dateFilter===t.k?"bg-indigo-600 text-white":"bg-gray-100 text-gray-600"}`}>{t.l}</button>
+            <button key={t.k} onClick={()=>setDateFilter(t.k as any)} className={`px-4 py-1 rounded-full text-sm font-medium ${dateFilter===t.k?"bg-indigo-600 text-white shadow-sm":"bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>{t.l}</button>
           ))}
         </div>
         <div className="flex gap-2 flex-wrap justify-center">
@@ -273,11 +268,12 @@ const WasselOrders: React.FC = () => {
             {k:"pending",l:"🟡 اعتماد"}, {k:"processing",l:"🔵 معالجة"},
             {k:"delivering",l:"🚚 توصيل"}, {k:"completed",l:"✅ مكتمل"}, {k:"cancelled",l:"❌ ملغي"}
           ].map(t=>(
-            <button key={t.k} onClick={()=>setActiveTab(t.k as any)} className={`px-4 py-2 rounded-lg border-b-4 transition-all ${activeTab===t.k?"bg-blue-50 border-blue-600 text-blue-700":"bg-white border-transparent text-gray-500"}`}>{t.l} ({counts[t.k as keyof typeof counts]})</button>
+            <button key={t.k} onClick={()=>setActiveTab(t.k as any)} className={`px-4 py-2 rounded-lg border-b-4 transition-all ${activeTab===t.k?"bg-blue-50 border-blue-600 text-blue-700":"bg-white border-transparent text-gray-500 hover:bg-gray-50"}`}>{t.l} ({counts[t.k as keyof typeof counts]})</button>
           ))}
         </div>
       </div>
 
+      {/* الجدول */}
       {loading ? <div className="text-center py-10 text-gray-500 font-bold">⏳ جاري التحميل...</div> : (
         <div className="bg-white rounded-xl shadow overflow-x-auto">
           <table className="w-full text-center border-collapse">
@@ -300,16 +296,35 @@ const WasselOrders: React.FC = () => {
                   <td className="p-3 font-bold">#{o.id}</td>
                   <td>{o.customer_name}</td>
                   <td className="text-indigo-600 font-bold">{o.captain_name || "—"}</td>
-                  <td><button onClick={()=>o.from_lat && window.open(`http://maps.google.com/?q=${o.from_lat},${o.from_lng}`)} className="text-blue-500"><MapPin size={16} /></button></td>
-                  <td><button onClick={()=>o.to_lat && window.open(`http://maps.google.com/?q=${o.to_lat},${o.to_lng}`)} className="text-blue-500"><MapPin size={16} /></button></td>
+                  <td><button onClick={()=>o.from_lat && window.open(`https://www.google.com/maps?q=${o.from_lat},${o.from_lng}`)} className="text-blue-500 hover:scale-110 transition"><MapPin size={16} /></button></td>
+                  <td><button onClick={()=>o.to_lat && window.open(`https://www.google.com/maps?q=${o.to_lat},${o.to_lng}`)} className="text-blue-500 hover:scale-110 transition"><MapPin size={16} /></button></td>
                   <td className="text-sm">🚚 {o.delivery_fee} | ➕ {o.extra_fee}</td>
-                  <td>
-                    <select value={o.status} onChange={(e) => updateOrderStatus(o.id, e.target.value)} className="border rounded px-2 py-1 text-xs">
-                      <option value="pending">اعتماد</option><option value="confirmed">مؤكد</option><option value="preparing">تحضير</option><option value="delivering">توصيل</option><option value="completed">مكتمل</option><option value="cancelled">ملغي</option>
-                    </select>
+                  
+                  {/* ✅ منطق إخفاء القائمة المنسدلة وعرض النص الملون */}
+                  <td className="px-2">
+                    {o.status === "completed" || o.status === "cancelled" ? (
+                      <span className={`px-2 py-1 rounded-md text-xs font-bold ${
+                        o.status === "completed" ? "bg-green-100 text-green-700 border border-green-200" : "bg-red-100 text-red-700 border border-red-200"
+                      }`}>
+                        {o.status === "completed" ? "مكتمل" : "ملغي"}
+                      </span>
+                    ) : (
+                      <select 
+                        value={o.status} 
+                        onChange={(e) => updateOrderStatus(o.id, e.target.value)} 
+                        className="border rounded px-2 py-1 text-xs bg-white focus:ring-1 focus:ring-blue-400 outline-none"
+                      >
+                        <option value="pending">اعتماد</option>
+                        <option value="confirmed">مؤكد</option>
+                        <option value="preparing">تحضير</option>
+                        <option value="ready">جاهز</option>
+                        <option value="delivering">توصيل</option>
+                      </select>
+                    )}
                   </td>
+                  
                   <td>{renderActions(o)}</td>
-                  <td><button onClick={()=>openEdit(o)} className="text-blue-600 p-1 hover:bg-blue-50 rounded"><Edit size={16} /></button></td>
+                  <td><button onClick={()=>openEdit(o)} className="text-blue-600 p-1 hover:bg-blue-50 rounded transition-colors"><Edit size={16} /></button></td>
                 </tr>
               ))}
             </tbody>
@@ -318,19 +333,20 @@ const WasselOrders: React.FC = () => {
         </div>
       )}
 
+      {/* مودال الكباتن */}
       {isCaptainModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-[60] p-4">
+        <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-[60] p-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md">
             <div className="flex justify-between items-center border-b pb-4 mb-4">
               <h2 className="text-xl font-bold">🚗 إسناد كابتن</h2>
               <button onClick={()=>setIsCaptainModalOpen(false)} className="text-gray-400 hover:text-black">✖</button>
             </div>
             {captainsLoading ? <div className="text-center py-6">⏳ جاري التحميل...</div> : captains.length===0 ? <div className="text-center py-6 text-red-500">لا يوجد كباتن متاحين</div> : (
-              <ul className="divide-y max-h-60 overflow-y-auto pr-2">
+              <ul className="divide-y max-h-60 overflow-y-auto pr-2 custom-scrollbar">
                 {captains.map(c=>(
                   <li key={c.id} className="flex justify-between items-center py-3">
-                    <div><p className="font-bold">{c.name}</p><p className="text-xs text-gray-400">معلقة: {c.pending_orders} | اليوم: {c.completed_today}</p></div>
-                    <button onClick={()=>assignCaptain(c.id)} className="bg-green-600 text-white px-3 py-1 rounded-md text-sm hover:bg-green-700">إسناد</button>
+                    <div><p className="font-bold text-gray-800">{c.name}</p><p className="text-xs text-gray-400">معلقة: {c.pending_orders} | اليوم: {c.completed_today}</p></div>
+                    <button onClick={()=>assignCaptain(c.id)} className="bg-green-600 text-white px-3 py-1 rounded-md text-sm hover:bg-green-700 transition">إسناد</button>
                   </li>
                 ))}
               </ul>
@@ -339,18 +355,19 @@ const WasselOrders: React.FC = () => {
         </div>
       )}
 
+      {/* مودال الإضافة/التعديل */}
       {showModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-xl p-6 space-y-5 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl w-full max-w-xl p-6 space-y-5 max-h-[90vh] overflow-y-auto shadow-2xl">
             <div className="flex justify-between items-center border-b pb-3">
               <h2 className="text-xl font-bold">{editingOrder ? "✏️ تعديل طلب" : "➕ إضافة طلب"}</h2>
               <button onClick={()=>setShowModal(false)} className="text-gray-400">✖</button>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <select className="p-3 border rounded-xl" value={form.order_type} onChange={(e)=>setForm({...form, order_type: e.target.value})}>
+              <select className="p-3 border rounded-xl bg-gray-50 outline-none focus:border-blue-500" value={form.order_type} onChange={(e)=>setForm({...form, order_type: e.target.value})}>
                 <option value="">نوع الطلب</option><option value="كيكة">كيكة</option><option value="كرتون">كرتون</option><option value="مشوار">مشوار</option>
               </select>
-              <select className="p-3 border rounded-xl" value={form.customer_id} onChange={(e)=>setForm({...form, customer_id: e.target.value})}>
+              <select className="p-3 border rounded-xl bg-gray-50 outline-none focus:border-blue-500" value={form.customer_id} onChange={(e)=>setForm({...form, customer_id: e.target.value})}>
                 <option value="">العميل</option>{customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
@@ -358,11 +375,11 @@ const WasselOrders: React.FC = () => {
             <div className="border p-4 rounded-2xl bg-gray-50 space-y-3">
               <p className="font-bold text-sm text-gray-600">من (نقطة الانطلاق):</p>
               <div className="flex gap-2">
-                <button onClick={()=>setFromMode("saved")} className={`flex-1 py-2 rounded-lg text-sm ${fromMode==="saved"?"bg-blue-600 text-white":"bg-white border"}`}>محفوظ</button>
-                <button onClick={()=>setFromMode("map")} className={`flex-1 py-2 rounded-lg text-sm ${fromMode==="map"?"bg-blue-600 text-white":"bg-white border"}`}>الخريطة</button>
+                <button onClick={()=>setFromMode("saved")} className={`flex-1 py-2 rounded-lg text-sm transition-colors ${fromMode==="saved"?"bg-blue-600 text-white shadow-sm":"bg-white border text-gray-500 hover:bg-gray-100"}`}>محفوظ</button>
+                <button onClick={()=>setFromMode("map")} className={`flex-1 py-2 rounded-lg text-sm transition-colors ${fromMode==="map"?"bg-blue-600 text-white shadow-sm":"bg-white border text-gray-500 hover:bg-gray-100"}`}>الخريطة</button>
               </div>
               {fromMode==="saved" ? (
-                <select className="w-full p-2 border rounded-lg text-sm" value={form.from_address_id} onChange={(e)=>{
+                <select className="w-full p-2 border rounded-lg text-sm bg-white" value={form.from_address_id} onChange={(e)=>{
                   const opt = e.target.selectedOptions[0];
                   setForm({...form, from_address_id: e.target.value, from_address: opt.dataset.address, from_lat: opt.dataset.lat, from_lng: opt.dataset.lng});
                 }}>
@@ -370,8 +387,8 @@ const WasselOrders: React.FC = () => {
                   {addresses.map(a => <option key={a.id} value={a.id} data-address={a.address} data-lat={a.latitude} data-lng={a.longitude}>{a.address}</option>)}
                 </select>
               ) : (
-                <button onClick={()=>goToMap("from")} className="w-full p-2 border rounded-lg bg-blue-50 text-blue-700 text-xs font-bold">
-                  {/* حماية دالة toFixed بـ Number() */}
+                <button onClick={()=>goToMap("from")} className="w-full p-2 border rounded-lg bg-blue-50 text-blue-700 text-xs font-bold hover:bg-blue-100">
+                   {/* ✅ حماية دالة toFixed */}
                   {(form.from_lat && !isNaN(Number(form.from_lat))) ? `📍 تم التحديد (${Number(form.from_lat).toFixed(4)})` : "📍 حدد من الخريطة"}
                 </button>
               )}
@@ -380,11 +397,11 @@ const WasselOrders: React.FC = () => {
             <div className="border p-4 rounded-2xl bg-gray-50 space-y-3">
               <p className="font-bold text-sm text-gray-600">إلى (نقطة الوصول):</p>
               <div className="flex gap-2">
-                <button onClick={()=>setToMode("saved")} className={`flex-1 py-2 rounded-lg text-sm ${toMode==="saved"?"bg-blue-600 text-white":"bg-white border"}`}>محفوظ</button>
-                <button onClick={()=>setToMode("map")} className={`flex-1 py-2 rounded-lg text-sm ${toMode==="map"?"bg-blue-600 text-white":"bg-white border"}`}>الخريطة</button>
+                <button onClick={()=>setToMode("saved")} className={`flex-1 py-2 rounded-lg text-sm transition-colors ${toMode==="saved"?"bg-blue-600 text-white shadow-sm":"bg-white border text-gray-500 hover:bg-gray-100"}`}>محفوظ</button>
+                <button onClick={()=>setToMode("map")} className={`flex-1 py-2 rounded-lg text-sm transition-colors ${toMode==="map"?"bg-blue-600 text-white shadow-sm":"bg-white border text-gray-500 hover:bg-gray-100"}`}>الخريطة</button>
               </div>
               {toMode==="saved" ? (
-                <select className="w-full p-2 border rounded-lg text-sm" value={form.to_address_id} onChange={(e)=>{
+                <select className="w-full p-2 border rounded-lg text-sm bg-white" value={form.to_address_id} onChange={(e)=>{
                   const opt = e.target.selectedOptions[0];
                   setForm({...form, to_address_id: e.target.value, to_address: opt.dataset.address, to_lat: opt.dataset.lat, to_lng: opt.dataset.lng});
                 }}>
@@ -392,22 +409,22 @@ const WasselOrders: React.FC = () => {
                   {addresses.map(a => <option key={a.id} value={a.id} data-address={a.address} data-lat={a.latitude} data-lng={a.longitude}>{a.address}</option>)}
                 </select>
               ) : (
-                <button onClick={()=>goToMap("to")} className="w-full p-2 border rounded-lg bg-blue-50 text-blue-700 text-xs font-bold">
-                  {/* حماية دالة toFixed بـ Number() */}
+                <button onClick={()=>goToMap("to")} className="w-full p-2 border rounded-lg bg-blue-50 text-blue-700 text-xs font-bold hover:bg-blue-100">
+                   {/* ✅ حماية دالة toFixed */}
                   {(form.to_lat && !isNaN(Number(form.to_lat))) ? `📍 تم التحديد (${Number(form.to_lat).toFixed(4)})` : "📍 حدد من الخريطة"}
                 </button>
               )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1"><label className="text-xs text-gray-400">رسوم التوصيل</label><input type="number" className="w-full p-2 border rounded-lg" value={form.delivery_fee} onChange={(e)=>setForm({...form, delivery_fee: e.target.value})} /></div>
-              <div className="space-y-1"><label className="text-xs text-gray-400">إضافي</label><input type="number" className="w-full p-2 border rounded-lg" value={form.extra_fee} onChange={(e)=>setForm({...form, extra_fee: e.target.value})} /></div>
-              <textarea placeholder="ملاحظات العميل..." className="w-full p-2 border rounded-xl col-span-2 min-h-[80px]" value={form.notes} onChange={(e)=>setForm({...form, notes: e.target.value})} />
+              <div className="space-y-1"><label className="text-xs text-gray-400">رسوم التوصيل</label><input type="number" className="w-full p-2 border rounded-lg outline-none focus:border-blue-500" value={form.delivery_fee} onChange={(e)=>setForm({...form, delivery_fee: e.target.value})} /></div>
+              <div className="space-y-1"><label className="text-xs text-gray-400">إضافي</label><input type="number" className="w-full p-2 border rounded-lg outline-none focus:border-blue-500" value={form.extra_fee} onChange={(e)=>setForm({...form, extra_fee: e.target.value})} /></div>
+              <textarea placeholder="ملاحظات العميل..." className="w-full p-2 border rounded-xl col-span-2 min-h-[80px] outline-none focus:border-blue-500" value={form.notes} onChange={(e)=>setForm({...form, notes: e.target.value})} />
             </div>
 
             <div className="flex justify-end gap-3 pt-4 border-t">
-              <button onClick={()=>setShowModal(false)} className="px-5 py-2 text-gray-500">إلغاء</button>
-              <button onClick={saveOrder} className="px-8 py-2 bg-green-600 text-white rounded-xl shadow-lg shadow-green-200 hover:bg-green-700 transition font-bold">حفظ الطلب</button>
+              <button onClick={()=>setShowModal(false)} className="px-5 py-2 text-gray-500 hover:text-gray-700">إلغاء</button>
+              <button onClick={saveOrder} className="px-8 py-2 bg-green-600 text-white rounded-xl shadow-lg hover:bg-green-700 transition-all font-bold">حفظ الطلب</button>
             </div>
           </div>
         </div>
