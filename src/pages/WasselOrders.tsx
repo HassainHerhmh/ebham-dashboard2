@@ -56,6 +56,12 @@ const WasselOrders: React.FC = () => {
 
   const [fromMode, setFromMode] = useState<"saved" | "map">("saved");
   const [toMode, setToMode] = useState<"saved" | "map">("saved");
+   
+useEffect(() => {
+  if (form.customer_id) {
+    loadAddresses(form.customer_id);
+  }
+}, [form.customer_id]);
 
   /* Form */
  const [form, setForm] = useState<any>({
