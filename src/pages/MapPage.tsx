@@ -78,16 +78,17 @@ const handleSave = () => {
     return;
   }
 
-  navigate(returnTo, {
-    state: {
-      from: "map",
-      target,
-      value: name,
-      lat: pos[0],
-      lng: pos[1],
-    },
-  });
-};
+navigate(returnTo, {
+  state: {
+    from: "map",
+    target,
+    value: name,
+    lat: pos[0],
+    lng: pos[1],
+    reopenModal: true, // ✅ مهم
+  },
+});
+
 
 
 
