@@ -224,32 +224,44 @@ setForm({
   }, [showModal]);
 
   useEffect(() => {
-    const state = location.state as any;
+  const state = location.state as any;
 
-    if (state?.from === "map") {
-      const url = `https://www.google.com/maps?q=${state.lat},${state.lng}`;
+  if (state?.from === "map") {
 
-      if (state.target === "from") {
-        setForm((f: any) => ({
-          ...f,
-          from_address: url,
-          from_lat: state.lat,
-          from_lng: state.lng,
-        }));
-      }
-
-      if (state.target === "to") {
-        setForm((f: any) => ({
-          ...f,
-          to_address: url,
-          to_lat: state.lat,
-          to_lng: state.lng,
-        }));
-      }
-
-      navigate(location.pathname, { replace: true });
+    // ✅ إعادة فتح المودال
+    if (state.reopenModal) {
+      setShowModal(true);
     }
-  }, [location, navigate]);
+
+    if (state.target === "from") {
+      setFromMode("map");
+
+      setForm((f: any) => ({
+        ...f,
+        from_address: state.value || "",
+        from_lat: state.lat,
+        from_lng: state.lng,
+        from_address_id: "",
+      }));
+    }
+
+    if (state.target === "to") {
+      setToMode("map");
+
+      setForm((f: any) => ({
+        ...f,
+        to_address: state.value || "",
+        to_lat: state.lat,
+        to_lng: state.lng,
+        to_address_id: "",
+      }));
+    }
+
+    // تنظيف state
+    navigate(location.pathname, { replace: true });
+  }
+}, [location, navigate]);
+
 
   /* ======================
      JSX
