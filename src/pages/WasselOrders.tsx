@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import api from "../services/api";
 import { Plus, Edit, MapPin, DollarSign } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useRef } from "react";
 
 /* ======================
    Types
@@ -56,7 +57,8 @@ const WasselOrders: React.FC = () => {
 
   const [fromMode, setFromMode] = useState<"saved" | "map">("saved");
   const [toMode, setToMode] = useState<"saved" | "map">("saved");
-   
+   const formRef = useRef<any>(null);
+
 
 
   /* Form */
@@ -80,11 +82,24 @@ const WasselOrders: React.FC = () => {
   notes: "",
 });
 
+   useEffect(() => {
+  const draft = sessionStorage.getItem("wassel_form_draft");
+
+  if (draft && showModal) {
+    try {
+      const data = JSON.parse(draft);
+
+      setForm(data);
+    } catch {}
+  }
+}, [showModal]);
+
 useEffect(() => {
   if (form.customer_id) {
     loadAddresses(form.customer_id);
   }
 }, [form.customer_id]);
+   
   /* ======================
      Load Orders
   ====================== */
@@ -104,9 +119,12 @@ useEffect(() => {
     }
   };
 
-  useEffect(() => {
+useEffect(() => {
+  if (!showModal) {
     loadOrders();
-  }, []);
+  }
+}, [showModal]);
+;
 
   /* ======================
      Handlers
@@ -194,6 +212,9 @@ setForm({
         await api.post("/wassel-orders", payload);
       }
 
+    sessionStorage.removeItem("wassel_form_draft"); // 👈 أضفها هنا
+
+       
       setShowModal(false);
       loadOrders();
     } catch (err) {
@@ -492,7 +513,14 @@ value={form.from_address_id}
   {fromMode === "map" && (
     <button
       onClick={() =>
-        navigate("/map-picker", {
+formRef.current = form;
+
+sessionStorage.setItem(
+  "wassel_form_draft",
+  JSON.stringify(form)
+);
+
+navigate("/map-picker", {
           state: {
             target: "from",
     returnTo: "/orders/wassel",
@@ -593,7 +621,14 @@ value={form.to_address_id}
   {toMode === "map" && (
     <button
       onClick={() =>
-        navigate("/map-picker", {
+formRef.current = form;
+
+sessionStorage.setItem(
+  "wassel_form_draft",
+  JSON.stringify(form)
+);
+
+navigate("/map-picker", {
           state: {
             target: "to",
     returnTo: "/orders/wassel",
