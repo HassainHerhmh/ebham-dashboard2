@@ -15,6 +15,9 @@ interface WasselOrder {
 
   order_type: string;
 
+  from_address_id?: number;
+  to_address_id?: number;
+
   from_address: string;
   from_lat?: number;
   from_lng?: number;
@@ -55,22 +58,26 @@ const WasselOrders: React.FC = () => {
   const [toMode, setToMode] = useState<"saved" | "map">("saved");
 
   /* Form */
-  const [form, setForm] = useState<any>({
-    customer_id: "",
-    order_type: "",
+ const [form, setForm] = useState<any>({
+  customer_id: "",
+  order_type: "",
 
-    from_address: "",
-    from_lat: null,
-    from_lng: null,
+  from_address_id: "",
+  to_address_id: "",
 
-    to_address: "",
-    to_lat: null,
-    to_lng: null,
+  from_address: "",
+  from_lat: null,
+  from_lng: null,
 
-    delivery_fee: 0,
-    extra_fee: 0,
-    notes: "",
-  });
+  to_address: "",
+  to_lat: null,
+  to_lng: null,
+
+  delivery_fee: 0,
+  extra_fee: 0,
+  notes: "",
+});
+
 
   /* ======================
      Load Orders
@@ -122,31 +129,32 @@ const WasselOrders: React.FC = () => {
     setShowModal(true);
   };
 
-  const openEdit = (o: WasselOrder) => {
-    setEditingOrder(o);
+ const openEdit = (o: WasselOrder) => {
+  setEditingOrder(o);
 
-    setForm({
-      customer_id: o.customer_id || "",
+  setForm({
+    customer_id: o.customer_id || "",
+    order_type: o.order_type,
 
-      order_type: o.order_type,
+    from_address_id: o.from_address_id || "",
+    to_address_id: o.to_address_id || "",
 
-      from_address: o.from_address,
-      from_lat: o.from_lat || null,
-      from_lng: o.from_lng || null,
+    from_address: o.from_address,
+    from_lat: o.from_lat || null,
+    from_lng: o.from_lng || null,
 
-      to_address: o.to_address,
-      to_lat: o.to_lat || null,
-      to_lng: o.to_lng || null,
-       from_address_id: o.from_address_id || "",
-to_address_id: o.to_address_id || "",
+    to_address: o.to_address,
+    to_lat: o.to_lat || null,
+    to_lng: o.to_lng || null,
 
-      delivery_fee: o.delivery_fee || 0,
-      extra_fee: o.extra_fee || 0,
-      notes: o.notes || "",
-    });
+    delivery_fee: o.delivery_fee || 0,
+    extra_fee: o.extra_fee || 0,
+    notes: o.notes || "",
+  });
 
-    setShowModal(true);
-  };
+  setShowModal(true);
+};
+
 
   const saveOrder = async () => {
     try {
