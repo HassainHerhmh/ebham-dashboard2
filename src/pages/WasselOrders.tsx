@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import api from "../services/api";
-import { Plus, Edit, MapPin, DollarSign } from "lucide-react";
+import { Plus, Edit, MapPin, DollarSign, UserCheck } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 /* ======================
@@ -24,6 +24,14 @@ interface WasselOrder {
   notes?: string;
   status: string;
   created_at: string;
+  captain_name?: string; // أضف حقل اسم الكابتن
+}
+
+interface Captain {
+  id: number;
+  name: string;
+  pending_orders: number;
+  completed_today: number;
 }
 
 type OrderTab = "pending" | "processing" | "ready" | "delivering" | "completed" | "cancelled";
@@ -43,6 +51,12 @@ const WasselOrders: React.FC = () => {
   // الفلاتر والتبويبات
   const [activeTab, setActiveTab] = useState<OrderTab>("pending");
   const [dateFilter, setDateFilter] = useState<DateFilter>("today");
+
+  // === حالات الكباتن ===
+  const [captains, setCaptains] = useState<Captain[]>([]);
+  const [captainsLoading, setCaptainsLoading] = useState(false);
+  const [isCaptainModalOpen, setIsCaptainModalOpen] = useState(false);
+  const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
 
   const [fromMode, setFromMode] = useState<"saved" | "map">("saved");
   const [toMode, setToMode] = useState<"saved" | "map">("saved");
@@ -149,6 +163,18 @@ const WasselOrders: React.FC = () => {
     } catch (err) { console.error(err); } finally { setLoading(false); }
   };
 
+  const fetchCaptains = async () => {
+    setCaptainsLoading(true);
+    try {
+      const res = await api.captains.getAvailableCaptains();
+      setCaptains(res.captains || res);
+    } catch (error) {
+      console.error("❌ خطأ في جلب الكباتن:", error);
+    } finally {
+      setCaptainsLoading(false);
+    }
+  };
+
   useEffect(() => {
     loadOrders();
     api.get("/customers").then((res) => setCustomers(res.data.customers || []));
@@ -163,6 +189,34 @@ const WasselOrders: React.FC = () => {
   /* ======================
      Handlers
   ====================== */
+  const openCaptainModal = (orderId: number) => {
+    setSelectedOrderId(orderId);
+    setIsCaptainModalOpen(true);
+    fetchCaptains();
+  };
+
+  const assignCaptain = async (captainId: number) => {
+    if (!selectedOrderId) return;
+    try {
+      // نستخدم نفس راوت الإسناد الموحد في السيرفر
+      await api.orders.assignCaptain(selectedOrderId, captainId);
+      alert("✅ تم تعيين الكابتن لطلب وصل لي");
+      setIsCaptainModalOpen(false);
+      loadOrders();
+    } catch (error) {
+      console.error("❌ خطأ في إسناد الكابتن:", error);
+    }
+  };
+
+  const updateOrderStatus = async (orderId: number, newStatus: string) => {
+    try {
+      await api.put(`/wassel-orders/status/${orderId}`, { status: newStatus });
+      loadOrders();
+    } catch (error) {
+      console.error("❌ خطأ في تحديث الحالة:", error);
+    }
+  };
+
   const openAdd = () => {
     setEditingOrder(null);
     setFromMode("saved");
@@ -222,6 +276,34 @@ const WasselOrders: React.FC = () => {
     } catch (err) { alert("خطأ في الحفظ"); }
   };
 
+  // أزرار التحكم في الجدول بناءً على التبويب النشط
+  const renderActions = (o: WasselOrder) => {
+    switch (activeTab) {
+      case "pending":
+        return (
+          <button onClick={() => updateOrderStatus(o.id, "confirmed")} className="bg-green-600 text-white px-2 py-1 rounded text-xs">إعتماد</button>
+        );
+      case "processing":
+      case "ready":
+        return (
+          <div className="flex gap-1 justify-center">
+            <button onClick={() => openCaptainModal(o.id)} className="bg-indigo-600 text-white px-2 py-1 rounded text-xs flex items-center gap-1">
+              <UserCheck size={12}/> كابتن
+            </button>
+            {activeTab === "processing" && (
+                <button onClick={() => updateOrderStatus(o.id, "ready")} className="bg-green-600 text-white px-2 py-1 rounded text-xs">جاهز</button>
+            )}
+          </div>
+        );
+      case "delivering":
+        return (
+            <button onClick={() => updateOrderStatus(o.id, "completed")} className="bg-green-600 text-white px-2 py-1 rounded text-xs">تم التسليم</button>
+        );
+      default:
+        return <span className="text-gray-400">—</span>;
+    }
+  };
+
   return (
     <div className="space-y-6" dir="rtl">
       {/* Header */}
@@ -266,24 +348,27 @@ const WasselOrders: React.FC = () => {
                 <th className="p-3">#</th>
                 <th>العميل</th>
                 <th>نوع الطلب</th>
+                <th>الكابتن</th>
                 <th>من</th>
                 <th>إلى</th>
                 <th>الرسوم</th>
                 <th>الحالة</th>
+                <th>إسناد</th>
                 <th>تحكم</th>
               </tr>
             </thead>
             <tbody>
               {visibleOrders.map((o, i) => (
                 <tr key={o.id} className="border-t hover:bg-gray-50">
-                  <td className="p-3">{i + 1}</td>
+                  <td className="p-3">#{o.id}</td>
                   <td>{o.customer_name}</td>
                   <td>{o.order_type}</td>
-                  <td><button onClick={() => o.from_lat && window.open(`http://maps.google.com/?q=${o.from_lat},${o.from_lng}`)} className="text-blue-600 underline"><MapPin size={14} /></button></td>
-                  <td><button onClick={() => o.to_lat && window.open(`http://maps.google.com/?q=${o.to_lat},${o.to_lng}`)} className="text-blue-600 underline"><MapPin size={14} /></button></td>
+                  <td className="text-indigo-600 font-bold">{o.captain_name || "—"}</td>
+                  <td><button onClick={() => o.from_lat && window.open(`https://www.google.com/maps?q=${o.from_lat},${o.from_lng}`)} className="text-blue-600 underline"><MapPin size={14} /></button></td>
+                  <td><button onClick={() => o.to_lat && window.open(`https://www.google.com/maps?q=${o.to_lat},${o.to_lng}`)} className="text-blue-600 underline"><MapPin size={14} /></button></td>
                   <td className="text-sm">🚚 {o.delivery_fee} | ➕ {o.extra_fee}</td>
                   <td>
-                    <select value={o.status} onChange={async (e) => { await api.put(`/wassel-orders/status/${o.id}`, { status: e.target.value }); loadOrders(); }}
+                    <select value={o.status} onChange={(e) => updateOrderStatus(o.id, e.target.value)}
                       className="border rounded px-2 py-1 text-sm">
                       <option value="pending">إعتماد</option>
                       <option value="confirmed">مؤكد</option>
@@ -294,6 +379,7 @@ const WasselOrders: React.FC = () => {
                       <option value="cancelled">ملغي</option>
                     </select>
                   </td>
+                  <td>{renderActions(o)}</td>
                   <td><button onClick={() => openEdit(o)} className="text-blue-600"><Edit size={14} /></button></td>
                 </tr>
               ))}
@@ -303,7 +389,36 @@ const WasselOrders: React.FC = () => {
         </div>
       )}
 
-      {/* Modal */}
+      {/* مودال اختيار الكابتن */}
+      {isCaptainModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-[60]">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+            <div className="flex justify-between items-center border-b pb-3">
+              <h2 className="text-lg font-bold">🚗 اختر كابتن وصل لي</h2>
+              <button onClick={() => setIsCaptainModalOpen(false)}>✖</button>
+            </div>
+            {captainsLoading ? (
+              <div className="py-6 text-center">⏳ جاري التحميل...</div>
+            ) : captains.length === 0 ? (
+              <div className="py-6 text-center">❌ لا يوجد كباتن متاحين</div>
+            ) : (
+              <ul className="divide-y mt-4 max-h-60 overflow-y-auto">
+                {captains.map((c) => (
+                  <li key={c.id} className="flex justify-between items-center py-3">
+                    <div>
+                      <p className="font-semibold">{c.name}</p>
+                      <p className="text-xs text-gray-500">نشط: {c.pending_orders} | اليوم: {c.completed_today}</p>
+                    </div>
+                    <button onClick={() => assignCaptain(c.id)} className="bg-green-600 text-white px-3 py-1 rounded text-sm">إسناد</button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Modal إضافة/تعديل */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl w-full max-w-xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
