@@ -152,25 +152,31 @@ const WasselOrders: React.FC = () => {
     setShowModal(true);
   };
 
-  const openEdit = (o: WasselOrder) => {
-    setEditingOrder(o);
-    setForm({
-      customer_id: o.customer_id || "",
-      order_type: o.order_type,
-      from_address_id: o.from_address_id || "",
-      to_address_id: o.to_address_id || "",
-      from_address: o.from_address,
-      from_lat: o.from_lat || null,
-      from_lng: o.from_lng || null,
-      to_address: o.to_address,
-      to_lat: o.to_lat || null,
-      to_lng: o.to_lng || null,
-      delivery_fee: o.delivery_fee || 0,
-      extra_fee: o.extra_fee || 0,
-      notes: o.notes || "",
-    });
-    setShowModal(true);
-  };
+ const openEdit = (o: WasselOrder) => {
+  setEditingOrder(o);
+  
+  // فحص هل العنوان من الخريطة أم من العناوين المحفوظة
+  // إذا كان هناك معرف عنوان (id) نفتح وضع "المحفوظ"، وإلا نفتح وضع "الخريطة"
+  setFromMode(o.from_address_id ? "saved" : "map");
+  setToMode(o.to_address_id ? "saved" : "map");
+
+  setForm({
+    customer_id: o.customer_id || "",
+    order_type: o.order_type,
+    from_address_id: o.from_address_id || "",
+    to_address_id: o.to_address_id || "",
+    from_address: o.from_address,
+    from_lat: o.from_lat || null,
+    from_lng: o.from_lng || null,
+    to_address: o.to_address,
+    to_lat: o.to_lat || null,
+    to_lng: o.to_lng || null,
+    delivery_fee: o.delivery_fee || 0,
+    extra_fee: o.extra_fee || 0,
+    notes: o.notes || "",
+  });
+  setShowModal(true);
+};
 
   const goToMap = (target: "from" | "to") => {
     sessionStorage.setItem("wassel_form_draft", JSON.stringify(form));
