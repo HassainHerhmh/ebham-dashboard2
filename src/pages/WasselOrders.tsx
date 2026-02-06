@@ -57,11 +57,7 @@ const WasselOrders: React.FC = () => {
   const [fromMode, setFromMode] = useState<"saved" | "map">("saved");
   const [toMode, setToMode] = useState<"saved" | "map">("saved");
    
-useEffect(() => {
-  if (form.customer_id) {
-    loadAddresses(form.customer_id);
-  }
-}, [form.customer_id]);
+
 
   /* Form */
  const [form, setForm] = useState<any>({
@@ -84,7 +80,11 @@ useEffect(() => {
   notes: "",
 });
 
-
+useEffect(() => {
+  if (form.customer_id) {
+    loadAddresses(form.customer_id);
+  }
+}, [form.customer_id]);
   /* ======================
      Load Orders
   ====================== */
@@ -115,22 +115,26 @@ useEffect(() => {
   const openAdd = () => {
     setEditingOrder(null);
 
-    setForm({
-      customer_id: "",
-      order_type: "",
+setForm({
+  customer_id: "",
+  order_type: "",
 
-      from_address: "",
-      from_lat: null,
-      from_lng: null,
+  from_address_id: "",
+  to_address_id: "",
 
-      to_address: "",
-      to_lat: null,
-      to_lng: null,
+  from_address: "",
+  from_lat: null,
+  from_lng: null,
 
-      delivery_fee: 0,
-      extra_fee: 0,
-      notes: "",
-    });
+  to_address: "",
+  to_lat: null,
+  to_lng: null,
+
+  delivery_fee: 0,
+  extra_fee: 0,
+  notes: "",
+});
+
 
     setShowModal(true);
   };
