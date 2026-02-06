@@ -309,17 +309,19 @@ const WasselOrders: React.FC = () => {
                         {o.status === "completed" ? "مكتمل" : "ملغي"}
                       </span>
                     ) : (
-                      <select 
-                        value={o.status} 
-                        onChange={(e) => updateOrderStatus(o.id, e.target.value)} 
-                        className="border rounded px-2 py-1 text-xs bg-white focus:ring-1 focus:ring-blue-400 outline-none"
-                      >
-                        <option value="pending">اعتماد</option>
-                        <option value="confirmed">مؤكد</option>
-                        <option value="preparing">تحضير</option>
-                        <option value="ready">جاهز</option>
-                        <option value="delivering">توصيل</option>
-                      </select>
+              <select 
+  value={o.status} 
+  onChange={(e) => updateOrderStatus(o.id, e.target.value)} 
+  className="border rounded px-2 py-1 text-xs bg-white focus:ring-1 focus:ring-blue-400 outline-none"
+>
+  <option value="pending">اعتماد</option>
+  <option value="confirmed">مؤكد</option>
+  <option value="preparing">تحضير</option>
+  <option value="ready">جاهز</option>
+  <option value="delivering">توصيل</option>
+  {/* الخيار الجديد أدناه */}
+  <option value="cancelled" className="text-red-600">إلغاء</option> 
+</select>
                     )}
                   </td>
                   
