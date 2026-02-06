@@ -396,132 +396,158 @@ const WasselOrders: React.FC = () => {
           </option>
         ))}
       </select>
+{/* From Address */}
+<div className="space-y-2">
 
-      {/* From Address */}
-      <div className="space-y-2">
+  <div className="flex gap-2">
+    <button
+      onClick={() => setFromMode("saved")}
+      className={`px-3 py-1 rounded ${
+        fromMode === "saved"
+          ? "bg-blue-600 text-white"
+          : "bg-gray-200"
+      }`}
+    >
+      عناوين محفوظة
+    </button>
 
-        <div className="flex gap-2">
-          <button
-            onClick={() => setFromMode("saved")}
-            className={`px-3 py-1 rounded ${
-              fromMode === "saved"
-                ? "bg-blue-600 text-white"
-                : "bg-gray-200"
-            }`}
-          >
-            عناوين محفوظة
-          </button>
+    <button
+      onClick={() => setFromMode("map")}
+      className={`px-3 py-1 rounded ${
+        fromMode === "map"
+          ? "bg-blue-600 text-white"
+          : "bg-gray-200"
+      }`}
+    >
+      من الخريطة
+    </button>
+  </div>
 
-          <button
-            onClick={() => setFromMode("map")}
-            className={`px-3 py-1 rounded ${
-              fromMode === "map"
-                ? "bg-blue-600 text-white"
-                : "bg-gray-200"
-            }`}
-          >
-            من الخريطة
-          </button>
-        </div>
+  {fromMode === "saved" && (
+    <select
+      className="w-full p-2 border rounded"
+      value={form.from_address}
+      onChange={(e) => {
+        const opt = e.target.selectedOptions[0];
 
-        {fromMode === "saved" && (
-          <select
-            className="w-full p-2 border rounded"
-            value={form.from_address}
-            onChange={(e) =>
-              setForm({ ...form, from_address: e.target.value })
-            }
-          >
-            <option value="">اختر عنوان</option>
+        setForm({
+          ...form,
+          from_address: opt.dataset.address,
+          from_lat: Number(opt.dataset.lat),
+          from_lng: Number(opt.dataset.lng),
+        });
+      }}
+    >
+      <option value="">اختر عنوان</option>
 
-            {addresses.map((a) => (
-              <option key={a.id} value={a.map_url || a.address}>
-                {a.neighborhood_name} - {a.address}
-              </option>
-            ))}
-          </select>
-        )}
+      {addresses.map((a) => (
+        <option
+          key={a.id}
+          value={a.id}
+          data-address={a.address}
+          data-lat={a.latitude}
+          data-lng={a.longitude}
+        >
+          {a.neighborhood_name} - {a.address}
+        </option>
+      ))}
+    </select>
+  )}
 
-        {fromMode === "map" && (
-          <button
-            onClick={() =>
-              navigate("/map-picker", {
-                state: {
-                  target: "from",
-                  returnTo: "/wassel-lee",
-                },
-              })
-            }
-            className="w-full p-2 border rounded bg-blue-50 text-blue-700"
-          >
-            📍 اختر الموقع من الخريطة
-          </button>
-        )}
+  {fromMode === "map" && (
+    <button
+      onClick={() =>
+        navigate("/map-picker", {
+          state: {
+            target: "from",
+            returnTo: "/wassel-lee",
+          },
+        })
+      }
+      className="w-full p-2 border rounded bg-blue-50 text-blue-700"
+    >
+      📍 اختر الموقع من الخريطة
+    </button>
+  )}
 
-      </div>
+</div>
+{/* To Address */}
+<div className="space-y-2">
 
-      {/* To Address */}
-      <div className="space-y-2">
+  <div className="flex gap-2">
+    <button
+      onClick={() => setToMode("saved")}
+      className={`px-3 py-1 rounded ${
+        toMode === "saved"
+          ? "bg-blue-600 text-white"
+          : "bg-gray-200"
+      }`}
+    >
+      عناوين محفوظة
+    </button>
 
-        <div className="flex gap-2">
-          <button
-            onClick={() => setToMode("saved")}
-            className={`px-3 py-1 rounded ${
-              toMode === "saved"
-                ? "bg-blue-600 text-white"
-                : "bg-gray-200"
-            }`}
-          >
-            عناوين محفوظة
-          </button>
+    <button
+      onClick={() => setToMode("map")}
+      className={`px-3 py-1 rounded ${
+        toMode === "map"
+          ? "bg-blue-600 text-white"
+          : "bg-gray-200"
+      }`}
+    >
+      من الخريطة
+    </button>
+  </div>
 
-          <button
-            onClick={() => setToMode("map")}
-            className={`px-3 py-1 rounded ${
-              toMode === "map"
-                ? "bg-blue-600 text-white"
-                : "bg-gray-200"
-            }`}
-          >
-            من الخريطة
-          </button>
-        </div>
+  {toMode === "saved" && (
+    <select
+      className="w-full p-2 border rounded"
+      value={form.to_address}
+      onChange={(e) => {
+        const opt = e.target.selectedOptions[0];
 
-        {toMode === "saved" && (
-          <select
-            className="w-full p-2 border rounded"
-            value={form.to_address}
-            onChange={(e) =>
-              setForm({ ...form, to_address: e.target.value })
-            }
-          >
-            <option value="">اختر عنوان</option>
+        setForm({
+          ...form,
+          to_address: opt.dataset.address,
+          to_lat: Number(opt.dataset.lat),
+          to_lng: Number(opt.dataset.lng),
+        });
+      }}
+    >
+      <option value="">اختر عنوان</option>
 
-            {addresses.map((a) => (
-              <option key={a.id} value={a.map_url || a.address}>
-                {a.neighborhood_name} - {a.address}
-              </option>
-            ))}
-          </select>
-        )}
+      {addresses.map((a) => (
+        <option
+          key={a.id}
+          value={a.id}
+          data-address={a.address}
+          data-lat={a.latitude}
+          data-lng={a.longitude}
+        >
+          {a.neighborhood_name} - {a.address}
+        </option>
+      ))}
+    </select>
+  )}
 
-        {toMode === "map" && (
-          <button
-            onClick={() =>
-              navigate("/map-picker", {
-                state: {
-                  target: "to",
-                  returnTo: "/wassel-lee",
-                },
-              })
-            }
-            className="w-full p-2 border rounded bg-blue-50 text-blue-700"
-          >
-            📍 اختر الموقع من الخريطة
-          </button>
-        )}
+  {toMode === "map" && (
+    <button
+      onClick={() =>
+        navigate("/map-picker", {
+          state: {
+            target: "to",
+            returnTo: "/wassel-lee",
+          },
+        })
+      }
+      className="w-full p-2 border rounded bg-blue-50 text-blue-700"
+    >
+      📍 اختر الموقع من الخريطة
+    </button>
+  )}
 
-      </div>
+</div>
+
+    
 
       {/* Fees */}
       <div className="grid grid-cols-2 gap-3">
