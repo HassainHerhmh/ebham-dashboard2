@@ -64,9 +64,8 @@ const WasselOrders: React.FC = () => {
     const draft = sessionStorage.getItem("wassel_form_draft");
 
     if (state?.from === "map") {
-      let baseForm = form;
+      let baseForm = { ...form };
       
-      // إذا توفرت مسودة محفوظة، نستخدمها كأساس
       if (draft) {
         try {
           baseForm = JSON.parse(draft);
@@ -75,7 +74,6 @@ const WasselOrders: React.FC = () => {
         }
       }
 
-      // دمج البيانات الجديدة القادمة من الخريطة
       const updatedForm = { ...baseForm };
       
       if (state.target === "from") {
@@ -95,7 +93,6 @@ const WasselOrders: React.FC = () => {
       setForm(updatedForm);
       setShowModal(true);
       
-      // تنظيف الـ state والـ storage بعد الدمج
       sessionStorage.removeItem("wassel_form_draft");
       navigate(location.pathname, { replace: true, state: {} });
     }
@@ -325,8 +322,9 @@ const WasselOrders: React.FC = () => {
                   {addresses.map(a => <option key={a.id} value={a.id} data-address={a.address} data-lat={a.latitude} data-lng={a.longitude}>{a.address}</option>)}
                 </select>
               ) : (
-                <button onClick={() => goToMap("from")} className="w-full p-2 border rounded bg-blue-50 text-blue-700 text-sm">
-                  {form.from_lat ? `📍 تم تحديد الموقع (${form.from_lat.toFixed(4)})` : "📍 حدد من الخريطة"}
+                <button onClick={() => goToMap("from")} className="w-full p-2 border rounded bg-blue-50 text-blue-700 text-sm text-center">
+                   {/* تم التعديل هنا لإضافة فحص الرقم */}
+                  {typeof form.from_lat === 'number' ? `📍 تم تحديد الموقع (${form.from_lat.toFixed(4)})` : "📍 حدد من الخريطة"}
                 </button>
               )}
             </div>
@@ -347,8 +345,9 @@ const WasselOrders: React.FC = () => {
                   {addresses.map(a => <option key={a.id} value={a.id} data-address={a.address} data-lat={a.latitude} data-lng={a.longitude}>{a.address}</option>)}
                 </select>
               ) : (
-                <button onClick={() => goToMap("to")} className="w-full p-2 border rounded bg-blue-50 text-blue-700 text-sm">
-                  {form.to_lat ? `📍 تم تحديد الموقع (${form.to_lat.toFixed(4)})` : "📍 حدد من الخريطة"}
+                <button onClick={() => goToMap("to")} className="w-full p-2 border rounded bg-blue-50 text-blue-700 text-sm text-center">
+                   {/* تم التعديل هنا لإضافة فحص الرقم */}
+                  {typeof form.to_lat === 'number' ? `📍 تم تحديد الموقع (${form.to_lat.toFixed(4)})` : "📍 حدد من الخريطة"}
                 </button>
               )}
             </div>
