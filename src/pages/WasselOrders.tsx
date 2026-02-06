@@ -499,6 +499,29 @@ value={form.from_address_id}
   )}
 
 </div>
+       {/* عرض الموقع المختار */}
+{fromMode === "map" && form.from_lat && form.from_lng && (
+  <div className="mt-2 p-2 bg-green-50 border border-green-300 rounded text-sm text-green-800 space-y-1">
+
+    <div>
+      📍 الإحداثيات:
+      <span className="font-mono ml-1">
+        {form.from_lat.toFixed(5)}, {form.from_lng.toFixed(5)}
+      </span>
+    </div>
+
+    <a
+      href={`https://www.google.com/maps?q=${form.from_lat},${form.from_lng}`}
+      target="_blank"
+      rel="noreferrer"
+      className="text-blue-600 underline"
+    >
+      فتح في Google Maps
+    </a>
+
+  </div>
+)}
+
 {/* To Address */}
 <div className="space-y-2">
 
@@ -578,7 +601,29 @@ value={form.to_address_id}
 
 </div>
 
-    
+    {/* عرض الموقع المختار */}
+{toMode === "map" && form.to_lat && form.to_lng && (
+  <div className="mt-2 p-2 bg-blue-50 border border-blue-300 rounded text-sm text-blue-800 space-y-1">
+
+    <div>
+      📍 الإحداثيات:
+      <span className="font-mono ml-1">
+        {form.to_lat.toFixed(5)}, {form.to_lng.toFixed(5)}
+      </span>
+    </div>
+
+    <a
+      href={`https://www.google.com/maps?q=${form.to_lat},${form.to_lng}`}
+      target="_blank"
+      rel="noreferrer"
+      className="text-blue-600 underline"
+    >
+      فتح في Google Maps
+    </a>
+
+  </div>
+)}
+
 
       {/* Fees */}
       <div className="grid grid-cols-2 gap-3">
