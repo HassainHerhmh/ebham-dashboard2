@@ -48,11 +48,9 @@ const WasselOrders: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // الفلاتر
   const [activeTab, setActiveTab] = useState<OrderTab>("pending");
   const [dateFilter, setDateFilter] = useState<DateFilter>("today");
 
-  // الكباتن
   const [captains, setCaptains] = useState<Captain[]>([]);
   const [captainsLoading, setCaptainsLoading] = useState(false);
   const [isCaptainModalOpen, setIsCaptainModalOpen] = useState(false);
@@ -121,7 +119,7 @@ const WasselOrders: React.FC = () => {
   const filterByTab = (list: WasselOrder[]) => {
     switch (activeTab) {
       case "pending": return list.filter(o => o.status === "pending");
-      case "processing": return list.filter(o => o.status === "confirmed" || o.status === "preparing" || o.status === "ready");
+      case "processing": return list.filter(o => ["confirmed", "preparing", "ready"].includes(o.status));
       case "delivering": return list.filter(o => o.status === "delivering");
       case "completed": return list.filter(o => o.status === "completed");
       case "cancelled": return list.filter(o => o.status === "cancelled");
@@ -131,7 +129,7 @@ const WasselOrders: React.FC = () => {
 
   const counts = {
     pending: filterByDate(orders).filter(o => o.status === "pending").length,
-    processing: filterByDate(orders).filter(o => o.status === "confirmed" || o.status === "preparing" || o.status === "ready").length,
+    processing: filterByDate(orders).filter(o => ["confirmed", "preparing", "ready"].includes(o.status)).length,
     delivering: filterByDate(orders).filter(o => o.status === "delivering").length,
     completed: filterByDate(orders).filter(o => o.status === "completed").length,
     cancelled: filterByDate(orders).filter(o => o.status === "cancelled").length,
@@ -142,9 +140,10 @@ const WasselOrders: React.FC = () => {
   const loadOrders = async () => {
     try {
       setLoading(true);
+      // استخدام المسار المباشر للتأكد من جلب البيانات كاملة
       const res = await api.get("/wassel-orders");
       setOrders(res.data?.orders || []);
-    } catch (e) {} finally { setLoading(false); }
+    } catch (e) { console.error("Load Orders Error:", e); } finally { setLoading(false); }
   };
 
   useEffect(() => {
@@ -165,8 +164,8 @@ const WasselOrders: React.FC = () => {
     setSelectedOrderId(orderId);
     setIsCaptainModalOpen(true);
     setCaptainsLoading(true);
-    api.captains.getAvailableCaptains().then(res => {
-      setCaptains(res.captains || res);
+    api.get("/captains").then(res => {
+      setCaptains(res.data.captains || []);
       setCaptainsLoading(false);
     });
   };
@@ -174,19 +173,24 @@ const WasselOrders: React.FC = () => {
   const assignCaptain = async (captainId: number) => {
     if (!selectedOrderId) return;
     try {
-      await api.orders.assignCaptain(selectedOrderId, captainId);
-      // ملاحظة: تم إزالة تحديث الحالة التلقائي بناءً على طلبك
-      setIsCaptainModalOpen(false);
-      loadOrders();
-      alert("✅ تم إسناد الكابتن للطلب");
-    } catch (e) { alert("حدث خطأ، تأكد من وجود عمود captain_id"); }
+      // إرسال طلب الإسناد للمسار المخصص في السيرفر لضمان الحفظ
+      const res = await api.post("/wassel-orders/assign", { orderId: selectedOrderId, captainId });
+      if (res.data.success) {
+        alert("✅ تم إسناد الكابتن بنجاح");
+        setIsCaptainModalOpen(false);
+        loadOrders();
+      }
+    } catch (e) { 
+      console.error("Assign Error:", e);
+      alert("حدث خطأ، تأكد من تحديث السيرفر وإضافة عمود captain_id"); 
+    }
   };
 
   const updateOrderStatus = async (orderId: number, newStatus: string) => {
     try {
       await api.put(`/wassel-orders/status/${orderId}`, { status: newStatus });
       loadOrders();
-    } catch (e) {}
+    } catch (e) { console.error("Update Status Error:", e); }
   };
 
   const openAdd = () => {
@@ -232,13 +236,12 @@ const WasselOrders: React.FC = () => {
       if (editingOrder) await api.put(`/wassel-orders/${editingOrder.id}`, payload);
       else await api.post("/wassel-orders", payload);
       setShowModal(false); loadOrders();
-    } catch (e) {}
+    } catch (e) { console.error("Save Error:", e); }
   };
 
   const renderActions = (o: WasselOrder) => {
     if (activeTab === "pending") return <button onClick={() => updateOrderStatus(o.id, "confirmed")} className="bg-green-600 text-white px-2 py-1 rounded text-xs">إعتماد</button>;
     
-    // التعديل هنا: إضافة زر قيد التوصيل بجانب الكابتن في مرحلة المعالجة
     if (activeTab === "processing") return (
       <div className="flex gap-1 justify-center">
          <button onClick={() => openCaptainModal(o.id)} className="bg-indigo-600 text-white px-2 py-1 rounded text-xs flex items-center gap-1"><UserCheck size={12}/> كابتن</button>
@@ -259,7 +262,6 @@ const WasselOrders: React.FC = () => {
         </button>
       </div>
 
-      {/* الفلاتر */}
       <div className="bg-white p-4 rounded-xl shadow-sm space-y-4">
         <div className="flex gap-2 justify-center border-b pb-3">
           {[{k:"all",l:"الكل"}, {k:"today",l:"اليوم"}, {k:"week",l:"الأسبوع"}].map(t=>(
@@ -276,7 +278,6 @@ const WasselOrders: React.FC = () => {
         </div>
       </div>
 
-      {/* الجدول */}
       {loading ? <div className="text-center py-10 text-gray-500 font-bold">⏳ جاري التحميل...</div> : (
         <div className="bg-white rounded-xl shadow overflow-x-auto">
           <table className="w-full text-center border-collapse">
@@ -294,17 +295,17 @@ const WasselOrders: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y text-gray-600">
-              {visibleOrders.map((o, i) => (
+              {visibleOrders.map((o) => (
                 <tr key={o.id} className="hover:bg-gray-50">
                   <td className="p-3 font-bold">#{o.id}</td>
                   <td>{o.customer_name}</td>
                   <td className="text-indigo-600 font-bold">{o.captain_name || "—"}</td>
-                  <td><button onClick={()=>o.from_lat && window.open(`https://www.google.com/maps?q=${o.from_lat},${o.from_lng}`)} className="text-blue-500"><MapPin size={16} /></button></td>
-                  <td><button onClick={()=>o.to_lat && window.open(`https://www.google.com/maps?q=${o.to_lat},${o.to_lng}`)} className="text-blue-500"><MapPin size={16} /></button></td>
+                  <td><button onClick={()=>o.from_lat && window.open(`http://maps.google.com/?q=${o.from_lat},${o.from_lng}`)} className="text-blue-500"><MapPin size={16} /></button></td>
+                  <td><button onClick={()=>o.to_lat && window.open(`http://maps.google.com/?q=${o.to_lat},${o.to_lng}`)} className="text-blue-500"><MapPin size={16} /></button></td>
                   <td className="text-sm">🚚 {o.delivery_fee} | ➕ {o.extra_fee}</td>
                   <td>
                     <select value={o.status} onChange={(e) => updateOrderStatus(o.id, e.target.value)} className="border rounded px-2 py-1 text-xs">
-                      <option value="pending">اعتماد</option><option value="confirmed">مؤكد</option><option value="delivering">توصيل</option><option value="completed">مكتمل</option>
+                      <option value="pending">اعتماد</option><option value="confirmed">مؤكد</option><option value="preparing">تحضير</option><option value="delivering">توصيل</option><option value="completed">مكتمل</option><option value="cancelled">ملغي</option>
                     </select>
                   </td>
                   <td>{renderActions(o)}</td>
@@ -317,7 +318,6 @@ const WasselOrders: React.FC = () => {
         </div>
       )}
 
-      {/* مودال الكباتن */}
       {isCaptainModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-[60] p-4">
           <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md">
@@ -339,7 +339,6 @@ const WasselOrders: React.FC = () => {
         </div>
       )}
 
-      {/* مودال الإضافة/التعديل */}
       {showModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl w-full max-w-xl p-6 space-y-5 max-h-[90vh] overflow-y-auto">
@@ -356,7 +355,6 @@ const WasselOrders: React.FC = () => {
               </select>
             </div>
 
-            {/* From */}
             <div className="border p-4 rounded-2xl bg-gray-50 space-y-3">
               <p className="font-bold text-sm text-gray-600">من (نقطة الانطلاق):</p>
               <div className="flex gap-2">
@@ -373,12 +371,12 @@ const WasselOrders: React.FC = () => {
                 </select>
               ) : (
                 <button onClick={()=>goToMap("from")} className="w-full p-2 border rounded-lg bg-blue-50 text-blue-700 text-xs font-bold">
+                  {/* حماية دالة toFixed بـ Number() */}
                   {(form.from_lat && !isNaN(Number(form.from_lat))) ? `📍 تم التحديد (${Number(form.from_lat).toFixed(4)})` : "📍 حدد من الخريطة"}
                 </button>
               )}
             </div>
 
-            {/* To */}
             <div className="border p-4 rounded-2xl bg-gray-50 space-y-3">
               <p className="font-bold text-sm text-gray-600">إلى (نقطة الوصول):</p>
               <div className="flex gap-2">
@@ -395,6 +393,7 @@ const WasselOrders: React.FC = () => {
                 </select>
               ) : (
                 <button onClick={()=>goToMap("to")} className="w-full p-2 border rounded-lg bg-blue-50 text-blue-700 text-xs font-bold">
+                  {/* حماية دالة toFixed بـ Number() */}
                   {(form.to_lat && !isNaN(Number(form.to_lat))) ? `📍 تم التحديد (${Number(form.to_lat).toFixed(4)})` : "📍 حدد من الخريطة"}
                 </button>
               )}
