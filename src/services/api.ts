@@ -1128,6 +1128,33 @@ export const executeExchange = async (data: {
   delete: async (id: number) =>
     (await api.delete(`/agent-info/${id}`)).data,
 };
+/* =========================
+   WASSEL ORDERS (طلبات وصل لي)
+========================= */
+(api as any).wasselOrders = {
+  // جلب جميع الطلبات (التي أصلحنا الاستعلام الخاص بها لجلب اسم الكابتن)
+  getAll: async () => 
+    (await api.get("/wassel-orders")).data,
 
+  // إضافة طلب جديد
+  create: async (data: any) => 
+    (await api.post("/wassel-orders", data)).data,
+
+  // تحديث طلب بالكامل (تعديل)
+  update: async (id: number, data: any) => 
+    (await api.put(`/wassel-orders/${id}`, data)).data,
+
+  // تحديث الحالة فقط (مثل: قيد التوصيل، مكتمل)
+  updateStatus: async (id: number, status: string) => 
+    (await api.put(`/wassel-orders/status/${id}`, { status })).data,
+
+  // حذف طلب
+  delete: async (id: number) => 
+    (await api.delete(`/wassel-orders/${id}`)).data,
+
+  // إسناد كابتن (إذا كان السيرفر يستخدم راوت منفصل أو يستخدم update)
+  assignCaptain: async (orderId: number, captainId: number) => 
+    (await api.put(`/wassel-orders/${orderId}`, { captain_id: captainId })).data,
+};
 
 export default api;
