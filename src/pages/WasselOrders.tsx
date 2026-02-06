@@ -511,27 +511,27 @@ value={form.from_address_id}
   )}
 
   {fromMode === "map" && (
-    <button
-      onClick={() =>
-formRef.current = form;
+   <button
+  onClick={() => {
+    formRef.current = form;
 
-sessionStorage.setItem(
-  "wassel_form_draft",
-  JSON.stringify(form)
-);
+    sessionStorage.setItem(
+      "wassel_form_draft",
+      JSON.stringify(form)
+    );
 
-navigate("/map-picker", {
-          state: {
-            target: "from",
-    returnTo: "/orders/wassel",
+    navigate("/map-picker", {
+      state: {
+        target: "from",
+        returnTo: "/orders/wassel",
+      },
+    });
+  }}
+  className="w-full p-2 border rounded bg-blue-50 text-blue-700"
+>
+  📍 اختر الموقع من الخريطة
+</button>
 
-          },
-        })
-      }
-      className="w-full p-2 border rounded bg-blue-50 text-blue-700"
-    >
-      📍 اختر الموقع من الخريطة
-    </button>
   )}
 
 </div>
@@ -620,22 +620,22 @@ value={form.to_address_id}
 
   {toMode === "map" && (
     <button
-      onClick={() =>
-formRef.current = form;
+    onClick={() => {
+  formRef.current = form;
 
-sessionStorage.setItem(
-  "wassel_form_draft",
-  JSON.stringify(form)
-);
+  sessionStorage.setItem(
+    "wassel_form_draft",
+    JSON.stringify(form)
+  );
 
-navigate("/map-picker", {
-          state: {
-            target: "to",
-    returnTo: "/orders/wassel",
+  navigate("/map-picker", {
+    state: {
+      target: "to",
+      returnTo: "/orders/wassel",
+    },
+  });
+}}
 
-          },
-        })
-      }
       className="w-full p-2 border rounded bg-blue-50 text-blue-700"
     >
       📍 اختر الموقع من الخريطة
