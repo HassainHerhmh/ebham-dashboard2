@@ -83,13 +83,13 @@ const WasselOrders: React.FC = () => {
         updatedForm.from_address = state.value || "موقع من الخريطة";
         updatedForm.from_lat = state.lat;
         updatedForm.from_lng = state.lng;
-        updatedForm.from_address_id = ""; 
+  updated.from_address_id = null;
       } else if (state.target === "to") {
         setToMode("map");
         updatedForm.to_address = state.value || "موقع من الخريطة";
         updatedForm.to_lat = state.lat;
         updatedForm.to_lng = state.lng;
-        updatedForm.to_address_id = "";
+  updated.to_address_id = null;
       }
 
       setForm(updatedForm);
