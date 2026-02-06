@@ -137,6 +137,8 @@ const WasselOrders: React.FC = () => {
       to_address: o.to_address,
       to_lat: o.to_lat || null,
       to_lng: o.to_lng || null,
+       from_address_id: o.from_address_id || "",
+to_address_id: o.to_address_id || "",
 
       delivery_fee: o.delivery_fee || 0,
       extra_fee: o.extra_fee || 0,
