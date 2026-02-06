@@ -59,7 +59,7 @@ export default function MapPage() {
 const state = location.state as any;
 
 const target = state?.target || "from";
-const returnTo = state?.returnTo || "/wassel-orders";
+const returnTo = "/wassel-orders";
 
   const [pos, setPos] = useState<[number, number]>([15.3694, 44.191]);
 
@@ -79,7 +79,6 @@ const handleSave = () => {
   }
 
   navigate(returnTo, {
-    replace: true,
     state: {
       from: "map",
       target,
@@ -89,6 +88,7 @@ const handleSave = () => {
     },
   });
 };
+
 
 
 
