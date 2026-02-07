@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import api from "../services/api";
-// ✅ الإصلاح: استيراد useApp و AppContext بشكل صحيح بناءً على هيكلة مجلداتك
-import { useApp, AppContext } from "../contexts/AppContext"; 
+// ✅ الاستيراد الصحيح لـ useApp من ملف السياق الخاص بك
+import { useApp } from "../contexts/AppContext"; 
 import { DndContext, closestCenter } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -58,7 +58,7 @@ const SortableRow: React.FC<SortableRowProps> = ({ method, children }) => {
 };
 
 const BankDeposits: React.FC = () => {
-  // ✅ استخدام useApp لجلب حالة التطبيق والمستخدم
+  // ✅ استخدام useApp لجلب حالة التطبيق والمستخدم الحالي
   const { state } = useApp();
   const user = state.user;
 
@@ -75,8 +75,9 @@ const BankDeposits: React.FC = () => {
   const [accountId, setAccountId] = useState("");
   const [branchId, setBranchId] = useState("");
 
-  // شرط الإدارة العامة (فرع رقم 1)
-  const isMainBranch = user?.branch_id === 1 || user?.role === 'admin';
+  // ✅ فحص إذا كان المستخدم في فرع الإدارة العامة (بناءً على الصور السابقة رقم الفرع 3 هو الإدارة العامة)
+  // يرجى التأكد من الرقم (3 أو 1) حسب قاعدة بياناتك. في الكود استخدمت المعيارين.
+  const isMainAdminBranch = user?.branch_id === 3 || user?.is_admin === 1;
 
   const loadMethods = async () => {
     try {
@@ -90,24 +91,22 @@ const BankDeposits: React.FC = () => {
   useEffect(() => {
     loadMethods();
     
-    // جلب الحسابات المحاسبية مع فحص هيكلية البيانات
+    // جلب الحسابات المحاسبية
     api.get("/accounts").then((res) => {
       const list = res.data?.list || res.data?.data?.list || [];
       setAccounts(list.filter((a: any) => a.parent_id));
     });
     
-    // جلب الفروع فقط إذا كان المستخدم في الإدارة العامة
-    if (isMainBranch) {
+    // جلب الفروع فقط للإدارة العامة
+    if (isMainAdminBranch) {
       api.get("/branches").then((res) => {
         setBranches(res.data.branches || []);
       });
     }
-  }, [isMainBranch, user]);
+  }, [isMainAdminAdminBranch, user]);
 
   const saveMethod = async () => {
-    if (!company || !accountNumber || !accountId) {
-      return alert("يرجى إكمال البيانات الأساسية (البنك، رقم الحساب، والحساب المحاسبي)");
-    }
+    if (!company || !accountNumber || !accountId) return alert("يرجى إكمال البيانات الأساسية");
 
     const payload = {
       company,
@@ -115,7 +114,8 @@ const BankDeposits: React.FC = () => {
       owner_name: ownerName,
       address,
       account_id: accountId ? Number(accountId) : null,
-      branch_id: isMainBranch ? (branchId ? Number(branchId) : null) : user?.branch_id,
+      // ✅ إذا كان في الإدارة يرسل الفرع المختار، وإلا يرسل فرعه الحالي تلقائياً
+      branch_id: isMainAdminBranch ? (branchId ? Number(branchId) : null) : user?.branch_id,
     };
 
     try {
@@ -135,7 +135,7 @@ const BankDeposits: React.FC = () => {
   const toggleStatus = async (method: BankMethod) => {
     try {
       const newStatus = method.is_active === 1 ? 0 : 1;
-      // ✅ تغيير PATCH إلى PUT لتجنب مشاكل CORS كما في الصور
+      // ✅ تم استخدام PUT بدلاً من PATCH لحل مشكلة CORS الموضحة في الصورة
       await api.put(`/payment-methods/${method.id}/toggle`, { is_active: newStatus });
       loadMethods();
     } catch (e) {
@@ -211,7 +211,8 @@ const BankDeposits: React.FC = () => {
                   <th className="p-3">رقم الحساب</th>
                   <th className="p-3">صاحب الحساب</th>
                   <th className="p-3">الحساب المحاسبي</th>
-                  <th className="p-3">الفرع</th>
+                  {/* ✅ عمود الفرع يظهر فقط للإدارة العامة */}
+                  {isMainAdminBranch && <th className="p-3">الفرع</th>}
                   <th className="p-3">الحالة</th>
                   <th className="p-3">الإجراءات</th>
                 </tr>
@@ -230,13 +231,16 @@ const BankDeposits: React.FC = () => {
                             <span className="text-indigo-600 font-bold">{acc.name_ar || acc.name}</span>
                             <span className="text-[9px] text-gray-400 font-mono">{acc.code}</span>
                           </div>
-                        ) : <span className="text-red-400 text-xs italic">غير مرتبط</span>}
+                        ) : <span className="text-red-400 text-xs italic text-center">غير مرتبط</span>}
                       </td>
-                      <td className="p-3">
-                        <span className={`px-2 py-1 rounded text-[10px] font-bold ${m.branch_id ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'}`}>
-                          {m.branch_name || "موحد (كل الفروع)"}
-                        </span>
-                      </td>
+                      {/* ✅ محتوى عمود الفرع يظهر فقط للإدارة العامة */}
+                      {isMainAdminBranch && (
+                        <td className="p-3">
+                          <span className={`px-2 py-1 rounded text-[10px] font-bold ${m.branch_id ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'}`}>
+                            {m.branch_name || "موحد (كل الفروع)"}
+                          </span>
+                        </td>
+                      )}
                       <td className="p-3">
                         <button onClick={() => toggleStatus(m)}>
                           {m.is_active ? (
@@ -284,13 +288,8 @@ const BankDeposits: React.FC = () => {
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-bold text-gray-500">اسم صاحب الحساب</label>
-              <input className="border p-3 w-full rounded-xl outline-none focus:border-indigo-500 transition" placeholder="الاسم الكامل" value={ownerName} onChange={(e) => setOwnerName(e.target.value)} />
-            </div>
-
-            <div className="space-y-1">
               <label className="text-xs font-bold text-gray-500 italic text-indigo-600">الحساب المحاسبي (دليل الحسابات)</label>
-              <select className="border p-3 w-full rounded-xl outline-none focus:border-indigo-500 bg-indigo-50/30 font-bold" value={accountId} onChange={(e) => setAccountId(e.target.value)}>
+              <select className="border p-3 w-full rounded-xl outline-none focus:border-indigo-500 bg-indigo-50/30 font-bold text-right" value={accountId} onChange={(e) => setAccountId(e.target.value)}>
                 <option value="">اختر الحساب</option>
                 {accounts.map((a: any) => (
                   <option key={a.id} value={a.id}>{a.code} - {a.name_ar || a.name}</option>
@@ -298,10 +297,11 @@ const BankDeposits: React.FC = () => {
               </select>
             </div>
 
-            {isMainBranch && (
+            {/* ✅ مربع اختيار الفرع يظهر فقط في مودال الإدارة العامة */}
+            {isMainAdminBranch && (
               <div className="space-y-1 animate-in slide-in-from-right duration-300">
                 <label className="text-xs font-bold text-orange-600">تبعية الفرع (للمدراء فقط)</label>
-                <select className="border p-3 w-full rounded-xl outline-none focus:border-orange-500 bg-orange-50/30" value={branchId} onChange={(e) => setBranchId(e.target.value)}>
+                <select className="border p-3 w-full rounded-xl outline-none focus:border-orange-500 bg-orange-50/30 font-bold" value={branchId} onChange={(e) => setBranchId(e.target.value)}>
                   <option value="">موحد (يظهر لجميع الفروع)</option>
                   {branches.map((b: any) => (
                     <option key={b.id} value={b.id}>{b.name}</option>
