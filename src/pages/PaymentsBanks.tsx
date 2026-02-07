@@ -103,7 +103,7 @@ const BankDeposits: React.FC = () => {
         setBranches(res.data.branches || []);
       });
     }
-  }, [isMainAdminAdminBranch, user]);
+}, [isMainAdminBranch, user]);
 
   const saveMethod = async () => {
     if (!company || !accountNumber || !accountId) return alert("يرجى إكمال البيانات الأساسية");
