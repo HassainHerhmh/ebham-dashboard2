@@ -23,11 +23,11 @@ interface WasselOrder {
   extra_fee: number;
   notes?: string;
   status: string;
-  payment_method: string;
+  payment_method: string;
   created_at: string;
   captain_name?: string;
-  creator_name?: string; 
-  updater_name?: string; 
+  creator_name?: string; 
+  updater_name?: string; 
 }
 
 interface Captain {
@@ -47,8 +47,8 @@ const WasselOrders: React.FC = () => {
   const [editingOrder, setEditingOrder] = useState<WasselOrder | null>(null);
   const [customers, setCustomers] = useState<any[]>([]);
   const [addresses, setAddresses] = useState<any[]>([]);
-  const [banks, setBanks] = useState<any[]>([]);
-  const [customerBalance, setCustomerBalance] = useState<{current_balance: number, credit_limit: number} | null>(null);
+  const [banks, setBanks] = useState<any[]>([]);
+  const [customerBalance, setCustomerBalance] = useState<{current_balance: number, credit_limit: number} | null>(null);
   
   const navigate = useNavigate();
   const location = useLocation();
@@ -70,7 +70,7 @@ const WasselOrders: React.FC = () => {
     to_address: "", to_lat: null, to_lng: null,
     delivery_fee: 0, extra_fee: 0, notes: "",
     payment_method: "cod",
-    bank_id: ""
+    bank_id: ""
   });
 
   /* ======================
@@ -157,29 +157,29 @@ const WasselOrders: React.FC = () => {
     } catch (e) { console.error(e); } finally { setLoading(false); }
   };
 
-  const fetchCustomerWallet = async (customerId: number) => {
-    try {
-      const res = await api.get(`/customer-guarantees/${customerId}/balance`);
-      setCustomerBalance({
-        current_balance: res.data?.balance || 0,
-        credit_limit: res.data?.credit_limit || 0
-      });
-    } catch (e) { console.error("Error fetching wallet", e); }
-  };
+  const fetchCustomerWallet = async (customerId: number) => {
+    try {
+      const res = await api.get(`/customer-guarantees/${customerId}/balance`);
+      setCustomerBalance({
+        current_balance: Number(res.data?.balance || 0),
+        credit_limit: Number(res.data?.credit_limit || 0)
+      });
+    } catch (e) { console.error("Error fetching wallet", e); }
+  };
 
   useEffect(() => {
     loadOrders();
     api.get("/customers").then(res => setCustomers(res.data.customers || []));
-    api.get("/wassel-orders/banks").then(res => setBanks(res.data.banks || []));
+    api.get("/wassel-orders/banks").then(res => setBanks(res.data.banks || []));
   }, []);
 
   useEffect(() => {
     if (form.customer_id) {
       api.get(`/customer-addresses/customer/${form.customer_id}`).then(res => setAddresses(res.data.addresses || []));
-      fetchCustomerWallet(Number(form.customer_id));
+      fetchCustomerWallet(Number(form.customer_id));
     } else {
-      setCustomerBalance(null);
-    }
+      setCustomerBalance(null);
+    }
   }, [form.customer_id]);
 
   /* ======================
@@ -222,7 +222,7 @@ const WasselOrders: React.FC = () => {
       to_address: "", to_lat: null, to_lng: null,
       delivery_fee: 0, extra_fee: 0, notes: "",
       payment_method: "cod",
-      bank_id: ""
+      bank_id: ""
     });
     setShowModal(true);
   };
@@ -238,7 +238,7 @@ const WasselOrders: React.FC = () => {
       to_address: o.to_address, to_lat: o.to_lat, to_lng: o.to_lng,
       delivery_fee: o.delivery_fee || 0, extra_fee: o.extra_fee || 0, notes: o.notes || "",
       payment_method: o.payment_method || "cod",
-      bank_id: ""
+      bank_id: ""
     });
     setShowModal(true);
   };
@@ -251,21 +251,22 @@ const WasselOrders: React.FC = () => {
   const saveOrder = async () => {
     try {
       if (!form.customer_id || !form.order_type || !form.from_address || !form.to_address) return alert("أكمل البيانات");
-      
-      const totalAmount = Number(form.delivery_fee) + Number(form.extra_fee);
+      
+      const totalAmount = Number(form.delivery_fee) + Number(form.extra_fee);
 
-      // ✅ التحقق من الرصيد والسقف عند اختيار الدفع من الرصيد
-      if (form.payment_method === 'wallet' && customerBalance) {
-        const available = customerBalance.current_balance + customerBalance.credit_limit;
-        if (totalAmount > available) {
-          return alert(`عذراً، الرصيد غير كافٍ. المتاح مع السقف: ${available.toFixed(2)} ريال`);
-        }
-      }
+      // ✅ التحقق الصارم من الرصيد والسقف عند اختيار الدفع من الرصيد
+      if (form.payment_method === 'wallet') {
+        if (!customerBalance) return alert("جاري التحقق من رصيد العميل...");
+        const available = Number(customerBalance.current_balance) + Number(customerBalance.credit_limit);
+        if (totalAmount > available) {
+          return alert(`عذراً، الرصيد غير كافٍ. المتاح (مع السقف): ${available.toLocaleString()} ريال. العجز: ${(totalAmount - available).toLocaleString()} ريال`);
+        }
+      }
 
-      // ✅ التحقق من اختيار البنك عند اختيار إيداع بنكي
-      if (form.payment_method === 'bank' && !form.bank_id) {
-        return alert("يرجى اختيار البنك المحول إليه");
-      }
+      // ✅ التحقق من اختيار البنك عند اختيار إيداع بنكي
+      if (form.payment_method === 'bank' && !form.bank_id) {
+        return alert("يرجى اختيار البنك المحول إليه");
+      }
 
       const payload = { 
         ...form, 
@@ -278,8 +279,8 @@ const WasselOrders: React.FC = () => {
       else await api.post("/wassel-orders", payload);
       setShowModal(false); loadOrders();
     } catch (e: any) {
-      alert(e.response?.data?.message || "حدث خطأ أثناء الحفظ");
-    }
+      alert(e.response?.data?.message || "حدث خطأ أثناء الحفظ");
+    }
   };
 
   const renderActions = (o: WasselOrder) => {
@@ -516,45 +517,63 @@ const WasselOrders: React.FC = () => {
                 ))}
               </div>
 
-              {/* ✅ عرض رصيد العميل عند اختيار "من الرصيد" */}
-              {form.payment_method === 'wallet' && customerBalance && (
-                <div className="mt-2 p-2 bg-blue-50 border border-blue-100 rounded-lg animate-in fade-in slide-in-from-top-1">
-                  <div className="flex justify-between text-[11px]">
-                    <span className="text-gray-600 font-bold">الرصيد الفعلي:</span>
-                    <span className={customerBalance.current_balance < 0 ? "text-red-600 font-black" : "text-green-600 font-black"}>
-                      {customerBalance.current_balance.toFixed(2)} ريال
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-[11px] mt-1">
-                    <span className="text-gray-600 font-bold">سقف الحساب (المتاح):</span>
-                    <span className="text-blue-600 font-black">
-                      {(customerBalance.current_balance + customerBalance.credit_limit).toFixed(2)} ريال
-                    </span>
-                  </div>
-                </div>
-              )}
+              {/* ✅ تحسين عرض الرصيد بشكل احترافي وملون */}
+              {form.payment_method === 'wallet' && customerBalance && (
+                <div className={`mt-3 p-3 rounded-2xl border-2 animate-in fade-in slide-in-from-top-2 ${
+                  (Number(form.delivery_fee) + Number(form.extra_fee)) > (customerBalance.current_balance + customerBalance.credit_limit)
+                  ? "bg-red-50 border-red-200"
+                  : "bg-emerald-50 border-emerald-200"
+                }`}>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex justify-between items-center text-[11px]">
+                      <span className="text-gray-600 font-bold">الرصيد الفعلي:</span>
+                      <span className={`font-black ${customerBalance.current_balance < 0 ? "text-red-600" : "text-emerald-600"}`}>
+                        {customerBalance.current_balance.toLocaleString()} ريال
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center pt-1 border-t border-dashed border-gray-300 text-[11px]">
+                      <span className="text-blue-700 font-black">المتاح (مع السقف):</span>
+                      <span className="text-blue-800 font-black">
+                        {(customerBalance.current_balance + customerBalance.credit_limit).toLocaleString()} ريال
+                      </span>
+                    </div>
+                    {/* تنبيه العجز */}
+                    {(Number(form.delivery_fee) + Number(form.extra_fee)) > (customerBalance.current_balance + customerBalance.credit_limit) && (
+                      <div className="text-[10px] text-red-600 font-bold text-center mt-1 animate-pulse">
+                        ⚠️ تنبيه: إجمالي الرسوم يتجاوز الرصيد المتاح!
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
-              {/* ✅ اختيار البنك عند اختيار "إيداع بنكي" */}
-              {form.payment_method === 'bank' && (
-                <div className="mt-2 animate-in fade-in slide-in-from-top-1">
-                  <label className="text-[10px] font-bold text-gray-400 px-1">🏦 البنك المحول إليه:</label>
-                  <select 
-                    className="w-full p-2 border rounded-lg text-xs bg-white outline-none focus:ring-1 focus:ring-indigo-300"
-                    value={form.bank_id}
-                    onChange={(e) => setForm({ ...form, bank_id: e.target.value })}
-                  >
-                    <option value="">-- اختر البنك --</option>
-                    {banks.map(b => (
-                      <option key={b.id} value={b.id}>{b.name} - {b.account_number}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
+              {/* ✅ اختيار البنك عند اختيار "إيداع بنكي" */}
+              {form.payment_method === 'bank' && (
+                <div className="mt-2 animate-in fade-in slide-in-from-top-1">
+                  <label className="text-[10px] font-bold text-gray-400 px-1">🏦 البنك المحول إليه:</label>
+                  <select 
+                    className="w-full p-2 border rounded-lg text-xs bg-white outline-none focus:ring-1 focus:ring-indigo-300"
+                    value={form.bank_id}
+                    onChange={(e) => setForm({ ...form, bank_id: e.target.value })}
+                  >
+                    <option value="">-- اختر البنك --</option>
+                    {banks.map(b => (
+                      <option key={b.id} value={b.id}>{b.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1"><label className="text-xs text-gray-400">رسوم التوصيل</label><input type="number" className="w-full p-2 border rounded-lg outline-none focus:border-blue-500" value={form.delivery_fee} onChange={(e)=>setForm({...form, delivery_fee: e.target.value})} /></div>
-              <div className="space-y-1"><label className="text-xs text-gray-400">إضافي</label><input type="number" className="w-full p-2 border rounded-lg outline-none focus:border-blue-500" value={form.extra_fee} onChange={(e)=>setForm({...form, extra_fee: e.target.value})} /></div>
+              <div className="space-y-1">
+                <label className="text-xs text-gray-400 font-bold">رسوم التوصيل</label>
+                <input type="number" className="w-full p-2 border rounded-lg outline-none focus:border-blue-500" value={form.delivery_fee} onChange={(e)=>setForm({...form, delivery_fee: e.target.value})} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-gray-400 font-bold">إضافي</label>
+                <input type="number" className="w-full p-2 border rounded-lg outline-none focus:border-blue-500" value={form.extra_fee} onChange={(e)=>setForm({...form, extra_fee: e.target.value})} />
+              </div>
               <textarea placeholder="ملاحظات العميل..." className="w-full p-2 border rounded-xl col-span-2 min-h-[80px] outline-none focus:border-blue-500" value={form.notes} onChange={(e)=>setForm({...form, notes: e.target.value})} />
             </div>
 
