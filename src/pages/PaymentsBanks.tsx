@@ -1,321 +1,225 @@
-import React, { useEffect, useState, useContext } from "react";
-import api from "../services/api";
-// ✅ الإصلاح: استيراد useApp مباشرة بدلاً من useContext، واستيراد AppContext كـ Named Export
-import { useApp, AppContext } from "../contexts/AppContext"; 
-import { DndContext, closestCenter } from "@dnd-kit/core";
-import {
-  SortableContext,
-  verticalListSortingStrategy,
-  useSortable,
-  arrayMove,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, Edit2, Trash2, CheckCircle, XCircle } from "lucide-react";
+import express from "express";
+import db from "../db.js";
+import PDFDocument from "pdfkit";
 
-interface BankMethod {
-  id: number;
-  company: string;
-  account_number: string;
-  owner_name: string;
-  address: string;
-  is_active: number;
-  sort_order: number;
-  account_id: number | null;
-  branch_id: number | null;
-  branch_name?: string;
-}
+const router = express.Router();
 
-interface SortableRowProps {
-  method: BankMethod;
-  children: React.ReactNode;
-}
+/* ========================
+   1. جلب جميع طرق الدفع (للإدارة)
+======================== */
+router.get("/", async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT 
+        pm.*,
+        b.name AS branch_name,
+        CAST(pm.is_active AS UNSIGNED) AS is_active
+      FROM payment_methods pm
+      LEFT JOIN branches b ON b.id = pm.branch_id
+      ORDER BY pm.sort_order ASC
+    `);
 
-const SortableRow: React.FC<SortableRowProps> = ({ method, children }) => {
-  const { attributes, listeners, setNodeRef, transform, transition } =
-    useSortable({ id: method.id });
+    res.json({ success: true, methods: rows });
+  } catch (err) {
+    console.error("Get payment methods error:", err);
+    res.status(500).json({ success: false });
+  }
+});
 
-  const style: React.CSSProperties = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
+/* ========================
+   2. جلب الطرق المفعّلة للفرع المحدد أو الموحدة
+======================== */
+router.get("/active", async (req, res) => {
+  try {
+    // جلب رقم الفرع من الهيدر (x-branch-id) أو من بيانات المستخدم
+    const branchId = req.headers["x-branch-id"] || req.user?.branch_id;
 
-  return (
-    <tr
-      ref={setNodeRef}
-      style={style}
-      className={`border-t hover:bg-gray-50 transition-colors ${
-        method.is_active === 0 ? "bg-red-50 text-gray-400" : ""
-      }`}
-    >
-      <td className="p-2 w-8 text-gray-400">
-        <span {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing">
-          <GripVertical size={18} />
-        </span>
-      </td>
-      {children}
-    </tr>
-  );
-};
-
-const BankDeposits: React.FC = () => {
-  // ✅ استخدام useApp لجلب الحالة (State) التي تحتوي على المستخدم
-  const { state } = useApp();
-  const user = state.user;
-
-  const [methods, setMethods] = useState<BankMethod[]>([]);
-  const [accounts, setAccounts] = useState<any[]>([]);
-  const [branches, setBranches] = useState<any[]>([]);
-
-  const [company, setCompany] = useState("");
-  const [accountNumber, setAccountNumber] = useState("");
-  const [ownerName, setOwnerName] = useState("");
-  const [address, setAddress] = useState("");
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [accountId, setAccountId] = useState("");
-  const [branchId, setBranchId] = useState("");
-
-  // شرط الإدارة العامة (فرع رقم 1) أو مدير نظام
-  const isMainBranch = user?.branch_id === 1 || user?.role === 'admin';
-
-  const loadMethods = async () => {
-    try {
-      const res = await api.get("/payment-methods");
-      setMethods(res.data.methods || []);
-    } catch (e) {
-      console.error("Load error", e);
-    }
-  };
-
-  useEffect(() => {
-    loadMethods();
-    api.get("/accounts").then((res) => {
-      const list = res.data?.list || res.data?.data?.list || [];
-      setAccounts(list.filter((a: any) => a.parent_id));
-    });
+    let query = `
+      SELECT 
+        id, company, account_number, owner_name, address, branch_id
+      FROM payment_methods 
+      WHERE is_active = 1
+    `;
     
-    if (isMainBranch) {
-      api.get("/branches").then((res) => {
-        setBranches(res.data.branches || []);
-      });
+    let params = [];
+
+    // عرض بنوك الفرع المحدد + البنوك العامة (NULL)
+    if (branchId) {
+      query += ` AND (branch_id IS NULL OR branch_id = ?) `;
+      params.push(Number(branchId));
     }
-  }, [isMainBranch, user]);
 
-  const saveMethod = async () => {
-    if (!company || !accountNumber || !accountId) return alert("يرجى إكمال البيانات الأساسية (البنك، الحساب، الحساب المحاسبي)");
+    query += ` ORDER BY sort_order ASC `;
 
-    const payload = {
-      company,
-      account_number: accountNumber,
-      owner_name: ownerName,
-      address,
-      account_id: accountId ? Number(accountId) : null,
-      // إذا كان مدير إدارة عامة يرسل ما اختاره، وإلا يرسل فرعه الحالي تلقائياً
-      branch_id: isMainBranch ? (branchId ? Number(branchId) : null) : user?.branch_id,
-    };
+    const [rows] = await db.query(query, params);
+    res.json({ success: true, methods: rows });
+  } catch (err) {
+    console.error("❌ خطأ في جلب البنوك:", err);
+    res.status(500).json({ success: false });
+  }
+});
 
-    try {
-      if (editingId) {
-        await api.put(`/payment-methods/${editingId}`, payload);
-      } else {
-        await api.post("/payment-methods", payload);
-      }
-      resetForm();
-      setModalOpen(false);
-      loadMethods();
-    } catch (e) {
-      alert("حدث خطأ أثناء الحفظ");
+/* ========================
+   3. إضافة طريقة دفع (مع دعم تحديد الفرع)
+======================== */
+router.post("/", async (req, res) => {
+  try {
+    const { company, account_number, owner_name, address, account_id, branch_id } = req.body;
+
+    if (!account_id) {
+      return res.json({ success: false, message: "يجب اختيار حساب فرعي" });
     }
-  };
 
-  const toggleStatus = async (method: BankMethod) => {
-    try {
-      const newStatus = method.is_active === 1 ? 0 : 1;
-      await api.patch(`/payment-methods/${method.id}/toggle`, { is_active: newStatus });
-      loadMethods();
-    } catch (e) {
-      alert("فشل في تغيير الحالة");
+    const [[acc]] = await db.query(
+      "SELECT id FROM accounts WHERE id=? AND parent_id IS NOT NULL",
+      [account_id]
+    );
+
+    if (!acc) {
+      return res.json({ success: false, message: "الحساب المختار ليس فرعيًا" });
     }
-  };
 
-  const deleteMethod = async (id: number) => {
-    if (!window.confirm("هل أنت متأكد من حذف وسيلة الدفع هذه؟")) return;
-    try {
-      await api.delete(`/payment-methods/${id}`);
-      loadMethods();
-    } catch (e) {
-      alert("فشل في الحذف");
+    await db.query(
+      `INSERT INTO payment_methods
+        (company, account_number, owner_name, address, account_id, branch_id, sort_order, is_active)
+        VALUES (?, ?, ?, ?, ?, ?, 9999, 1)`,
+      [company, account_number, owner_name, address, account_id, branch_id || null]
+    );
+
+    res.json({ success: true, message: "✅ تم إضافة طريقة الدفع" });
+  } catch (err) {
+    console.error("Add payment method error:", err);
+    res.status(500).json({ success: false });
+  }
+});
+
+/* ========================
+   4. تعديل طريقة دفع
+======================== */
+router.put("/:id", async (req, res) => {
+  try {
+    const { company, account_number, owner_name, address, account_id, branch_id } = req.body;
+
+    await db.query(
+      `UPDATE payment_methods
+        SET company=?, account_number=?, owner_name=?, address=?, account_id=?, branch_id=?
+        WHERE id=?`,
+      [company, account_number, owner_name, address, account_id, branch_id || null, req.params.id]
+    );
+
+    res.json({ success: true, message: "✅ تم التعديل" });
+  } catch (err) {
+    console.error("Update payment method error:", err);
+    res.status(500).json({ success: false });
+  }
+});
+
+/* ========================
+   5. حذف طريقة دفع
+======================== */
+router.delete("/:id", async (req, res) => {
+  try {
+    await db.query("DELETE FROM payment_methods WHERE id=?", [req.params.id]);
+    res.json({ success: true, message: "🗑️ تم الحذف" });
+  } catch (err) {
+    res.status(500).json({ success: false });
+  }
+});
+
+/* ========================
+   6. تفعيل / تعطيل (تم التعديل إلى PUT لحل خطأ CORS) ✅
+======================== */
+router.put("/:id/toggle", async (req, res) => {
+  const { id } = req.params;
+  const { is_active } = req.body;
+  const status = is_active ? 1 : 0;
+  const userId = req.user?.id || null;
+
+  const conn = await db.getConnection();
+  try {
+    await conn.beginTransaction();
+    await conn.query("UPDATE payment_methods SET is_active=? WHERE id=?", [status, id]);
+    await conn.query(
+      "INSERT INTO payment_method_logs (payment_method_id, action, changed_by) VALUES (?, ?, ?)",
+      [id, status === 1 ? "activate" : "deactivate", userId]
+    );
+    await conn.commit();
+    res.json({ success: true, message: "تم تحديث الحالة بنجاح" });
+  } catch (err) {
+    await conn.rollback();
+    console.error("Toggle error:", err);
+    res.status(500).json({ success: false });
+  } finally {
+    conn.release();
+  }
+});
+
+/* ========================
+   7. ترتيب بالسحب
+======================== */
+router.post("/reorder", async (req, res) => {
+  const { orders } = req.body;
+  const conn = await db.getConnection();
+  try {
+    await conn.beginTransaction();
+    for (const o of orders) {
+      await conn.query("UPDATE payment_methods SET sort_order=? WHERE id=?", [o.sort_order, o.id]);
     }
-  };
+    await conn.commit();
+    res.json({ success: true });
+  } catch (err) {
+    await conn.rollback();
+    res.status(500).json({ success: false });
+  } finally {
+    conn.release();
+  }
+});
 
-  const openEdit = (m: BankMethod) => {
-    setEditingId(m.id);
-    setCompany(m.company);
-    setAccountNumber(m.account_number);
-    setOwnerName(m.owner_name);
-    setAddress(m.address);
-    setAccountId(m.account_id?.toString() || "");
-    setBranchId(m.branch_id?.toString() || "");
-    setModalOpen(true);
-  };
+/* ========================
+   8. سجل التغييرات
+======================== */
+router.get("/:id/logs", async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT l.action, l.created_at, u.name AS user_name
+      FROM payment_method_logs l
+      LEFT JOIN users u ON u.id = l.changed_by
+      WHERE l.payment_method_id = ?
+      ORDER BY l.created_at DESC
+    `, [req.params.id]);
+    res.json({ success: true, logs: rows });
+  } catch (err) {
+    res.status(500).json({ success: false });
+  }
+});
 
-  const resetForm = () => {
-    setEditingId(null);
-    setCompany("");
-    setAccountNumber("");
-    setOwnerName("");
-    setAddress("");
-    setAccountId("");
-    setBranchId("");
-  };
+/* ========================
+   9. تصدير PDF
+======================== */
+router.get("/:id/logs/pdf", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [logs] = await db.query(`
+      SELECT l.action, l.created_at, u.name AS user_name
+      FROM payment_method_logs l
+      LEFT JOIN users u ON u.id = l.changed_by
+      WHERE l.payment_method_id=?
+      ORDER BY l.created_at DESC
+    `, [id]);
 
-  const handleDragEnd = async (event: any) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    const oldIndex = methods.findIndex((m) => m.id === active.id);
-    const newIndex = methods.findIndex((m) => m.id === over.id);
-    const newList = arrayMove(methods, oldIndex, newIndex);
-    setMethods(newList);
-    await api.post("/payment-methods/reorder", {
-      orders: newList.map((m, i) => ({ id: m.id, sort_order: i + 1 })),
+    const doc = new PDFDocument({ margin: 40 });
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", "attachment; filename=logs.pdf");
+    doc.pipe(res);
+    doc.fontSize(16).text("سجل تغييرات طرق الدفع", { align: "center" });
+    doc.moveDown();
+    logs.forEach((l) => {
+      doc.fontSize(12).text(`${l.action === "activate" ? "تفعيل" : "تعطيل"} | ${l.user_name ?? "النظام"} | ${l.created_at}`);
     });
-  };
+    doc.end();
+  } catch (err) {
+    res.status(500).json({ success: false });
+  }
+});
 
-  return (
-    <div className="bg-white p-6 rounded-xl shadow-lg space-y-6" dir="rtl">
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-          🏦 إدارة الحسابات البنكية والإيداعات
-        </h2>
-        <button
-          onClick={() => { resetForm(); setModalOpen(true); }}
-          className="bg-indigo-600 text-white px-5 py-2 rounded-lg font-bold shadow-md hover:bg-indigo-700 transition"
-        >
-          ➕ إضافة بنك جديد
-        </button>
-      </div>
-
-      <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <SortableContext items={methods.map((m) => m.id)} strategy={verticalListSortingStrategy}>
-          <div className="overflow-x-auto border rounded-xl">
-            <table className="w-full text-sm text-center">
-              <thead className="bg-gray-50 text-gray-600 font-bold border-b">
-                <tr>
-                  <th className="p-3 w-8"></th>
-                  <th className="p-3 text-right">البنك</th>
-                  <th className="p-3">رقم الحساب</th>
-                  <th className="p-3">صاحب الحساب</th>
-                  <th className="p-3">الحساب المحاسبي</th>
-                  <th className="p-3">الفرع</th>
-                  <th className="p-3">الحالة</th>
-                  <th className="p-3">الإجراءات</th>
-                </tr>
-              </thead>
-              <tbody>
-                {methods.map((m) => {
-                  const acc = accounts.find((a: any) => a.id === m.account_id);
-                  return (
-                    <SortableRow key={m.id} method={m}>
-                      <td className="p-3 text-right font-bold text-indigo-700">{m.company}</td>
-                      <td className="p-3 font-mono">{m.account_number}</td>
-                      <td className="p-3">{m.owner_name}</td>
-                      <td className="p-3">
-                        {acc ? (
-                          <div className="flex flex-col items-center">
-                            <span className="text-indigo-600 font-bold">{acc.name_ar || acc.name}</span>
-                            <span className="text-[9px] text-gray-400 font-mono">{acc.code}</span>
-                          </div>
-                        ) : <span className="text-red-400 text-xs italic">غير مرتبط</span>}
-                      </td>
-                      <td className="p-3">
-                        <span className={`px-2 py-1 rounded text-[10px] font-bold ${m.branch_id ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'}`}>
-                          {m.branch_name || "موحد (كل الفروع)"}
-                        </span>
-                      </td>
-                      <td className="p-3">
-                        <button onClick={() => toggleStatus(m)}>
-                          {m.is_active ? (
-                            <div className="flex items-center gap-1 text-green-600 font-bold bg-green-50 px-2 py-1 rounded">
-                              <CheckCircle size={14} /> نشط
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-1 text-red-600 font-bold bg-red-50 px-2 py-1 rounded">
-                              <XCircle size={14} /> معطل
-                            </div>
-                          )}
-                        </button>
-                      </td>
-                      <td className="p-3">
-                        <div className="flex justify-center gap-2">
-                          <button onClick={() => openEdit(m)} className="p-2 text-blue-600 hover:bg-blue-50 rounded transition"><Edit2 size={16} /></button>
-                          <button onClick={() => deleteMethod(m.id)} className="p-2 text-red-600 hover:bg-red-50 rounded transition"><Trash2 size={16} /></button>
-                        </div>
-                      </td>
-                    </SortableRow>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </SortableContext>
-      </DndContext>
-
-      {modalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] backdrop-blur-sm p-4">
-          <div className="bg-white p-8 rounded-2xl w-full max-w-lg space-y-5 shadow-2xl animate-in fade-in zoom-in duration-200">
-            <h3 className="text-xl font-bold border-b pb-4 text-gray-800">
-              {editingId ? "✏️ تعديل بيانات البنك" : "➕ إضافة بنك جديد"}
-            </h3>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-500">اسم البنك / الشركة</label>
-                <input className="border p-3 w-full rounded-xl outline-none focus:border-indigo-500 transition" placeholder="بنك الكريمي" value={company} onChange={(e) => setCompany(e.target.value)} />
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-500">رقم الحساب</label>
-                <input className="border p-3 w-full rounded-xl outline-none focus:border-indigo-500 transition" placeholder="123456" value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} />
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-gray-500">اسم صاحب الحساب</label>
-              <input className="border p-3 w-full rounded-xl outline-none focus:border-indigo-500 transition" placeholder="الاسم الكامل" value={ownerName} onChange={(e) => setOwnerName(e.target.value)} />
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-gray-500 italic text-indigo-600">الحساب المحاسبي (دليل الحسابات)</label>
-              <select className="border p-3 w-full rounded-xl outline-none focus:border-indigo-500 bg-indigo-50/30 font-bold" value={accountId} onChange={(e) => setAccountId(e.target.value)}>
-                <option value="">اختر الحساب</option>
-                {accounts.map((a: any) => (
-                  <option key={a.id} value={a.id}>{a.code} - {a.name_ar || a.name}</option>
-                ))}
-              </select>
-            </div>
-
-            {isMainBranch && (
-              <div className="space-y-1 animate-in slide-in-from-right duration-300">
-                <label className="text-xs font-bold text-orange-600">تبعية الفرع (للمدراء فقط)</label>
-                <select className="border p-3 w-full rounded-xl outline-none focus:border-orange-500 bg-orange-50/30" value={branchId} onChange={(e) => setBranchId(e.target.value)}>
-                  <option value="">موحد (يظهر لجميع الفروع)</option>
-                  {branches.map((b: any) => (
-                    <option key={b.id} value={b.id}>{b.name}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            <div className="flex justify-end gap-3 pt-6">
-              <button onClick={() => setModalOpen(false)} className="px-6 py-2 rounded-xl text-gray-500 hover:bg-gray-100 transition font-bold">إلغاء</button>
-              <button onClick={saveMethod} className="bg-indigo-600 text-white px-8 py-2 rounded-xl font-bold shadow-lg hover:shadow-indigo-200 transition active:scale-95">
-                {editingId ? "تحديث البيانات" : "إضافة الحساب"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-export default BankDeposits;
+export default router;
