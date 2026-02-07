@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import api from "../services/api";
+import { useAuth } from "../context/AuthContext"; // تأكد من استيراد السياق لجلب بيانات المستخدم
 import { DndContext, closestCenter } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -8,7 +9,7 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, Edit2, Trash2, CheckCircle, XCircle } from "lucide-react";
+import { GripVertical, Edit2, Trash2, CheckCircle, XCircle, Landmark } from "lucide-react";
 
 interface BankMethod {
   id: number;
@@ -56,6 +57,7 @@ const SortableRow: React.FC<SortableRowProps> = ({ method, children }) => {
 };
 
 const BankDeposits: React.FC = () => {
+  const { user } = useAuth(); // جلب بيانات المستخدم الحالي
   const [methods, setMethods] = useState<BankMethod[]>([]);
   const [accounts, setAccounts] = useState<any[]>([]);
   const [branches, setBranches] = useState<any[]>([]);
@@ -69,9 +71,12 @@ const BankDeposits: React.FC = () => {
   const [accountId, setAccountId] = useState("");
   const [branchId, setBranchId] = useState("");
 
+  // شرط الإدارة العامة (بفرض أن رقم فرع الإدارة هو 1)
+  const isMainBranch = user?.branch_id === 1 || user?.role === 'admin';
+
   const loadMethods = async () => {
     try {
-      const res = await api.get("/payment-methods"); // الرابط الموحد الجديد
+      const res = await api.get("/payment-methods");
       setMethods(res.data.methods || []);
     } catch (e) {
       console.error("Load error", e);
@@ -80,18 +85,16 @@ const BankDeposits: React.FC = () => {
 
   useEffect(() => {
     loadMethods();
-    
-    // جلب الحسابات المحاسبية
     api.get("/accounts").then((res) => {
       const list = res.data?.list || [];
       setAccounts(list.filter((a: any) => a.parent_id));
     });
-
-    // جلب الفروع
-    api.get("/branches").then((res) => {
-      setBranches(res.data.branches || []);
-    });
-  }, []);
+    if (isMainBranch) {
+      api.get("/branches").then((res) => {
+        setBranches(res.data.branches || []);
+      });
+    }
+  }, [isMainBranch]);
 
   const saveMethod = async () => {
     const payload = {
@@ -100,7 +103,8 @@ const BankDeposits: React.FC = () => {
       owner_name: ownerName,
       address,
       account_id: accountId ? Number(accountId) : null,
-      branch_id: branchId ? Number(branchId) : null, // ربط الفرع
+      // إذا لم يكن موظف إدارة، يتم إرسال فرعه الحالي تلقائياً أو تركه NULL حسب السياسة
+      branch_id: isMainBranch ? (branchId ? Number(branchId) : null) : user?.branch_id,
     };
 
     try {
@@ -161,13 +165,10 @@ const BankDeposits: React.FC = () => {
   const handleDragEnd = async (event: any) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-
     const oldIndex = methods.findIndex((m) => m.id === active.id);
     const newIndex = methods.findIndex((m) => m.id === over.id);
-
     const newList = arrayMove(methods, oldIndex, newIndex);
     setMethods(newList);
-
     await api.post("/payment-methods/reorder", {
       orders: newList.map((m, i) => ({ id: m.id, sort_order: i + 1 })),
     });
@@ -180,10 +181,7 @@ const BankDeposits: React.FC = () => {
           🏦 إدارة الحسابات البنكية والإيداعات
         </h2>
         <button
-          onClick={() => {
-            resetForm();
-            setModalOpen(true);
-          }}
+          onClick={() => { resetForm(); setModalOpen(true); }}
           className="bg-indigo-600 text-white px-5 py-2 rounded-lg font-bold shadow-md hover:bg-indigo-700 transition"
         >
           ➕ إضافة بنك جديد
@@ -200,6 +198,7 @@ const BankDeposits: React.FC = () => {
                   <th className="p-3 text-right">البنك</th>
                   <th className="p-3">رقم الحساب</th>
                   <th className="p-3">صاحب الحساب</th>
+                  <th className="p-3">الحساب المحاسبي</th> {/* ✅ العمود الجديد */}
                   <th className="p-3">الفرع</th>
                   <th className="p-3">الحالة</th>
                   <th className="p-3">الإجراءات</th>
@@ -214,12 +213,20 @@ const BankDeposits: React.FC = () => {
                       <td className="p-3 font-mono">{m.account_number}</td>
                       <td className="p-3">{m.owner_name}</td>
                       <td className="p-3">
+                        {acc ? (
+                          <div className="flex flex-col items-center">
+                            <span className="text-indigo-600 font-bold">{acc.name_ar || acc.name}</span>
+                            <span className="text-[9px] text-gray-400 font-mono">{acc.code}</span>
+                          </div>
+                        ) : <span className="text-red-400 text-xs italic">غير مرتبط</span>}
+                      </td>
+                      <td className="p-3">
                         <span className={`px-2 py-1 rounded text-[10px] font-bold ${m.branch_id ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'}`}>
                           {m.branch_name || "موحد (كل الفروع)"}
                         </span>
                       </td>
                       <td className="p-3">
-                        <button onClick={() => toggleStatus(m)} title={m.is_active ? "تعطيل" : "تفعيل"}>
+                        <button onClick={() => toggleStatus(m)}>
                           {m.is_active ? (
                             <div className="flex items-center gap-1 text-green-600 font-bold bg-green-50 px-2 py-1 rounded">
                               <CheckCircle size={14} /> نشط
@@ -256,37 +263,28 @@ const BankDeposits: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1">
                 <label className="text-xs font-bold text-gray-500">اسم البنك / الشركة</label>
-                <input className="border p-3 w-full rounded-xl outline-none focus:border-indigo-500 transition" placeholder="مثلاً: بنك الكريمي" value={company} onChange={(e) => setCompany(e.target.value)} />
+                <input className="border p-3 w-full rounded-xl outline-none focus:border-indigo-500 transition" placeholder="بنك الكريمي" value={company} onChange={(e) => setCompany(e.target.value)} />
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-bold text-gray-500">رقم الحساب</label>
-                <input className="border p-3 w-full rounded-xl outline-none focus:border-indigo-500 transition" placeholder="رقم الحساب البنكي" value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} />
+                <input className="border p-3 w-full rounded-xl outline-none focus:border-indigo-500 transition" placeholder="123456" value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} />
               </div>
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-bold text-gray-500">اسم صاحب الحساب</label>
-              <input className="border p-3 w-full rounded-xl outline-none focus:border-indigo-500 transition" placeholder="الاسم الكامل كما هو في البنك" value={ownerName} onChange={(e) => setOwnerName(e.target.value)} />
+              <label className="text-xs font-bold text-gray-500 italic text-indigo-600">الحساب المحاسبي (دليل الحسابات)</label>
+              <select className="border p-3 w-full rounded-xl outline-none focus:border-indigo-500 bg-indigo-50/30 font-bold" value={accountId} onChange={(e) => setAccountId(e.target.value)}>
+                <option value="">اختر الحساب</option>
+                {accounts.map((a: any) => (
+                  <option key={a.id} value={a.id}>{a.code} - {a.name_ar || a.name}</option>
+                ))}
+              </select>
             </div>
 
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-gray-500">العنوان / الملاحظات</label>
-              <input className="border p-3 w-full rounded-xl outline-none focus:border-indigo-500 transition" placeholder="عنوان الفرع أو ملاحظات إضافية" value={address} onChange={(e) => setAddress(e.target.value)} />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t pt-4">
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-500 italic text-indigo-600">الحساب المحاسبي (دليل الحسابات)</label>
-                <select className="border p-3 w-full rounded-xl outline-none focus:border-indigo-500 bg-indigo-50/30" value={accountId} onChange={(e) => setAccountId(e.target.value)}>
-                  <option value="">اختر الحساب</option>
-                  {accounts.map((a: any) => (
-                    <option key={a.id} value={a.id}>{a.name_ar || a.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-500 italic text-orange-600">تبعية الفرع</label>
+            {/* ✅ مربع الفرع يظهر فقط للإدارة العامة */}
+            {isMainBranch && (
+              <div className="space-y-1 animate-in slide-in-from-right duration-300">
+                <label className="text-xs font-bold text-orange-600">تبعية الفرع (للمدراء فقط)</label>
                 <select className="border p-3 w-full rounded-xl outline-none focus:border-orange-500 bg-orange-50/30" value={branchId} onChange={(e) => setBranchId(e.target.value)}>
                   <option value="">موحد (يظهر لجميع الفروع)</option>
                   {branches.map((b: any) => (
@@ -294,12 +292,10 @@ const BankDeposits: React.FC = () => {
                   ))}
                 </select>
               </div>
-            </div>
+            )}
 
             <div className="flex justify-end gap-3 pt-6">
-              <button onClick={() => setModalOpen(false)} className="px-6 py-2 rounded-xl text-gray-500 hover:bg-gray-100 transition font-bold">
-                إلغاء
-              </button>
+              <button onClick={() => setModalOpen(false)} className="px-6 py-2 rounded-xl text-gray-500 hover:bg-gray-100 transition font-bold">إلغاء</button>
               <button onClick={saveMethod} className="bg-indigo-600 text-white px-8 py-2 rounded-xl font-bold shadow-lg hover:shadow-indigo-200 transition active:scale-95">
                 {editingId ? "تحديث البيانات" : "إضافة الحساب"}
               </button>
