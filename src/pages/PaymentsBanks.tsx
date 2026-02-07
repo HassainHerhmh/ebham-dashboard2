@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import api from "../services/api";
-import { useAuth } from "../context/AppContext";
+import { useAuth } from "../contexts/AppContext";
 import { DndContext, closestCenter } from "@dnd-kit/core";
 import {
   SortableContext,
