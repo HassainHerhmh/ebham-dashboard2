@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import api from "../services/api";
-import { useAuth } from "../contexts/AppContext";
+import { useContext } from "react";
+import { AppContext } from "../contexts/AppContext";
 import { DndContext, closestCenter } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -57,7 +58,7 @@ const SortableRow: React.FC<SortableRowProps> = ({ method, children }) => {
 };
 
 const BankDeposits: React.FC = () => {
-  const { user } = useAuth(); // جلب بيانات المستخدم الحالي
+const { user } = useContext(AppContext);
   const [methods, setMethods] = useState<BankMethod[]>([]);
   const [accounts, setAccounts] = useState<any[]>([]);
   const [branches, setBranches] = useState<any[]>([]);
