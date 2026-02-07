@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import api from "../services/api";
-import { useContext } from "react";
-import { AppContext } from "../contexts/AppContext";
+// ✅ إصلاح الاستيراد: تأكد من المسار الصحيح لـ useAuth في مشروعك
+import { useAuth } from "../hooks/useAuth"; 
 import { DndContext, closestCenter } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -10,7 +10,7 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, Edit2, Trash2, CheckCircle, XCircle, Landmark } from "lucide-react";
+import { GripVertical, Edit2, Trash2, CheckCircle, XCircle } from "lucide-react";
 
 interface BankMethod {
   id: number;
@@ -58,7 +58,8 @@ const SortableRow: React.FC<SortableRowProps> = ({ method, children }) => {
 };
 
 const BankDeposits: React.FC = () => {
-const { user } = useContext(AppContext);
+  // ✅ استخدام useAuth بشكل صحيح بعد استيرادها
+  const { user } = useAuth(); 
   const [methods, setMethods] = useState<BankMethod[]>([]);
   const [accounts, setAccounts] = useState<any[]>([]);
   const [branches, setBranches] = useState<any[]>([]);
@@ -72,7 +73,7 @@ const { user } = useContext(AppContext);
   const [accountId, setAccountId] = useState("");
   const [branchId, setBranchId] = useState("");
 
-  // شرط الإدارة العامة (بفرض أن رقم فرع الإدارة هو 1)
+  // شرط الإدارة العامة (فرع رقم 1)
   const isMainBranch = user?.branch_id === 1 || user?.role === 'admin';
 
   const loadMethods = async () => {
@@ -90,21 +91,25 @@ const { user } = useContext(AppContext);
       const list = res.data?.list || [];
       setAccounts(list.filter((a: any) => a.parent_id));
     });
+    
+    // جلب الفروع فقط إذا كان المستخدم في الإدارة العامة
     if (isMainBranch) {
       api.get("/branches").then((res) => {
         setBranches(res.data.branches || []);
       });
     }
-  }, [isMainBranch]);
+  }, [isMainBranch, user]); // ✅ إضافة الاعتمادات الصحيحة
 
   const saveMethod = async () => {
+    if (!company || !accountNumber || !accountId) return alert("يرجى إكمال البيانات الأساسية");
+
     const payload = {
       company,
       account_number: accountNumber,
       owner_name: ownerName,
       address,
       account_id: accountId ? Number(accountId) : null,
-      // إذا لم يكن موظف إدارة، يتم إرسال فرعه الحالي تلقائياً أو تركه NULL حسب السياسة
+      // إذا كان مدير إدارة عامة يرسل ما اختاره، وإلا يرسل فرعه الحالي تلقائياً
       branch_id: isMainBranch ? (branchId ? Number(branchId) : null) : user?.branch_id,
     };
 
@@ -199,7 +204,7 @@ const { user } = useContext(AppContext);
                   <th className="p-3 text-right">البنك</th>
                   <th className="p-3">رقم الحساب</th>
                   <th className="p-3">صاحب الحساب</th>
-                  <th className="p-3">الحساب المحاسبي</th> {/* ✅ العمود الجديد */}
+                  <th className="p-3">الحساب المحاسبي</th>
                   <th className="p-3">الفرع</th>
                   <th className="p-3">الحالة</th>
                   <th className="p-3">الإجراءات</th>
