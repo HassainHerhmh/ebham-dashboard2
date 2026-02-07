@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import api from "../services/api";
 // ✅ إصلاح الاستيراد: تأكد من المسار الصحيح لـ useAuth في مشروعك
-import { useAuth } from "../hooks/useAuth"; 
+import { AppContext } from "../contexts/AppContext";
 import { DndContext, closestCenter } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -59,7 +59,7 @@ const SortableRow: React.FC<SortableRowProps> = ({ method, children }) => {
 
 const BankDeposits: React.FC = () => {
   // ✅ استخدام useAuth بشكل صحيح بعد استيرادها
-  const { user } = useAuth(); 
+const { user } = useContext(AppContext);
   const [methods, setMethods] = useState<BankMethod[]>([]);
   const [accounts, setAccounts] = useState<any[]>([]);
   const [branches, setBranches] = useState<any[]>([]);
