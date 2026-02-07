@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useContext } from "react";
 import api from "../services/api";
-// ✅ الاستيراد الصحيح للسياق بناءً على هيكلة مجلداتك
-import AppContext from "../contexts/AppContext";
+// ✅ الإصلاح: استيراد useApp مباشرة بدلاً من useContext، واستيراد AppContext كـ Named Export
+import { useApp, AppContext } from "../contexts/AppContext"; 
 import { DndContext, closestCenter } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -58,8 +58,10 @@ const SortableRow: React.FC<SortableRowProps> = ({ method, children }) => {
 };
 
 const BankDeposits: React.FC = () => {
-  // ✅ استخدام useAuth بشكل صحيح بعد استيرادها
-const { user } = useContext(AppContext);
+  // ✅ استخدام useApp لجلب الحالة (State) التي تحتوي على المستخدم
+  const { state } = useApp();
+  const user = state.user;
+
   const [methods, setMethods] = useState<BankMethod[]>([]);
   const [accounts, setAccounts] = useState<any[]>([]);
   const [branches, setBranches] = useState<any[]>([]);
@@ -73,7 +75,7 @@ const { user } = useContext(AppContext);
   const [accountId, setAccountId] = useState("");
   const [branchId, setBranchId] = useState("");
 
-  // شرط الإدارة العامة (فرع رقم 1)
+  // شرط الإدارة العامة (فرع رقم 1) أو مدير نظام
   const isMainBranch = user?.branch_id === 1 || user?.role === 'admin';
 
   const loadMethods = async () => {
@@ -88,20 +90,19 @@ const { user } = useContext(AppContext);
   useEffect(() => {
     loadMethods();
     api.get("/accounts").then((res) => {
-      const list = res.data?.list || [];
+      const list = res.data?.list || res.data?.data?.list || [];
       setAccounts(list.filter((a: any) => a.parent_id));
     });
     
-    // جلب الفروع فقط إذا كان المستخدم في الإدارة العامة
     if (isMainBranch) {
       api.get("/branches").then((res) => {
         setBranches(res.data.branches || []);
       });
     }
-  }, [isMainBranch, user]); // ✅ إضافة الاعتمادات الصحيحة
+  }, [isMainBranch, user]);
 
   const saveMethod = async () => {
-    if (!company || !accountNumber || !accountId) return alert("يرجى إكمال البيانات الأساسية");
+    if (!company || !accountNumber || !accountId) return alert("يرجى إكمال البيانات الأساسية (البنك، الحساب، الحساب المحاسبي)");
 
     const payload = {
       company,
@@ -278,6 +279,11 @@ const { user } = useContext(AppContext);
             </div>
 
             <div className="space-y-1">
+              <label className="text-xs font-bold text-gray-500">اسم صاحب الحساب</label>
+              <input className="border p-3 w-full rounded-xl outline-none focus:border-indigo-500 transition" placeholder="الاسم الكامل" value={ownerName} onChange={(e) => setOwnerName(e.target.value)} />
+            </div>
+
+            <div className="space-y-1">
               <label className="text-xs font-bold text-gray-500 italic text-indigo-600">الحساب المحاسبي (دليل الحسابات)</label>
               <select className="border p-3 w-full rounded-xl outline-none focus:border-indigo-500 bg-indigo-50/30 font-bold" value={accountId} onChange={(e) => setAccountId(e.target.value)}>
                 <option value="">اختر الحساب</option>
@@ -287,7 +293,6 @@ const { user } = useContext(AppContext);
               </select>
             </div>
 
-            {/* ✅ مربع الفرع يظهر فقط للإدارة العامة */}
             {isMainBranch && (
               <div className="space-y-1 animate-in slide-in-from-right duration-300">
                 <label className="text-xs font-bold text-orange-600">تبعية الفرع (للمدراء فقط)</label>
