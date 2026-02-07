@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import api from "../services/api";
-// ✅ إصلاح الاستيراد: تأكد من المسار الصحيح لـ useAuth في مشروعك
-import { AppContext } from "../contexts/AppContext";
+// ✅ الاستيراد الصحيح للسياق بناءً على هيكلة مجلداتك
+import AppContext from "../contexts/AppContext";
 import { DndContext, closestCenter } from "@dnd-kit/core";
 import {
   SortableContext,
