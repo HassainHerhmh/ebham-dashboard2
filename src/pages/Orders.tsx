@@ -563,10 +563,21 @@ const countByTab = (list: Order[]) => {
     manual: list.filter((o) => o.is_manual === 1).length,
   };
 };
-   const counts = countByTab(orders); 
+const filteredByDateOrders = useMemo(
+  () => filterByDate(orders),
+  [orders, dateFilter]
+);
 
+const counts = useMemo(
+  () => countByTab(filteredByDateOrders),
+  [filteredByDateOrders]
+);
 
-  const visibleOrders = filterByTab(filterByDate(orders));
+const visibleOrders = useMemo(
+  () => filterByTab(filteredByDateOrders),
+  [filteredByDateOrders, activeTab]
+);
+
 
   // ====================================
   //                JSX
