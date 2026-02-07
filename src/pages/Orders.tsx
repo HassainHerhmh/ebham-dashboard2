@@ -351,8 +351,573 @@ const Orders: React.FC = () => {
         </div>
       )}
 
-      {/* Details & Add Order Modals should be here as per your original file structure... */}
+
+      {/* ===== مودال تفاصيل الطلب ===== */}
+      {isDetailsModalOpen && selectedOrderDetails && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-3xl flex flex-col max-h-[90vh]">
+            <div ref={printRef} className="p-6 overflow-y-auto">
+              <h2 className="text-lg font-bold mb-4 text-center">
+                🧾 فاتورة الطلب #{selectedOrderDetails.id}
+              </h2>
+              {(() => {
+                const restaurants = selectedOrderDetails.restaurants || [];
+                const allRestaurantsTotal = restaurants.reduce(
+                  (sum: number, r: any) => sum + (r.total || 0),
+                  0
+                );
+                const delivery = Number(selectedOrderDetails.delivery_fee || 0);
+                const extraStore = Number(selectedOrderDetails.extra_store_fee || 0);
+                const grandTotal = allRestaurantsTotal + delivery + extraStore;
+
+                return (
+                  <>
+                    {restaurants.map((r: any, idx: number) => (
+                      <div key={idx} className="mb-6 border rounded p-3">
+                        <h3 className="font-bold text-lg mb-2">🏪 {r.name}</h3>
+                        <table className="w-full mb-2 border">
+                          <thead className="bg-gray-100">
+                            <tr>
+                              <th>المنتج</th>
+                              <th>السعر</th>
+                              <th>الكمية</th>
+                              <th>الإجمالي</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {r.items.map((p: any, i: number) => (
+                              <tr key={i}>
+                                <td className="border px-2 py-1">{p.name}</td>
+                                <td className="border">{p.price} ر.س</td>
+                                <td className="border">{p.quantity}</td>
+                                <td className="border font-semibold text-green-600">
+                                  {p.subtotal} ر.س
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                        <div className="text-right font-bold">
+                          إجمالي المطعم: {Number(r.total || 0).toFixed(2)} ريال
+                        </div>
+                      </div>
+                    ))}
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                      <div className="border p-3 rounded bg-gray-50">
+                        <p>🧮 إجمالي المطاعم: {allRestaurantsTotal.toFixed(2)} ريال</p>
+                        <p>📦 رسوم التوصيل: {delivery.toFixed(2)} ريال</p>
+                        {extraStore > 0 && (
+                          <p>🏪 رسوم المحل الإضافي: {extraStore.toFixed(2)} ريال</p>
+                        )}
+                        <p className="text-lg font-bold text-blue-600">
+                          💰 الإجمالي الكلي: {grandTotal.toFixed(2)} ريال
+                        </p>
+                      </div>
+                      <div className="border p-3 rounded bg-white">
+                        <h4 className="font-bold mb-2">💳 تفاصيل الدفع</h4>
+                        <p>
+                          طريقة الدفع: <strong>{paymentMethodLabel}</strong>
+                        </p>
+                        {(paymentMethod === "bank" || paymentMethod === "wallet") && (
+                          <>
+                            {depositorName && <p>اسم المودع: {depositorName}</p>}
+                            {referenceNo && <p>رقم الحوالة: {referenceNo}</p>}
+                            {attachments?.length > 0 && (
+                              <div className="mt-2">
+                                <p className="font-semibold">المرفقات:</p>
+                                <div className="flex gap-2 mt-1">
+                                  {attachments.map((f: any, i: number) => (
+                                    <a key={i} href={f.url} target="_blank">
+                                      <img
+                                        src={f.thumb}
+                                        className="w-16 h-16 rounded border"
+                                      />
+                                    </a>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 mt-4">
+                      <div className="border p-3 rounded">
+                        <h3 className="font-bold mb-2">🏪 المطاعم المشاركة</h3>
+                        {restaurants.map((r: any, i: number) => (
+                          <div key={i} className="mb-2 text-sm">
+                            <p>الاسم: {r.name}</p>
+                            <p>الهاتف: {r.phone}</p>
+                            {r.map_url && (
+                              <a
+                                href={r.map_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 underline"
+                              >
+                                عرض على الخريطة 🌍
+                              </a>
+                            )}
+                            <hr className="my-2" />
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex flex-col gap-3">
+                        <div className="border p-3 rounded">
+                          <h3 className="font-bold mb-1">👤 بيانات العميل</h3>
+                          <p>الاسم: {selectedOrderDetails.customer_name}</p>
+                          <p>الهاتف: {selectedOrderDetails.customer_phone}</p>
+                          <p>
+                            📍 العنوان:{" "}
+                            <strong>
+                              {selectedOrderDetails.neighborhood_name
+                                ? `${selectedOrderDetails.neighborhood_name} - `
+                                : ""}
+                              {selectedOrderDetails.customer_address || "-"}
+                            </strong>
+                          </p>
+                          {selectedOrderDetails.map_url && (
+                            <p>
+                              <a
+                                href={selectedOrderDetails.map_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 underline"
+                              >
+                                عرض على الخريطة 🌍
+                              </a>
+                            </p>
+                          )}
+                        </div>
+                   <div className="border p-3 rounded bg-yellow-50">
+  <h3 className="font-bold mb-1">📝 ملاحظات الطلب</h3>
+  <p className="text-gray-700">
+    {selectedOrderDetails.note || "لا توجد ملاحظات"}
+  </p>
+</div>
+
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+      {/* ✅ تعديل التذييل (Footer) */}
+      <div className="flex justify-between items-center p-4 border-t bg-gray-100">
+        
+        {/* 1. القسم الأيمن: معلومات الحالة والمستخدم */}
+        <div className="text-sm">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="font-bold text-gray-700">الحالة:</span>
+            <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
+              selectedOrderDetails.status === 'completed' ? 'bg-green-100 text-green-700' :
+              selectedOrderDetails.status === 'cancelled' ? 'bg-red-100 text-red-700' :
+              'bg-blue-100 text-blue-700'
+            }`}>
+              {
+                {
+                  pending: "قيد الانتظار",
+                  confirmed: "مؤكد",
+                  preparing: "قيد التحضير",
+                  ready: "جاهز",
+                  delivering: "قيد التوصيل",
+                  completed: "مكتمل",
+                  cancelled: "ملغي"
+                }[selectedOrderDetails.status as string] || selectedOrderDetails.status
+              }
+            </span>
+          </div>
+
+    
+           {/* المستخدم (الذي قام بآخر تحديث) */}
+          <div className="text-sm text-gray-600">
+            <span className="font-bold">المستخدم: </span>
+            <span className="font-medium text-black">
+              {/* سيظهر الآن لأننا مررناه يدوياً من القائمة */}
+              {(selectedOrderDetails as any).user_name || "—"}
+            </span>
+          </div>
+
+          <div className="text-xs text-gray-500 dir-ltr">
+            🕒 {new Date((selectedOrderDetails as any).updated_at || new Date()).toLocaleString('en-US', {
+              hour: 'numeric', minute: 'numeric', hour12: true,
+              day: 'numeric', month: 'numeric' 
+            })}
+          </div>
+        </div>
+
+        {/* 2. القسم الأيسر: أزرار التحكم */}
+        <div className="flex gap-3">
+          <button
+            onClick={handlePrint}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+          >
+            🧾 طباعة الفاتورة
+          </button>
+          <button
+            onClick={() => setIsDetailsModalOpen(false)}
+            className="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500 transition"
+          >
+            إغلاق
+          </button>
+             </div>
+
+      </div>
     </div>
+  </div>
+)}
+      {/* ===== مودال إضافة الطلب ===== */}
+      {showAddOrderModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <h2 className="text-lg font-bold mb-4">➕ إضافة طلب جديد</h2>
+
+            <label className="block font-semibold mb-1">👤 اختر العميل:</label>
+            <select
+              onChange={(e) => selectCustomer(Number(e.target.value))}
+              className="border w-full p-2 rounded mb-3 focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">-- اختر العميل من القائمة --</option>
+              {customers.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name} ({c.phone})
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={selectedAddress?.id || ""}
+              onChange={(e) => {
+                const addr = addresses.find((a) => a.id == Number(e.target.value));
+                setSelectedAddress(addr || null);
+
+                if (addr?.gps_link) {
+                  setGpsLink(addr.gps_link);
+                } else if (addr?.latitude && addr?.longitude) {
+                  // ✅ تصحيح رابط خرائط جوجل
+                  setGpsLink(
+                    `https://www.google.com/maps?q=${addr.latitude},${addr.longitude}`
+                  );
+                } else {
+                  setGpsLink("");
+                }
+              }}
+              className="border w-full p-2 rounded focus:ring-2 focus:ring-blue-500"
+              disabled={!selectedCustomer}
+            >
+              <option value="">
+                {selectedCustomer
+                  ? "-- اختر عنوان العميل --"
+                  : "⚠️ يرجى اختيار عميل أولاً"}
+              </option>
+              {addresses.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {`${a.neighborhood_name || "بدون حي"} - ${a.address || ""}`}
+                </option>
+              ))}
+            </select>
+
+            <h3 className="font-bold mb-2">💳 طريقة الدفع</h3>
+            <div className="flex gap-3 flex-wrap mb-3">
+              {[
+                { key: "cod", label: "الدفع عند الاستلام" },
+                { key: "bank", label: "إيداع بنكي" },
+                { key: "electronic", label: "دفع إلكتروني" },
+                { key: "wallet", label: "الدفع من رصيدي" },
+              ].map((m) => (
+                <button
+                  key={m.key}
+                  onClick={() => setNewOrderPaymentMethod(m.key as any)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded border ${
+                    newOrderPaymentMethod === m.key
+                      ? "border-blue-600 bg-blue-50"
+                      : "border-gray-300"
+                  }`}
+                >
+                  <span
+                    className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                      newOrderPaymentMethod === m.key
+                        ? "border-blue-600"
+                        : "border-gray-400"
+                    }`}
+                  >
+                    {newOrderPaymentMethod === m.key && (
+                      <span className="w-2 h-2 rounded-full bg-blue-600" />
+                    )}
+                  </span>
+                  {m.label}
+                </button>
+              ))}
+            </div>
+
+            {newOrderPaymentMethod === "bank" && (
+              <div className="border p-3 rounded bg-gray-50 mb-3">
+                <h4 className="font-semibold mb-2">🏦 اختر البنك</h4>
+                <select
+                  value={selectedBankId || ""}
+                  onChange={(e) => setSelectedBankId(Number(e.target.value))}
+                  className="border w-full p-2 rounded"
+                >
+                  <option value="">-- اختر البنك --</option>
+                  {banks.map((b: any) => (
+                    <option key={b.id} value={b.id}>
+                      {b.company} - {b.account_number}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {newOrderPaymentMethod === "electronic" && (
+              <div className="border p-3 rounded bg-gray-50 mb-3">
+                <h4 className="font-semibold mb-2">🌐 اختر بوابة الدفع</h4>
+                <select className="border w-full p-2 rounded">
+                  <option value="">-- اختر --</option>
+                </select>
+              </div>
+            )}
+
+            {newOrderPaymentMethod === "wallet" && (
+              <div className="border p-3 rounded bg-gray-50 mb-3">
+                <h4 className="font-semibold mb-2">👛 رصيدك</h4>
+                <p>
+                  الرصيد الحالي:{" "}
+                  <strong
+                    className={
+                      walletBalance < 0 ? "text-red-600" : "text-green-600"
+                    }
+                  >
+                    {walletBalance.toFixed(2)} ريال
+                  </strong>
+                </p>
+                {!walletAllowed && (
+                  <p className="text-red-600 mt-2">
+                    ❌ لا يسمح بالسحب من هذا الحساب (تجاوز السقف)
+                  </p>
+                )}
+                {walletAllowed && walletBalance < 0 && (
+                  <p className="text-orange-600 mt-2">
+                    ⚠️ الرصيد سالب لكن مسموح حسب إعدادات الحساب
+                  </p>
+                )}
+              </div>
+            )}
+
+            <label className="mt-3 block">🏪 اختر المطعم:</label>
+            <select
+              value={currentRestaurant?.id || ""}
+              onChange={(e) => selectRestaurant(Number(e.target.value))}
+              className="border w-full p-2 rounded"
+            >
+              <option value="">-- اختر --</option>
+              {restaurants.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.name}
+                </option>
+              ))}
+            </select>
+
+            <button
+              onClick={openProductsModal}
+              className="bg-blue-600 text-white px-3 py-1 mt-3 rounded"
+              disabled={!currentRestaurant}
+            >
+              📦 تحديد المنتجات
+            </button>
+
+            <h3 className="font-bold mt-4">🛒 السلال:</h3>
+            {groups.length === 0 && (
+              <div className="text-sm text-gray-500">لم يتم إضافة أي مطعم بعد</div>
+            )}
+
+            {groups.map((g) => (
+              <div key={g.restaurant.id} className="border rounded p-3 mt-3">
+                <div className="flex justify-between items-center mb-2">
+                  <h4 className="font-semibold">🏪 {g.restaurant.name}</h4>
+                  <button
+                    onClick={() => removeRestaurantGroup(g.restaurant.id)}
+                    className="text-red-600 text-sm"
+                  >
+                    حذف المطعم ✖
+                  </button>
+                </div>
+                {g.items.length === 0 ? (
+                  <p className="text-sm text-gray-500">لا توجد منتجات</p>
+                ) : (
+                  g.items.map((item) => {
+                    const total = item.price * item.quantity;
+                    return (
+                      <div
+                        key={item.id}
+                        className="flex justify-between items-center border-b py-1"
+                      >
+                        <div className="flex-1">
+                          <div className="font-semibold">{item.name}</div>
+                          <div className="text-sm text-gray-600">
+                            {item.price} ريال × {item.quantity} ={" "}
+                            <span className="text-green-600 font-bold">
+                              {total} ريال
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() =>
+                              updateItemQty(
+                                g.restaurant.id,
+                                item.id,
+                                item.quantity - 1
+                              )
+                            }
+                            className="px-2 py-1 bg-gray-200 rounded"
+                          >
+                            ➖
+                          </button>
+                          <span className="min-w-[24px] text-center">
+                            {item.quantity}
+                          </span>
+                          <button
+                            onClick={() =>
+                              updateItemQty(
+                                g.restaurant.id,
+                                item.id,
+                                item.quantity + 1
+                              )
+                            }
+                            className="px-2 py-1 bg-gray-200 rounded"
+                          >
+                            ➕
+                          </button>
+                          <button
+                            onClick={() => updateItemQty(g.restaurant.id, item.id, 0)}
+                            className="text-red-600 ml-2"
+                          >
+                            🗑
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            ))}
+
+            <button
+              onClick={() => {
+                setCurrentRestaurant(null);
+                setRestaurantCategories([]);
+                setProducts([]);
+                setSelectedCategory(null);
+              }}
+              className="mt-3 bg-indigo-600 text-white px-3 py-2 rounded"
+            >
+              ➕ إضافة مطعم آخر
+            </button>
+
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                onClick={saveOrder}
+                className="bg-green-600 text-white px-4 py-2 rounded"
+              >
+                💾 حفظ
+              </button>
+              <button
+                onClick={() => setShowAddOrderModal(false)}
+                className="bg-gray-400 text-white px-4 py-2 rounded"
+              >
+                إلغاء
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== مودال اختيار المنتجات ===== */}
+      {showProductsModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <h2 className="text-lg font-bold mb-4">📦 قائمة المنتجات</h2>
+            <div className="flex gap-3 overflow-x-auto border-b pb-2">
+              {restaurantCategories.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => setSelectedCategory(cat.id)}
+                  className={`px-4 py-2 rounded ${
+                    selectedCategory === cat.id
+                      ? "bg-blue-600 text-white"
+                      : "bg-gray-200"
+                  }`}
+                >
+                  {cat.name}
+                </button>
+              ))}
+            </div>
+            <div className="grid grid-cols-2 gap-3 mt-4">
+              {products
+                .filter((p) => {
+                  if (!selectedCategory) return true;
+                  const ids = String(p.category_ids || "").split(",");
+                  return ids.includes(String(selectedCategory));
+                })
+                .map((p) => (
+                  <div
+                    key={p.id}
+                    className="border p-2 rounded flex flex-col justify-between"
+                  >
+                    <span className="font-bold">{p.name}</span>
+                    <span>{p.price} ريال</span>
+                    <button
+                      onClick={() => addToCart(p)}
+                      className="bg-green-600 text-white mt-2 px-3 py-1 rounded"
+                    >
+                      ➕ إضافة
+                    </button>
+                  </div>
+                ))}
+            </div>
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                onClick={() => setShowProductsModal(false)}
+                className="bg-gray-400 text-white px-4 py-2 rounded"
+              >
+                إغلاق
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== مودال إلغاء الطلب ===== */}
+      {cancelModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h2 className="text-lg font-bold mb-3">تأكيد إلغاء الطلب</h2>
+            <textarea
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              className="border w-full p-2 rounded mb-4"
+              placeholder="اكتب سبب الإلغاء..."
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setCancelModalOpen(false)}
+                className="bg-gray-400 text-white px-4 py-2 rounded"
+              >
+                إغلاق
+              </button>
+              <button
+                onClick={confirmCancelOrder}
+                className="bg-red-600 text-white px-4 py-2 rounded"
+              >
+                تأكيد الإلغاء
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 
