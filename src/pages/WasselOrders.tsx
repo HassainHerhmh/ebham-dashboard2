@@ -25,6 +25,8 @@ interface WasselOrder {
   status: string;
   created_at: string;
   captain_name?: string;
+  creator_name?: string; // اسم من أضاف الطلب
+  updater_name?: string; // اسم من حدث الحالة
 }
 
 interface Captain {
@@ -172,12 +174,13 @@ const WasselOrders: React.FC = () => {
   const assignCaptain = async (captainId: number) => {
     if (!selectedOrderId) return;
     try {
+      // إرسال لراوت الـ assign الجديد في السيرفر
       const res = await api.post("/wassel-orders/assign", { orderId: selectedOrderId, captainId });
       if (res.data.success) {
         setIsCaptainModalOpen(false);
         loadOrders();
       }
-    } catch (e) { alert("حدث خطأ، تأكد من تحديث السيرفر"); }
+    } catch (e) { alert("حدث خطأ في الإسناد"); }
   };
 
   const updateOrderStatus = async (orderId: number, newStatus: string) => {
@@ -234,16 +237,16 @@ const WasselOrders: React.FC = () => {
   };
 
   const renderActions = (o: WasselOrder) => {
-    if (activeTab === "pending") return <button onClick={() => updateOrderStatus(o.id, "confirmed")} className="bg-green-600 text-white px-2 py-1 rounded text-xs">إعتماد</button>;
+    if (activeTab === "pending") return <button onClick={() => updateOrderStatus(o.id, "confirmed")} className="bg-green-600 text-white px-2 py-1 rounded text-xs hover:bg-green-700">إعتماد</button>;
     
     if (activeTab === "processing") return (
       <div className="flex gap-1 justify-center">
-         <button onClick={() => openCaptainModal(o.id)} className="bg-indigo-600 text-white px-2 py-1 rounded text-xs flex items-center gap-1"><UserCheck size={12}/> كابتن</button>
-         <button onClick={() => updateOrderStatus(o.id, "delivering")} className="bg-orange-600 text-white px-2 py-1 rounded text-xs flex items-center gap-1"><Truck size={12}/> توصيل</button>
+         <button onClick={() => openCaptainModal(o.id)} className="bg-indigo-600 text-white px-2 py-1 rounded text-xs flex items-center gap-1 hover:bg-indigo-700"><UserCheck size={12}/> كابتن</button>
+         <button onClick={() => updateOrderStatus(o.id, "delivering")} className="bg-orange-600 text-white px-2 py-1 rounded text-xs flex items-center gap-1 hover:bg-orange-700"><Truck size={12}/> توصيل</button>
       </div>
     );
 
-    if (activeTab === "delivering") return <button onClick={() => updateOrderStatus(o.id, "completed")} className="bg-green-600 text-white px-2 py-1 rounded text-xs">تم التسليم</button>;
+    if (activeTab === "delivering") return <button onClick={() => updateOrderStatus(o.id, "completed")} className="bg-green-600 text-white px-2 py-1 rounded text-xs hover:bg-green-700">تم التسليم</button>;
     return "—";
   };
 
@@ -278,7 +281,7 @@ const WasselOrders: React.FC = () => {
         <div className="bg-white rounded-xl shadow overflow-x-auto">
           <table className="w-full text-center border-collapse">
             <thead className="bg-gray-50 text-gray-700">
-              <tr className="border-b">
+              <tr className="border-b text-sm">
                 <th className="p-3">#</th>
                 <th>العميل</th>
                 <th>الكابتن</th>
@@ -287,45 +290,63 @@ const WasselOrders: React.FC = () => {
                 <th>الرسوم</th>
                 <th>الحالة</th>
                 <th>إسناد</th>
+                <th>المستخدم</th>
                 <th>تحكم</th>
               </tr>
             </thead>
             <tbody className="divide-y text-gray-600">
               {visibleOrders.map((o) => (
-                <tr key={o.id} className="hover:bg-gray-50">
+                <tr key={o.id} className="hover:bg-gray-50 text-sm">
                   <td className="p-3 font-bold">#{o.id}</td>
                   <td>{o.customer_name}</td>
                   <td className="text-indigo-600 font-bold">{o.captain_name || "—"}</td>
                   <td><button onClick={()=>o.from_lat && window.open(`https://www.google.com/maps?q=${o.from_lat},${o.from_lng}`)} className="text-blue-500 hover:scale-110 transition"><MapPin size={16} /></button></td>
                   <td><button onClick={()=>o.to_lat && window.open(`https://www.google.com/maps?q=${o.to_lat},${o.to_lng}`)} className="text-blue-500 hover:scale-110 transition"><MapPin size={16} /></button></td>
-                  <td className="text-sm">🚚 {o.delivery_fee} | ➕ {o.extra_fee}</td>
+                  <td className="text-xs">🚚 {o.delivery_fee} | ➕ {o.extra_fee}</td>
                   
-                  {/* ✅ منطق إخفاء القائمة المنسدلة وعرض النص الملون */}
+                  {/* الحالة */}
                   <td className="px-2">
                     {o.status === "completed" || o.status === "cancelled" ? (
-                      <span className={`px-2 py-1 rounded-md text-xs font-bold ${
+                      <span className={`px-2 py-1 rounded-md text-[10px] font-bold ${
                         o.status === "completed" ? "bg-green-100 text-green-700 border border-green-200" : "bg-red-100 text-red-700 border border-red-200"
                       }`}>
                         {o.status === "completed" ? "مكتمل" : "ملغي"}
                       </span>
                     ) : (
-              <select 
-  value={o.status} 
-  onChange={(e) => updateOrderStatus(o.id, e.target.value)} 
-  className="border rounded px-2 py-1 text-xs bg-white focus:ring-1 focus:ring-blue-400 outline-none"
->
-  <option value="pending">اعتماد</option>
-  <option value="confirmed">مؤكد</option>
-  <option value="preparing">تحضير</option>
-  <option value="ready">جاهز</option>
-  <option value="delivering">توصيل</option>
-  {/* الخيار الجديد أدناه */}
-  <option value="cancelled" className="text-red-600">إلغاء</option> 
-</select>
+                      <select 
+                        value={o.status} 
+                        onChange={(e) => updateOrderStatus(o.id, e.target.value)} 
+                        className="border rounded px-2 py-1 text-[11px] bg-white outline-none"
+                      >
+                        <option value="pending">اعتماد</option>
+                        <option value="confirmed">مؤكد</option>
+                        <option value="preparing">تحضير</option>
+                        <option value="ready">جاهز</option>
+                        <option value="delivering">توصيل</option>
+                        <option value="cancelled">إلغاء</option>
+                      </select>
                     )}
                   </td>
                   
                   <td>{renderActions(o)}</td>
+
+                  {/* ✅ عمود المستخدم (المنطق المطلوب) */}
+                  <td className="px-2 text-[11px]">
+                    {o.updater_name ? (
+                      <div className="flex flex-col text-blue-600">
+                        <span className="font-bold">📝 {o.updater_name}</span>
+                        <span className="text-[9px] text-gray-400 italic">آخر تحديث</span>
+                      </div>
+                    ) : o.creator_name ? (
+                      <div className="flex flex-col text-gray-700">
+                        <span className="font-medium">👤 {o.creator_name}</span>
+                        <span className="text-[9px] text-gray-400 italic">لوحة التحكم</span>
+                      </div>
+                    ) : (
+                      <span className="text-gray-400 italic">📱 طلب تطبيق</span>
+                    )}
+                  </td>
+
                   <td><button onClick={()=>openEdit(o)} className="text-blue-600 p-1 hover:bg-blue-50 rounded transition-colors"><Edit size={16} /></button></td>
                 </tr>
               ))}
@@ -337,18 +358,18 @@ const WasselOrders: React.FC = () => {
 
       {/* مودال الكباتن */}
       {isCaptainModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-[60] p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md">
+        <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-[60] p-4">
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md animate-in fade-in zoom-in duration-200">
             <div className="flex justify-between items-center border-b pb-4 mb-4">
               <h2 className="text-xl font-bold">🚗 إسناد كابتن</h2>
               <button onClick={()=>setIsCaptainModalOpen(false)} className="text-gray-400 hover:text-black">✖</button>
             </div>
             {captainsLoading ? <div className="text-center py-6">⏳ جاري التحميل...</div> : captains.length===0 ? <div className="text-center py-6 text-red-500">لا يوجد كباتن متاحين</div> : (
-              <ul className="divide-y max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+              <ul className="divide-y max-h-60 overflow-y-auto pr-2">
                 {captains.map(c=>(
-                  <li key={c.id} className="flex justify-between items-center py-3">
+                  <li key={c.id} className="flex justify-between items-center py-3 hover:bg-gray-50 px-2 transition-colors">
                     <div><p className="font-bold text-gray-800">{c.name}</p><p className="text-xs text-gray-400">معلقة: {c.pending_orders} | اليوم: {c.completed_today}</p></div>
-                    <button onClick={()=>assignCaptain(c.id)} className="bg-green-600 text-white px-3 py-1 rounded-md text-sm hover:bg-green-700 transition">إسناد</button>
+                    <button onClick={()=>assignCaptain(c.id)} className="bg-green-600 text-white px-3 py-1 rounded-md text-sm hover:bg-green-700 transition shadow-sm">إسناد</button>
                   </li>
                 ))}
               </ul>
@@ -374,6 +395,7 @@ const WasselOrders: React.FC = () => {
               </select>
             </div>
 
+            {/* From */}
             <div className="border p-4 rounded-2xl bg-gray-50 space-y-3">
               <p className="font-bold text-sm text-gray-600">من (نقطة الانطلاق):</p>
               <div className="flex gap-2">
@@ -390,12 +412,12 @@ const WasselOrders: React.FC = () => {
                 </select>
               ) : (
                 <button onClick={()=>goToMap("from")} className="w-full p-2 border rounded-lg bg-blue-50 text-blue-700 text-xs font-bold hover:bg-blue-100">
-                   {/* ✅ حماية دالة toFixed */}
                   {(form.from_lat && !isNaN(Number(form.from_lat))) ? `📍 تم التحديد (${Number(form.from_lat).toFixed(4)})` : "📍 حدد من الخريطة"}
                 </button>
               )}
             </div>
 
+            {/* To */}
             <div className="border p-4 rounded-2xl bg-gray-50 space-y-3">
               <p className="font-bold text-sm text-gray-600">إلى (نقطة الوصول):</p>
               <div className="flex gap-2">
@@ -412,7 +434,6 @@ const WasselOrders: React.FC = () => {
                 </select>
               ) : (
                 <button onClick={()=>goToMap("to")} className="w-full p-2 border rounded-lg bg-blue-50 text-blue-700 text-xs font-bold hover:bg-blue-100">
-                   {/* ✅ حماية دالة toFixed */}
                   {(form.to_lat && !isNaN(Number(form.to_lat))) ? `📍 تم التحديد (${Number(form.to_lat).toFixed(4)})` : "📍 حدد من الخريطة"}
                 </button>
               )}
