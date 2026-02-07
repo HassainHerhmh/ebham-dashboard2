@@ -563,19 +563,16 @@ const countByTab = (list: Order[]) => {
     manual: list.filter((o) => o.is_manual === 1).length,
   };
 };
-const filteredByDateOrders = useMemo(
-  () => filterByDate(orders),
-  [orders, dateFilter]
-);
-
+// العدادات
 const counts = useMemo(
-  () => countByTab(filteredByDateOrders),
-  [filteredByDateOrders]
+  () => countByTab(orders),
+  [orders]
 );
 
+// الجدول
 const visibleOrders = useMemo(
-  () => filterByTab(filteredByDateOrders),
-  [filteredByDateOrders, activeTab]
+  () => filterByTab(orders),
+  [orders, activeTab]
 );
 
 
