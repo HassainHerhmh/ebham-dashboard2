@@ -698,34 +698,30 @@ const countByTab = (list: Order[]) => {
         </div>
 
         {/* تبويبات الحالات */}
-        <div className="flex gap-2 flex-wrap">
-{[
-  { key: "pending", label: "🟡 اعتماد" },
-  { key: "processing", label: "🔵 قيد المعالجة" },
-  { key: "ready", label: "🟢 جاهز" },
-  { key: "delivering", label: "🚚 قيد التوصيل" },
-  { key: "completed", label: "✅ مكتمل" },
-  { key: "cancelled", label: "❌ ملغي" },
-
-].map((t) => (
-  <button
-    key={t.key}
-    onClick={() => setActiveTab(t.key as OrderTab)}
-    className={`px-4 py-2 rounded ${
-      activeTab === t.key
-        ? "bg-blue-600 text-white"
-        : "bg-gray-200 text-gray-700"
-    }`}
-  >
-    {t.label}{" "}
-    <span className="text-sm font-bold">
-      ({counts[t.key as keyof typeof counts] || 0})
-    </span>
-  </button>
-))}
-
-
-        </div>
+{/* تبويبات الحالات - ستعرض الآن الأرقام بناءً على فلتر اليوم/الأسبوع */}
+<div className="flex gap-2 flex-wrap">
+  {[
+    { key: "pending", label: "🟡 اعتماد" },
+    { key: "processing", label: "🔵 قيد المعالجة" },
+    { key: "ready", label: "🟢 جاهز" },
+    { key: "delivering", label: "🚚 قيد التوصيل" },
+    { key: "completed", label: "✅ مكتمل" },
+    { key: "cancelled", label: "❌ ملغي" },
+  ].map((t) => (
+    <button
+      key={t.key}
+      onClick={() => setActiveTab(t.key as OrderTab)}
+      className={`px-4 py-2 rounded ${
+        activeTab === t.key ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-700"
+      }`}
+    >
+      {t.label}{" "}
+      <span className="text-sm font-bold">
+        ({counts[t.key as keyof typeof counts] || 0})
+      </span>
+    </button>
+  ))}
+</div>
 
         {/* فلترة زمنية */}
 <div className="flex gap-2 justify-center w-full">
