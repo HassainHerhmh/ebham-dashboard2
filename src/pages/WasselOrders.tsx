@@ -23,11 +23,11 @@ interface WasselOrder {
   extra_fee: number;
   notes?: string;
   status: string;
-  payment_method: string; // ✅ أضف
+  payment_method: string;
   created_at: string;
   captain_name?: string;
-  creator_name?: string; // اسم من أضاف الطلب
-  updater_name?: string; // اسم من حدث الحالة
+  creator_name?: string; 
+  updater_name?: string; 
 }
 
 interface Captain {
@@ -47,6 +47,8 @@ const WasselOrders: React.FC = () => {
   const [editingOrder, setEditingOrder] = useState<WasselOrder | null>(null);
   const [customers, setCustomers] = useState<any[]>([]);
   const [addresses, setAddresses] = useState<any[]>([]);
+  const [banks, setBanks] = useState<any[]>([]);
+  const [customerBalance, setCustomerBalance] = useState<{current_balance: number, credit_limit: number} | null>(null);
   
   const navigate = useNavigate();
   const location = useLocation();
@@ -67,7 +69,8 @@ const WasselOrders: React.FC = () => {
     from_address: "", from_lat: null, from_lng: null,
     to_address: "", to_lat: null, to_lng: null,
     delivery_fee: 0, extra_fee: 0, notes: "",
-    payment_method: "cod", // ✅ قيمة افتراضية
+    payment_method: "cod",
+    bank_id: ""
   });
 
   /* ======================
@@ -108,24 +111,24 @@ const WasselOrders: React.FC = () => {
   ====================== */
   const getFilteredByDateList = (list: WasselOrder[]) => {
     const now = new Date();
-    const todayStr = now.toLocaleDateString('en-CA');
+    const todayStr = now.toLocaleDateString('en-CA');
 
     return list.filter((o) => {
       const orderDate = new Date(o.created_at);
-      const orderDateStr = orderDate.toLocaleDateString('en-CA');
+      const orderDateStr = orderDate.toLocaleDateString('en-CA');
 
       if (dateFilter === "today") return orderDateStr === todayStr;
       if (dateFilter === "week") {
         const weekAgo = new Date();
         weekAgo.setDate(now.getDate() - 7);
-        weekAgo.setHours(0, 0, 0, 0);
+        weekAgo.setHours(0, 0, 0, 0);
         return orderDate >= weekAgo;
       }
       return true;
     });
   };
 
-  const dateFilteredOrders = getFilteredByDateList(orders);
+  const dateFilteredOrders = getFilteredByDateList(orders);
 
   const counts = {
     pending: dateFilteredOrders.filter(o => o.status === "pending").length,
@@ -136,7 +139,7 @@ const WasselOrders: React.FC = () => {
   };
 
   const visibleOrders = dateFilteredOrders.filter(o => {
-    switch (activeTab) {
+    switch (activeTab) {
       case "pending": return o.status === "pending";
       case "processing": return ["confirmed", "preparing", "ready"].includes(o.status);
       case "delivering": return o.status === "delivering";
@@ -144,7 +147,7 @@ const WasselOrders: React.FC = () => {
       case "cancelled": return o.status === "cancelled";
       default: return true;
     }
-  });
+  });
 
   const loadOrders = async () => {
     try {
@@ -154,15 +157,29 @@ const WasselOrders: React.FC = () => {
     } catch (e) { console.error(e); } finally { setLoading(false); }
   };
 
+  const fetchCustomerWallet = async (customerId: number) => {
+    try {
+      const res = await api.get(`/customer-guarantees/${customerId}/balance`);
+      setCustomerBalance({
+        current_balance: res.data?.balance || 0,
+        credit_limit: res.data?.credit_limit || 0
+      });
+    } catch (e) { console.error("Error fetching wallet", e); }
+  };
+
   useEffect(() => {
     loadOrders();
     api.get("/customers").then(res => setCustomers(res.data.customers || []));
+    api.get("/wassel-orders/banks").then(res => setBanks(res.data.banks || []));
   }, []);
 
   useEffect(() => {
     if (form.customer_id) {
       api.get(`/customer-addresses/customer/${form.customer_id}`).then(res => setAddresses(res.data.addresses || []));
-    }
+      fetchCustomerWallet(Number(form.customer_id));
+    } else {
+      setCustomerBalance(null);
+    }
   }, [form.customer_id]);
 
   /* ======================
@@ -204,7 +221,8 @@ const WasselOrders: React.FC = () => {
       from_address: "", from_lat: null, from_lng: null,
       to_address: "", to_lat: null, to_lng: null,
       delivery_fee: 0, extra_fee: 0, notes: "",
-      payment_method: "cod"
+      payment_method: "cod",
+      bank_id: ""
     });
     setShowModal(true);
   };
@@ -219,7 +237,8 @@ const WasselOrders: React.FC = () => {
       from_address: o.from_address, from_lat: o.from_lat, from_lng: o.from_lng,
       to_address: o.to_address, to_lat: o.to_lat, to_lng: o.to_lng,
       delivery_fee: o.delivery_fee || 0, extra_fee: o.extra_fee || 0, notes: o.notes || "",
-      payment_method: o.payment_method || "cod"
+      payment_method: o.payment_method || "cod",
+      bank_id: ""
     });
     setShowModal(true);
   };
@@ -232,16 +251,35 @@ const WasselOrders: React.FC = () => {
   const saveOrder = async () => {
     try {
       if (!form.customer_id || !form.order_type || !form.from_address || !form.to_address) return alert("أكمل البيانات");
+      
+      const totalAmount = Number(form.delivery_fee) + Number(form.extra_fee);
+
+      // ✅ التحقق من الرصيد والسقف عند اختيار الدفع من الرصيد
+      if (form.payment_method === 'wallet' && customerBalance) {
+        const available = customerBalance.current_balance + customerBalance.credit_limit;
+        if (totalAmount > available) {
+          return alert(`عذراً، الرصيد غير كافٍ. المتاح مع السقف: ${available.toFixed(2)} ريال`);
+        }
+      }
+
+      // ✅ التحقق من اختيار البنك عند اختيار إيداع بنكي
+      if (form.payment_method === 'bank' && !form.bank_id) {
+        return alert("يرجى اختيار البنك المحول إليه");
+      }
+
       const payload = { 
         ...form, 
         delivery_fee: Number(form.delivery_fee), extra_fee: Number(form.extra_fee),
         from_address_id: fromMode === "map" ? null : form.from_address_id,
         to_address_id: toMode === "map" ? null : form.to_address_id,
       };
+
       if (editingOrder) await api.put(`/wassel-orders/${editingOrder.id}`, payload);
       else await api.post("/wassel-orders", payload);
       setShowModal(false); loadOrders();
-    } catch (e) {}
+    } catch (e: any) {
+      alert(e.response?.data?.message || "حدث خطأ أثناء الحفظ");
+    }
   };
 
   const renderActions = (o: WasselOrder) => {
@@ -258,16 +296,15 @@ const WasselOrders: React.FC = () => {
     return "—";
   };
 
-  // دالة لعرض أيقونة وسيلة الدفع
-  const renderPaymentIcon = (method: string) => {
-    switch(method) {
-      case 'cod': return <div className="flex items-center gap-1 text-green-600 font-bold"><Banknote size={12}/> استلام</div>;
-      case 'wallet': return <div className="flex items-center gap-1 text-blue-600 font-bold"><Wallet size={12}/> رصيد</div>;
-      case 'bank': return <div className="flex items-center gap-1 text-indigo-600 font-bold"><Landmark size={12}/> بنكي</div>;
-      case 'online': return <div className="flex items-center gap-1 text-purple-600 font-bold"><CreditCard size={12}/> إلكتروني</div>;
-      default: return '—';
-    }
-  };
+  const renderPaymentIcon = (method: string) => {
+    switch(method) {
+      case 'cod': return <div className="flex items-center gap-1 text-green-600 font-bold"><Banknote size={12}/> استلام</div>;
+      case 'wallet': return <div className="flex items-center gap-1 text-blue-600 font-bold"><Wallet size={12}/> رصيد</div>;
+      case 'bank': return <div className="flex items-center gap-1 text-indigo-600 font-bold"><Landmark size={12}/> بنكي</div>;
+      case 'online': return <div className="flex items-center gap-1 text-purple-600 font-bold"><CreditCard size={12}/> إلكتروني</div>;
+      default: return '—';
+    }
+  };
 
   return (
     <div className="space-y-6" dir="rtl">
@@ -278,7 +315,6 @@ const WasselOrders: React.FC = () => {
         </button>
       </div>
 
-      {/* الفلاتر */}
       <div className="bg-white p-4 rounded-xl shadow-sm space-y-4">
         <div className="flex gap-2 justify-center border-b pb-3">
           {[{k:"all",l:"الكل"}, {k:"today",l:"اليوم"}, {k:"week",l:"الأسبوع"}].map(t=>(
@@ -295,7 +331,6 @@ const WasselOrders: React.FC = () => {
         </div>
       </div>
 
-      {/* الجدول */}
       {loading ? <div className="text-center py-10 text-gray-500 font-bold">⏳ جاري التحميل...</div> : (
         <div className="bg-white rounded-xl shadow overflow-x-auto">
           <table className="w-full text-center border-collapse">
@@ -305,7 +340,7 @@ const WasselOrders: React.FC = () => {
                 <th>العميل</th>
                 <th>الكابتن</th>
                 <th>من | إلى</th>
-                <th>الدفع</th>
+                <th>الدفع</th>
                 <th>الرسوم</th>
                 <th>الحالة</th>
                 <th>إسناد</th>
@@ -320,15 +355,14 @@ const WasselOrders: React.FC = () => {
                   <td>{o.customer_name}</td>
                   <td className="text-indigo-600 font-bold">{o.captain_name || "—"}</td>
                   <td>
-                    <div className="flex gap-2 justify-center">
-                      <button onClick={()=>o.from_lat && window.open(`https://www.google.com/maps?q=${o.from_lat},${o.from_lng}`)} className="text-blue-500"><MapPin size={14} /></button>
-                      <button onClick={()=>o.to_lat && window.open(`https://www.google.com/maps?q=${o.to_lat},${o.to_lng}`)} className="text-red-500"><MapPin size={14} /></button>
-                    </div>
-                  </td>
-                  <td className="text-[10px]">{renderPaymentIcon(o.payment_method)}</td>
+                    <div className="flex gap-2 justify-center">
+                      <button onClick={()=>o.from_lat && window.open(`https://www.google.com/maps?q=${o.from_lat},${o.from_lng}`)} className="text-blue-500"><MapPin size={14} /></button>
+                      <button onClick={()=>o.to_lat && window.open(`https://www.google.com/maps?q=${o.to_lat},${o.to_lng}`)} className="text-red-500"><MapPin size={14} /></button>
+                    </div>
+                  </td>
+                  <td className="text-[10px]">{renderPaymentIcon(o.payment_method)}</td>
                   <td className="text-xs">🚚 {o.delivery_fee} | ➕ {o.extra_fee}</td>
                   
-                  {/* الحالة */}
                   <td className="px-2">
                     {o.status === "completed" || o.status === "cancelled" ? (
                       <span className={`px-2 py-1 rounded-md text-[10px] font-bold ${
@@ -379,7 +413,6 @@ const WasselOrders: React.FC = () => {
         </div>
       )}
 
-      {/* مودال الكباتن */}
       {isCaptainModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-[60] p-4">
           <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md animate-in fade-in zoom-in duration-200">
@@ -401,7 +434,6 @@ const WasselOrders: React.FC = () => {
         </div>
       )}
 
-      {/* مودال الإضافة/التعديل */}
       {showModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl w-full max-w-xl p-6 space-y-5 max-h-[90vh] overflow-y-auto shadow-2xl">
@@ -418,7 +450,6 @@ const WasselOrders: React.FC = () => {
               </select>
             </div>
 
-            {/* From */}
             <div className="border p-4 rounded-2xl bg-gray-50 space-y-3">
               <p className="font-bold text-sm text-gray-600">من (نقطة الانطلاق):</p>
               <div className="flex gap-2">
@@ -440,7 +471,6 @@ const WasselOrders: React.FC = () => {
               )}
             </div>
 
-            {/* To */}
             <div className="border p-4 rounded-2xl bg-gray-50 space-y-3">
               <p className="font-bold text-sm text-gray-600">إلى (نقطة الوصول):</p>
               <div className="flex gap-2">
@@ -462,31 +492,65 @@ const WasselOrders: React.FC = () => {
               )}
             </div>
 
-            {/* ✅ إضافة نظام اختيار وسيلة الدفع */}
-            <div className="border p-4 rounded-2xl bg-gray-50 space-y-3">
-              <p className="font-bold text-sm text-gray-600 flex items-center gap-2">💳 وسيلة الدفع:</p>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                {[
-                  { id: "cod", label: "عند الاستلام", icon: <Banknote size={14}/> },
-                  { id: "wallet", label: "من الرصيد", icon: <Wallet size={14}/> },
-                  { id: "bank", label: "إيداع بنكي", icon: <Landmark size={14}/> },
-                  { id: "online", label: "دفع إلكتروني", icon: <CreditCard size={14}/> }
-                ].map((method) => (
-                  <button
-                    key={method.id}
-                    onClick={() => setForm({ ...form, payment_method: method.id })}
-                    className={`flex items-center justify-center gap-1 py-2 px-1 rounded-xl text-[10px] font-bold border transition-all ${
-                      form.payment_method === method.id 
-                      ? "bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-100" 
-                      : "bg-white text-gray-500 border-gray-200 hover:bg-gray-50"
-                    }`}
+            <div className="border p-4 rounded-2xl bg-gray-50 space-y-3">
+              <p className="font-bold text-sm text-gray-600 flex items-center gap-2">💳 وسيلة الدفع:</p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                {[
+                  { id: "cod", label: "عند الاستلام", icon: <Banknote size={14}/> },
+                  { id: "wallet", label: "من الرصيد", icon: <Wallet size={14}/> },
+                  { id: "bank", label: "إيداع بنكي", icon: <Landmark size={14}/> },
+                  { id: "online", label: "دفع إلكتروني", icon: <CreditCard size={14}/> }
+                ].map((method) => (
+                  <button
+                    key={method.id}
+                    onClick={() => setForm({ ...form, payment_method: method.id })}
+                    className={`flex items-center justify-center gap-1 py-2 px-1 rounded-xl text-[10px] font-bold border transition-all ${
+                      form.payment_method === method.id 
+                      ? "bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-100" 
+                      : "bg-white text-gray-500 border-gray-200 hover:bg-gray-50"
+                    }`}
+                  >
+                    {method.icon}
+                    {method.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* ✅ عرض رصيد العميل عند اختيار "من الرصيد" */}
+              {form.payment_method === 'wallet' && customerBalance && (
+                <div className="mt-2 p-2 bg-blue-50 border border-blue-100 rounded-lg animate-in fade-in slide-in-from-top-1">
+                  <div className="flex justify-between text-[11px]">
+                    <span className="text-gray-600 font-bold">الرصيد الفعلي:</span>
+                    <span className={customerBalance.current_balance < 0 ? "text-red-600 font-black" : "text-green-600 font-black"}>
+                      {customerBalance.current_balance.toFixed(2)} ريال
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-[11px] mt-1">
+                    <span className="text-gray-600 font-bold">سقف الحساب (المتاح):</span>
+                    <span className="text-blue-600 font-black">
+                      {(customerBalance.current_balance + customerBalance.credit_limit).toFixed(2)} ريال
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* ✅ اختيار البنك عند اختيار "إيداع بنكي" */}
+              {form.payment_method === 'bank' && (
+                <div className="mt-2 animate-in fade-in slide-in-from-top-1">
+                  <label className="text-[10px] font-bold text-gray-400 px-1">🏦 البنك المحول إليه:</label>
+                  <select 
+                    className="w-full p-2 border rounded-lg text-xs bg-white outline-none focus:ring-1 focus:ring-indigo-300"
+                    value={form.bank_id}
+                    onChange={(e) => setForm({ ...form, bank_id: e.target.value })}
                   >
-                    {method.icon}
-                    {method.label}
-                  </button>
-                ))}
-              </div>
-            </div>
+                    <option value="">-- اختر البنك --</option>
+                    {banks.map(b => (
+                      <option key={b.id} value={b.id}>{b.name} - {b.account_number}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1"><label className="text-xs text-gray-400">رسوم التوصيل</label><input type="number" className="w-full p-2 border rounded-lg outline-none focus:border-blue-500" value={form.delivery_fee} onChange={(e)=>setForm({...form, delivery_fee: e.target.value})} /></div>
