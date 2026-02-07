@@ -8,7 +8,7 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical } from "lucide-react";
+import { GripVertical, Edit2, Trash2, CheckCircle, XCircle } from "lucide-react";
 
 interface BankMethod {
   id: number;
@@ -19,6 +19,8 @@ interface BankMethod {
   is_active: number;
   sort_order: number;
   account_id: number | null;
+  branch_id: number | null;
+  branch_name?: string;
 }
 
 interface SortableRowProps {
@@ -39,12 +41,12 @@ const SortableRow: React.FC<SortableRowProps> = ({ method, children }) => {
     <tr
       ref={setNodeRef}
       style={style}
-      className={`border-t ${
-        method.is_active === 0 ? "opacity-50 bg-gray-50" : ""
+      className={`border-t hover:bg-gray-50 transition-colors ${
+        method.is_active === 0 ? "bg-red-50 text-gray-400" : ""
       }`}
     >
       <td className="p-2 w-8 text-gray-400">
-        <span {...attributes} {...listeners} className="cursor-grab">
+        <span {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing">
           <GripVertical size={18} />
         </span>
       </td>
@@ -56,6 +58,7 @@ const SortableRow: React.FC<SortableRowProps> = ({ method, children }) => {
 const BankDeposits: React.FC = () => {
   const [methods, setMethods] = useState<BankMethod[]>([]);
   const [accounts, setAccounts] = useState<any[]>([]);
+  const [branches, setBranches] = useState<any[]>([]);
 
   const [company, setCompany] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
@@ -64,18 +67,29 @@ const BankDeposits: React.FC = () => {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [accountId, setAccountId] = useState("");
+  const [branchId, setBranchId] = useState("");
 
   const loadMethods = async () => {
-    const res = await api.payments.banks.getAll(); // API خاص بالبنوك
-    const list = res?.methods || res || [];
-    setMethods(list.map((m: any) => ({ ...m, is_active: Number(m.is_active) })));
+    try {
+      const res = await api.get("/payment-methods"); // الرابط الموحد الجديد
+      setMethods(res.data.methods || []);
+    } catch (e) {
+      console.error("Load error", e);
+    }
   };
 
   useEffect(() => {
     loadMethods();
-    api.accounts.getAccounts().then((res) => {
-      const list = res?.list || res?.data?.list || [];
+    
+    // جلب الحسابات المحاسبية
+    api.get("/accounts").then((res) => {
+      const list = res.data?.list || [];
       setAccounts(list.filter((a: any) => a.parent_id));
+    });
+
+    // جلب الفروع
+    api.get("/branches").then((res) => {
+      setBranches(res.data.branches || []);
     });
   }, []);
 
@@ -86,17 +100,52 @@ const BankDeposits: React.FC = () => {
       owner_name: ownerName,
       address,
       account_id: accountId ? Number(accountId) : null,
+      branch_id: branchId ? Number(branchId) : null, // ربط الفرع
     };
 
-    if (editingId) {
-      await api.payments.banks.update(editingId, payload);
-    } else {
-      await api.payments.banks.add(payload);
+    try {
+      if (editingId) {
+        await api.put(`/payment-methods/${editingId}`, payload);
+      } else {
+        await api.post("/payment-methods", payload);
+      }
+      resetForm();
+      setModalOpen(false);
+      loadMethods();
+    } catch (e) {
+      alert("حدث خطأ أثناء الحفظ");
     }
+  };
 
-    resetForm();
-    setModalOpen(false);
-    loadMethods();
+  const toggleStatus = async (method: BankMethod) => {
+    try {
+      const newStatus = method.is_active === 1 ? 0 : 1;
+      await api.patch(`/payment-methods/${method.id}/toggle`, { is_active: newStatus });
+      loadMethods();
+    } catch (e) {
+      alert("فشل في تغيير الحالة");
+    }
+  };
+
+  const deleteMethod = async (id: number) => {
+    if (!window.confirm("هل أنت متأكد من حذف وسيلة الدفع هذه؟")) return;
+    try {
+      await api.delete(`/payment-methods/${id}`);
+      loadMethods();
+    } catch (e) {
+      alert("فشل في الحذف");
+    }
+  };
+
+  const openEdit = (m: BankMethod) => {
+    setEditingId(m.id);
+    setCompany(m.company);
+    setAccountNumber(m.account_number);
+    setOwnerName(m.owner_name);
+    setAddress(m.address);
+    setAccountId(m.account_id?.toString() || "");
+    setBranchId(m.branch_id?.toString() || "");
+    setModalOpen(true);
   };
 
   const resetForm = () => {
@@ -106,6 +155,7 @@ const BankDeposits: React.FC = () => {
     setOwnerName("");
     setAddress("");
     setAccountId("");
+    setBranchId("");
   };
 
   const handleDragEnd = async (event: any) => {
@@ -118,90 +168,140 @@ const BankDeposits: React.FC = () => {
     const newList = arrayMove(methods, oldIndex, newIndex);
     setMethods(newList);
 
-    await api.banks.reorder(
-      newList.map((m: BankMethod, i: number) => ({
-        id: m.id,
-        sort_order: i + 1,
-      }))
-    );
+    await api.post("/payment-methods/reorder", {
+      orders: newList.map((m, i) => ({ id: m.id, sort_order: i + 1 })),
+    });
   };
 
   return (
-    <div className="bg-white p-6 rounded shadow space-y-4">
-      <div className="flex justify-between">
-        <h2 className="text-lg font-bold">الإيداعات البنكية</h2>
+    <div className="bg-white p-6 rounded-xl shadow-lg space-y-6" dir="rtl">
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+          🏦 إدارة الحسابات البنكية والإيداعات
+        </h2>
         <button
           onClick={() => {
             resetForm();
             setModalOpen(true);
           }}
-          className="bg-blue-600 text-white px-4 py-2 rounded"
+          className="bg-indigo-600 text-white px-5 py-2 rounded-lg font-bold shadow-md hover:bg-indigo-700 transition"
         >
-          ➕ إضافة بنك
+          ➕ إضافة بنك جديد
         </button>
       </div>
 
       <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <SortableContext
-          items={methods.map((m) => m.id)}
-          strategy={verticalListSortingStrategy}
-        >
-          <table className="w-full border">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="w-8"></th>
-                <th>البنك</th>
-                <th>رقم الحساب</th>
-                <th>صاحب الحساب</th>
-                <th>العنوان</th>
-                <th>الحساب المحاسبي</th>
-              </tr>
-            </thead>
-            <tbody>
-              {methods.map((m) => {
-                const acc = accounts.find((a: any) => a.id === m.account_id);
-                return (
-                  <SortableRow key={m.id} method={m}>
-                    <td>{m.company}</td>
-                    <td>{m.account_number}</td>
-                    <td>{m.owner_name}</td>
-                    <td>{m.address}</td>
-                    <td>{acc ? acc.name_ar || acc.name : "-"}</td>
-                  </SortableRow>
-                );
-              })}
-            </tbody>
-          </table>
+        <SortableContext items={methods.map((m) => m.id)} strategy={verticalListSortingStrategy}>
+          <div className="overflow-x-auto border rounded-xl">
+            <table className="w-full text-sm text-center">
+              <thead className="bg-gray-50 text-gray-600 font-bold border-b">
+                <tr>
+                  <th className="p-3 w-8"></th>
+                  <th className="p-3 text-right">البنك</th>
+                  <th className="p-3">رقم الحساب</th>
+                  <th className="p-3">صاحب الحساب</th>
+                  <th className="p-3">الفرع</th>
+                  <th className="p-3">الحالة</th>
+                  <th className="p-3">الإجراءات</th>
+                </tr>
+              </thead>
+              <tbody>
+                {methods.map((m) => {
+                  const acc = accounts.find((a: any) => a.id === m.account_id);
+                  return (
+                    <SortableRow key={m.id} method={m}>
+                      <td className="p-3 text-right font-bold text-indigo-700">{m.company}</td>
+                      <td className="p-3 font-mono">{m.account_number}</td>
+                      <td className="p-3">{m.owner_name}</td>
+                      <td className="p-3">
+                        <span className={`px-2 py-1 rounded text-[10px] font-bold ${m.branch_id ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'}`}>
+                          {m.branch_name || "موحد (كل الفروع)"}
+                        </span>
+                      </td>
+                      <td className="p-3">
+                        <button onClick={() => toggleStatus(m)} title={m.is_active ? "تعطيل" : "تفعيل"}>
+                          {m.is_active ? (
+                            <div className="flex items-center gap-1 text-green-600 font-bold bg-green-50 px-2 py-1 rounded">
+                              <CheckCircle size={14} /> نشط
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1 text-red-600 font-bold bg-red-50 px-2 py-1 rounded">
+                              <XCircle size={14} /> معطل
+                            </div>
+                          )}
+                        </button>
+                      </td>
+                      <td className="p-3">
+                        <div className="flex justify-center gap-2">
+                          <button onClick={() => openEdit(m)} className="p-2 text-blue-600 hover:bg-blue-50 rounded transition"><Edit2 size={16} /></button>
+                          <button onClick={() => deleteMethod(m.id)} className="p-2 text-red-600 hover:bg-red-50 rounded transition"><Trash2 size={16} /></button>
+                        </div>
+                      </td>
+                    </SortableRow>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </SortableContext>
       </DndContext>
 
       {modalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded w-full max-w-md space-y-3">
-            <h3 className="font-bold">
-              {editingId ? "تعديل بنك" : "إضافة بنك"}
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] backdrop-blur-sm p-4">
+          <div className="bg-white p-8 rounded-2xl w-full max-w-lg space-y-5 shadow-2xl animate-in fade-in zoom-in duration-200">
+            <h3 className="text-xl font-bold border-b pb-4 text-gray-800">
+              {editingId ? "✏️ تعديل بيانات البنك" : "➕ إضافة بنك جديد"}
             </h3>
 
-            <input className="border p-2 w-full rounded" placeholder="اسم البنك" value={company} onChange={(e) => setCompany(e.target.value)} />
-            <input className="border p-2 w-full rounded" placeholder="رقم الحساب" value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} />
-            <input className="border p-2 w-full rounded" placeholder="اسم صاحب الحساب" value={ownerName} onChange={(e) => setOwnerName(e.target.value)} />
-            <input className="border p-2 w-full rounded" placeholder="العنوان" value={address} onChange={(e) => setAddress(e.target.value)} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-gray-500">اسم البنك / الشركة</label>
+                <input className="border p-3 w-full rounded-xl outline-none focus:border-indigo-500 transition" placeholder="مثلاً: بنك الكريمي" value={company} onChange={(e) => setCompany(e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-gray-500">رقم الحساب</label>
+                <input className="border p-3 w-full rounded-xl outline-none focus:border-indigo-500 transition" placeholder="رقم الحساب البنكي" value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} />
+              </div>
+            </div>
 
-            <select className="border p-2 w-full rounded" value={accountId} onChange={(e) => setAccountId(e.target.value)}>
-              <option value="">اختر الحساب المحاسبي</option>
-              {accounts.map((a: any) => (
-                <option key={a.id} value={a.id}>
-                  {a.name_ar || a.name}
-                </option>
-              ))}
-            </select>
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-gray-500">اسم صاحب الحساب</label>
+              <input className="border p-3 w-full rounded-xl outline-none focus:border-indigo-500 transition" placeholder="الاسم الكامل كما هو في البنك" value={ownerName} onChange={(e) => setOwnerName(e.target.value)} />
+            </div>
 
-            <div className="flex justify-end gap-2">
-              <button onClick={() => setModalOpen(false)} className="bg-gray-400 text-white px-4 py-2 rounded">
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-gray-500">العنوان / الملاحظات</label>
+              <input className="border p-3 w-full rounded-xl outline-none focus:border-indigo-500 transition" placeholder="عنوان الفرع أو ملاحظات إضافية" value={address} onChange={(e) => setAddress(e.target.value)} />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t pt-4">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-gray-500 italic text-indigo-600">الحساب المحاسبي (دليل الحسابات)</label>
+                <select className="border p-3 w-full rounded-xl outline-none focus:border-indigo-500 bg-indigo-50/30" value={accountId} onChange={(e) => setAccountId(e.target.value)}>
+                  <option value="">اختر الحساب</option>
+                  {accounts.map((a: any) => (
+                    <option key={a.id} value={a.id}>{a.name_ar || a.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-gray-500 italic text-orange-600">تبعية الفرع</label>
+                <select className="border p-3 w-full rounded-xl outline-none focus:border-orange-500 bg-orange-50/30" value={branchId} onChange={(e) => setBranchId(e.target.value)}>
+                  <option value="">موحد (يظهر لجميع الفروع)</option>
+                  {branches.map((b: any) => (
+                    <option key={b.id} value={b.id}>{b.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-6">
+              <button onClick={() => setModalOpen(false)} className="px-6 py-2 rounded-xl text-gray-500 hover:bg-gray-100 transition font-bold">
                 إلغاء
               </button>
-              <button onClick={saveMethod} className="bg-green-600 text-white px-4 py-2 rounded">
-                حفظ
+              <button onClick={saveMethod} className="bg-indigo-600 text-white px-8 py-2 rounded-xl font-bold shadow-lg hover:shadow-indigo-200 transition active:scale-95">
+                {editingId ? "تحديث البيانات" : "إضافة الحساب"}
               </button>
             </div>
           </div>
