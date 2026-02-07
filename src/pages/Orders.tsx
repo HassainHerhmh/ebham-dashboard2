@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Plus, Edit, MapPin, DollarSign, UserCheck, Truck, RotateCcw } from "lucide-react";
+import { Plus, Edit, MapPin, DollarSign, UserCheck, Truck, RotateCcw, X, Printer, Trash2, Minus } from "lucide-react";
 import api from "../services/api";
 import { io } from "socket.io-client";
 
@@ -20,9 +20,8 @@ interface Order {
   extra_store_fee?: number | string | null;
   created_at: string;
   payment_method_label?: string;
-  user_name?: string; // هذا الحقل القديم، سنستخدم creator/updater أدناه
-  creator_name?: string; // اسم من أضاف الطلب
-  updater_name?: string; // اسم من حدث الحالة
+  creator_name?: string; 
+  updater_name?: string; 
   branch_name?: string;
 }
 
@@ -59,32 +58,28 @@ type OrderTab = "pending" | "processing" | "delivering" | "completed" | "cancell
 type DateFilter = "all" | "today" | "week";
 
 /* =====================
-   Socket Configuration
+   Socket & Notifications
 ===================== */
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "http://localhost:8080";
 const socket = io(SOCKET_URL);
 
 function ToastNotifications() {
   const [toasts, setToasts] = useState<any[]>([]);
-
   useEffect(() => {
     const handler = (data: any) => {
       const id = Date.now();
       setToasts((prev) => [...prev, { ...data, id }]);
-      setTimeout(() => {
-        setToasts((prev) => prev.filter((t) => t.id !== id));
-      }, 5000);
+      setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 5000);
     };
     socket.on("notification", handler);
     return () => { socket.off("notification", handler); };
   }, []);
-
   return (
-    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 space-y-2 w-[420px] pointer-events-none">
+    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 space-y-2 w-[400px] pointer-events-none" dir="rtl">
       {toasts.map((t) => (
-        <div key={t.id} className="bg-white border shadow-lg rounded-xl px-4 py-3 text-sm flex flex-col pointer-events-auto animate-in slide-in-from-top-2">
-          <div className="font-semibold text-gray-800">{t.message}</div>
-          {t.user && <div className="text-gray-500 text-xs mt-1">بواسطة: {t.user}</div>}
+        <div key={t.id} className="bg-white border-r-4 border-blue-600 shadow-2xl rounded-xl px-4 py-3 text-sm flex flex-col pointer-events-auto animate-in slide-in-from-top-2">
+          <div className="font-bold text-gray-800">{t.message}</div>
+          {t.user && <div className="text-gray-500 text-[10px] mt-1 italic">بواسطة: {t.user}</div>}
         </div>
       ))}
     </div>
@@ -100,18 +95,34 @@ const Orders: React.FC = () => {
   const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
   const isAdminBranch = !!currentUser?.is_admin_branch;
 
+  // Modals States
+  const [isCaptainModalOpen, setIsCaptainModalOpen] = useState(false);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [showAddOrderModal, setShowAddOrderModal] = useState(false);
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  
+  const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+  const [selectedOrderDetails, setSelectedOrderDetails] = useState<OrderDetails | null>(null);
   const [captains, setCaptains] = useState<Captain[]>([]);
   const [captainsLoading, setCaptainsLoading] = useState(false);
-  const [isCaptainModalOpen, setIsCaptainModalOpen] = useState(false);
-  const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+  const [cancelReason, setCancelReason] = useState("");
 
-  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
-  const [selectedOrderDetails, setSelectedOrderDetails] = useState<OrderDetails | null>(null);
-  const [showAddOrderModal, setShowAddOrderModal] = useState(false);
+  // Add Order Form States
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
+  const [addresses, setAddresses] = useState<any[]>([]);
+  const [selectedAddress, setSelectedAddress] = useState<any>(null);
+  const [restaurants, setRestaurants] = useState<any[]>([]);
+  const [currentRestaurant, setCurrentRestaurant] = useState<any>(null);
+  const [groups, setGroups] = useState<any[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
+  const [showProductsModal, setShowProductsModal] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<string>("cod");
+
   const printRef = useRef<HTMLDivElement>(null);
 
   /* =====================
-     Fetch & Filters Logic
+     Data Loading
   ===================== */
   const fetchOrders = async () => {
     setLoading(true);
@@ -121,8 +132,21 @@ const Orders: React.FC = () => {
     } catch (e) { setOrders([]); } finally { setLoading(false); }
   };
 
-  useEffect(() => { fetchOrders(); }, []);
+  useEffect(() => {
+    fetchOrders();
+    api.get("/customers").then(res => setCustomers(res.data.customers || []));
+    api.get("/restaurants").then(res => setRestaurants(res.data.restaurants || []));
+  }, []);
 
+  useEffect(() => {
+    if (selectedCustomer) {
+      api.get(`/customer-addresses/customer/${selectedCustomer.id}`).then(res => setAddresses(res.data.addresses || []));
+    }
+  }, [selectedCustomer]);
+
+  /* =====================
+     Filter Logic
+  ===================== */
   const filterByDate = (list: Order[]) => {
     const today = new Date().toISOString().split("T")[0];
     return list.filter((o) => {
@@ -160,47 +184,58 @@ const Orders: React.FC = () => {
   /* =====================
      Handlers
   ===================== */
-  const updateOrderStatus = async (orderId: number, status: string) => {
-    try { await api.orders.updateStatus(orderId, status); fetchOrders(); } catch (e) {}
+  const updateStatus = async (id: number, s: string) => {
+    await api.orders.updateStatus(id, s); fetchOrders();
   };
 
-  const openCaptainModal = (orderId: number) => {
-    setSelectedOrderId(orderId);
-    setIsCaptainModalOpen(true);
-    setCaptainsLoading(true);
-    api.captains.getAvailableCaptains().then(res => {
-      setCaptains(res.captains || res);
-      setCaptainsLoading(false);
-    });
+  const openCaptainModal = (id: number) => {
+    setSelectedOrderId(id); setIsCaptainModalOpen(true); setCaptainsLoading(true);
+    api.captains.getAvailableCaptains().then(res => { setCaptains(res.captains || res); setCaptainsLoading(false); });
   };
 
   const assignCaptain = async (captainId: number) => {
     if (!selectedOrderId) return;
-    try {
-      await api.orders.assignCaptain(selectedOrderId, captainId);
-      setIsCaptainModalOpen(false);
-      fetchOrders();
-      alert("✅ تم إسناد الكابتن بنجاح");
-    } catch (e) { alert("حدث خطأ في الإسناد"); }
+    await api.orders.assignCaptain(selectedOrderId, captainId);
+    setIsCaptainModalOpen(false); fetchOrders();
   };
 
-  const formatAmount = (amount: any) => {
-    const num = Number(amount);
-    return isNaN(num) ? "-" : num.toFixed(2) + " ريال";
+  const addToCart = (product: any) => {
+    if (!currentRestaurant) return;
+    setGroups(prev => {
+      const existingGroup = prev.find(g => g.restaurant.id === currentRestaurant.id);
+      if (existingGroup) {
+        const item = existingGroup.items.find((i: any) => i.id === product.id);
+        if (item) {
+          item.quantity += 1;
+          return [...prev];
+        }
+        existingGroup.items.push({ ...product, quantity: 1 });
+        return [...prev];
+      }
+      return [...prev, { restaurant: currentRestaurant, items: [{ ...product, quantity: 1 }] }];
+    });
   };
 
-  const renderActions = (o: Order) => {
-    if (activeTab === "pending") return <button onClick={() => updateOrderStatus(o.id, "confirmed")} className="bg-green-600 text-white px-2 py-1 rounded text-xs hover:bg-green-700 transition">اعتماد</button>;
-    
-    if (activeTab === "processing") return (
-      <div className="flex gap-1 justify-center">
-         <button onClick={() => openCaptainModal(o.id)} className="bg-indigo-600 text-white px-2 py-1 rounded text-xs flex items-center gap-1 hover:bg-indigo-700 transition"><UserCheck size={12}/> كابتن</button>
-         <button onClick={() => updateOrderStatus(o.id, "delivering")} className="bg-orange-600 text-white px-2 py-1 rounded text-xs flex items-center gap-1 hover:bg-orange-700 transition"><Truck size={12}/> توصيل</button>
-      </div>
-    );
+  const saveOrder = async () => {
+    if (!selectedCustomer || !selectedAddress || groups.length === 0) return alert("أكمل البيانات");
+    const payload = {
+      customer_id: selectedCustomer.id,
+      address_id: selectedAddress.id,
+      payment_method: paymentMethod,
+      restaurants: groups.map(g => ({
+        restaurant_id: g.restaurant.id,
+        products: g.items.map((i: any) => ({ product_id: i.id, quantity: i.quantity }))
+      }))
+    };
+    await api.post("/orders", payload);
+    setShowAddOrderModal(false); setGroups([]); fetchOrders();
+  };
 
-    if (activeTab === "delivering") return <button onClick={() => updateOrderStatus(o.id, "completed")} className="bg-green-600 text-white px-2 py-1 rounded text-xs hover:bg-green-700 transition">تم التسليم</button>;
-    return "—";
+  const handlePrint = () => {
+    if (!printRef.current) return;
+    const win = window.open("", "_blank");
+    win?.document.write(`<html><body dir="rtl" style="font-family:sans-serif;padding:20px;">${printRef.current.innerHTML}</body></html>`);
+    win?.document.close(); win?.print();
   };
 
   return (
@@ -208,48 +243,48 @@ const Orders: React.FC = () => {
       <ToastNotifications />
 
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center px-4">
         <h1 className="text-2xl font-bold text-gray-800">📋 إدارة الطلبات</h1>
         <div className="flex gap-2">
-          <button onClick={() => setShowAddOrderModal(true)} className="bg-green-600 text-white px-4 py-2 rounded-xl flex items-center gap-2 hover:bg-green-700 transition shadow-lg shadow-green-100">
-            <Plus size={18} /> إضافة طلب
+          <button onClick={() => setShowAddOrderModal(true)} className="bg-green-600 text-white px-5 py-2.5 rounded-2xl flex items-center gap-2 hover:bg-green-700 transition shadow-lg shadow-green-100 font-bold">
+            <Plus size={20} /> إضافة طلب جديد
           </button>
-          <button onClick={fetchOrders} className="bg-white border text-gray-600 px-4 py-2 rounded-xl hover:bg-gray-50 transition">
-            <RotateCcw size={18} />
+          <button onClick={fetchOrders} className="bg-white border border-gray-200 text-gray-500 p-2.5 rounded-2xl hover:bg-gray-50 transition shadow-sm">
+            <RotateCcw size={20} />
           </button>
         </div>
       </div>
 
-      {/* Filters (Style matched with Wassel) */}
-      <div className="bg-white p-4 rounded-2xl shadow-sm space-y-4 border border-gray-100">
-        <div className="flex gap-2 justify-center border-b border-gray-50 pb-3">
+      {/* Modern Filter Section */}
+      <div className="bg-white p-4 rounded-3xl shadow-sm space-y-4 border border-gray-100 mx-4">
+        <div className="flex gap-2 justify-center border-b border-gray-50 pb-4">
           {[{k:"all",l:"الكل"}, {k:"today",l:"اليوم"}, {k:"week",l:"الأسبوع"}].map(t=>(
             <button key={t.k} onClick={()=>setDateFilter(t.k as any)} 
-              className={`px-6 py-1.5 rounded-full text-sm font-medium transition-all ${dateFilter===t.k?"bg-indigo-600 text-white shadow-md shadow-indigo-100":"bg-gray-100 text-gray-500 hover:bg-gray-200"}`}>
+              className={`px-8 py-2 rounded-full text-sm font-bold transition-all ${dateFilter===t.k?"bg-indigo-600 text-white shadow-xl shadow-indigo-100":"bg-gray-50 text-gray-400 hover:bg-gray-100"}`}>
               {t.l}
             </button>
           ))}
         </div>
-        <div className="flex gap-2 flex-wrap justify-center">
+        <div className="flex gap-3 flex-wrap justify-center pt-2">
           {[
             {k:"pending",l:"🟡 اعتماد"}, {k:"processing",l:"🔵 معالجة"},
             {k:"delivering",l:"🚚 توصيل"}, {k:"completed",l:"✅ مكتمل"}, {k:"cancelled",l:"❌ ملغي"}
           ].map(t=>(
             <button key={t.k} onClick={()=>setActiveTab(t.k as any)} 
-              className={`px-4 py-2 rounded-xl border-b-4 transition-all font-bold ${activeTab===t.k?"bg-blue-50 border-blue-600 text-blue-700":"bg-white border-transparent text-gray-400 hover:bg-gray-50"}`}>
-              {t.l} <span className="text-xs mr-1 bg-white/50 px-1.5 py-0.5 rounded-md">({counts[t.k as keyof typeof counts]})</span>
+              className={`px-5 py-3 rounded-2xl border-b-4 transition-all font-bold text-sm ${activeTab===t.k?"bg-blue-50 border-blue-600 text-blue-700 shadow-sm":"bg-white border-transparent text-gray-400 hover:bg-gray-50"}`}>
+              {t.l} <span className={`text-[10px] mr-1.5 px-2 py-0.5 rounded-lg ${activeTab === t.k ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-500"}`}>{counts[t.k as keyof typeof counts]}</span>
             </button>
           ))}
         </div>
       </div>
 
-      {/* Table */}
-      {loading ? <div className="text-center py-20 text-gray-400 font-medium">⏳ جاري تحميل الطلبات...</div> : (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-x-auto">
-          <table className="w-full text-center border-collapse min-w-[1000px]">
-            <thead className="bg-gray-50/50 text-gray-500 text-xs uppercase tracking-wider">
-              <tr className="border-b">
-                <th className="p-4">رقم</th>
+      {/* Table Section */}
+      <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden mx-4">
+        <div className="overflow-x-auto">
+          <table className="w-full text-center border-collapse min-w-[1100px]">
+            <thead className="bg-gray-50/50 text-gray-500 text-[11px] font-bold uppercase tracking-widest">
+              <tr className="border-b border-gray-100">
+                <th className="p-5">رقم</th>
                 <th>العميل</th>
                 <th>المطاعم</th>
                 <th>الكابتن</th>
@@ -257,31 +292,30 @@ const Orders: React.FC = () => {
                 <th>الحالة</th>
                 <th>إسناد</th>
                 <th>المستخدم</th>
-                {isAdminBranch && <th>الفرع</th>}
-                <th className="p-4">تحكم</th>
+                <th className="p-5 text-left">تحكم</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50 text-gray-600">
               {visibleOrders.map((o) => (
-                <tr key={o.id} className="hover:bg-gray-50/80 transition-colors">
-                  <td className="p-4 font-bold text-gray-900 text-sm">#{o.id}</td>
-                  <td className="text-sm">
-                    <div className="font-medium text-gray-800">{o.customer_name}</div>
-                    <div className="text-[10px] text-gray-400">{o.customer_phone}</div>
+                <tr key={o.id} className="hover:bg-gray-50/80 transition-all group">
+                  <td className="p-5 font-black text-gray-900 text-sm">#{o.id}</td>
+                  <td className="text-right px-4">
+                    <div className="font-bold text-gray-800 text-sm">{o.customer_name}</div>
+                    <div className="text-[10px] text-gray-400 tracking-tighter">{o.customer_phone}</div>
                   </td>
-                  <td className="text-xs font-medium px-2"><span className="bg-gray-100 px-2 py-1 rounded-lg">{o.stores_count} مطعم</span></td>
-                  <td className="text-indigo-600 font-bold text-xs">{o.captain_name || "—"}</td>
-                  <td className="text-xs font-bold text-gray-700">{formatAmount(o.total_amount)}</td>
+                  <td className="px-2"><span className="bg-gray-100 text-gray-500 text-[10px] px-2.5 py-1 rounded-full font-bold">{o.stores_count} مطعم</span></td>
+                  <td className="text-indigo-600 font-black text-xs">{o.captain_name || "—"}</td>
+                  <td className="text-xs font-black text-gray-700">{o.total_amount} ريال</td>
                   
-                  {/* Status Cell */}
+                  {/* Modern Status Switcher */}
                   <td className="px-2">
                     {o.status === "completed" || o.status === "cancelled" ? (
-                      <span className={`px-2 py-1 rounded-lg text-[10px] font-bold border ${o.status === "completed" ? "bg-green-50 text-green-700 border-green-100" : "bg-red-50 text-red-700 border-red-100"}`}>
+                      <span className={`px-3 py-1.5 rounded-xl text-[10px] font-black border uppercase ${o.status === "completed" ? "bg-green-50 text-green-700 border-green-100" : "bg-red-50 text-red-700 border-red-100"}`}>
                         {o.status === "completed" ? "مكتمل" : "ملغي"}
                       </span>
                     ) : (
-                      <select value={o.status} onChange={(e) => updateOrderStatus(o.id, e.target.value)} 
-                        className="border rounded-lg px-2 py-1 text-[10px] bg-white outline-none focus:ring-1 focus:ring-blue-400">
+                      <select value={o.status} onChange={(e) => updateStatus(o.id, e.target.value)} 
+                        className="border border-gray-200 rounded-xl px-3 py-1.5 text-[10px] bg-white outline-none focus:ring-2 focus:ring-blue-100 cursor-pointer font-bold">
                         <option value="pending">اعتماد</option>
                         <option value="confirmed">مؤكد</option>
                         <option value="preparing">تحضير</option>
@@ -292,57 +326,62 @@ const Orders: React.FC = () => {
                     )}
                   </td>
                   
-                  <td>{renderActions(o)}</td>
+                  {/* Actions Column */}
+                  <td className="px-2">
+                    {activeTab === "pending" && <button onClick={()=>updateStatus(o.id,"confirmed")} className="bg-green-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold shadow-md shadow-green-50">اعتماد</button>}
+                    {activeTab === "processing" && (
+                      <div className="flex gap-1.5 justify-center">
+                        <button onClick={()=>openCaptainModal(o.id)} className="bg-indigo-600 text-white p-1.5 rounded-lg hover:bg-indigo-700"><UserCheck size={14}/></button>
+                        <button onClick={()=>updateStatus(o.id,"delivering")} className="bg-orange-500 text-white p-1.5 rounded-lg hover:bg-orange-600"><Truck size={14}/></button>
+                      </div>
+                    )}
+                    {activeTab === "delivering" && <button onClick={()=>updateStatus(o.id,"completed")} className="bg-green-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold">تسليم ✅</button>}
+                  </td>
 
-                  {/* ✅ عمود المستخدم المتطور (المنطق المطلوب) */}
+                  {/* Smart User Tracking */}
                   <td className="px-2 text-[10px]">
                     {o.updater_name ? (
-                      <div className="flex flex-col text-blue-600">
-                        <span className="font-bold">📝 {o.updater_name}</span>
-                        <span className="text-[8px] text-gray-400 italic">آخر تحديث</span>
-                      </div>
+                      <div className="flex flex-col"><span className="font-bold text-blue-600">📝 {o.updater_name}</span><span className="text-[8px] text-gray-300 italic">تحديث</span></div>
                     ) : o.creator_name ? (
-                      <div className="flex flex-col text-gray-700">
-                        <span className="font-medium">👤 {o.creator_name}</span>
-                        <span className="text-[8px] text-gray-400 italic">المُنشئ</span>
-                      </div>
+                      <div className="flex flex-col"><span className="font-bold text-gray-700">👤 {o.creator_name}</span><span className="text-[8px] text-gray-300 italic">منشئ</span></div>
                     ) : (
-                      <span className="text-gray-400 italic font-medium">📱 طلب تطبيق</span>
+                      <span className="text-gray-300 italic">📱 تطبيق</span>
                     )}
                   </td>
 
-                  {isAdminBranch && <td className="text-xs text-gray-500">{o.branch_name}</td>}
-                  
-                  <td className="p-4 flex gap-2 justify-center">
-                    <button onClick={() => api.orders.getOrderDetails(o.id).then(res => { setSelectedOrderDetails(res.order || res); setIsDetailsModalOpen(true); })} 
-                      className="text-blue-500 p-1.5 hover:bg-blue-50 rounded-lg transition-colors"><MapPin size={16} /></button>
-                    <button className="text-gray-400 p-1.5 hover:bg-gray-100 rounded-lg transition-colors"><Edit size={16} /></button>
+                  <td className="p-5">
+                    <div className="flex gap-2 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => api.orders.getOrderDetails(o.id).then(res => { setSelectedOrderDetails(res.order || res); setIsDetailsModalOpen(true); })} 
+                        className="text-blue-600 p-2 bg-blue-50 rounded-xl hover:bg-blue-100"><MapPin size={16} /></button>
+                      <button className="text-gray-400 p-2 bg-gray-50 rounded-xl hover:bg-gray-100"><Edit size={16} /></button>
+                    </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-          {visibleOrders.length === 0 && <div className="p-20 text-center text-gray-400">لا توجد طلبات في هذا القسم</div>}
         </div>
-      )}
+      </div>
 
-      {/* Captain Selection Modal */}
+      {/* =====================
+          1. مودال تعيين الكابتن
+      ===================== */}
       {isCaptainModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[60] p-4">
-          <div className="bg-white rounded-3xl shadow-2xl p-6 w-full max-w-md animate-in zoom-in duration-200">
-            <div className="flex justify-between items-center border-b border-gray-100 pb-4 mb-4">
-              <h2 className="text-xl font-bold text-gray-800">🚗 إسناد كابتن للطلب</h2>
-              <button onClick={()=>setIsCaptainModalOpen(false)} className="text-gray-400 hover:text-gray-600 transition">✖</button>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[100] p-4">
+          <div className="bg-white rounded-[2.5rem] shadow-2xl p-8 w-full max-w-md animate-in zoom-in duration-300">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-black text-gray-800">🚗 اختر كابتن متاح</h2>
+              <button onClick={()=>setIsCaptainModalOpen(false)} className="text-gray-400 bg-gray-50 p-2 rounded-full"><X size={20}/></button>
             </div>
-            {captainsLoading ? <div className="text-center py-10">⏳ جاري البحث عن كباتن...</div> : captains.length === 0 ? <div className="text-center py-10 text-red-500">لا يوجد كباتن متاحين حالياً</div> : (
-              <ul className="divide-y divide-gray-50 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+            {captainsLoading ? <div className="text-center py-10 text-gray-400 font-bold animate-pulse">جاري البحث...</div> : (
+              <ul className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
                 {captains.map(c=>(
-                  <li key={c.id} className="flex justify-between items-center py-4 px-2 hover:bg-gray-50 rounded-2xl transition-colors">
+                  <li key={c.id} className="flex justify-between items-center p-4 bg-gray-50 rounded-2xl hover:bg-indigo-50 transition-colors border border-transparent hover:border-indigo-100">
                     <div>
-                      <p className="font-bold text-gray-900">{c.name}</p>
-                      <p className="text-[10px] text-gray-400">الطلبات النشطة: {c.pending_orders} | مكتمل اليوم: {c.completed_today}</p>
+                      <p className="font-black text-gray-800 text-sm">{c.name}</p>
+                      <p className="text-[10px] text-gray-400 font-bold uppercase mt-1">نشط: {c.pending_orders} | اليوم: {c.completed_today}</p>
                     </div>
-                    <button onClick={()=>assignCaptain(c.id)} className="bg-indigo-600 text-white px-4 py-1.5 rounded-xl text-sm font-bold hover:bg-indigo-700 transition shadow-md shadow-indigo-100">إسناد</button>
+                    <button onClick={()=>assignCaptain(c.id)} className="bg-indigo-600 text-white px-5 py-2 rounded-xl text-xs font-black hover:bg-indigo-700 shadow-lg shadow-indigo-100">إسناد</button>
                   </li>
                 ))}
               </ul>
@@ -351,573 +390,188 @@ const Orders: React.FC = () => {
         </div>
       )}
 
-
-      {/* ===== مودال تفاصيل الطلب ===== */}
+      {/* =====================
+          2. مودال تفاصيل الطلب والفاتورة
+      ===================== */}
       {isDetailsModalOpen && selectedOrderDetails && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-          <div className="bg-white rounded-lg shadow-lg w-full max-w-3xl flex flex-col max-h-[90vh]">
-            <div ref={printRef} className="p-6 overflow-y-auto">
-              <h2 className="text-lg font-bold mb-4 text-center">
-                🧾 فاتورة الطلب #{selectedOrderDetails.id}
-              </h2>
-              {(() => {
-                const restaurants = selectedOrderDetails.restaurants || [];
-                const allRestaurantsTotal = restaurants.reduce(
-                  (sum: number, r: any) => sum + (r.total || 0),
-                  0
-                );
-                const delivery = Number(selectedOrderDetails.delivery_fee || 0);
-                const extraStore = Number(selectedOrderDetails.extra_store_fee || 0);
-                const grandTotal = allRestaurantsTotal + delivery + extraStore;
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex justify-center items-center z-[100] p-4">
+          <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-4xl flex flex-col max-h-[90vh] overflow-hidden animate-in slide-in-from-bottom-5">
+            <div className="p-6 border-b flex justify-between items-center bg-gray-50/50">
+              <div className="flex items-center gap-3">
+                <div className="bg-blue-600 text-white p-3 rounded-2xl shadow-lg shadow-blue-100 font-black">#{selectedOrderDetails.id}</div>
+                <h2 className="text-xl font-black text-gray-800 tracking-tighter">تفاصيل الفاتورة والطلب</h2>
+              </div>
+              <button onClick={()=>setIsDetailsModalOpen(false)} className="text-gray-400 hover:text-black"><X/></button>
+            </div>
+            
+            <div className="p-8 overflow-y-auto" ref={printRef}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+                <div className="space-y-4">
+                  <div className="bg-blue-50 p-5 rounded-3xl border border-blue-100">
+                    <h3 className="font-black text-blue-800 mb-3 flex items-center gap-2"><MapPin size={18}/> بيانات التوصيل</h3>
+                    <p className="text-sm font-bold text-gray-700">العميل: {selectedOrderDetails.customer_name}</p>
+                    <p className="text-sm text-gray-500 font-medium">العنوان: {selectedOrderDetails.customer_address}</p>
+                    {selectedOrderDetails.map_url && <a href={selectedOrderDetails.map_url} target="_blank" className="text-blue-600 text-xs font-black underline mt-2 block">فتح الموقع على الخريطة 🌍</a>}
+                  </div>
+                </div>
+                <div className="bg-gray-50 p-5 rounded-3xl border border-gray-100">
+                  <h3 className="font-black text-gray-800 mb-3 flex items-center gap-2"><DollarSign size={18}/> ملخص المبالغ</h3>
+                  <div className="space-y-2 text-sm font-bold">
+                    <div className="flex justify-between"><span>رسوم التوصيل:</span><span>{selectedOrderDetails.delivery_fee} ريال</span></div>
+                    {Number(selectedOrderDetails.extra_store_fee) > 0 && <div className="flex justify-between text-orange-600"><span>رسوم إضافية:</span><span>{selectedOrderDetails.extra_store_fee} ريال</span></div>}
+                    <div className="pt-2 border-t flex justify-between text-lg text-blue-600"><span>الإجمالي:</span><span>{Number(selectedOrderDetails.delivery_fee) + Number(selectedOrderDetails.extra_store_fee)} ريال</span></div>
+                  </div>
+                </div>
+              </div>
 
-                return (
-                  <>
-                    {restaurants.map((r: any, idx: number) => (
-                      <div key={idx} className="mb-6 border rounded p-3">
-                        <h3 className="font-bold text-lg mb-2">🏪 {r.name}</h3>
-                        <table className="w-full mb-2 border">
-                          <thead className="bg-gray-100">
-                            <tr>
-                              <th>المنتج</th>
-                              <th>السعر</th>
-                              <th>الكمية</th>
-                              <th>الإجمالي</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {r.items.map((p: any, i: number) => (
-                              <tr key={i}>
-                                <td className="border px-2 py-1">{p.name}</td>
-                                <td className="border">{p.price} ر.س</td>
-                                <td className="border">{p.quantity}</td>
-                                <td className="border font-semibold text-green-600">
-                                  {p.subtotal} ر.س
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                        <div className="text-right font-bold">
-                          إجمالي المطعم: {Number(r.total || 0).toFixed(2)} ريال
-                        </div>
-                      </div>
-                    ))}
+              <h3 className="font-black text-lg mb-4 text-gray-800 px-2">🏪 المنتجات حسب المطعم</h3>
+              {selectedOrderDetails.restaurants?.map((rest: any, idx: number) => (
+                <div key={idx} className="mb-6 rounded-3xl border border-gray-100 overflow-hidden shadow-sm">
+                  <div className="bg-gray-50 p-4 font-black text-gray-700 flex justify-between items-center">
+                    <span>مطعم: {rest.name}</span>
+                    <span className="text-xs text-blue-600">{rest.phone}</span>
+                  </div>
+                  <table className="w-full text-right text-sm">
+                    <thead className="bg-white text-gray-400 text-[10px] font-black uppercase">
+                      <tr><th className="p-4">المنتج</th><th className="p-4 text-center">الكمية</th><th className="p-4 text-left">السعر</th></tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {rest.items?.map((item: any, i: number) => (
+                        <tr key={i}><td className="p-4 font-bold text-gray-800">{item.name}</td><td className="p-4 text-center font-black">x{item.quantity}</td><td className="p-4 text-left font-black text-green-600">{item.price} ريال</td></tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ))}
+            </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                      <div className="border p-3 rounded bg-gray-50">
-                        <p>🧮 إجمالي المطاعم: {allRestaurantsTotal.toFixed(2)} ريال</p>
-                        <p>📦 رسوم التوصيل: {delivery.toFixed(2)} ريال</p>
-                        {extraStore > 0 && (
-                          <p>🏪 رسوم المحل الإضافي: {extraStore.toFixed(2)} ريال</p>
-                        )}
-                        <p className="text-lg font-bold text-blue-600">
-                          💰 الإجمالي الكلي: {grandTotal.toFixed(2)} ريال
-                        </p>
-                      </div>
-                      <div className="border p-3 rounded bg-white">
-                        <h4 className="font-bold mb-2">💳 تفاصيل الدفع</h4>
-                        <p>
-                          طريقة الدفع: <strong>{paymentMethodLabel}</strong>
-                        </p>
-                        {(paymentMethod === "bank" || paymentMethod === "wallet") && (
-                          <>
-                            {depositorName && <p>اسم المودع: {depositorName}</p>}
-                            {referenceNo && <p>رقم الحوالة: {referenceNo}</p>}
-                            {attachments?.length > 0 && (
-                              <div className="mt-2">
-                                <p className="font-semibold">المرفقات:</p>
-                                <div className="flex gap-2 mt-1">
-                                  {attachments.map((f: any, i: number) => (
-                                    <a key={i} href={f.url} target="_blank">
-                                      <img
-                                        src={f.thumb}
-                                        className="w-16 h-16 rounded border"
-                                      />
-                                    </a>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                          </>
-                        )}
-                      </div>
+            <div className="p-6 bg-gray-50 border-t flex justify-between items-center">
+              <button onClick={handlePrint} className="bg-blue-600 text-white px-8 py-3 rounded-2xl font-black flex items-center gap-2 hover:bg-blue-700 transition shadow-xl shadow-blue-100">
+                <Printer size={20}/> طباعة الفاتورة
+              </button>
+              <div className="text-right">
+                <div className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">آخر تحديث بواسطة</div>
+                <div className="text-sm font-black text-gray-800">{selectedOrderDetails.user_name || "النظام"}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =====================
+          3. مودال إضافة طلب (متعدد المطاعم)
+      ===================== */}
+      {showAddOrderModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex justify-center items-center z-[100] p-4">
+          <div className="bg-white rounded-[3rem] shadow-2xl w-full max-w-5xl flex flex-col max-h-[90vh] overflow-hidden animate-in zoom-in duration-300">
+            <div className="p-8 border-b bg-gray-50/80 flex justify-between items-center">
+              <h2 className="text-2xl font-black text-gray-800 tracking-tighter">➕ إنشاء طلب جديد متعدد المطاعم</h2>
+              <button onClick={()=>setShowAddOrderModal(false)} className="text-gray-400 bg-white p-3 rounded-full shadow-sm"><X size={24}/></button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-10">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+                
+                {/* Right: Data Entry */}
+                <div className="lg:col-span-2 space-y-8">
+                  <section className="space-y-4">
+                    <label className="text-sm font-black text-gray-800 flex items-center gap-2 px-1">👤 العميل والموقع</label>
+                    <select className="w-full p-4 bg-gray-50 border-none rounded-2xl font-bold focus:ring-4 focus:ring-blue-100 transition-all outline-none"
+                      onChange={(e) => setSelectedCustomer(customers.find(c => c.id === Number(e.target.value)))}>
+                      <option>اختر العميل...</option>
+                      {customers.map(c => <option key={c.id} value={c.id}>{c.name} - {c.phone}</option>)}
+                    </select>
+                    <select className="w-full p-4 bg-gray-50 border-none rounded-2xl font-bold focus:ring-4 focus:ring-blue-100 transition-all outline-none"
+                      disabled={!selectedCustomer} onChange={(e)=>setSelectedAddress(addresses.find(a=>a.id === Number(e.target.value)))}>
+                      <option>حدد عنوان العميل...</option>
+                      {addresses.map(a => <option key={a.id} value={a.id}>{a.address} - {a.neighborhood_name}</option>)}
+                    </select>
+                  </section>
+
+                  <section className="space-y-4">
+                    <label className="text-sm font-black text-gray-800 flex items-center gap-2 px-1">🏪 إضافة مطاعم ومنتجات</label>
+                    <div className="flex gap-3">
+                      <select className="flex-1 p-4 bg-gray-50 border-none rounded-2xl font-bold outline-none"
+                        onChange={(e)=>setCurrentRestaurant(restaurants.find(r=>r.id === Number(e.target.value)))}>
+                        <option>اختر مطعم للبدء...</option>
+                        {restaurants.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                      </select>
+                      <button onClick={() => {
+                        if(!currentRestaurant) return alert("اختر مطعم");
+                        api.get(`/restaurants/${currentRestaurant.id}/products`).then(res => { setProducts(res.data.products || []); setShowProductsModal(true); });
+                      }} className="bg-blue-600 text-white px-6 rounded-2xl font-black hover:bg-blue-700 shadow-lg shadow-blue-100">فتح المنيو 🍔</button>
                     </div>
+                  </section>
 
-                    <div className="grid grid-cols-2 gap-3 mt-4">
-                      <div className="border p-3 rounded">
-                        <h3 className="font-bold mb-2">🏪 المطاعم المشاركة</h3>
-                        {restaurants.map((r: any, i: number) => (
-                          <div key={i} className="mb-2 text-sm">
-                            <p>الاسم: {r.name}</p>
-                            <p>الهاتف: {r.phone}</p>
-                            {r.map_url && (
-                              <a
-                                href={r.map_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-600 underline"
-                              >
-                                عرض على الخريطة 🌍
-                              </a>
-                            )}
-                            <hr className="my-2" />
+                  <section className="space-y-4 pt-4 border-t border-gray-100">
+                    <h4 className="font-black text-gray-400 uppercase text-[10px] tracking-widest">السلال النشطة</h4>
+                    {groups.length === 0 ? <div className="p-10 bg-gray-50 rounded-[2rem] text-center text-gray-300 font-bold italic tracking-tighter">لم يتم إضافة أي منتجات بعد</div> : (
+                      <div className="space-y-4">
+                        {groups.map((g, idx) => (
+                          <div key={idx} className="bg-white border border-gray-100 rounded-3xl p-5 shadow-sm">
+                            <div className="flex justify-between items-center mb-4 pb-2 border-b border-gray-50">
+                              <span className="font-black text-gray-800">🏪 {g.restaurant.name}</span>
+                              <button onClick={()=>setGroups(groups.filter((_,i)=>i!==idx))} className="text-red-400 p-1.5 hover:bg-red-50 rounded-lg"><Trash2 size={16}/></button>
+                            </div>
+                            {g.items.map((item: any, i: number) => (
+                              <div key={i} className="flex justify-between items-center text-sm mb-2">
+                                <span className="font-bold text-gray-600">{item.name} <span className="text-[10px] text-gray-300">x{item.quantity}</span></span>
+                                <span className="font-black text-green-600">{item.price * item.quantity} ريال</span>
+                              </div>
+                            ))}
                           </div>
                         ))}
                       </div>
-                      <div className="flex flex-col gap-3">
-                        <div className="border p-3 rounded">
-                          <h3 className="font-bold mb-1">👤 بيانات العميل</h3>
-                          <p>الاسم: {selectedOrderDetails.customer_name}</p>
-                          <p>الهاتف: {selectedOrderDetails.customer_phone}</p>
-                          <p>
-                            📍 العنوان:{" "}
-                            <strong>
-                              {selectedOrderDetails.neighborhood_name
-                                ? `${selectedOrderDetails.neighborhood_name} - `
-                                : ""}
-                              {selectedOrderDetails.customer_address || "-"}
-                            </strong>
-                          </p>
-                          {selectedOrderDetails.map_url && (
-                            <p>
-                              <a
-                                href={selectedOrderDetails.map_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-600 underline"
-                              >
-                                عرض على الخريطة 🌍
-                              </a>
-                            </p>
-                          )}
-                        </div>
-                   <div className="border p-3 rounded bg-yellow-50">
-  <h3 className="font-bold mb-1">📝 ملاحظات الطلب</h3>
-  <p className="text-gray-700">
-    {selectedOrderDetails.note || "لا توجد ملاحظات"}
-  </p>
-</div>
-
-                      </div>
-                    </div>
-                  </>
-                );
-              })()}
-            </div>
-      {/* ✅ تعديل التذييل (Footer) */}
-      <div className="flex justify-between items-center p-4 border-t bg-gray-100">
-        
-        {/* 1. القسم الأيمن: معلومات الحالة والمستخدم */}
-        <div className="text-sm">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="font-bold text-gray-700">الحالة:</span>
-            <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
-              selectedOrderDetails.status === 'completed' ? 'bg-green-100 text-green-700' :
-              selectedOrderDetails.status === 'cancelled' ? 'bg-red-100 text-red-700' :
-              'bg-blue-100 text-blue-700'
-            }`}>
-              {
-                {
-                  pending: "قيد الانتظار",
-                  confirmed: "مؤكد",
-                  preparing: "قيد التحضير",
-                  ready: "جاهز",
-                  delivering: "قيد التوصيل",
-                  completed: "مكتمل",
-                  cancelled: "ملغي"
-                }[selectedOrderDetails.status as string] || selectedOrderDetails.status
-              }
-            </span>
-          </div>
-
-    
-           {/* المستخدم (الذي قام بآخر تحديث) */}
-          <div className="text-sm text-gray-600">
-            <span className="font-bold">المستخدم: </span>
-            <span className="font-medium text-black">
-              {/* سيظهر الآن لأننا مررناه يدوياً من القائمة */}
-              {(selectedOrderDetails as any).user_name || "—"}
-            </span>
-          </div>
-
-          <div className="text-xs text-gray-500 dir-ltr">
-            🕒 {new Date((selectedOrderDetails as any).updated_at || new Date()).toLocaleString('en-US', {
-              hour: 'numeric', minute: 'numeric', hour12: true,
-              day: 'numeric', month: 'numeric' 
-            })}
-          </div>
-        </div>
-
-        {/* 2. القسم الأيسر: أزرار التحكم */}
-        <div className="flex gap-3">
-          <button
-            onClick={handlePrint}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
-          >
-            🧾 طباعة الفاتورة
-          </button>
-          <button
-            onClick={() => setIsDetailsModalOpen(false)}
-            className="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500 transition"
-          >
-            إغلاق
-          </button>
-             </div>
-
-      </div>
-    </div>
-  </div>
-)}
-      {/* ===== مودال إضافة الطلب ===== */}
-      {showAddOrderModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-            <h2 className="text-lg font-bold mb-4">➕ إضافة طلب جديد</h2>
-
-            <label className="block font-semibold mb-1">👤 اختر العميل:</label>
-            <select
-              onChange={(e) => selectCustomer(Number(e.target.value))}
-              className="border w-full p-2 rounded mb-3 focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">-- اختر العميل من القائمة --</option>
-              {customers.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name} ({c.phone})
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={selectedAddress?.id || ""}
-              onChange={(e) => {
-                const addr = addresses.find((a) => a.id == Number(e.target.value));
-                setSelectedAddress(addr || null);
-
-                if (addr?.gps_link) {
-                  setGpsLink(addr.gps_link);
-                } else if (addr?.latitude && addr?.longitude) {
-                  // ✅ تصحيح رابط خرائط جوجل
-                  setGpsLink(
-                    `https://www.google.com/maps?q=${addr.latitude},${addr.longitude}`
-                  );
-                } else {
-                  setGpsLink("");
-                }
-              }}
-              className="border w-full p-2 rounded focus:ring-2 focus:ring-blue-500"
-              disabled={!selectedCustomer}
-            >
-              <option value="">
-                {selectedCustomer
-                  ? "-- اختر عنوان العميل --"
-                  : "⚠️ يرجى اختيار عميل أولاً"}
-              </option>
-              {addresses.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {`${a.neighborhood_name || "بدون حي"} - ${a.address || ""}`}
-                </option>
-              ))}
-            </select>
-
-            <h3 className="font-bold mb-2">💳 طريقة الدفع</h3>
-            <div className="flex gap-3 flex-wrap mb-3">
-              {[
-                { key: "cod", label: "الدفع عند الاستلام" },
-                { key: "bank", label: "إيداع بنكي" },
-                { key: "electronic", label: "دفع إلكتروني" },
-                { key: "wallet", label: "الدفع من رصيدي" },
-              ].map((m) => (
-                <button
-                  key={m.key}
-                  onClick={() => setNewOrderPaymentMethod(m.key as any)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded border ${
-                    newOrderPaymentMethod === m.key
-                      ? "border-blue-600 bg-blue-50"
-                      : "border-gray-300"
-                  }`}
-                >
-                  <span
-                    className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                      newOrderPaymentMethod === m.key
-                        ? "border-blue-600"
-                        : "border-gray-400"
-                    }`}
-                  >
-                    {newOrderPaymentMethod === m.key && (
-                      <span className="w-2 h-2 rounded-full bg-blue-600" />
                     )}
-                  </span>
-                  {m.label}
-                </button>
-              ))}
-            </div>
-
-            {newOrderPaymentMethod === "bank" && (
-              <div className="border p-3 rounded bg-gray-50 mb-3">
-                <h4 className="font-semibold mb-2">🏦 اختر البنك</h4>
-                <select
-                  value={selectedBankId || ""}
-                  onChange={(e) => setSelectedBankId(Number(e.target.value))}
-                  className="border w-full p-2 rounded"
-                >
-                  <option value="">-- اختر البنك --</option>
-                  {banks.map((b: any) => (
-                    <option key={b.id} value={b.id}>
-                      {b.company} - {b.account_number}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {newOrderPaymentMethod === "electronic" && (
-              <div className="border p-3 rounded bg-gray-50 mb-3">
-                <h4 className="font-semibold mb-2">🌐 اختر بوابة الدفع</h4>
-                <select className="border w-full p-2 rounded">
-                  <option value="">-- اختر --</option>
-                </select>
-              </div>
-            )}
-
-            {newOrderPaymentMethod === "wallet" && (
-              <div className="border p-3 rounded bg-gray-50 mb-3">
-                <h4 className="font-semibold mb-2">👛 رصيدك</h4>
-                <p>
-                  الرصيد الحالي:{" "}
-                  <strong
-                    className={
-                      walletBalance < 0 ? "text-red-600" : "text-green-600"
-                    }
-                  >
-                    {walletBalance.toFixed(2)} ريال
-                  </strong>
-                </p>
-                {!walletAllowed && (
-                  <p className="text-red-600 mt-2">
-                    ❌ لا يسمح بالسحب من هذا الحساب (تجاوز السقف)
-                  </p>
-                )}
-                {walletAllowed && walletBalance < 0 && (
-                  <p className="text-orange-600 mt-2">
-                    ⚠️ الرصيد سالب لكن مسموح حسب إعدادات الحساب
-                  </p>
-                )}
-              </div>
-            )}
-
-            <label className="mt-3 block">🏪 اختر المطعم:</label>
-            <select
-              value={currentRestaurant?.id || ""}
-              onChange={(e) => selectRestaurant(Number(e.target.value))}
-              className="border w-full p-2 rounded"
-            >
-              <option value="">-- اختر --</option>
-              {restaurants.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.name}
-                </option>
-              ))}
-            </select>
-
-            <button
-              onClick={openProductsModal}
-              className="bg-blue-600 text-white px-3 py-1 mt-3 rounded"
-              disabled={!currentRestaurant}
-            >
-              📦 تحديد المنتجات
-            </button>
-
-            <h3 className="font-bold mt-4">🛒 السلال:</h3>
-            {groups.length === 0 && (
-              <div className="text-sm text-gray-500">لم يتم إضافة أي مطعم بعد</div>
-            )}
-
-            {groups.map((g) => (
-              <div key={g.restaurant.id} className="border rounded p-3 mt-3">
-                <div className="flex justify-between items-center mb-2">
-                  <h4 className="font-semibold">🏪 {g.restaurant.name}</h4>
-                  <button
-                    onClick={() => removeRestaurantGroup(g.restaurant.id)}
-                    className="text-red-600 text-sm"
-                  >
-                    حذف المطعم ✖
-                  </button>
+                  </section>
                 </div>
-                {g.items.length === 0 ? (
-                  <p className="text-sm text-gray-500">لا توجد منتجات</p>
-                ) : (
-                  g.items.map((item) => {
-                    const total = item.price * item.quantity;
-                    return (
-                      <div
-                        key={item.id}
-                        className="flex justify-between items-center border-b py-1"
-                      >
-                        <div className="flex-1">
-                          <div className="font-semibold">{item.name}</div>
-                          <div className="text-sm text-gray-600">
-                            {item.price} ريال × {item.quantity} ={" "}
-                            <span className="text-green-600 font-bold">
-                              {total} ريال
-                            </span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() =>
-                              updateItemQty(
-                                g.restaurant.id,
-                                item.id,
-                                item.quantity - 1
-                              )
-                            }
-                            className="px-2 py-1 bg-gray-200 rounded"
-                          >
-                            ➖
-                          </button>
-                          <span className="min-w-[24px] text-center">
-                            {item.quantity}
-                          </span>
-                          <button
-                            onClick={() =>
-                              updateItemQty(
-                                g.restaurant.id,
-                                item.id,
-                                item.quantity + 1
-                              )
-                            }
-                            className="px-2 py-1 bg-gray-200 rounded"
-                          >
-                            ➕
-                          </button>
-                          <button
-                            onClick={() => updateItemQty(g.restaurant.id, item.id, 0)}
-                            className="text-red-600 ml-2"
-                          >
-                            🗑
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
+
+                {/* Left: Summary Panel */}
+                <div className="bg-gray-900 rounded-[3rem] p-8 text-white flex flex-col justify-between shadow-2xl">
+                  <div>
+                    <h3 className="text-xl font-black mb-8 border-b border-gray-800 pb-4">💳 ملخص الطلب</h3>
+                    <div className="space-y-4 opacity-70">
+                      <div className="flex justify-between"><span>إجمالي المنتجات:</span><span className="font-black">{groups.reduce((sum, g) => sum + g.items.reduce((s:any, i:any)=> s + (i.price*i.quantity),0),0)} ريال</span></div>
+                      <div className="flex justify-between"><span>رسوم التوصيل:</span><span className="font-black">مجاني (تجريبي)</span></div>
+                    </div>
+                  </div>
+                  <div className="pt-10">
+                    <div className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-2 px-1">المبلغ الإجمالي المستحق</div>
+                    <div className="text-5xl font-black tracking-tighter mb-8">{groups.reduce((sum, g) => sum + g.items.reduce((s:any, i:any)=> s + (i.price*i.quantity),0),0)} <small className="text-lg">ريال</small></div>
+                    <button onClick={saveOrder} className="w-full bg-blue-500 text-white py-5 rounded-[2rem] font-black text-lg hover:bg-blue-400 transition-all shadow-2xl shadow-blue-500/20 active:scale-95">تأكيد وإرسال الطلب ✨</button>
+                  </div>
+                </div>
               </div>
-            ))}
-
-            <button
-              onClick={() => {
-                setCurrentRestaurant(null);
-                setRestaurantCategories([]);
-                setProducts([]);
-                setSelectedCategory(null);
-              }}
-              className="mt-3 bg-indigo-600 text-white px-3 py-2 rounded"
-            >
-              ➕ إضافة مطعم آخر
-            </button>
-
-            <div className="mt-4 flex justify-end gap-2">
-              <button
-                onClick={saveOrder}
-                className="bg-green-600 text-white px-4 py-2 rounded"
-              >
-                💾 حفظ
-              </button>
-              <button
-                onClick={() => setShowAddOrderModal(false)}
-                className="bg-gray-400 text-white px-4 py-2 rounded"
-              >
-                إلغاء
-              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ===== مودال اختيار المنتجات ===== */}
+      {/* =====================
+          4. مودال المنتجات (داخل إضافة طلب)
+      ===================== */}
       {showProductsModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-            <h2 className="text-lg font-bold mb-4">📦 قائمة المنتجات</h2>
-            <div className="flex gap-3 overflow-x-auto border-b pb-2">
-              {restaurantCategories.map((cat) => (
-                <button
-                  key={cat.id}
-                  onClick={() => setSelectedCategory(cat.id)}
-                  className={`px-4 py-2 rounded ${
-                    selectedCategory === cat.id
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-200"
-                  }`}
-                >
-                  {cat.name}
-                </button>
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-end z-[110] p-4">
+          <div className="bg-white rounded-t-[3rem] w-full max-w-4xl max-h-[80vh] overflow-hidden animate-in slide-in-from-bottom-10 shadow-2xl">
+            <div className="p-8 border-b flex justify-between items-center">
+              <h2 className="text-2xl font-black text-gray-800">📦 قائمة أصناف {currentRestaurant?.name}</h2>
+              <button onClick={()=>setShowProductsModal(false)} className="text-gray-400 bg-gray-50 p-2 rounded-full"><X/></button>
+            </div>
+            <div className="p-8 overflow-y-auto max-h-[60vh] grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {products.map(p => (
+                <div key={p.id} className="p-5 border border-gray-100 rounded-3xl hover:border-blue-200 transition-all group flex flex-col justify-between">
+                  <div>
+                    <div className="font-black text-gray-800 text-sm mb-1">{p.name}</div>
+                    <div className="text-green-600 font-black text-xs">{p.price} ريال</div>
+                  </div>
+                  <button onClick={() => { addToCart(p); setShowProductsModal(false); }} className="mt-4 w-full bg-blue-50 text-blue-600 py-2 rounded-xl font-bold text-xs group-hover:bg-blue-600 group-hover:text-white transition-all">+ إضافة للسلة</button>
+                </div>
               ))}
             </div>
-            <div className="grid grid-cols-2 gap-3 mt-4">
-              {products
-                .filter((p) => {
-                  if (!selectedCategory) return true;
-                  const ids = String(p.category_ids || "").split(",");
-                  return ids.includes(String(selectedCategory));
-                })
-                .map((p) => (
-                  <div
-                    key={p.id}
-                    className="border p-2 rounded flex flex-col justify-between"
-                  >
-                    <span className="font-bold">{p.name}</span>
-                    <span>{p.price} ريال</span>
-                    <button
-                      onClick={() => addToCart(p)}
-                      className="bg-green-600 text-white mt-2 px-3 py-1 rounded"
-                    >
-                      ➕ إضافة
-                    </button>
-                  </div>
-                ))}
-            </div>
-            <div className="mt-4 flex justify-end gap-2">
-              <button
-                onClick={() => setShowProductsModal(false)}
-                className="bg-gray-400 text-white px-4 py-2 rounded"
-              >
-                إغلاق
-              </button>
-            </div>
           </div>
         </div>
       )}
-
-      {/* ===== مودال إلغاء الطلب ===== */}
-      {cancelModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h2 className="text-lg font-bold mb-3">تأكيد إلغاء الطلب</h2>
-            <textarea
-              value={cancelReason}
-              onChange={(e) => setCancelReason(e.target.value)}
-              className="border w-full p-2 rounded mb-4"
-              placeholder="اكتب سبب الإلغاء..."
-            />
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setCancelModalOpen(false)}
-                className="bg-gray-400 text-white px-4 py-2 rounded"
-              >
-                إغلاق
-              </button>
-              <button
-                onClick={confirmCancelOrder}
-                className="bg-red-600 text-white px-4 py-2 rounded"
-              >
-                تأكيد الإلغاء
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
+    </div>
   );
 };
 
