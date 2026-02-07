@@ -7,6 +7,9 @@ import React, {
 } from "react";
 import { usePolling } from "../hooks/usePolling";
 
+/* ======================
+      Interfaces
+====================== */
 interface Notification {
   id: string;
   message: string;
@@ -50,7 +53,11 @@ interface AppContextType {
   actions: AppActions;
 }
 
-const AppContext = createContext<AppContextType | undefined>(undefined);
+/* ======================
+    Context Export ✅
+====================== */
+// إضافة كلمة export هنا هي المفتاح لحل خطأ "AppContext is not exported"
+export const AppContext = createContext<AppContextType | undefined>(undefined);
 
 type Action =
   | { type: "SET_STATS"; payload: Stats }
@@ -74,19 +81,15 @@ function appReducer(state: AppState, action: Action): AppState {
   switch (action.type) {
     case "SET_STATS":
       return { ...state, stats: action.payload, loading: false, error: null };
-
     case "SET_LOADING":
       return { ...state, loading: action.payload };
-
     case "SET_ERROR":
       return { ...state, error: action.payload, loading: false };
-
     case "ADD_NOTIFICATION":
       return {
         ...state,
         notifications: [...state.notifications, action.payload],
       };
-
     case "HIDE_NOTIFICATION":
       return {
         ...state,
@@ -94,18 +97,18 @@ function appReducer(state: AppState, action: Action): AppState {
           n.id === action.payload ? { ...n, isVisible: false } : n
         ),
       };
-
     case "TOGGLE_REAL_TIME_UPDATES":
       return { ...state, realTimeUpdates: !state.realTimeUpdates };
-
     case "SET_USER":
       return { ...state, user: action.payload };
-
     default:
       return state;
   }
 }
 
+/* ======================
+      Provider
+====================== */
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(appReducer, initialState);
 
@@ -113,10 +116,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     loadStats: async () => {
       try {
         const api = await import("../services/api");
-
-        const hasGetStats = Boolean(
-          (api.default as any)?.admin?.getStatistics
-        );
+        const hasGetStats = Boolean((api.default as any)?.admin?.getStatistics);
 
         if (hasGetStats) {
           const response = await (api.default as any).admin.getStatistics();
@@ -134,11 +134,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           averageDeliveryTime: 28,
           dailyTarget: 200,
         };
-
         dispatch({ type: "SET_STATS", payload: mockStats });
       } catch (error) {
         console.error("Error loading stats:", error);
-
         const mockStats: Stats = {
           totalOrders: 0,
           activeCustomers: 0,
@@ -147,7 +145,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           averageDeliveryTime: 28,
           dailyTarget: 200,
         };
-
         dispatch({ type: "SET_STATS", payload: mockStats });
       }
     },
@@ -171,9 +168,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         timestamp: new Date(),
         isVisible: true,
       };
-
       dispatch({ type: "ADD_NOTIFICATION", payload: notification });
-
       setTimeout(() => {
         dispatch({ type: "HIDE_NOTIFICATION", payload: notification.id });
       }, 5000);
@@ -189,7 +184,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   useEffect(() => {
-    // تحميل المستخدم الحقيقي من localStorage
     const userStr = localStorage.getItem("user");
     if (userStr) {
       try {
@@ -199,7 +193,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         dispatch({ type: "SET_USER", payload: null });
       }
     }
-
     actions.loadStats();
   }, []);
 
@@ -219,6 +212,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   );
 };
 
+/* ======================
+      Hook
+====================== */
 export const useApp = () => {
   const context = useContext(AppContext);
   if (context === undefined) {
