@@ -47,7 +47,7 @@ const ManualOrders: React.FC = () => {
     try {
       setLoading(true);
       const [ordersRes, custRes, accRes] = await Promise.all([
-        api.get("/wassel-orders/manual-list"),
+        api.get("/wassel-orders/manual/manual-list");
         api.get("/customers"),
         api.get("/accounts")
       ]);
