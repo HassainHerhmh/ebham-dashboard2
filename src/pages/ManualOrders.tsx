@@ -37,7 +37,7 @@ const ManualOrders: React.FC = () => {
     to_address: "",
     delivery_fee: 0,
     notes: "",
-    payment_method: "cod", 
+    payment_method: "cod", // القيمة الافتراضية
   });
 
   /* ======================
@@ -128,7 +128,7 @@ const ManualOrders: React.FC = () => {
           </div>
           <div>
             <h1 className="text-xl font-black text-gray-800 dark:text-white uppercase">✍️ الطلبات اليدوية</h1>
-            <p className="text-[10px] text-gray-400 font-bold tracking-tighter">إضافة وتتبع المشتريات المباشرة للعملاء</p>
+            <p className="text-[10px] text-gray-400 font-bold">إضافة وتتبع المشتريات المباشرة للعملاء</p>
           </div>
         </div>
 
@@ -199,6 +199,9 @@ const ManualOrders: React.FC = () => {
               ))}
             </tbody>
           </table>
+          {orders.length === 0 && !loading && (
+            <div className="p-20 text-center text-gray-300 dark:text-gray-600 font-bold italic">لا توجد طلبات يدوية مسجلة</div>
+          )}
         </div>
       </div>
 
@@ -214,8 +217,8 @@ const ManualOrders: React.FC = () => {
                   <ShoppingCart size={24}/>
                 </div>
                 <div>
-                  <h2 className="text-xl font-black dark:text-white">تسجيل طلب يدوي جديد</h2>
-                  <p className="text-[10px] text-gray-400 font-bold italic tracking-tighter">يتم اختيار العميل المسجل مسبقاً وتحديد عناصره يدوياً</p>
+                  <h2 className="text-xl font-black dark:text-white">تسجيل طلب يدوي (منتجات متعددة)</h2>
+                  <p className="text-[10px] text-gray-400 font-bold italic tracking-tighter">يتم اختيار العميل المسجل وتحديد بيانات الطلب</p>
                 </div>
               </div>
               <button onClick={() => setShowModal(false)} className="p-3 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20 rounded-2xl transition-all dark:text-gray-400"><X size={24}/></button>
@@ -229,40 +232,41 @@ const ManualOrders: React.FC = () => {
                   <h3 className="text-sm font-black border-b dark:border-gray-700 pb-3 flex items-center gap-2"><FileText size={18} className="text-orange-500"/> بيانات الفاتورة</h3>
                   
                   <div>
-                    <label className="text-[11px] font-black text-gray-400 mb-2 block">العميل (من قاعدة البيانات)</label>
-                    <select className="custom-select border-r-4 border-blue-500" value={form.customer_id} onChange={(e)=>setForm({...form, customer_id: e.target.value})}>
+                    <label className="text-[11px] font-black text-gray-400 mb-2 block uppercase tracking-wider">العميل (من قاعدة البيانات)</label>
+                    <select className="custom-select border-r-4 border-blue-500 font-bold" value={form.customer_id} onChange={(e)=>setForm({...form, customer_id: e.target.value})}>
                       <option value="">-- اختر العميل --</option>
                       {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-black text-gray-400 mb-2 block flex items-center gap-1"><LayoutList size={14}/> المحل / الوكيل اليدوي</label>
-                    <select className="custom-select border-r-4 border-orange-500" value={form.agent_id} onChange={(e)=>setForm({...form, agent_id: e.target.value})}>
+                    <label className="text-[11px] font-black text-gray-400 mb-2 block flex items-center gap-1 uppercase tracking-wider"><LayoutList size={14}/> المحل / الوكيل اليدوي</label>
+                    <select className="custom-select border-r-4 border-orange-500 font-bold" value={form.agent_id} onChange={(e)=>setForm({...form, agent_id: e.target.value})}>
                       <option value="">-- شراء مباشر (توصيل فقط) --</option>
                       {agents.map(a => <option key={a.id} value={a.id}>🛒 {a.name_ar}</option>)}
                     </select>
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-black text-gray-400 mb-2 block">العنوان المحفوظ للعميل</label>
-                    <select className="custom-select" value={form.to_address} onChange={(e)=>setForm({...form, to_address: e.target.value})}>
+                    <label className="text-[11px] font-black text-gray-400 mb-2 block uppercase tracking-wider">العنوان المحفوظ للعميل</label>
+                    <select className="custom-select font-bold" value={form.to_address} onChange={(e)=>setForm({...form, to_address: e.target.value})}>
                       <option value="">-- اختر العنوان --</option>
                       {addresses.map(a => <option key={a.id} value={a.address}>{a.address}</option>)}
                     </select>
-                    {form.customer_id && addresses.length === 0 && <p className="text-[10px] text-red-400 mt-1 font-bold">* لا يوجد عناوين مسجلة لهذا العميل</p>}
+                    {form.customer_id && addresses.length === 0 && <p className="text-[9px] text-red-500 mt-1 font-black italic">* لا يوجد عناوين مسجلة للعميل</p>}
                   </div>
 
-                  {/* 🟢 قسم وسيلة الدفع (المعدل والمطلوب) */}
+                  {/* 🟢 قسم وسيلة الدفع (المعدل كما طلبت) */}
                   <div className="pt-2">
-                    <label className="text-[13px] font-black text-[#58647a] dark:text-gray-300 mb-3 block flex items-center gap-2">
+                    <label className="text-[13px] font-black text-[#58647a] dark:text-gray-300 mb-3 block flex items-center gap-2 tracking-wider">
                         <CreditCard size={18} className="text-blue-500"/> وسيلة الدفع:
                     </label>
                     <div className="flex flex-row-reverse gap-2 overflow-hidden">
                         {/* عند الاستلام */}
                         <button 
+                            type="button"
                             onClick={() => setForm({...form, payment_method: 'cod'})}
-                            className={`flex-1 flex items-center justify-center gap-2 py-3 px-1 rounded-2xl border-2 font-black transition-all text-[10px] ${form.payment_method === 'cod' ? 'bg-[#5b51ef] border-[#5b51ef] text-white shadow-lg' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500'}`}
+                            className={`flex-1 flex items-center justify-center gap-2 py-3 px-1 rounded-2xl border-2 font-black transition-all text-[10px] ${form.payment_method === 'cod' ? 'bg-[#5b51ef] border-[#5b51ef] text-white shadow-lg shadow-indigo-500/20' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500'}`}
                         >
                             <span className="order-2 text-center leading-tight">عند الاستلام</span>
                             <Banknote size={16} className="order-1"/>
@@ -270,8 +274,9 @@ const ManualOrders: React.FC = () => {
 
                         {/* من الرصيد */}
                         <button 
+                            type="button"
                             onClick={() => setForm({...form, payment_method: 'wallet'})}
-                            className={`flex-1 flex items-center justify-center gap-2 py-3 px-1 rounded-2xl border-2 font-black transition-all text-[10px] ${form.payment_method === 'wallet' ? 'bg-[#5b51ef] border-[#5b51ef] text-white shadow-lg' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500'}`}
+                            className={`flex-1 flex items-center justify-center gap-2 py-3 px-1 rounded-2xl border-2 font-black transition-all text-[10px] ${form.payment_method === 'wallet' ? 'bg-[#5b51ef] border-[#5b51ef] text-white shadow-lg shadow-indigo-500/20' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500'}`}
                         >
                             <span className="order-2 text-center leading-tight">من الرصيد</span>
                             <Wallet size={16} className="order-1"/>
@@ -279,8 +284,9 @@ const ManualOrders: React.FC = () => {
 
                         {/* إيداع بنكي */}
                         <button 
+                            type="button"
                             onClick={() => setForm({...form, payment_method: 'bank'})}
-                            className={`flex-1 flex items-center justify-center gap-2 py-3 px-1 rounded-2xl border-2 font-black transition-all text-[10px] ${form.payment_method === 'bank' ? 'bg-[#5b51ef] border-[#5b51ef] text-white shadow-lg' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500'}`}
+                            className={`flex-1 flex items-center justify-center gap-2 py-3 px-1 rounded-2xl border-2 font-black transition-all text-[10px] ${form.payment_method === 'bank' ? 'bg-[#5b51ef] border-[#5b51ef] text-white shadow-lg shadow-indigo-500/20' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500'}`}
                         >
                             <span className="order-2 text-center leading-tight">إيداع بنكي</span>
                             <Building2 size={16} className="order-1"/>
@@ -288,8 +294,9 @@ const ManualOrders: React.FC = () => {
 
                         {/* دفع إلكتروني */}
                         <button 
+                            type="button"
                             onClick={() => setForm({...form, payment_method: 'electronic'})}
-                            className={`flex-1 flex items-center justify-center gap-2 py-3 px-1 rounded-2xl border-2 font-black transition-all text-[10px] ${form.payment_method === 'electronic' ? 'bg-[#5b51ef] border-[#5b51ef] text-white shadow-lg' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500'}`}
+                            className={`flex-1 flex items-center justify-center gap-2 py-3 px-1 rounded-2xl border-2 font-black transition-all text-[10px] ${form.payment_method === 'electronic' ? 'bg-[#5b51ef] border-[#5b51ef] text-white shadow-lg shadow-indigo-500/20' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500'}`}
                         >
                             <span className="order-2 text-center leading-tight">دفع إلكتروني</span>
                             <Globe size={16} className="order-1"/>
@@ -304,9 +311,9 @@ const ManualOrders: React.FC = () => {
                 </div>
 
                 {customerBalance && (
-                  <div className="p-5 bg-blue-600 rounded-3xl shadow-xl shadow-blue-600/20 text-white transition-all">
-                    <p className="text-[10px] font-bold opacity-80 mb-1 uppercase tracking-widest italic">الرصيد الفعلي المتاح للعميل</p>
-                    <p className="text-2xl font-black">{(Number(customerBalance.balance) + Number(customerBalance.credit_limit)).toLocaleString()} <span className="text-xs">ريال</span></p>
+                  <div className="p-5 bg-blue-600 rounded-3xl shadow-xl shadow-blue-600/20 text-white transition-all animate-pulse-slow">
+                    <p className="text-[10px] font-bold opacity-80 mb-1 uppercase tracking-widest italic text-center">الرصيد الفعلي المتاح للعميل</p>
+                    <p className="text-2xl font-black text-center">{(Number(customerBalance.balance) + Number(customerBalance.credit_limit)).toLocaleString()} <span className="text-xs">ريال</span></p>
                   </div>
                 )}
               </div>
@@ -331,9 +338,9 @@ const ManualOrders: React.FC = () => {
                       <thead className="bg-gray-50 dark:bg-gray-800 text-gray-400 text-[10px] font-black uppercase sticky top-0 z-10 border-b dark:border-gray-700">
                         <tr>
                           <th className="p-4 text-right font-black">المنتج</th>
-                          <th className="p-4 w-32 font-black">العدد</th>
-                          <th className="p-4 w-32 font-black">السعر</th>
-                          <th className="p-4 w-32 font-black text-orange-500">الإجمالي</th>
+                          <th className="p-4 w-32 font-black text-center">العدد</th>
+                          <th className="p-4 w-32 font-black text-center">السعر</th>
+                          <th className="p-4 w-32 font-black text-center text-orange-500">الإجمالي</th>
                           <th className="p-4 w-16"></th>
                         </tr>
                       </thead>
@@ -343,25 +350,31 @@ const ManualOrders: React.FC = () => {
                             <td className="p-4 font-black text-gray-700 dark:text-white">{item.name}</td>
                             <td className="p-4">
                               <div className="flex items-center justify-center gap-2 bg-gray-100 dark:bg-gray-700 p-1 rounded-xl w-fit mx-auto border dark:border-gray-600">
-                                <button onClick={()=>updateItem(index, 'qty', Math.max(1, item.qty-1))} className="w-7 h-7 bg-white dark:bg-gray-600 rounded-lg shadow-sm font-black dark:text-white">-</button>
+                                <button type="button" onClick={()=>updateItem(index, 'qty', Math.max(1, item.qty-1))} className="w-7 h-7 bg-white dark:bg-gray-600 rounded-lg shadow-sm font-black dark:text-white">-</button>
                                 <span className="w-6 text-center font-black dark:text-white text-xs">{item.qty}</span>
-                                <button onClick={()=>updateItem(index, 'qty', item.qty+1)} className="w-7 h-7 bg-white dark:bg-gray-600 rounded-lg shadow-sm font-black dark:text-white">+</button>
+                                <button type="button" onClick={()=>updateItem(index, 'qty', item.qty+1)} className="w-7 h-7 bg-white dark:bg-gray-600 rounded-lg shadow-sm font-black dark:text-white">+</button>
                               </div>
                             </td>
-                            <td className="p-4">
+                            <td className="p-4 text-center">
                               <input 
                                 type="number" 
-                                className="w-full p-2 bg-white dark:bg-gray-700 border dark:border-gray-600 rounded-xl text-center font-black text-green-600 outline-none focus:ring-1 ring-green-500 shadow-sm" 
+                                className="w-24 p-2 bg-white dark:bg-gray-700 border dark:border-gray-600 rounded-xl text-center font-black text-green-600 outline-none focus:ring-1 ring-green-500 shadow-sm" 
                                 value={item.price} 
                                 onChange={(e)=>updateItem(index, 'price', Number(e.target.value))} 
                               />
                             </td>
-                            <td className="p-4 font-black text-orange-600">{(item.qty * item.price).toLocaleString()}</td>
-                            <td className="p-4"><button onClick={()=>removeItem(index)} className="text-gray-300 hover:text-red-500 transition-all transform group-hover:scale-110"><Trash2 size={18}/></button></td>
+                            <td className="p-4 font-black text-orange-600 text-center">{(item.qty * item.price).toLocaleString()}</td>
+                            <td className="p-4 text-center"><button onClick={()=>removeItem(index)} className="text-gray-300 hover:text-red-500 transition-all transform group-hover:scale-110"><Trash2 size={18}/></button></td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
+                    {items.length === 0 && (
+                      <div className="flex flex-col items-center justify-center h-full text-gray-300 py-20 italic">
+                        <ShoppingCart size={40} className="mb-2 opacity-20" />
+                        <p className="font-bold tracking-tighter">قائمة المشتريات فارغة</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -382,8 +395,12 @@ const ManualOrders: React.FC = () => {
               </div>
               <div className="flex gap-3">
                 <button onClick={()=>setShowModal(false)} className="px-8 py-3 text-gray-400 font-black hover:text-red-500 transition-all text-xs uppercase tracking-widest">إلغاء</button>
-                <button onClick={saveOrder} disabled={items.length===0} className="bg-green-600 text-white px-12 py-4 rounded-3xl font-black hover:bg-green-700 transition-all shadow-2xl shadow-green-600/30 disabled:bg-gray-200 disabled:shadow-none flex items-center gap-3">
-                  <Save size={20}/> اعتماد الطلب اليدوي
+                <button 
+                  onClick={saveOrder} 
+                  disabled={items.length===0} 
+                  className="bg-green-600 text-white px-12 py-4 rounded-3xl font-black hover:bg-green-700 transition-all shadow-2xl shadow-green-600/30 disabled:bg-gray-200 disabled:shadow-none flex items-center gap-3"
+                >
+                  <Save size={20}/> اعتماد وحفظ الطلب
                 </button>
               </div>
             </div>
@@ -419,6 +436,7 @@ const ManualOrders: React.FC = () => {
           to { opacity: 1; transform: scale(1); }
         }
         .animate-in { animation: fadeIn 0.25s ease-out; }
+        .animate-pulse-slow { animation: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
       `}</style>
     </div>
   );
