@@ -63,8 +63,6 @@ const PaymentsWallet: React.FC = () => {
 
     const [c1, c2, c3, c4, c5, c6] = await Promise.all([
       
-    console.log("Currencies:", c6.data);
-
       api.get("/customers"),
       (api as any).accounts.getAccounts(),
       api.get("/customer-guarantees", config),
