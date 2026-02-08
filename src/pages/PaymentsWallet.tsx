@@ -552,70 +552,7 @@ const PaymentsWallet: React.FC = () => {
     </div>
   </div>
 )}
-            </option>
-              ))}
-            </select>
-
-            <div className="flex justify-around bg-gray-50 p-2 rounded">
-              {["cash", "bank"].map((t) => (
-                <label key={t}>
-                  <input
-                    type="radio"
-                    checked={addAmountType === t}
-                    onChange={() =>
-                      setAddAmountType(t as any)
-                    }
-                  />{" "}
-                  {t === "cash" ? "نقدي" : "بنكي"}
-                </label>
-              ))}
-            </div>
-
-            <select
-              className="border p-3 w-full rounded"
-              value={selectedAccountId}
-              onChange={(e) =>
-                setSelectedAccountId(e.target.value)
-              }
-            >
-              <option value="">اختر الحساب</option>
-
-              {(addAmountType === "cash"
-                ? cashBoxes
-                : banks
-              ).map((a: any) => (
-                <option key={a.id} value={a.id}>
-                  {a.name_ar}
-                </option>
-              ))}
-            </select>
-
-            <input
-              type="number"
-              className="border p-3 w-full rounded"
-              placeholder="المبلغ"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-            />
-
-            <div className="flex justify-end gap-2 pt-3">
-              <button
-                onClick={() => setShowAddAmountModal(false)}
-              >
-                إلغاء
-              </button>
-
-              <button
-                onClick={addAmount}
-                className="bg-green-600 text-white px-6 py-2 rounded"
-              >
-                إضافة
-              </button>
-            </div>
-
-          </div>
-        </div>
-      )}
+           
     </div>
   );
 };
