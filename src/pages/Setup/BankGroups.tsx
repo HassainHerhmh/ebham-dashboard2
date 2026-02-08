@@ -22,10 +22,12 @@ const BankGroups: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
 
+  // ✅ الرقم التلقائي
+  const [autoCode, setAutoCode] = useState("");
+
   const [form, setForm] = useState({
     name_ar: "",
     name_en: "",
-    code: "",
   });
 
   /* =========================
@@ -45,27 +47,62 @@ const BankGroups: React.FC = () => {
   }, [search]);
 
   /* =========================
+     Get Auto Code
+  ========================= */
+  const loadNextCode = async () => {
+    try {
+      const res = await api.get("/bank-groups/next-code");
+
+      if (res.data?.success) {
+        setAutoCode(String(res.data.nextCode));
+      }
+    } catch (err) {
+      console.error("Load next code error:", err);
+    }
+  };
+
+  /* =========================
      Reset Form
   ========================= */
   const resetForm = () => {
-    setForm({ name_ar: "", name_en: "", code: "" });
+    setForm({
+      name_ar: "",
+      name_en: "",
+    });
+
+    setAutoCode("");
     setEditId(null);
+  };
+
+  /* =========================
+     Open Add
+  ========================= */
+  const openAdd = async () => {
+    resetForm();
+    await loadNextCode();
+    setShowModal(true);
   };
 
   /* =========================
      Add / Edit
   ========================= */
   const handleSubmit = async () => {
-    if (!form.name_ar || !form.code) {
-      alert("الاسم والرقم مطلوبان");
+    if (!form.name_ar) {
+      alert("الاسم مطلوب");
       return;
     }
 
     try {
       if (editId) {
-        await api.put(`/bank-groups/${editId}`, form);
+        await api.put(`/bank-groups/${editId}`, {
+          ...form,
+          code: autoCode,
+        });
       } else {
-        await api.post("/bank-groups", form);
+        await api.post("/bank-groups", {
+          ...form,
+          code: autoCode,
+        });
       }
 
       setShowModal(false);
@@ -82,11 +119,14 @@ const BankGroups: React.FC = () => {
   ========================= */
   const handleEdit = (g: BankGroup) => {
     setEditId(g.id);
+
     setForm({
       name_ar: g.name_ar,
       name_en: g.name_en || "",
-      code: g.code,
     });
+
+    setAutoCode(g.code);
+
     setShowModal(true);
   };
 
@@ -154,10 +194,7 @@ const BankGroups: React.FC = () => {
 
         <div className="flex gap-2">
           <button
-            onClick={() => {
-              resetForm();
-              setShowModal(true);
-            }}
+            onClick={openAdd}
             className="rounded-lg bg-green-700 px-4 py-2 text-white"
           >
             ➕ إضافة
@@ -205,9 +242,8 @@ const BankGroups: React.FC = () => {
                 <td className="border px-3 py-2">{g.name_en || "-"}</td>
                 <td className="border px-3 py-2 text-center">{g.code}</td>
                 <td className="border px-3 py-2">{g.user_name || "-"}</td>
-                <td className="border px-3 py-2">
-                  {g.branch || "—"}
-                </td>
+                <td className="border px-3 py-2">{g.branch || "—"}</td>
+
                 <td className="border px-3 py-2 text-center">
                   <div className="flex justify-center gap-2">
                     <button
@@ -216,6 +252,7 @@ const BankGroups: React.FC = () => {
                     >
                       ✏️
                     </button>
+
                     <button
                       onClick={() => handleDelete(g.id)}
                       className="text-red-600 hover:text-red-800"
@@ -241,14 +278,17 @@ const BankGroups: React.FC = () => {
         </table>
       </div>
 
+      {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="w-full max-w-md rounded-xl bg-[#eef4ee] p-6">
+
             <h2 className="mb-4 text-center text-xl font-bold">
               {editId ? "تعديل مجموعة بنك" : "إضافة مجموعة بنك"}
             </h2>
 
             <div className="space-y-3">
+
               <input
                 placeholder="الاسم"
                 className="w-full rounded-lg border px-3 py-2"
@@ -257,6 +297,7 @@ const BankGroups: React.FC = () => {
                   setForm({ ...form, name_ar: e.target.value })
                 }
               />
+
               <input
                 placeholder="الاسم الأجنبي"
                 className="w-full rounded-lg border px-3 py-2"
@@ -265,18 +306,19 @@ const BankGroups: React.FC = () => {
                   setForm({ ...form, name_en: e.target.value })
                 }
               />
+
+              {/* الرقم التلقائي */}
               <input
-                placeholder="الرقم"
-                className="w-full rounded-lg border px-3 py-2"
-                value={form.code}
-                onChange={(e) =>
-                  setForm({ ...form, code: e.target.value })
-                }
+                disabled
+                className="w-full rounded-lg border bg-gray-100 px-3 py-2 text-gray-600"
+                value={autoCode}
+                placeholder="رقم تلقائي"
               />
             </div>
 
             <div className="mt-6 flex justify-between">
               <button onClick={() => setShowModal(false)}>إلغاء</button>
+
               <button
                 onClick={handleSubmit}
                 className="rounded-lg bg-green-700 px-6 py-2 text-white"
@@ -287,6 +329,7 @@ const BankGroups: React.FC = () => {
           </div>
         </div>
       )}
+
     </div>
   );
 };
