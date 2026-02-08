@@ -4,415 +4,416 @@ import { Plus, Edit, MapPin, DollarSign, UserCheck, Truck, CreditCard, Wallet, L
 import { useNavigate, useLocation } from "react-router-dom";
 
 /* ======================
-   Types
+    Types
 ====================== */
 interface WasselOrder {
-  id: number;
-  customer_name: string;
-  customer_id?: number;
-  order_type: string;
-  from_address_id?: number;
-  to_address_id?: number;
-  from_address: string;
-  from_lat?: number | string;
-  from_lng?: number | string;
-  to_address: string;
-  to_lat?: number | string;
-  to_lng?: number | string;
-  delivery_fee: number;
-  extra_fee: number;
-  notes?: string;
-  status: string;
-  payment_method: string;
-  created_at: string;
-  captain_name?: string;
-  creator_name?: string; 
-  updater_name?: string; 
+  id: number;
+  customer_name: string;
+  customer_id?: number;
+  order_type: string;
+  from_address_id?: number;
+  to_address_id?: number;
+  from_address: string;
+  from_lat?: number | string;
+  from_lng?: number | string;
+  to_address: string;
+  to_lat?: number | string;
+  to_lng?: number | string;
+  delivery_fee: number;
+  extra_fee: number;
+  notes?: string;
+  status: string;
+  payment_method: string;
+  created_at: string;
+  captain_name?: string;
+  creator_name?: string; 
+  updater_name?: string; 
 }
 
 interface Captain {
-  id: number;
-  name: string;
-  pending_orders: number;
-  completed_today: number;
+  id: number;
+  name: string;
+  pending_orders: number;
+  completed_today: number;
 }
 
 type OrderTab = "pending" | "processing" | "delivering" | "completed" | "cancelled";
 type DateFilter = "all" | "today" | "week";
 
 const WasselOrders: React.FC = () => {
-  const [orders, setOrders] = useState<WasselOrder[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
-  const [editingOrder, setEditingOrder] = useState<WasselOrder | null>(null);
-  const [customers, setCustomers] = useState<any[]>([]);
-  const [addresses, setAddresses] = useState<any[]>([]);
-  const [banks, setBanks] = useState<any[]>([]);
-  const [customerBalance, setCustomerBalance] = useState<{current_balance: number, credit_limit: number} | null>(null);
-  
-  const navigate = useNavigate();
-  const location = useLocation();
+  const [orders, setOrders] = useState<WasselOrder[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [editingOrder, setEditingOrder] = useState<WasselOrder | null>(null);
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [addresses, setAddresses] = useState<any[]>([]);
+  const [banks, setBanks] = useState<any[]>([]);
+  const [customerBalance, setCustomerBalance] = useState<{current_balance: number, credit_limit: number} | null>(null);
+  
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  const [activeTab, setActiveTab] = useState<OrderTab>("pending");
-  const [dateFilter, setDateFilter] = useState<DateFilter>("today");
+  const [activeTab, setActiveTab] = useState<OrderTab>("pending");
+  const [dateFilter, setDateFilter] = useState<DateFilter>("today");
 
-  const [captains, setCaptains] = useState<Captain[]>([]);
-  const [captainsLoading, setCaptainsLoading] = useState(false);
-  const [isCaptainModalOpen, setIsCaptainModalOpen] = useState(false);
-  const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+  const [captains, setCaptains] = useState<Captain[]>([]);
+  const [captainsLoading, setCaptainsLoading] = useState(false);
+  const [isCaptainModalOpen, setIsCaptainModalOpen] = useState(false);
+  const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
 
-  const [fromMode, setFromMode] = useState<"saved" | "map">("saved");
-  const [toMode, setToMode] = useState<"saved" | "map">("saved");
+  const [fromMode, setFromMode] = useState<"saved" | "map">("saved");
+  const [toMode, setToMode] = useState<"saved" | "map">("saved");
 
-  const [form, setForm] = useState<any>({
-    customer_id: "", order_type: "", from_address_id: "", to_address_id: "",
-    from_address: "", from_lat: null, from_lng: null,
-    to_address: "", to_lat: null, to_lng: null,
-    delivery_fee: 0, extra_fee: 0, notes: "",
-    payment_method: "cod",
-    bank_id: ""
-  });
+  const [form, setForm] = useState<any>({
+    customer_id: "", order_type: "", from_address_id: "", to_address_id: "",
+    from_address: "", from_lat: null, from_lng: null,
+    to_address: "", to_lat: null, to_lng: null,
+    delivery_fee: 0, extra_fee: 0, notes: "",
+    payment_method: "cod",
+    bank_id: ""
+  });
 
-  /* ======================
-     الخريطة والمسودة
-  ====================== */
-  useEffect(() => {
-    const state = location.state as any;
-    const draft = sessionStorage.getItem("wassel_form_draft");
+  /* ======================
+      الخريطة والمسودة
+  ====================== */
+  useEffect(() => {
+    const state = location.state as any;
+    const draft = sessionStorage.getItem("wassel_form_draft");
 
-    if (state?.from === "map") {
-      let baseForm = { ...form };
-      if (draft) { try { baseForm = JSON.parse(draft); } catch (e) {} }
+    if (state?.from === "map") {
+      let baseForm = { ...form };
+      if (draft) { try { baseForm = JSON.parse(draft); } catch (e) {} }
 
-      const updatedForm = { ...baseForm };
-      if (state.target === "from") {
-        setFromMode("map");
-        updatedForm.from_address = state.value || "موقع من الخريطة";
-        updatedForm.from_lat = state.lat;
-        updatedForm.from_lng = state.lng;
-        updatedForm.from_address_id = null;
-      } else if (state.target === "to") {
-        setToMode("map");
-        updatedForm.to_address = state.value || "موقع من الخريطة";
-        updatedForm.to_lat = state.lat;
-        updatedForm.to_lng = state.lng;
-        updatedForm.to_address_id = null;
-      }
+      const updatedForm = { ...baseForm };
+      if (state.target === "from") {
+        setFromMode("map");
+        updatedForm.from_address = state.value || "موقع من الخريطة";
+        updatedForm.from_lat = state.lat;
+        updatedForm.from_lng = state.lng;
+        updatedForm.from_address_id = null;
+      } else if (state.target === "to") {
+        setToMode("map");
+        updatedForm.to_address = state.value || "موقع من الخريطة";
+        updatedForm.to_lat = state.lat;
+        updatedForm.to_lng = state.lng;
+        updatedForm.to_address_id = null;
+      }
 
-      setForm(updatedForm);
-      setShowModal(true);
-      sessionStorage.removeItem("wassel_form_draft");
-      navigate(location.pathname, { replace: true, state: {} });
-    }
-  }, [location.state]);
+      setForm(updatedForm);
+      setShowModal(true);
+      sessionStorage.removeItem("wassel_form_draft");
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state]);
 
-  /* ======================
-     الفلترة والبيانات
-  ====================== */
-  const getFilteredByDateList = (list: WasselOrder[]) => {
-    const now = new Date();
-    const todayStr = now.toLocaleDateString('en-CA');
+  /* ======================
+      الفلترة والبيانات
+  ====================== */
+  const getFilteredByDateList = (list: WasselOrder[]) => {
+    const now = new Date();
+    const todayStr = now.toLocaleDateString('en-CA');
 
-    return list.filter((o) => {
-      const orderDate = new Date(o.created_at);
-      const orderDateStr = orderDate.toLocaleDateString('en-CA');
+    return list.filter((o) => {
+      const orderDate = new Date(o.created_at);
+      const orderDateStr = orderDate.toLocaleDateString('en-CA');
 
-      if (dateFilter === "today") return orderDateStr === todayStr;
-      if (dateFilter === "week") {
-        const weekAgo = new Date();
-        weekAgo.setDate(now.getDate() - 7);
-        weekAgo.setHours(0, 0, 0, 0);
-        return orderDate >= weekAgo;
-      }
-      return true;
-    });
-  };
+      if (dateFilter === "today") return orderDateStr === todayStr;
+      if (dateFilter === "week") {
+        const weekAgo = new Date();
+        weekAgo.setDate(now.getDate() - 7);
+        weekAgo.setHours(0, 0, 0, 0);
+        return orderDate >= weekAgo;
+      }
+      return true;
+    });
+  };
 
-  const dateFilteredOrders = getFilteredByDateList(orders);
+  const dateFilteredOrders = getFilteredByDateList(orders);
 
-  const counts = {
-    pending: dateFilteredOrders.filter(o => o.status === "pending").length,
-    processing: dateFilteredOrders.filter(o => ["confirmed", "preparing", "ready"].includes(o.status)).length,
-    delivering: dateFilteredOrders.filter(o => o.status === "delivering").length,
-    completed: dateFilteredOrders.filter(o => o.status === "completed").length,
-    cancelled: dateFilteredOrders.filter(o => o.status === "cancelled").length,
-  };
+  const counts = {
+    pending: dateFilteredOrders.filter(o => o.status === "pending").length,
+    processing: dateFilteredOrders.filter(o => ["confirmed", "preparing", "ready"].includes(o.status)).length,
+    delivering: dateFilteredOrders.filter(o => o.status === "delivering").length,
+    completed: dateFilteredOrders.filter(o => o.status === "completed").length,
+    cancelled: dateFilteredOrders.filter(o => o.status === "cancelled").length,
+  };
 
-  const visibleOrders = dateFilteredOrders.filter(o => {
-    switch (activeTab) {
-      case "pending": return o.status === "pending";
-      case "processing": return ["confirmed", "preparing", "ready"].includes(o.status);
-      case "delivering": return o.status === "delivering";
-      case "completed": return o.status === "completed";
-      case "cancelled": return o.status === "cancelled";
-      default: return true;
-    }
-  });
+  const visibleOrders = dateFilteredOrders.filter(o => {
+    switch (activeTab) {
+      case "pending": return o.status === "pending";
+      case "processing": return ["confirmed", "preparing", "ready"].includes(o.status);
+      case "delivering": return o.status === "delivering";
+      case "completed": return o.status === "completed";
+      case "cancelled": return o.status === "cancelled";
+      default: return true;
+    }
+  });
 
-  const loadOrders = async () => {
-    try {
-      setLoading(true);
-      const res = await api.get("/wassel-orders");
-      setOrders(res.data?.orders || []);
-    } catch (e) { console.error(e); } finally { setLoading(false); }
-  };
+  const loadOrders = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get("/wassel-orders");
+      setOrders(res.data?.orders || []);
+    } catch (e) { console.error(e); } finally { setLoading(false); }
+  };
 
-  const fetchCustomerWallet = async (customerId: number) => {
-    try {
-      const res = await api.get(`/customer-guarantees/${customerId}/balance`);
-      setCustomerBalance({
-        current_balance: Number(res.data?.balance || 0),
-        credit_limit: Number(res.data?.credit_limit || 0)
-      });
-    } catch (e) { console.error("Error fetching wallet", e); }
-  };
+  const fetchCustomerWallet = async (customerId: number) => {
+    try {
+      // ✅ تم تعديل المسار ليتوافق مع الـ Backend الجديد الذي يدعم الأرصدة المحاسبية
+      const res = await api.get(`/customer-guarantees/${customerId}/balance`);
+      setCustomerBalance({
+        current_balance: Number(res.data?.balance || 0),
+        credit_limit: Number(res.data?.credit_limit || 0)
+      });
+    } catch (e) { 
+      console.error("Error fetching wallet", e); 
+      setCustomerBalance(null);
+    }
+  };
 
-  useEffect(() => {
-    loadOrders();
-    api.get("/customers").then(res => setCustomers(res.data.customers || []));
-    api.get("/wassel-orders/banks").then(res => setBanks(res.data.banks || []));
-  }, []);
+  useEffect(() => {
+    loadOrders();
+    api.get("/customers").then(res => setCustomers(res.data.customers || []));
+    api.get("/wassel-orders/banks").then(res => setBanks(res.data.banks || []));
+  }, []);
 
-  useEffect(() => {
-    if (form.customer_id) {
-      api.get(`/customer-addresses/customer/${form.customer_id}`).then(res => setAddresses(res.data.addresses || []));
-      fetchCustomerWallet(Number(form.customer_id));
-    } else {
-      setCustomerBalance(null);
-    }
-  }, [form.customer_id]);
+  useEffect(() => {
+    if (form.customer_id) {
+      setAddresses([]);
+      api.get(`/customer-addresses/customer/${form.customer_id}`).then(res => setAddresses(res.data.addresses || []));
+      fetchCustomerWallet(Number(form.customer_id));
+    } else {
+      setCustomerBalance(null);
+    }
+  }, [form.customer_id]);
 
-  /* ======================
-     Handlers
-  ====================== */
-  const openCaptainModal = (orderId: number) => {
-    setSelectedOrderId(orderId);
-    setIsCaptainModalOpen(true);
-    setCaptainsLoading(true);
-    api.get("/captains").then(res => {
-      setCaptains(res.data.captains || []);
-      setCaptainsLoading(false);
-    });
-  };
+  /* ======================
+      Handlers
+  ====================== */
+  const openCaptainModal = (orderId: number) => {
+    setSelectedOrderId(orderId);
+    setIsCaptainModalOpen(true);
+    setCaptainsLoading(true);
+    api.get("/captains").then(res => {
+      setCaptains(res.data.captains || []);
+      setCaptainsLoading(false);
+    });
+  };
 
-  const assignCaptain = async (captainId: number) => {
-    if (!selectedOrderId) return;
-    try {
-      const res = await api.post("/wassel-orders/assign", { orderId: selectedOrderId, captainId });
-      if (res.data.success) {
-        setIsCaptainModalOpen(false);
-        loadOrders();
-      }
-    } catch (e) { alert("حدث خطأ في الإسناد"); }
-  };
+  const assignCaptain = async (captainId: number) => {
+    if (!selectedOrderId) return;
+    try {
+      const res = await api.post("/wassel-orders/assign", { orderId: selectedOrderId, captainId });
+      if (res.data.success) {
+        setIsCaptainModalOpen(false);
+        loadOrders();
+      }
+    } catch (e) { alert("حدث خطأ في الإسناد"); }
+  };
 
-  const updateOrderStatus = async (orderId: number, newStatus: string) => {
-    try {
-      await api.put(`/wassel-orders/status/${orderId}`, { status: newStatus });
-      loadOrders();
-    } catch (e) {}
-  };
+  const updateOrderStatus = async (orderId: number, newStatus: string) => {
+    try {
+      await api.put(`/wassel-orders/status/${orderId}`, { status: newStatus });
+      loadOrders();
+    } catch (e) {}
+  };
 
-  const openAdd = () => {
-    setEditingOrder(null);
-    setFromMode("saved"); setToMode("saved");
-    setForm({
-      customer_id: "", order_type: "", from_address_id: "", to_address_id: "",
-      from_address: "", from_lat: null, from_lng: null,
-      to_address: "", to_lat: null, to_lng: null,
-      delivery_fee: 0, extra_fee: 0, notes: "",
-      payment_method: "cod",
-      bank_id: ""
-    });
-    setShowModal(true);
-  };
+  const openAdd = () => {
+    setEditingOrder(null);
+    setFromMode("saved"); setToMode("saved");
+    setForm({
+      customer_id: "", order_type: "", from_address_id: "", to_address_id: "",
+      from_address: "", from_lat: null, from_lng: null,
+      to_address: "", to_lat: null, to_lng: null,
+      delivery_fee: 0, extra_fee: 0, notes: "",
+      payment_method: "cod",
+      bank_id: ""
+    });
+    setShowModal(true);
+  };
 
-  const openEdit = (o: WasselOrder) => {
-    setEditingOrder(o);
-    setFromMode(o.from_address_id ? "saved" : "map");
-    setToMode(o.to_address_id ? "saved" : "map");
-    setForm({
-      customer_id: o.customer_id || "", order_type: o.order_type,
-      from_address_id: o.from_address_id || "", to_address_id: o.to_address_id || "",
-      from_address: o.from_address, from_lat: o.from_lat, from_lng: o.from_lng,
-      to_address: o.to_address, to_lat: o.to_lat, to_lng: o.to_lng,
-      delivery_fee: o.delivery_fee || 0, extra_fee: o.extra_fee || 0, notes: o.notes || "",
-      payment_method: o.payment_method || "cod",
-      bank_id: ""
-    });
-    setShowModal(true);
-  };
+  const openEdit = (o: WasselOrder) => {
+    setEditingOrder(o);
+    setFromMode(o.from_address_id ? "saved" : "map");
+    setToMode(o.to_address_id ? "saved" : "map");
+    setForm({
+      customer_id: o.customer_id || "", order_type: o.order_type,
+      from_address_id: o.from_address_id || "", to_address_id: o.to_address_id || "",
+      from_address: o.from_address, from_lat: o.from_lat, from_lng: o.from_lng,
+      to_address: o.to_address, to_lat: o.to_lat, to_lng: o.to_lng,
+      delivery_fee: o.delivery_fee || 0, extra_fee: o.extra_fee || 0, notes: o.notes || "",
+      payment_method: o.payment_method || "cod",
+      bank_id: ""
+    });
+    setShowModal(true);
+  };
 
-  const goToMap = (target: "from" | "to") => {
-    sessionStorage.setItem("wassel_form_draft", JSON.stringify(form));
-    navigate("/map-picker", { state: { target, returnTo: "/orders/wassel" } });
-  };
+  const goToMap = (target: "from" | "to") => {
+    sessionStorage.setItem("wassel_form_draft", JSON.stringify(form));
+    navigate("/map-picker", { state: { target, returnTo: "/orders/wassel" } });
+  };
 
-  const saveOrder = async () => {
-    try {
-      if (!form.customer_id || !form.order_type || !form.from_address || !form.to_address) return alert("أكمل البيانات");
-      
-      const totalAmount = Number(form.delivery_fee) + Number(form.extra_fee);
+  const saveOrder = async () => {
+    try {
+      if (!form.customer_id || !form.order_type || !form.from_address || !form.to_address) return alert("أكمل البيانات");
+      
+      const totalAmount = Number(form.delivery_fee) + Number(form.extra_fee);
 
-      // ✅ التحقق الصارم من الرصيد والسقف عند اختيار الدفع من الرصيد
-      if (form.payment_method === 'wallet') {
-        if (!customerBalance) return alert("جاري التحقق من رصيد العميل...");
-        const available = Number(customerBalance.current_balance) + Number(customerBalance.credit_limit);
-        if (totalAmount > available) {
-          return alert(`عذراً، الرصيد غير كافٍ. المتاح (مع السقف): ${available.toLocaleString()} ريال. العجز: ${(totalAmount - available).toLocaleString()} ريال`);
-        }
-      }
+      if (form.payment_method === 'wallet') {
+        if (!customerBalance) return alert("جاري التحقق من رصيد العميل...");
+        const available = Number(customerBalance.current_balance) + Number(customerBalance.credit_limit);
+        if (totalAmount > available) {
+          return alert(`عذراً، الرصيد غير كافٍ. المتاح (مع السقف): ${available.toLocaleString()} ريال. العجز: ${(totalAmount - available).toLocaleString()} ريال`);
+        }
+      }
 
-      // ✅ التحقق من اختيار البنك عند اختيار إيداع بنكي
-      if (form.payment_method === 'bank' && !form.bank_id) {
-        return alert("يرجى اختيار البنك المحول إليه");
-      }
+      if (form.payment_method === 'bank' && !form.bank_id) {
+        return alert("يرجى اختيار البنك المحول إليه");
+      }
 
-      const payload = { 
-        ...form, 
-        delivery_fee: Number(form.delivery_fee), extra_fee: Number(form.extra_fee),
-        from_address_id: fromMode === "map" ? null : form.from_address_id,
-        to_address_id: toMode === "map" ? null : form.to_address_id,
-      };
+      const payload = { 
+        ...form, 
+        delivery_fee: Number(form.delivery_fee), extra_fee: Number(form.extra_fee),
+        from_address_id: fromMode === "map" ? null : form.from_address_id,
+        to_address_id: toMode === "map" ? null : form.to_address_id,
+      };
 
-      if (editingOrder) await api.put(`/wassel-orders/${editingOrder.id}`, payload);
-      else await api.post("/wassel-orders", payload);
-      setShowModal(false); loadOrders();
-    } catch (e: any) {
-      alert(e.response?.data?.message || "حدث خطأ أثناء الحفظ");
-    }
-  };
+      if (editingOrder) await api.put(`/wassel-orders/${editingOrder.id}`, payload);
+      else await api.post("/wassel-orders", payload);
+      setShowModal(false); loadOrders();
+    } catch (e: any) {
+      alert(e.response?.data?.message || "حدث خطأ أثناء الحفظ");
+    }
+  };
 
-  const renderActions = (o: WasselOrder) => {
-    if (activeTab === "pending") return <button onClick={() => updateOrderStatus(o.id, "confirmed")} className="bg-green-600 text-white px-2 py-1 rounded text-xs hover:bg-green-700">إعتماد</button>;
-    
-    if (activeTab === "processing") return (
-      <div className="flex gap-1 justify-center">
-         <button onClick={() => openCaptainModal(o.id)} className="bg-indigo-600 text-white px-2 py-1 rounded text-xs flex items-center gap-1 hover:bg-indigo-700"><UserCheck size={12}/> كابتن</button>
-         <button onClick={() => updateOrderStatus(o.id, "delivering")} className="bg-orange-600 text-white px-2 py-1 rounded text-xs flex items-center gap-1 hover:bg-orange-700"><Truck size={12}/> توصيل</button>
-      </div>
-    );
+  const renderActions = (o: WasselOrder) => {
+    if (activeTab === "pending") return <button onClick={() => updateOrderStatus(o.id, "confirmed")} className="bg-green-600 text-white px-2 py-1 rounded text-xs hover:bg-green-700 transition shadow-sm">إعتماد</button>;
+    
+    if (activeTab === "processing") return (
+      <div className="flex gap-1 justify-center">
+         <button onClick={() => openCaptainModal(o.id)} className="bg-indigo-600 text-white px-2 py-1 rounded text-xs flex items-center gap-1 hover:bg-indigo-700 transition shadow-sm"><UserCheck size={12}/> كابتن</button>
+         <button onClick={() => updateOrderStatus(o.id, "delivering")} className="bg-orange-600 text-white px-2 py-1 rounded text-xs flex items-center gap-1 hover:bg-orange-700 transition shadow-sm"><Truck size={12}/> توصيل</button>
+      </div>
+    );
 
-    if (activeTab === "delivering") return <button onClick={() => updateOrderStatus(o.id, "completed")} className="bg-green-600 text-white px-2 py-1 rounded text-xs hover:bg-green-700">تم التسليم</button>;
-    return "—";
-  };
+    if (activeTab === "delivering") return <button onClick={() => updateOrderStatus(o.id, "completed")} className="bg-green-600 text-white px-2 py-1 rounded text-xs hover:bg-green-700 transition shadow-sm">تم التسليم</button>;
+    return "—";
+  };
 
-  const renderPaymentIcon = (method: string) => {
-    switch(method) {
-      case 'cod': return <div className="flex items-center gap-1 text-green-600 font-bold"><Banknote size={12}/> استلام</div>;
-      case 'wallet': return <div className="flex items-center gap-1 text-blue-600 font-bold"><Wallet size={12}/> رصيد</div>;
-      case 'bank': return <div className="flex items-center gap-1 text-indigo-600 font-bold"><Landmark size={12}/> بنكي</div>;
-      case 'online': return <div className="flex items-center gap-1 text-purple-600 font-bold"><CreditCard size={12}/> إلكتروني</div>;
-      default: return '—';
-    }
-  };
+  const renderPaymentIcon = (method: string) => {
+    switch(method) {
+      case 'cod': return <div className="flex items-center gap-1 text-green-600 font-bold bg-green-50 px-2 py-0.5 rounded-full border border-green-100"><Banknote size={10}/> استلام</div>;
+      case 'wallet': return <div className="flex items-center gap-1 text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100"><Wallet size={10}/> رصيد</div>;
+      case 'bank': return <div className="flex items-center gap-1 text-indigo-600 font-bold bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100"><Landmark size={10}/> بنكي</div>;
+      case 'online': return <div className="flex items-center gap-1 text-purple-600 font-bold bg-purple-50 px-2 py-0.5 rounded-full border border-purple-100"><CreditCard size={10}/> إلكتروني</div>;
+      default: return '—';
+    }
+  };
 
-  return (
-    <div className="space-y-6" dir="rtl">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-800">📦 طلبات وصل لي</h1>
-        <button onClick={openAdd} className="bg-green-600 text-white px-4 py-2 rounded flex items-center gap-2 hover:bg-green-700 transition">
-          <Plus size={18} /> إضافة طلب
-        </button>
-      </div>
+  return (
+    <div className="space-y-6" dir="rtl">
+      <div className="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm">
+        <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">📦 طلبات وصل لي</h1>
+        <button onClick={openAdd} className="bg-green-600 text-white px-6 py-2 rounded-xl flex items-center gap-2 hover:bg-green-700 transition shadow-lg shadow-green-100 font-bold">
+          <Plus size={18} /> إضافة طلب
+        </button>
+      </div>
 
-      <div className="bg-white p-4 rounded-xl shadow-sm space-y-4">
-        <div className="flex gap-2 justify-center border-b pb-3">
-          {[{k:"all",l:"الكل"}, {k:"today",l:"اليوم"}, {k:"week",l:"الأسبوع"}].map(t=>(
-            <button key={t.k} onClick={()=>setDateFilter(t.k as any)} className={`px-4 py-1 rounded-full text-sm font-medium ${dateFilter===t.k?"bg-indigo-600 text-white shadow-sm":"bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>{t.l}</button>
-          ))}
-        </div>
-        <div className="flex gap-2 flex-wrap justify-center">
-          {[
-            {k:"pending",l:"🟡 اعتماد"}, {k:"processing",l:"🔵 معالجة"},
-            {k:"delivering",l:"🚚 توصيل"}, {k:"completed",l:"✅ مكتمل"}, {k:"cancelled",l:"❌ ملغي"}
-          ].map(t=>(
-            <button key={t.k} onClick={()=>setActiveTab(t.k as any)} className={`px-4 py-2 rounded-lg border-b-4 transition-all ${activeTab===t.k?"bg-blue-50 border-blue-600 text-blue-700":"bg-white border-transparent text-gray-500 hover:bg-gray-50"}`}>{t.l} ({counts[t.k as keyof typeof counts]})</button>
-          ))}
-        </div>
-      </div>
+      <div className="bg-white p-4 rounded-xl shadow-sm space-y-4">
+        <div className="flex gap-2 justify-center border-b pb-3">
+          {[{k:"all",l:"الكل"}, {k:"today",l:"اليوم"}, {k:"week",l:"الأسبوع"}].map(t=>(
+            <button key={t.k} onClick={()=>setDateFilter(t.k as any)} className={`px-4 py-1 rounded-full text-sm font-medium transition ${dateFilter===t.k?"bg-indigo-600 text-white shadow-sm":"bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>{t.l}</button>
+          ))}
+        </div>
+        <div className="flex gap-2 flex-wrap justify-center">
+          {[
+            {k:"pending",l:"🟡 اعتماد"}, {k:"processing",l:"🔵 معالجة"},
+            {k:"delivering",l:"🚚 توصيل"}, {k:"completed",l:"✅ مكتمل"}, {k:"cancelled",l:"❌ ملغي"}
+          ].map(t=>(
+            <button key={t.k} onClick={()=>setActiveTab(t.k as any)} className={`px-4 py-2 rounded-lg border-b-4 transition-all ${activeTab===t.k?"bg-blue-50 border-blue-600 text-blue-700":"bg-white border-transparent text-gray-500 hover:bg-gray-50"}`}>{t.l} <span className="text-[10px] bg-white/50 px-1.5 rounded-full ml-1">({counts[t.k as keyof typeof counts]})</span></button>
+          ))}
+        </div>
+      </div>
 
-      {loading ? <div className="text-center py-10 text-gray-500 font-bold">⏳ جاري التحميل...</div> : (
-        <div className="bg-white rounded-xl shadow overflow-x-auto">
-          <table className="w-full text-center border-collapse">
-            <thead className="bg-gray-50 text-gray-700">
-              <tr className="border-b text-sm">
-                <th className="p-3">#</th>
-                <th>العميل</th>
-                <th>الكابتن</th>
-                <th>من | إلى</th>
-                <th>الدفع</th>
-                <th>الرسوم</th>
-                <th>الحالة</th>
-                <th>إسناد</th>
-                <th>المستخدم</th>
-                <th>تحكم</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y text-gray-600">
-              {visibleOrders.map((o) => (
-                <tr key={o.id} className="hover:bg-gray-50 text-sm">
-                  <td className="p-3 font-bold">#{o.id}</td>
-                  <td>{o.customer_name}</td>
-                  <td className="text-indigo-600 font-bold">{o.captain_name || "—"}</td>
-                  <td>
-                    <div className="flex gap-2 justify-center">
-                      <button onClick={()=>o.from_lat && window.open(`https://www.google.com/maps?q=${o.from_lat},${o.from_lng}`)} className="text-blue-500"><MapPin size={14} /></button>
-                      <button onClick={()=>o.to_lat && window.open(`https://www.google.com/maps?q=${o.to_lat},${o.to_lng}`)} className="text-red-500"><MapPin size={14} /></button>
-                    </div>
-                  </td>
-                  <td className="text-[10px]">{renderPaymentIcon(o.payment_method)}</td>
-                  <td className="text-xs">🚚 {o.delivery_fee} | ➕ {o.extra_fee}</td>
-                  
-                  <td className="px-2">
-                    {o.status === "completed" || o.status === "cancelled" ? (
-                      <span className={`px-2 py-1 rounded-md text-[10px] font-bold ${
-                        o.status === "completed" ? "bg-green-100 text-green-700 border border-green-200" : "bg-red-100 text-red-700 border border-red-200"
-                      }`}>
-                        {o.status === "completed" ? "مكتمل" : "ملغي"}
-                      </span>
-                    ) : (
-                      <select 
-                        value={o.status} 
-                        onChange={(e) => updateOrderStatus(o.id, e.target.value)} 
-                        className="border rounded px-2 py-1 text-[11px] bg-white outline-none"
-                      >
-                        <option value="pending">اعتماد</option>
-                        <option value="confirmed">مؤكد</option>
-                        <option value="preparing">تحضير</option>
-                        <option value="ready">جاهز</option>
-                        <option value="delivering">توصيل</option>
-                        <option value="cancelled">إلغاء</option>
-                      </select>
-                    )}
-                  </td>
-                  
-                  <td>{renderActions(o)}</td>
+      {loading ? <div className="text-center py-20 bg-white rounded-2xl shadow-sm text-gray-400 animate-pulse">⏳ جاري تحميل الطلبات...</div> : (
+        <div className="bg-white rounded-2xl shadow-sm overflow-x-auto border border-gray-100">
+          <table className="w-full text-center border-collapse">
+            <thead className="bg-gray-50 text-gray-500 uppercase">
+              <tr className="border-b text-[11px] font-black">
+                <th className="p-4"># المرجع</th>
+                <th>اسم العميل</th>
+                <th>كابتن التوصيل</th>
+                <th>المواقع</th>
+                <th>وسيلة الدفع</th>
+                <th>إجمالي الرسوم</th>
+                <th>حالة الطلب</th>
+                <th>الإجراء</th>
+                <th>المستخدم</th>
+                <th className="p-4">تحكم</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y text-gray-600">
+              {visibleOrders.map((o) => (
+                <tr key={o.id} className="hover:bg-blue-50/30 text-sm transition-colors">
+                  <td className="p-4 font-black text-gray-400">#{o.id}</td>
+                  <td className="font-bold text-gray-800">{o.customer_name}</td>
+                  <td className="text-indigo-600 font-bold">{o.captain_name || <span className="text-gray-300 font-normal">لم يسند</span>}</td>
+                  <td>
+                    <div className="flex gap-2 justify-center">
+                      <button onClick={()=>o.from_lat && window.open(`https://www.google.com/maps?q=${o.from_lat},${o.from_lng}`, "_blank")} className="text-blue-500 hover:scale-125 transition" title="نقطة الانطلاق"><MapPin size={14} /></button>
+                      <button onClick={()=>o.to_lat && window.open(`https://www.google.com/maps?q=${o.to_lat},${o.to_lng}`, "_blank")} className="text-red-500 hover:scale-125 transition" title="نقطة الوصول"><MapPin size={14} /></button>
+                    </div>
+                  </td>
+                  <td>{renderPaymentIcon(o.payment_method)}</td>
+                  <td className="text-xs font-bold text-gray-800 bg-gray-50/50">{Number(o.delivery_fee) + Number(o.extra_fee)} ريال</td>
+                  
+                  <td className="px-2">
+                    {o.status === "completed" || o.status === "cancelled" ? (
+                      <span className={`px-2 py-1 rounded-md text-[10px] font-black uppercase ${
+                        o.status === "completed" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+                      }`}>
+                        {o.status === "completed" ? "مكتمل" : "ملغي"}
+                      </span>
+                    ) : (
+                      <select 
+                        value={o.status} 
+                        onChange={(e) => updateOrderStatus(o.id, e.target.value)} 
+                        className="border rounded-lg px-2 py-1 text-[11px] bg-white shadow-sm outline-none focus:ring-1 focus:ring-blue-300"
+                      >
+                        <option value="pending">اعتماد</option>
+                        <option value="confirmed">مؤكد</option>
+                        <option value="preparing">تحضير</option>
+                        <option value="ready">جاهز</option>
+                        <option value="delivering">توصيل</option>
+                        <option value="cancelled">إلغاء</option>
+                      </select>
+                    )}
+                  </td>
+                  
+                  <td>{renderActions(o)}</td>
 
-                  <td className="px-2 text-[11px]">
-                    {o.updater_name ? (
-                      <div className="flex flex-col text-blue-600">
-                        <span className="font-bold">📝 {o.updater_name}</span>
-                        <span className="text-[9px] text-gray-400 italic">آخر تحديث</span>
-                      </div>
-                    ) : o.creator_name ? (
-                      <div className="flex flex-col text-gray-700">
-                        <span className="font-medium">👤 {o.creator_name}</span>
-                        <span className="text-[9px] text-gray-400 italic">لوحة التحكم</span>
-                      </div>
-                    ) : (
-                      <span className="text-gray-400 italic">📱 طلب تطبيق</span>
-                    )}
-                  </td>
+                  <td className="px-2 text-[10px]">
+                    {o.updater_name ? (
+                      <div className="flex flex-col text-blue-600">
+                        <span className="font-bold">📝 {o.updater_name}</span>
+                        <span className="text-[8px] text-gray-400 italic">مُعدل</span>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col text-gray-500">
+                        <span className="font-medium">👤 {o.creator_name || "نظام"}</span>
+                        <span className="text-[8px] text-gray-300 italic">مُنشئ</span>
+                      </div>
+                    )}
+                  </td>
 
-                  <td><button onClick={()=>openEdit(o)} className="text-blue-600 p-1 hover:bg-blue-50 rounded transition-colors"><Edit size={16} /></button></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {visibleOrders.length===0 && <div className="p-10 text-center text-gray-400">لا توجد طلبات في هذا القسم</div>}
-        </div>
-      )}
+                  <td className="p-4"><button onClick={()=>openEdit(o)} className="text-blue-600 p-2 hover:bg-blue-100 rounded-xl transition-colors"><Edit size={16} /></button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {visibleOrders.length===0 && <div className="p-20 text-center text-gray-400 font-medium">✨ لا توجد طلبات في هذا القسم حالياً</div>}
+        </div>
+      )}
 
       {isCaptainModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-[60] p-4">
