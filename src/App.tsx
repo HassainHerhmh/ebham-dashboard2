@@ -30,7 +30,7 @@ import CommissionReport from "./pages/CommissionReport";
 
 import WasselOrders from "./pages/WasselOrders";
 import MapPage from "./pages/MapPage";
-
+import ManualOrders from "./pages/ManualOrders";
 
 
 // الوكلاء
@@ -114,6 +114,8 @@ const App: React.FC = () => {
     </ProtectedRoute>
   }
 />
+
+                    <Route path="/orders/manual" element={<ManualOrders />} />
                     <Route path="/map-picker" element={<MapPage />} />
 
                     <Route path="/types" element={<ProtectedRoute section="types"><Types /></ProtectedRoute>} />
