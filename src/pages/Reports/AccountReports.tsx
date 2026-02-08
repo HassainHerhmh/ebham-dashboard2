@@ -41,6 +41,7 @@ const AccountStatement: React.FC = () => {
   const referenceTranslations: { [key: string]: string } = {
     'order': 'طلب توصيل', 'journal': 'قيد يومي', 'payment': 'سند صرف',
     'receipt': 'سند قبض', 'opening': 'رصيد افتتاحي', 'wassel_order': 'طلب وصل لي'
+    'ceiling': 'سند تسقيف حساب'
   };
 
   useEffect(() => { loadLookups(); }, []);
