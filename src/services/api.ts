@@ -1156,5 +1156,33 @@ export const executeExchange = async (data: {
   assignCaptain: async (orderId: number, captainId: number) => 
     (await api.post(`/wassel-orders/assign`, { orderId, captainId })).data,
 };
+/* =========================
+   MANUAL ORDERS (الطلبات اليدوية)
+========================= */
+(api as any).manualOrders = {
+  // جلب قائمة الطلبات اليدوية فقط
+  getAll: async () => 
+    (await api.get("/wassel-orders/manual/manual-list")).data,
 
+  // إضافة طلب يدوي جديد (مع مصفوفة المنتجات)
+  create: async (data: {
+    customer_id: number | string;
+    agent_id?: number | string | null;
+    to_address: string;
+    delivery_fee: number;
+    payment_method: string;
+    items: Array<{ name: string; qty: number; price: number }>;
+    total_amount: number;
+    notes?: string;
+  }) => 
+    (await api.post("/wassel-orders/manual", data)).data,
+
+  // جلب تفاصيل طلب يدوي واحد (الأصناف)
+  getItems: async (orderId: number) => 
+    (await api.get(`/wassel-orders/manual/${orderId}/items`)).data,
+
+  // تحديث حالة الطلب اليدوي
+  updateStatus: async (id: number, status: string) => 
+    (await api.put(`/wassel-orders/manual/status/${id}`, { status })).data,
+};
 export default api;
