@@ -15,6 +15,7 @@ const TransitAccountsSettings = () => {
   const [transferGuarantee, setTransferGuarantee] = useState<number | "">("");
   const [currencyExchange, setCurrencyExchange] = useState<number | "">("");
   const [customerGuarantee, setCustomerGuarantee] = useState<number | "">("");
+const [customerCredit, setCustomerCredit] = useState<number | "">("");
 
 
 
@@ -40,6 +41,7 @@ useEffect(() => {
     setTransferGuarantee(d.transfer_guarantee_account || "");
     setCurrencyExchange(d.currency_exchange_account || "");
     setCustomerGuarantee(d.customer_guarantee_account || "");
+   setCustomerCredit(d.customer_credit_account || "");
 
   })();
 }, []);
@@ -51,6 +53,8 @@ useEffect(() => {
       transfer_guarantee_account: transferGuarantee || null,
       currency_exchange_account: currencyExchange || null,
         customer_guarantee_account: customerGuarantee || null, // 🆕
+        customer_credit_account: customerCredit || null, // 🆕
+
     };
 
     try {
@@ -121,8 +125,15 @@ useEffect(() => {
         value={customerGuarantee}
         onChange={setCustomerGuarantee}
         />
-      </div>
 
+        <Field
+  label="حساب وسيط اعتماد العملاء"
+  value={customerCredit}
+  onChange={setCustomerCredit}
+/>
+
+      </div>
+       
       <div className="flex justify-end">
         <button
           onClick={save}
