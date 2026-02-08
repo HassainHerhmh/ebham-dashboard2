@@ -406,33 +406,153 @@ const PaymentsWallet: React.FC = () => {
         </div>
       )}
 
-      {/* =========================
-          Modal: Add Amount
-      ========================= */}
-      {showAddAmountModal && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-white p-6 rounded-xl w-full max-w-md space-y-4">
+{/* =========================
+    Modal: Add Amount
+========================= */}
+{showAddAmountModal && (
+  <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+    <div className="bg-white p-6 rounded-xl w-full max-w-md space-y-4">
 
-            <h3 className="font-bold text-center text-lg">
-              إضافة مبلغ
-            </h3>
+      <h3 className="font-bold text-center text-lg">
+        إضافة مبلغ
+      </h3>
 
-            <select
-              className="border p-3 w-full rounded"
-              value={addAmountCustomerId}
-              onChange={(e) =>
-                setAddAmountCustomerId(e.target.value)
+      {/* العميل */}
+      <select
+        className="border p-3 w-full rounded"
+        value={addAmountCustomerId}
+        onChange={(e) =>
+          setAddAmountCustomerId(e.target.value)
+        }
+      >
+        <option value="">اختر العميل</option>
+
+        {eligibleForAdd.map((c) => (
+          <option
+            key={c.customer_id}
+            value={c.customer_id}
+          >
+            {c.customer_name}
+          </option>
+        ))}
+      </select>
+
+      {/* النوع */}
+      <div className="flex justify-around bg-gray-50 p-2 rounded">
+        {["cash", "bank"].map((t) => (
+          <label key={t}>
+            <input
+              type="radio"
+              checked={addAmountType === t}
+              onChange={() =>
+                setAddAmountType(t as any)
               }
-            >
-              <option value="">اختر العميل</option>
+            />{" "}
+            {t === "cash" ? "نقدي" : "بنكي"}
+          </label>
+        ))}
+      </div>
 
-              {eligibleForAdd.map((c) => (
-                <option
-                  key={c.customer_id}
-                  value={c.customer_id}
-                >
-                  {c.customer_name}
-                </option>
+      {/* الصندوق / البنك */}
+      <select
+        className="border p-3 w-full rounded"
+        value={selectedAccountId}
+        onChange={(e) =>
+          setSelectedAccountId(e.target.value)
+        }
+      >
+        <option value="">اختر الحساب</option>
+
+        {(addAmountType === "cash"
+          ? cashBoxes
+          : banks
+        ).map((a: any) => (
+          <option key={a.id} value={a.id}>
+            {a.name_ar}
+          </option>
+        ))}
+      </select>
+
+      {/* ====== العملة ====== */}
+      <select
+        className="border p-3 w-full rounded"
+        value={currencyId}
+        onChange={(e) => {
+          const id = e.target.value;
+          setCurrencyId(id);
+
+          const cur = currencies.find(
+            (c) => String(c.id) === id
+          );
+
+          if (cur) {
+            setRate(cur.exchange_rate || 1);
+            setIsLocalCurrency(!!cur.is_local);
+          }
+        }}
+      >
+        <option value="">اختر العملة</option>
+
+        {currencies.map((c) => (
+          <option key={c.id} value={c.id}>
+            {c.name_ar}
+          </option>
+        ))}
+      </select>
+
+      {/* سعر الصرف */}
+      {!isLocalCurrency && (
+        <input
+          type="number"
+          className="border p-3 w-full rounded"
+          placeholder="سعر الصرف"
+          value={rate}
+          onChange={(e) =>
+            setRate(Number(e.target.value))
+          }
+        />
+      )}
+
+      {/* المبلغ */}
+      <input
+        type="number"
+        className="border p-3 w-full rounded"
+        placeholder="المبلغ"
+        value={amount}
+        onChange={(e) => setAmount(e.target.value)}
+      />
+
+      {/* المعادل */}
+      {currencyId && !isLocalCurrency && amount && rate && (
+        <div className="bg-gray-100 p-2 rounded text-sm text-center">
+          ما يعادله:
+          <b className="mx-2 text-indigo-700">
+            {(Number(amount) * Number(rate)).toLocaleString()}
+          </b>
+          ريال
+        </div>
+      )}
+
+      {/* أزرار */}
+      <div className="flex justify-end gap-2 pt-3">
+        <button
+          onClick={() => setShowAddAmountModal(false)}
+        >
+          إلغاء
+        </button>
+
+        <button
+          onClick={addAmount}
+          className="bg-green-600 text-white px-6 py-2 rounded"
+        >
+          إضافة
+        </button>
+      </div>
+
+    </div>
+  </div>
+)}
+            </option>
               ))}
             </select>
 
