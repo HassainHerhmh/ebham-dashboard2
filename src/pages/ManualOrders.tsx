@@ -307,12 +307,35 @@ const ManualOrders: React.FC = () => {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="border dark:border-gray-700 p-4 rounded-3xl">
-                        <h3 className="text-xs font-black uppercase text-gray-400 mb-2">👤 بيانات العميل</h3>
-                        <p className="font-black">{selectedOrderDetails.customer_name}</p>
-                        <p className="text-xs text-gray-500 italic mt-1">📍 {selectedOrderDetails.neighborhood_name || ""} - {selectedOrderDetails.to_address}</p>
-                      </div>
-                      <div className="border dark:border-gray-700 p-4 rounded-3xl bg-yellow-50/30 dark:bg-yellow-900/10">
+<div className="border dark:border-gray-700 p-4 rounded-3xl space-y-2">
+
+  <h3 className="text-xs font-black uppercase text-gray-400 mb-2">
+    👤 بيانات العميل
+  </h3>
+
+  <p className="font-black">
+    {selectedOrderDetails.customer_name}
+  </p>
+
+  {/* العنوان */}
+  <p className="text-xs text-gray-600 italic leading-relaxed">
+    📍 {selectedOrderDetails.area || ""} <br />
+    {selectedOrderDetails.to_address}
+  </p>
+
+  {/* رابط الخريطة */}
+  {selectedOrderDetails.latitude && selectedOrderDetails.longitude && (
+    <a
+      href={`https://www.google.com/maps?q=${selectedOrderDetails.latitude},${selectedOrderDetails.longitude}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex items-center gap-1 mt-2 text-blue-600 hover:text-blue-800 text-xs font-black underline"
+    >
+      📌 فتح الموقع على الخريطة
+    </a>
+  )}
+
+</div>
                         <h3 className="text-xs font-black uppercase text-yellow-600 mb-1">📝 ملاحظات إضافية</h3>
                         <p className="text-xs italic leading-relaxed">{selectedOrderDetails.notes || selectedOrderDetails.note || "لا توجد ملاحظات"}</p>
                       </div>
