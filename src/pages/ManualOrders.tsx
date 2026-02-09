@@ -415,35 +415,98 @@ className="bg-orange-500 text-white px-6 py-2 rounded-xl font-bold hover:bg-oran
   <option value="cancelled">إلغاء</option>
 </select>
 
-                  </td>
-<td className="p-4 flex gap-2 justify-center">
+                  <td className="p-4 flex justify-between items-center gap-2">
 
-  {/* عرض */}
-  <button
-    onClick={() => openOrderDetails(o)}
-    className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-all"
-  >
-    <Eye size={14} />
-  </button>
-
-  {/* تعديل */}
+  {/* ✏️ تعديل (أقصى اليسار) */}
   <button
     onClick={() => openEdit(o)}
-    className="p-2 bg-yellow-50 text-yellow-600 rounded-lg hover:bg-yellow-500 hover:text-white transition-all"
+    className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition"
   >
     ✏️
   </button>
 
-  {/* كابتن */}
-  <button
-    onClick={() => openCaptainModal(o.id)}
-    className="p-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-600 hover:text-white transition-all"
-  >
-    👤
-  </button>
+  {/* الأزرار حسب الحالة */}
+  <div className="flex gap-2">
 
+    {/* اعتماد */}
+    {o.status === "pending" && (
+      <button
+        onClick={() => updateOrderStatus(o.id, "processing")}
+        className="bg-green-600 text-white px-3 py-1 rounded-lg text-xs hover:bg-green-700"
+      >
+        اعتماد
+      </button>
+    )}
+
+    {/* قيد المعالجة */}
+    {o.status === "processing" && (
+      <>
+        <button
+          onClick={() => openCaptainModal(o.id)}
+          className="bg-indigo-600 text-white px-3 py-1 rounded-lg text-xs hover:bg-indigo-700"
+        >
+          كابتن
+        </button>
+
+        <button
+          onClick={() => updateOrderStatus(o.id, "ready")}
+          className="bg-purple-600 text-white px-3 py-1 rounded-lg text-xs hover:bg-purple-700"
+        >
+          جاهز
+        </button>
+      </>
+    )}
+
+    {/* جاهز */}
+    {o.status === "ready" && (
+      <>
+        <button
+          onClick={() => openCaptainModal(o.id)}
+          className="bg-indigo-600 text-white px-3 py-1 rounded-lg text-xs hover:bg-indigo-700"
+        >
+          كابتن
+        </button>
+
+        <button
+          onClick={() => updateOrderStatus(o.id, "shipping")}
+          className="bg-orange-600 text-white px-3 py-1 rounded-lg text-xs hover:bg-orange-700"
+        >
+          قيد التوصيل
+        </button>
+      </>
+    )}
+
+    {/* قيد التوصيل */}
+    {o.status === "shipping" && (
+      <button
+        onClick={() => updateOrderStatus(o.id, "completed")}
+        className="bg-green-700 text-white px-3 py-1 rounded-lg text-xs hover:bg-green-800"
+      >
+        تم التسليم
+      </button>
+    )}
+
+    {/* مكتمل → عمولة */}
+    {o.status === "completed" && (
+      <button
+        onClick={() => openCommission(o)}
+        className="bg-gray-700 text-white px-3 py-1 rounded-lg text-xs hover:bg-gray-800"
+      >
+        العمولة
+      </button>
+    )}
+
+    {/* عرض دائم */}
+    <button
+      onClick={() => openOrderDetails(o)}
+      className="bg-sky-600 text-white px-3 py-1 rounded-lg text-xs hover:bg-sky-700"
+    >
+      عرض
+    </button>
+
+  </div>
 </td>
-                  <td className="p-4 text-xs text-gray-400 font-bold">{o.user_name || "Admin"}</td>
+           <td className="p-4 text-xs text-gray-400 font-bold">{o.user_name || "Admin"}</td>
                 </tr>
               ))}
             </tbody>
