@@ -307,7 +307,7 @@ const ManualOrders: React.FC = () => {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-<div className="border dark:border-gray-700 p-4 rounded-3xl space-y-2">
+                   <div className="border dark:border-gray-700 p-4 rounded-3xl space-y-2">
 
   <h3 className="text-xs font-black uppercase text-gray-400 mb-2">
     👤 بيانات العميل
@@ -336,6 +336,8 @@ const ManualOrders: React.FC = () => {
   )}
 
 </div>
+
+                      <div className="border dark:border-gray-700 p-4 rounded-3xl bg-yellow-50/30 dark:bg-yellow-900/10">
                         <h3 className="text-xs font-black uppercase text-yellow-600 mb-1">📝 ملاحظات إضافية</h3>
                         <p className="text-xs italic leading-relaxed">{selectedOrderDetails.notes || selectedOrderDetails.note || "لا توجد ملاحظات"}</p>
                       </div>
