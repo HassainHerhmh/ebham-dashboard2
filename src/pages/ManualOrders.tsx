@@ -9,7 +9,7 @@ import {
 import { useReactToPrint } from 'react-to-print';
 
 /* ======================
-    Types
+    الأنواع (Types)
 ====================== */
 interface OrderItem {
   name: string;
@@ -29,11 +29,9 @@ const ManualOrders: React.FC = () => {
   const [selectedOrderDetails, setSelectedOrderDetails] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState("");
   
-  // الفلاتر (التنسيق الجديد)
   const [activeTab, setActiveTab] = useState<OrderTab>("pending");
   const [dateFilter, setDateFilter] = useState<DateFilter>("today");
 
-  // بيانات المودال
   const [customers, setCustomers] = useState<any[]>([]);
   const [addresses, setAddresses] = useState<any[]>([]);
   const [agents, setAgents] = useState<any[]>([]); 
@@ -41,7 +39,6 @@ const ManualOrders: React.FC = () => {
   const [items, setItems] = useState<OrderItem[]>([]);
   const [newItemName, setNewItemName] = useState("");
 
-  // الكباتن
   const [captains, setCaptains] = useState<any[]>([]);
   const [isCaptainModalOpen, setIsCaptainModalOpen] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
@@ -59,7 +56,7 @@ const ManualOrders: React.FC = () => {
   const handlePrint = useReactToPrint({ content: () => printRef.current });
 
   /* ======================
-      API & Data
+      تحميل البيانات
   ====================== */
   const loadInitialData = async () => {
     try {
@@ -85,7 +82,7 @@ const ManualOrders: React.FC = () => {
   }, [form.customer_id]);
 
   /* ======================
-      Functions (Fixing ReferenceErrors)
+      العمليات البرمجية
   ====================== */
   const openOrderDetails = async (order: any) => {
     try {
@@ -155,7 +152,7 @@ const ManualOrders: React.FC = () => {
   };
 
   /* ======================
-      Filters Logic
+      منطق الفلترة
   ====================== */
   const dateFiltered = orders.filter(o => {
     const todayStr = new Date().toLocaleDateString('en-CA');
@@ -190,7 +187,7 @@ const ManualOrders: React.FC = () => {
   };
 
   const renderActions = (o: any) => {
-    if (activeTab === "pending") return <button onClick={() => updateOrderStatus(o.id, "confirmed")} className="bg-green-600 text-white px-3 py-1 rounded-lg text-xs font-bold">إعتماد</button>;
+    if (activeTab === "pending") return <button onClick={() => updateOrderStatus(o.id, "confirmed")} className="bg-green-600 text-white px-3 py-1 rounded-lg text-xs font-bold shadow-sm">إعتماد</button>;
     if (activeTab === "processing") return (
       <div className="flex gap-1 justify-center">
         <button onClick={() => openCaptainModal(o.id)} className="bg-indigo-600 text-white px-2 py-1 rounded-md text-xs flex items-center gap-1"><UserCheck size={12}/> كابتن</button>
@@ -198,13 +195,13 @@ const ManualOrders: React.FC = () => {
       </div>
     );
     if (activeTab === "delivering") return <button onClick={() => updateOrderStatus(o.id, "completed")} className="bg-emerald-600 text-white px-3 py-1 rounded-lg text-xs font-bold">تم التسليم</button>;
-    return "—";
+    return <span className="text-gray-300">—</span>;
   };
 
   return (
     <div className="w-full min-h-screen bg-[#f8fafc] dark:bg-gray-900 p-4 transition-all" dir="rtl">
       
-      {/* 🟢 التبويبات وفلترة الأيام (نفس وصل لي) */}
+      {/* 🟢 الهيدر والتبويبات */}
       <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-sm border dark:border-gray-700 mb-6 space-y-4">
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-3">
@@ -214,7 +211,7 @@ const ManualOrders: React.FC = () => {
           <div className="flex items-center gap-2">
             <div className="relative">
               <Search className="absolute right-3 top-2.5 text-gray-400" size={16} />
-              <input type="text" placeholder="بحث..." className="pr-10 pl-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-xl text-sm outline-none w-64 dark:text-white" value={searchTerm} onChange={(e)=>setSearchTerm(e.target.value)} />
+              <input type="text" placeholder="بحث سريع..." className="pr-10 pl-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-xl text-sm outline-none w-64 dark:text-white" value={searchTerm} onChange={(e)=>setSearchTerm(e.target.value)} />
             </div>
             <button onClick={() => { setEditingOrder(null); setItems([]); setShowModal(true); }} className="bg-green-600 text-white px-6 py-2 rounded-xl font-bold hover:bg-green-700 transition shadow-lg flex items-center gap-2"><Plus size={18}/> إضافة طلب</button>
           </div>
@@ -231,7 +228,7 @@ const ManualOrders: React.FC = () => {
               {k:"pending",l:"🟡 اعتماد", c:"orange"}, {k:"processing",l:"🔵 معالجة", c:"blue"},
               {k:"delivering",l:"🚚 توصيل", c:"indigo"}, {k:"completed",l:"✅ مكتمل", c:"emerald"}, {k:"cancelled",l:"❌ ملغي", c:"red"}
             ].map(t=>(
-              <button key={t.k} onClick={()=>setActiveTab(t.k as any)} className={`px-4 py-2 rounded-xl border-b-4 transition-all flex items-center gap-2 ${activeTab===t.k?`bg-${t.c}-50 dark:bg-${t.c}-900/20 border-${t.c}-600 text-${t.c}-700` : "bg-white dark:bg-gray-800 border-transparent text-gray-500"}`}>
+              <button key={t.k} onClick={()=>setActiveTab(t.k as any)} className={`px-4 py-2 rounded-xl border-b-4 transition-all flex items-center gap-2 ${activeTab===t.k?`bg-${t.c}-50 dark:bg-${t.c}-900/20 border-${t.c}-600 text-${t.c}-700` : "bg-white dark:bg-gray-800 border-transparent text-gray-400"}`}>
                 {t.l} <span className="text-[10px] bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full">({counts[t.k as keyof typeof counts]})</span>
               </button>
             ))}
@@ -239,7 +236,7 @@ const ManualOrders: React.FC = () => {
         </div>
       </div>
 
-      {/* 🟢 الجدول مع زر التعديل واسناد الكباتن */}
+      {/* 🟢 جدول البيانات */}
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border dark:border-gray-700 overflow-hidden">
         <table className="w-full text-[13px] text-center">
           <thead className="bg-gray-50 dark:bg-gray-900/50 text-gray-500 font-bold border-b">
@@ -250,116 +247,229 @@ const ManualOrders: React.FC = () => {
               <th>المبلغ</th>
               <th>الحالة</th>
               <th>الإجراء</th>
-              <th>المستخدم</th>
               <th className="p-4">تحكم</th>
             </tr>
           </thead>
           <tbody className="divide-y dark:divide-gray-700">
             {visibleOrders.map((o) => (
-              <tr key={o.id} className="hover:bg-blue-50/30 dark:hover:bg-gray-700/30">
+              <tr key={o.id} className="hover:bg-blue-50/30 dark:hover:bg-gray-700/30 transition-colors">
                 <td className="p-4 font-bold text-gray-400">#{o.id}</td>
                 <td className="text-right font-black text-gray-800 dark:text-white">{o.customer_name}</td>
                 <td className="text-right font-bold text-orange-600">{o.restaurant_name || "شراء مباشر"}</td>
                 <td className="font-black text-gray-900 dark:text-white">{Number(o.total_amount).toLocaleString()} ريال</td>
                 <td>
-                  <select value={o.status} onChange={(e) => updateOrderStatus(o.id, e.target.value)} className="bg-gray-50 dark:bg-gray-700 border rounded-lg px-2 py-1 text-[10px] font-bold">
-                    <option value="pending">بانتظار الاعتماد</option>
-                    <option value="confirmed">مؤكد</option>
-                    <option value="processing">قيد المعالجة</option>
-                    <option value="ready">جاهز</option>
-                    <option value="shipping">توصيل</option>
-                    <option value="completed">مكتمل</option>
-                    <option value="cancelled">ملغي</option>
-                  </select>
+                   <select value={o.status} onChange={(e) => updateOrderStatus(o.id, e.target.value)} className="bg-gray-50 dark:bg-gray-700 border rounded-lg px-2 py-1 text-[10px] font-bold outline-none">
+                      <option value="pending">بانتظار الاعتماد</option>
+                      <option value="confirmed">مؤكد</option>
+                      <option value="processing">قيد المعالجة</option>
+                      <option value="ready">جاهز</option>
+                      <option value="shipping">توصيل</option>
+                      <option value="completed">مكتمل</option>
+                      <option value="cancelled">ملغي</option>
+                   </select>
                 </td>
                 <td>{renderActions(o)}</td>
-                <td className="text-xs text-gray-400">{o.user_name || "Admin"}</td>
                 <td className="p-4 flex justify-center gap-2">
-                   <button onClick={() => openOrderDetails(o)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"><Eye size={16}/></button>
-                   <button onClick={() => openEdit(o)} className="p-2 text-amber-600 hover:bg-amber-50 rounded-lg"><Edit size={16}/></button>
+                   <button onClick={() => openOrderDetails(o)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="عرض الفاتورة"><Eye size={16}/></button>
+                   <button onClick={() => openEdit(o)} className="p-2 text-amber-600 hover:bg-amber-50 rounded-lg transition-colors" title="تعديل الطلب"><Edit size={16}/></button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
+        {visibleOrders.length === 0 && <div className="p-20 text-center text-gray-400 font-bold">✨ لا توجد طلبات في هذا القسم حالياً</div>}
       </div>
 
-      {/* ➕ مودال الإضافة (نفس ستايلك السابق بدون لخبطة) */}
+      {/* 🚗 مودال إسناد الكابتن */}
+      {isCaptainModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-[110] p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-md animate-in fade-in zoom-in">
+            <div className="flex justify-between items-center border-b dark:border-gray-700 pb-4 mb-4">
+              <h2 className="text-xl font-bold dark:text-white">🚗 إسناد كابتن</h2>
+              <button onClick={()=>setIsCaptainModalOpen(false)} className="text-gray-400 hover:text-black"><X size={20}/></button>
+            </div>
+            <ul className="divide-y dark:divide-gray-700 max-h-60 overflow-y-auto">
+              {captains.map(c=>(
+                <li key={c.id} className="flex justify-between items-center py-3 px-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                  <div><p className="font-bold dark:text-white">{c.name}</p><p className="text-[10px] text-gray-400">المعلقة: {c.pending_orders}</p></div>
+                  <button onClick={()=>assignCaptain(c.id)} className="bg-green-600 text-white px-4 py-1.5 rounded-lg text-xs font-bold shadow-sm">إسناد</button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
+
+      {/* ➕ مودال الإضافة والتعديل */}
       {showModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-[100] p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] w-full max-w-6xl max-h-[92vh] overflow-hidden shadow-2xl flex flex-col border">
-            <div className="p-6 border-b flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
-              <h2 className="text-xl font-black dark:text-white">{editingOrder ? "✏️ تعديل طلب" : "➕ إضافة طلب يدوي"}</h2>
-              <button onClick={() => setShowModal(false)} className="p-3 hover:bg-red-50 hover:text-red-500 rounded-2xl transition-all"><X size={24}/></button>
+          <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] w-full max-w-6xl max-h-[92vh] overflow-hidden shadow-2xl flex flex-col border dark:border-gray-700 animate-in fade-in zoom-in">
+            
+            <div className="p-6 border-b dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-orange-500 rounded-2xl text-white shadow-lg"><FileText size={24}/></div>
+                <div>
+                  <h2 className="text-xl font-black dark:text-white">{editingOrder ? "✏️ تعديل طلب يدوي" : "➕ إضافة طلب يدوي"}</h2>
+                  <p className="text-[10px] text-gray-400 font-bold italic">{editingOrder ? `تعديل المرجع #${editingOrder.id}` : "تسجيل مشتريات مباشرة للعميل"}</p>
+                </div>
+              </div>
+              <button onClick={() => setShowModal(false)} className="p-3 hover:bg-red-50 hover:text-red-500 rounded-2xl transition-all dark:text-gray-400"><X size={24}/></button>
             </div>
 
             <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 lg:grid-cols-12 gap-8">
               <div className="lg:col-span-4 space-y-5">
-                <div className="bg-gray-50 dark:bg-gray-900/30 p-5 rounded-3xl space-y-4">
-                  <select className="custom-select" value={form.customer_id} onChange={(e)=>setForm({...form, customer_id: e.target.value})}>
-                    <option value="">العميل</option>{customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
-                  <select className="custom-select" value={form.restaurant_id} onChange={(e)=>setForm({...form, restaurant_id: e.target.value})}>
-                    <option value="">المحل المورد</option>{agents.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
-                  </select>
-                  <select className="custom-select" value={form.to_address} onChange={(e)=>setForm({...form, to_address: e.target.value})}>
-                    <option value="">عنوان التوصيل</option>{addresses.map(a => <option key={a.id} value={a.address}>{a.address}</option>)}
-                  </select>
-                  <div className="flex gap-2">
-                    {['cod', 'wallet'].map(m => (
-                      <button key={m} onClick={()=>setForm({...form, payment_method: m})} className={`flex-1 py-3 rounded-2xl border-2 font-black ${form.payment_method === m ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-white text-gray-500'}`}>
-                        {m === 'cod' ? 'كاش' : 'رصيد'}
-                      </button>
-                    ))}
+                <div className="bg-gray-50 dark:bg-gray-900/30 p-5 rounded-3xl space-y-5 border dark:border-gray-700 shadow-inner">
+                  <div>
+                    <label className="text-[11px] font-black text-gray-400 mb-2 block uppercase">العميل</label>
+                    <select className="custom-select font-bold" value={form.customer_id} onChange={(e)=>setForm({...form, customer_id: e.target.value})}>
+                      <option value="">-- اختر العميل --</option>
+                      {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
                   </div>
-                  <input type="number" placeholder="رسوم التوصيل" className="custom-select" value={form.delivery_fee} onChange={(e)=>setForm({...form, delivery_fee: Number(e.target.value)})} />
+
+                  <div>
+                    <label className="text-[11px] font-black text-gray-400 mb-2 block uppercase">المحل المورد</label>
+                    <select className="custom-select font-bold" value={form.restaurant_id} onChange={(e)=>setForm({...form, restaurant_id: e.target.value})}>
+                      <option value="">-- شراء مباشر --</option>
+                      {agents.map(r => <option key={r.id} value={r.id}>🏪 {r.name}</option>)}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-black text-gray-400 mb-2 block uppercase">عنوان التوصيل</label>
+                    <select className="custom-select font-bold" value={form.to_address} onChange={(e)=>setForm({...form, to_address: e.target.value})}>
+                      <option value="">-- اختر العنوان --</option>
+                      {addresses.map(a => <option key={a.id} value={a.address}>{a.address}</option>)}
+                    </select>
+                  </div>
+
+                  <div className="pt-2">
+                    <label className="text-[11px] font-black text-gray-400 mb-2 block uppercase">وسيلة الدفع</label>
+                    <div className="flex gap-2">
+                        {[
+                          {id: 'cod', label: 'كاش', icon: Banknote},
+                          {id: 'wallet', label: 'رصيد', icon: Wallet},
+                        ].map(method => (
+                          <button key={method.id} type="button" onClick={() => setForm({...form, payment_method: method.id})} className={`flex-1 flex items-center justify-center gap-2 py-3 px-1 rounded-2xl border-2 font-black transition-all text-[11px] ${form.payment_method === method.id ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg' : 'bg-white dark:bg-gray-800 border-gray-200 text-gray-500'}`}>
+                            <method.icon size={16}/> {method.label}
+                          </button>
+                        ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-black text-gray-400 mb-2 block uppercase">رسوم التوصيل</label>
+                    <input type="number" className="custom-select font-black text-green-600" value={form.delivery_fee} onChange={(e)=>setForm({...form, delivery_fee: Number(e.target.value)})} />
+                  </div>
                 </div>
+
+                {customerBalance && (
+                  <div className="p-5 bg-blue-600 rounded-3xl shadow-xl text-white text-center animate-pulse-slow">
+                    <p className="text-[10px] font-bold opacity-80 mb-1">الرصيد المتاح (مع السقف)</p>
+                    <p className="text-2xl font-black">{(Number(customerBalance.balance) + Number(customerBalance.credit_limit)).toLocaleString()} ريال</p>
+                  </div>
+                )}
               </div>
 
               <div className="lg:col-span-8 flex flex-col space-y-4">
-                <div className="flex gap-2 p-1 bg-white dark:bg-gray-800 rounded-2xl border">
-                  <input type="text" placeholder="اسم المنتج..." className="flex-1 p-4 bg-transparent outline-none font-bold text-sm" value={newItemName} onChange={(e)=>setNewItemName(e.target.value)} onKeyPress={(e)=>e.key==='Enter' && addItem()} />
-                  <button onClick={addItem} className="bg-orange-500 text-white px-8 rounded-xl font-black">إضافة</button>
+                <div className="flex gap-2 p-1 bg-white dark:bg-gray-800 rounded-2xl border dark:border-gray-700 shadow-sm">
+                  <input type="text" placeholder="اسم المنتج..." className="flex-1 p-4 bg-transparent dark:text-white outline-none font-bold text-sm" value={newItemName} onChange={(e)=>setNewItemName(e.target.value)} onKeyPress={(e)=>e.key==='Enter' && addItem()} />
+                  <button onClick={addItem} className="bg-orange-500 text-white px-8 rounded-xl font-black hover:bg-orange-600 transition-all shadow-lg shadow-orange-500/20">إضافة</button>
                 </div>
-                <div className="flex-1 border-2 border-dashed rounded-3xl overflow-hidden">
-                  <table className="w-full text-sm">
-                    <thead className="bg-gray-50 dark:bg-gray-800 text-[10px] font-black uppercase">
-                      <tr><th className="p-4 text-right">المنتج</th><th className="p-4 text-center">العدد</th><th className="p-4 text-center">السعر</th><th className="p-4 text-center">الإجمالي</th><th className="p-4 w-16"></th></tr>
-                    </thead>
-                    <tbody className="divide-y">
-                      {items.map((item, index) => (
-                        <tr key={index}>
-                          <td className="p-4 font-black">{item.name}</td>
-                          <td className="p-4 flex justify-center gap-2">
-                            <button onClick={()=>updateItem(index, 'qty', Math.max(1, item.qty-1))} className="w-7 h-7 bg-gray-100 rounded-lg">-</button>
-                            <span className="font-bold">{item.qty}</span>
-                            <button onClick={()=>updateItem(index, 'qty', item.qty+1)} className="w-7 h-7 bg-gray-100 rounded-lg">+</button>
-                          </td>
-                          <td className="p-4"><input type="number" className="w-20 p-2 border rounded-xl text-center" value={item.price} onChange={(e)=>updateItem(index, 'price', Number(e.target.value))} /></td>
-                          <td className="p-4 font-black text-orange-600 text-center">{(item.qty * item.price).toLocaleString()}</td>
-                          <td className="p-4"><button onClick={()=>removeItem(index)} className="text-red-400"><Trash2 size={18}/></button></td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+
+                <div className="flex-1 border-2 border-dashed dark:border-gray-700 rounded-[2rem] overflow-hidden flex flex-col bg-white dark:bg-gray-900/20">
+                  <div className="flex-1 overflow-y-auto">
+                    <table className="w-full text-sm">
+                      <thead className="bg-gray-50 dark:bg-gray-800 text-gray-400 text-[10px] font-black uppercase sticky top-0 z-10 border-b">
+                        <tr><th className="p-4 text-right">المنتج</th><th className="p-4 w-32 text-center">العدد</th><th className="p-4 w-32 text-center">السعر</th><th className="p-4 w-32 text-center">الإجمالي</th><th className="p-4 w-16"></th></tr>
+                      </thead>
+                      <tbody className="divide-y dark:divide-gray-700">
+                        {items.map((item, index) => (
+                          <tr key={index} className="group hover:bg-orange-50/20 transition-colors">
+                            <td className="p-4 font-black text-gray-700 dark:text-white">{item.name}</td>
+                            <td className="p-4">
+                                <div className="flex items-center justify-center gap-2 bg-gray-100 dark:bg-gray-700 p-1 rounded-xl mx-auto w-fit border dark:border-gray-600">
+                                    <button onClick={()=>updateItem(index, 'qty', Math.max(1, item.qty-1))} className="w-7 h-7 bg-white dark:bg-gray-600 rounded-lg shadow-sm font-black dark:text-white">-</button>
+                                    <span className="w-6 text-center font-black dark:text-white text-xs">{item.qty}</span>
+                                    <button onClick={()=>updateItem(index, 'qty', item.qty+1)} className="w-7 h-7 bg-white dark:bg-gray-600 rounded-lg shadow-sm font-black dark:text-white">+</button>
+                                </div>
+                            </td>
+                            <td className="p-4 text-center"><input type="number" className="w-24 p-2 bg-white dark:bg-gray-700 border dark:border-gray-600 rounded-xl text-center font-black text-green-600" value={item.price} onChange={(e)=>updateItem(index, 'price', Number(e.target.value))} /></td>
+                            <td className="p-4 font-black text-orange-600 text-center">{(item.qty * item.price).toLocaleString()}</td>
+                            <td className="p-4 text-center"><button onClick={()=>removeItem(index)} className="text-gray-300 hover:text-red-500 transition-all"><Trash2 size={18}/></button></td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div className="p-6 border-t bg-gray-50/50 flex justify-between items-center">
-              <div className="text-2xl font-black text-orange-500">{(items.reduce((s,i)=>s+(i.qty*i.price),0) + Number(form.delivery_fee)).toLocaleString()} ريال</div>
-              <div className="flex gap-3"><button onClick={()=>setShowModal(false)} className="px-6 py-2 text-gray-400">إلغاء</button><button onClick={saveOrder} className="bg-green-600 text-white px-10 py-3 rounded-2xl font-black shadow-lg shadow-green-600/20">{editingOrder ? "تعديل" : "حفظ"}</button></div>
+            <div className="p-6 border-t dark:border-gray-700 bg-white dark:bg-gray-900/50 flex flex-col md:flex-row justify-between items-center gap-6">
+              <div className="flex items-center gap-8">
+                 <div className="text-right"><p className="text-[10px] text-gray-400 font-black mb-1 uppercase">إجمالي المشتريات</p><p className="text-xl font-bold dark:text-white">{items.reduce((s,i)=>s+(i.qty*i.price),0).toLocaleString()} ريال</p></div>
+                 <div className="text-right"><p className="text-[10px] text-gray-400 font-black mb-1 uppercase text-orange-500">الإجمالي النهائي</p><p className="text-3xl font-black text-orange-500">{ (items.reduce((s,i)=>s+(i.qty*i.price),0) + Number(form.delivery_fee)).toLocaleString()} ريال</p></div>
+              </div>
+              <div className="flex gap-3"><button onClick={()=>setShowModal(false)} className="px-8 py-3 text-gray-400 font-black hover:text-red-500 transition-all">إلغاء</button><button onClick={saveOrder} disabled={items.length===0} className="bg-green-600 text-white px-12 py-4 rounded-3xl font-black hover:bg-green-700 transition-all shadow-xl flex items-center gap-3"><Save size={20}/> {editingOrder ? "تحديث وحفظ" : "اعتماد وحفظ"}</button></div>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* 🧾 مودال عرض تفاصيل الفاتورة */}
+      {isDetailsModalOpen && selectedOrderDetails && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[100] p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] shadow-2xl w-full max-w-4xl flex flex-col max-h-[92vh] overflow-hidden border dark:border-gray-700 animate-in fade-in zoom-in">
+            <div className="p-5 border-b dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
+              <h2 className="text-lg font-black dark:text-white flex items-center gap-2">🧾 تفاصيل الطلب #{selectedOrderDetails.id}</h2>
+              <button onClick={() => setIsDetailsModalOpen(false)} className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-full"><X size={24}/></button>
+            </div>
+
+            <div ref={printRef} className="p-6 overflow-y-auto space-y-6 dark:text-white">
+              <div className="text-center mb-8 border-b pb-4">
+                <h1 className="text-2xl font-black text-indigo-600">فاتورة مبيعات يدوية</h1>
+              </div>
+
+              <div className="space-y-4">
+                 <div className="flex justify-between border-b dark:border-gray-700 pb-2"><span>العميل:</span><span className="font-bold">{selectedOrderDetails.customer_name}</span></div>
+                 <div className="flex justify-between border-b dark:border-gray-700 pb-2"><span>المورد:</span><span className="font-bold">{selectedOrderDetails.restaurant_name || "شراء مباشر"}</span></div>
+                 <div className="flex justify-between border-b dark:border-gray-700 pb-2"><span>وسيلة الدفع:</span><span className="font-bold">{selectedOrderDetails.payment_method === 'wallet' ? 'من الرصيد' : 'كاش'}</span></div>
+              </div>
+
+              <table className="w-full text-sm border rounded-xl overflow-hidden">
+                <thead className="bg-gray-50 dark:bg-gray-900"><tr><th className="p-3 text-right">المنتج</th><th className="p-3">الكمية</th><th className="p-3">السعر</th><th className="p-3">الإجمالي</th></tr></thead>
+                <tbody className="divide-y dark:divide-gray-700">
+                  {(selectedOrderDetails.items || []).map((item: any, i: number) => (
+                    <tr key={i}><td className="p-3 text-right font-bold">{item.name || item.product_name}</td><td className="p-3 text-center">{item.qty || item.quantity}</td><td className="p-3 text-center">{Number(item.price).toLocaleString()}</td><td className="p-3 text-center font-black text-green-600">{(Number(item.qty || item.quantity) * Number(item.price)).toLocaleString()}</td></tr>
+                  ))}
+                </tbody>
+              </table>
+
+              <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-2xl space-y-2">
+                <div className="flex justify-between"><span>رسوم التوصيل:</span><span className="font-bold">{Number(selectedOrderDetails.delivery_fee).toLocaleString()} ريال</span></div>
+                <div className="flex justify-between text-xl font-black text-indigo-600 border-t pt-2"><span>المجموع الكلي:</span><span>{Number(selectedOrderDetails.total_amount).toLocaleString()} ريال</span></div>
+              </div>
+            </div>
+
+            <div className="p-5 border-t dark:border-gray-700 flex justify-end gap-3 bg-gray-50/80 dark:bg-gray-900/50">
+               <button onClick={handlePrint} className="bg-indigo-600 text-white px-8 py-2.5 rounded-2xl font-black hover:bg-indigo-700 shadow-lg flex items-center gap-2"><Printer size={18}/> طباعة</button>
+               <button onClick={() => setIsDetailsModalOpen(false)} className="bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-6 py-2.5 rounded-2xl font-black hover:bg-gray-300 transition-all">إغلاق</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* مودال إسناد الكابتن ومودال الفاتورة يبقيان كما هما */}
-      {/* ... (بقية المودالات) */}
-
+      {/* 🟢 الستايلات الموحدة */}
       <style>{`
-        .custom-select { width: 100%; padding: 12px; border-radius: 15px; border: 1px solid #e2e8f0; font-size: 13px; font-weight: 700; outline: none; background: #ffffff; appearance: none; }
+        .custom-select { width: 100%; padding: 12px; border-radius: 15px; border: 1px solid #e2e8f0; font-size: 13px; font-weight: 700; outline: none; background: #ffffff; appearance: none; transition: border-color 0.2s; }
         .dark .custom-select { background: #1f2937; border-color: #374151; color: #fff; }
+        .custom-select:focus { border-color: #f97316; }
+        @media print { .no-print { display: none !important; } }
+        .animate-in { animation: fadeIn 0.2s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+        .animate-pulse-slow { animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
       `}</style>
     </div>
   );
