@@ -259,17 +259,21 @@ setForm({
 
                   <div>
                     <label className="text-[11px] font-black text-gray-400 mb-2 block flex items-center gap-1 uppercase tracking-wider"><LayoutList size={14}/> المحل / الوكيل اليدوي</label>
-                    <select className="custom-select border-r-4 border-orange-500 font-bold" value={form.restaurant_id}
-onChange={(e)=>setForm({...form, restaurant_id: e.target.value})}
+<select
+  className="custom-select border-r-4 border-orange-500 font-bold"
+  value={form.restaurant_id}
+  onChange={(e)=>setForm({...form, restaurant_id: e.target.value})}
+>
+  <option value="">-- شراء مباشر (توصيل فقط) --</option>
 
-                      <option value="">-- شراء مباشر (توصيل فقط) --</option>
-                     {agents.map(r => (
-  <option key={r.id} value={r.id}>
-    🏪 {r.name}
-  </option>
-))}
+  {agents.map((r) => (
+    <option key={r.id} value={r.id}>
+      🏪 {r.name}
+    </option>
+  ))}
 
-                    </select>
+</select>
+
                   </div>
 
                   <div>
