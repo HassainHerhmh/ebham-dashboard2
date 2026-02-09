@@ -33,7 +33,7 @@ const ManualOrders: React.FC = () => {
 
   const [form, setForm] = useState({
     customer_id: "",
-    agent_id: "",
+  restaurant_id: "",
     to_address: "",
     delivery_fee: 0,
     notes: "",
@@ -43,33 +43,35 @@ const ManualOrders: React.FC = () => {
   /* ======================
      تحميل البيانات (API)
   ====================== */
-  const loadInitialData = async () => {
-    try {
-      setLoading(true);
-      const [ordersRes, custRes, accRes] = await Promise.all([
+const loadInitialData = async () => {
+  try {
+    setLoading(true);
 
-        api.get("/wassel-orders/manual/manual-list"),
-        api.get("/customers"),
-api.get("/restaurants")
-      ]);
+    const [ordersRes, custRes, restRes] = await Promise.all([
+      api.get("/wassel-orders/manual/manual-list"),
+      api.get("/customers"),
+      api.get("/restaurants")
+    ]);
 
-      setOrders(ordersRes.data?.orders || []);
-      setCustomers(custRes.data.customers || []);
-      
-      // فلترة المحلات المرتبطة باليدوي
-const manualRestaurants = (restRes.data?.restaurants || []).filter(
-  (r:any) => r.display_type === "manual"
-);
+    console.log("🏪 Restaurants:", restRes.data); // فحص
 
-setAgents(manualRestaurants);
+    setOrders(ordersRes.data?.orders || []);
+    setCustomers(custRes.data.customers || []);
 
+    // فقط المحلات اليدوية
+    const manualRestaurants = (restRes.data?.restaurants || []).filter(
+      (r: any) => r.display_type === "manual"
+    );
 
-    } catch (e) {
-      console.error("Error loading data", e);
-    } finally {
-      setLoading(false);
-    }
-  };
+    setAgents(manualRestaurants);
+
+  } catch (e) {
+    console.error("❌ Error loading data", e);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   useEffect(() => {
     loadInitialData();
@@ -108,13 +110,25 @@ setAgents(manualRestaurants);
   const saveOrder = async () => {
     if (!form.customer_id || items.length === 0) return alert("يرجى اختيار عميل وإضافة منتجات");
     try {
-      const payload = { ...form, items, total_amount: calculateTotal(), is_manual: true };
+const payload = {
+  ...form,
+  restaurant_id: form.restaurant_id,
+  items,
+  total_amount: calculateTotal()
+};
       const res = await api.post("/wassel-orders/manual", payload);
       if (res.data.success) {
         setShowModal(false);
         loadInitialData();
         setItems([]);
-        setForm({ customer_id: "", agent_id: "", to_address: "", delivery_fee: 0, notes: "", payment_method: "cod" });
+setForm({
+  customer_id: "",
+  restaurant_id: "",
+  to_address: "",
+  delivery_fee: 0,
+  notes: "",
+  payment_method: "cod"
+});
       }
     } catch (e: any) {
       alert(e.response?.data?.message || "خطأ أثناء الحفظ");
@@ -179,7 +193,7 @@ setAgents(manualRestaurants);
                 <tr key={o.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors">
                   <td className="p-4 font-bold text-gray-400">#{o.id}</td>
                   <td className="p-4 text-right font-black text-gray-800 dark:text-white">{o.customer_name}</td>
-                  <td className="p-4 text-right font-bold text-orange-600">{o.agent_name || "شراء مباشر"}</td>
+                  <td className="p-4 text-right font-bold text-orange-600">{o.restaurant_name || "شراء مباشر"}</td>
                   <td className="p-4 text-blue-600 font-bold">{o.captain_name || "—"}</td>
                   <td className="p-4 font-black text-gray-900 dark:text-white">{Number(o.total_amount).toLocaleString()}</td>
                   <td className="p-4">
@@ -245,7 +259,9 @@ setAgents(manualRestaurants);
 
                   <div>
                     <label className="text-[11px] font-black text-gray-400 mb-2 block flex items-center gap-1 uppercase tracking-wider"><LayoutList size={14}/> المحل / الوكيل اليدوي</label>
-                    <select className="custom-select border-r-4 border-orange-500 font-bold" value={form.agent_id} onChange={(e)=>setForm({...form, agent_id: e.target.value})}>
+                    <select className="custom-select border-r-4 border-orange-500 font-bold" value={form.restaurant_id}
+onChange={(e)=>setForm({...form, restaurant_id: e.target.value})}
+
                       <option value="">-- شراء مباشر (توصيل فقط) --</option>
                      {agents.map(r => (
   <option key={r.id} value={r.id}>
