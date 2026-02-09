@@ -56,9 +56,13 @@ const ManualOrders: React.FC = () => {
       setCustomers(custRes.data.customers || []);
       
       // فلترة المحلات المرتبطة باليدوي
-      const manualStores = (accRes.data?.list || []).filter((a: any) => 
-        a.account_level === "فرعي" && (a.parent_id === 15 || a.is_manual_store === 1)
-      );
+    const manualStores = [
+  { id: null, name_ar: "شراء مباشر (توصيل فقط)" },
+  ...(accRes.data?.list || []).filter(
+    (a:any)=>a.display_type==="manual"
+  )
+];
+
       setAgents(manualStores);
     } catch (e) {
       console.error("Error loading data", e);
