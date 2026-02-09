@@ -50,22 +50,20 @@ const ManualOrders: React.FC = () => {
 
         api.get("/wassel-orders/manual/manual-list"),
         api.get("/customers"),
-        api.get("/accounts")
+api.get("/restaurants")
       ]);
-              console.log("ACCOUNTS RAW DATA:", accRes.data);
-console.log("ACCOUNTS LIST:", accRes.data?.list);
+
       setOrders(ordersRes.data?.orders || []);
       setCustomers(custRes.data.customers || []);
       
       // فلترة المحلات المرتبطة باليدوي
-    const manualStores = [
-  { id: null, name_ar: "شراء مباشر (توصيل فقط)" },
-  ...(accRes.data?.list || []).filter(
-    (a:any)=>a.display_type==="manual"
-  )
-];
+const manualRestaurants = (restRes.data?.restaurants || []).filter(
+  (r:any) => r.display_type === "manual"
+);
 
-      setAgents(manualStores);
+setAgents(manualRestaurants);
+
+
     } catch (e) {
       console.error("Error loading data", e);
     } finally {
@@ -249,7 +247,12 @@ console.log("ACCOUNTS LIST:", accRes.data?.list);
                     <label className="text-[11px] font-black text-gray-400 mb-2 block flex items-center gap-1 uppercase tracking-wider"><LayoutList size={14}/> المحل / الوكيل اليدوي</label>
                     <select className="custom-select border-r-4 border-orange-500 font-bold" value={form.agent_id} onChange={(e)=>setForm({...form, agent_id: e.target.value})}>
                       <option value="">-- شراء مباشر (توصيل فقط) --</option>
-                      {agents.map(a => <option key={a.id} value={a.id}>🛒 {a.name_ar}</option>)}
+                     {agents.map(r => (
+  <option key={r.id} value={r.id}>
+    🏪 {r.name}
+  </option>
+))}
+
                     </select>
                   </div>
 
