@@ -25,9 +25,30 @@ const ManualOrders: React.FC = () => {
   const [selectedOrderDetails, setSelectedOrderDetails] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState("");
   
-  // الفلاتر
-  const [filterPeriod, setFilterPeriod] = useState("all");
-  const [filterStatus, setFilterStatus] = useState("all");
+  // ================= Tabs & Filters (مثل وصل لي) =================
+
+type OrderTab =
+  | "pending"
+  | "processing"
+  | "ready"
+  | "shipping"
+  | "completed"
+  | "cancelled";
+
+type DateFilter = "all" | "today" | "week";
+
+const [activeTab, setActiveTab] = useState<OrderTab>("pending");
+const [dateFilter, setDateFilter] = useState<DateFilter>("today");
+
+// ================= Edit Order =================
+const [editingOrder, setEditingOrder] = useState<any>(null);
+
+// ================= Captain Assign =================
+const [captains, setCaptains] = useState<any[]>([]);
+const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+const [showCaptainModal, setShowCaptainModal] = useState(false);
+const [captainsLoading, setCaptainsLoading] = useState(false);
+
 
   // بيانات المودال
   const [customers, setCustomers] = useState<any[]>([]);
@@ -81,6 +102,31 @@ const ManualOrders: React.FC = () => {
     }
   }, [form.customer_id]);
 
+
+  // ================= Date Filter =================
+const getFilteredByDateList = (list: any[]) => {
+  const now = new Date();
+  const todayStr = now.toLocaleDateString("en-CA");
+
+  return list.filter((o) => {
+    if (!o.created_at) return true;
+
+    const orderDate = new Date(o.created_at);
+    const orderDateStr = orderDate.toLocaleDateString("en-CA");
+
+    if (dateFilter === "today") return orderDateStr === todayStr;
+
+    if (dateFilter === "week") {
+      const weekAgo = new Date();
+      weekAgo.setDate(now.getDate() - 7);
+      weekAgo.setHours(0, 0, 0, 0);
+      return orderDate >= weekAgo;
+    }
+
+    return true;
+  });
+};
+
   /* ======================
      العمليات (Actions)
   ====================== */
@@ -119,27 +165,134 @@ const ManualOrders: React.FC = () => {
   const removeItem = (index: number) => setItems(items.filter((_, i) => i !== index));
   const calculateTotal = () => items.reduce((sum, item) => sum + (item.qty * item.price), 0) + Number(form.delivery_fee);
 
-  const saveOrder = async () => {
-    if (!form.customer_id || items.length === 0) return alert("يرجى اختيار عميل وإضافة منتجات");
-    try {
-      const payload = { ...form, items, total_amount: calculateTotal() };
-      const res = await api.post("/wassel-orders/manual", payload);
-      if (res.data.success) {
-        setShowModal(false);
-        loadInitialData();
-        setItems([]);
-        setForm({ customer_id: "", restaurant_id: "", to_address: "", delivery_fee: 0, notes: "", payment_method: "cod" });
-      }
-    } catch (e: any) { alert(e.response?.data?.message || "خطأ أثناء الحفظ"); }
-  };
+const saveOrder = async () => {
+  if (!form.customer_id || items.length === 0)
+    return alert("يرجى اختيار عميل وإضافة منتجات");
 
-  const filteredOrders = orders.filter(o => {
-    const matchSearch = o.customer_name?.includes(searchTerm) || o.id.toString().includes(searchTerm);
-    const matchStatus = filterStatus === "all" || o.status === filterStatus;
-    return matchSearch && matchStatus;
-  });
+  try {
+    const payload = {
+      ...form,
+      items,
+      total_amount: calculateTotal(),
+    };
 
-  const getStatusCounts = (status: string) => orders.filter(o => o.status === status).length;
+    if (editingOrder) {
+      await api.put(
+        `/wassel-orders/manual/${editingOrder.id}`,
+        payload
+      );
+    } else {
+      await api.post("/wassel-orders/manual", payload);
+    }
+
+    setShowModal(false);
+    setEditingOrder(null);
+
+    loadInitialData();
+
+    setItems([]);
+
+    setForm({
+      customer_id: "",
+      restaurant_id: "",
+      to_address: "",
+      delivery_fee: 0,
+      notes: "",
+      payment_method: "cod",
+    });
+
+  } catch (e: any) {
+    alert(e.response?.data?.message || "خطأ أثناء الحفظ");
+  }
+};
+
+ 
+  // ================= Main Filter =================
+const dateFilteredOrders = getFilteredByDateList(orders);
+
+const filteredOrders = dateFilteredOrders.filter((o) => {
+  const matchSearch =
+    o.customer_name?.includes(searchTerm) ||
+    o.id.toString().includes(searchTerm);
+
+  switch (activeTab) {
+    case "pending":
+      return o.status === "pending" && matchSearch;
+
+    case "processing":
+      return ["confirmed", "processing"].includes(o.status) && matchSearch;
+
+    case "ready":
+      return o.status === "ready" && matchSearch;
+
+    case "shipping":
+      return o.status === "shipping" && matchSearch;
+
+    case "completed":
+      return o.status === "completed" && matchSearch;
+
+    case "cancelled":
+      return o.status === "cancelled" && matchSearch;
+
+    default:
+      return matchSearch;
+  }
+});
+
+const getStatusCounts = (status: OrderTab) =>
+  dateFilteredOrders.filter((o) => {
+    if (status === "processing") {
+      return ["confirmed", "processing"].includes(o.status);
+    }
+    return o.status === status;
+  }).length;
+// ================= Edit Order =================
+
+const openEdit = (order: any) => {
+  setEditingOrder(order);
+
+  setForm({
+    customer_id: order.customer_id || "",
+    restaurant_id: order.restaurant_id || "",
+    to_address: order.to_address || "",
+    delivery_fee: Number(order.delivery_fee || 0),
+    notes: order.notes || "",
+    payment_method: order.payment_method || "cod",
+  });
+
+  setItems(order.items || []);
+
+  setShowModal(true);
+};
+
+// ================= Captain Assign =================
+
+const openCaptainModal = (orderId: number) => {
+  setSelectedOrderId(orderId);
+  setShowCaptainModal(true);
+  setCaptainsLoading(true);
+
+  api.get("/captains").then((res) => {
+    setCaptains(res.data.captains || []);
+    setCaptainsLoading(false);
+  });
+};
+
+const assignCaptain = async (captainId: number) => {
+  if (!selectedOrderId) return;
+
+  try {
+    await api.post("/wassel-orders/assign", {
+      orderId: selectedOrderId,
+      captainId,
+    });
+
+    setShowCaptainModal(false);
+    loadInitialData();
+  } catch (e) {
+    alert("خطأ في إسناد الكابتن");
+  }
+};
 
   return (
     <div className="w-full min-h-screen bg-[#f8fafc] dark:bg-gray-900 p-4 transition-all" dir="rtl">
@@ -160,33 +313,64 @@ const ManualOrders: React.FC = () => {
                 <Search className="absolute right-3 top-2.5 text-gray-400" size={16} />
                 <input type="text" placeholder="بحث سريع..." className="pr-10 pl-4 py-2 bg-gray-50 dark:bg-gray-700 border dark:border-gray-600 rounded-xl text-sm outline-none focus:ring-2 ring-orange-500/20 dark:text-white w-64 transition-all" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
              </div>
-             <button onClick={() => setShowModal(true)} className="bg-orange-500 text-white px-6 py-2 rounded-xl font-bold hover:bg-orange-600 transition shadow-lg flex items-center gap-2"><Plus size={18}/> إضافة طلب</button>
+            <button
+  onClick={() => {
+    setEditingOrder(null);
+    setItems([]);
+    setShowModal(true);
+  }}
+className="bg-orange-500 text-white px-6 py-2 rounded-xl font-bold hover:bg-orange-600 transition shadow-lg flex items-center gap-2"><Plus size={18}/> إضافة طلب</button>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-4 pt-2 border-t dark:border-gray-700">
-           <div className="flex bg-gray-100 dark:bg-gray-700 p-1 rounded-xl">
-              {['all', 'today', 'week'].map((p) => (
-                <button key={p} onClick={() => setFilterPeriod(p)} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${filterPeriod === p ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-500 dark:text-gray-400'}`}>
-                  {p === 'all' ? 'الكل' : p === 'today' ? 'اليوم' : 'الأسبوع'}
-                </button>
-              ))}
-           </div>
+       {/* ================= Date Filter ================= */}
+<div className="flex gap-2 justify-center border-b pb-3">
+  {[
+    { k: "all", l: "الكل" },
+    { k: "today", l: "اليوم" },
+    { k: "week", l: "الأسبوع" },
+  ].map((t) => (
+    <button
+      key={t.k}
+      onClick={() => setDateFilter(t.k as any)}
+      className={`px-4 py-1 rounded-full text-sm font-medium transition ${
+        dateFilter === t.k
+          ? "bg-indigo-600 text-white shadow-sm"
+          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+      }`}
+    >
+      {t.l}
+    </button>
+  ))}
+</div>
 
-           <div className="flex flex-wrap items-center gap-2">
-              {[
-                { s: 'pending', l: 'اعتماد', c: 'orange', icon: Clock },
-                { s: 'ready', l: 'جاهز', c: 'green', icon: CheckCircle },
-                { s: 'shipping', l: 'توصيل', c: 'blue', icon: Truck },
-                { s: 'completed', l: 'مكتمل', c: 'emerald', icon: CheckCircle },
-                { s: 'cancelled', l: 'ملغي', c: 'red', icon: AlertCircle }
-              ].map(status => (
-                <button key={status.s} onClick={() => setFilterStatus(status.s)} className={`status-filter-btn border-${status.c}-200 text-${status.c}-600 ${filterStatus === status.s ? `bg-${status.c}-600 text-white shadow-sm` : `bg-${status.c}-50`}`}>
-                  <span className="text-[10px] font-black">{status.l} ({getStatusCounts(status.s)})</span>
-                  <status.icon size={12}/>
-                </button>
-              ))}
-           </div>
+{/* ================= Status Tabs ================= */}
+<div className="flex gap-2 flex-wrap justify-center mt-3">
+  {[
+    { k: "pending", l: "🟡 اعتماد" },
+    { k: "processing", l: "🔵 معالجة" },
+    { k: "ready", l: "🟣 جاهز" },
+    { k: "shipping", l: "🚚 توصيل" },
+    { k: "completed", l: "✅ مكتمل" },
+    { k: "cancelled", l: "❌ ملغي" },
+  ].map((t) => (
+    <button
+      key={t.k}
+      onClick={() => setActiveTab(t.k as any)}
+      className={`px-4 py-2 rounded-lg border-b-4 transition-all ${
+        activeTab === t.k
+          ? "bg-blue-50 border-blue-600 text-blue-700"
+          : "bg-white border-transparent text-gray-500 hover:bg-gray-50"
+      }`}
+    >
+      {t.l}
+      <span className="text-[10px] bg-white/50 px-1.5 rounded-full ml-1">
+        ({getStatusCounts(t.k as any)})
+      </span>
+    </button>
+  ))}
+</div>
+
         </div>
       </div>
 
@@ -219,16 +403,47 @@ const ManualOrders: React.FC = () => {
                     </span>
                   </td>
                   <td className="p-3 border-l dark:border-gray-700">
-                    <select value={o.status} onChange={(e) => updateOrderStatus(o.id, e.target.value)} className={`status-dropdown text-[10px] font-black px-2 py-1 rounded-full outline-none transition-all ${o.status === 'pending' ? 'bg-orange-100 text-orange-700' : o.status === 'ready' ? 'bg-green-100 text-green-700' : o.status === 'shipping' ? 'bg-blue-100 text-blue-700' : o.status === 'completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
-                      <option value="pending">اعتماد</option>
-                      <option value="confirmed">مؤكد</option>
-                      <option value="ready">جاهز</option>
-                      <option value="shipping">توصيل</option>
-                      <option value="completed">مكتمل</option>
-                      <option value="cancelled">ملغي</option>
-                    </select>
+                 <select
+  value={o.status}
+  onChange={(e) => updateOrderStatus(o.id, e.target.value)}
+  className="border rounded-lg px-2 py-1 text-[11px] bg-white shadow-sm outline-none focus:ring-1 focus:ring-blue-300"
+>
+  <option value="pending">اعتماد</option>
+  <option value="processing">قيد المعالجة</option>
+  <option value="ready">جاهز</option>
+  <option value="shipping">توصيل</option>
+  <option value="completed">مكتمل</option>
+  <option value="cancelled">إلغاء</option>
+</select>
+
                   </td>
-                  <td className="p-4 text-center"><button onClick={() => openOrderDetails(o)} className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-all"><Eye size={16}/></button></td>
+<td className="p-4 flex gap-2 justify-center">
+
+  {/* عرض */}
+  <button
+    onClick={() => openOrderDetails(o)}
+    className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-all"
+  >
+    <Eye size={14} />
+  </button>
+
+  {/* تعديل */}
+  <button
+    onClick={() => openEdit(o)}
+    className="p-2 bg-yellow-50 text-yellow-600 rounded-lg hover:bg-yellow-500 hover:text-white transition-all"
+  >
+    ✏️
+  </button>
+
+  {/* كابتن */}
+  <button
+    onClick={() => openCaptainModal(o.id)}
+    className="p-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-600 hover:text-white transition-all"
+  >
+    👤
+  </button>
+
+</td>
                   <td className="p-4 text-xs text-gray-400 font-bold">{o.user_name || "Admin"}</td>
                 </tr>
               ))}
@@ -385,7 +600,10 @@ const ManualOrders: React.FC = () => {
               <div className="flex items-center gap-4">
                 <div className="p-3 bg-orange-500 rounded-2xl text-white shadow-lg"><ShoppingCart size={24}/></div>
                 <div>
-                  <h2 className="text-xl font-black dark:text-white uppercase tracking-tight">تسجيل طلب يدوي (منتجات متعددة)</h2>
+<h2 className="text-xl font-black dark:text-white uppercase tracking-tight">
+  {editingOrder ? "✏️ تعديل الطلب" : "➕ تسجيل طلب يدوي"}
+</h2>
+
                   <p className="text-[10px] text-gray-400 font-bold italic tracking-tighter">يتم اختيار العميل المسجل وتحديد بيانات الطلب</p>
                 </div>
               </div>
@@ -490,6 +708,67 @@ const ManualOrders: React.FC = () => {
             </div>
 
           </div>
+{/* ================= Captain Modal ================= */}
+{showCaptainModal && (
+  <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-[200] p-4">
+
+    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-md">
+
+      <div className="flex justify-between items-center border-b pb-3 mb-4">
+        <h2 className="text-lg font-black dark:text-white">
+          🚗 إسناد كابتن
+        </h2>
+
+        <button
+          onClick={() => setShowCaptainModal(false)}
+          className="text-gray-400 hover:text-black"
+        >
+          ✖
+        </button>
+      </div>
+
+      {captainsLoading ? (
+        <div className="text-center py-6">
+          ⏳ جاري التحميل...
+        </div>
+      ) : captains.length === 0 ? (
+        <div className="text-center py-6 text-red-500">
+          لا يوجد كباتن
+        </div>
+      ) : (
+        <ul className="divide-y max-h-60 overflow-y-auto">
+
+          {captains.map((c) => (
+            <li
+              key={c.id}
+              className="flex justify-between items-center py-3 px-2 hover:bg-gray-50 dark:hover:bg-gray-700"
+            >
+              <div>
+                <p className="font-bold dark:text-white">
+                  {c.name}
+                </p>
+
+                <p className="text-xs text-gray-400">
+                  معلقة: {c.pending_orders} | اليوم:{" "}
+                  {c.completed_today}
+                </p>
+              </div>
+
+              <button
+                onClick={() => assignCaptain(c.id)}
+                className="bg-green-600 text-white px-3 py-1 rounded-md text-sm hover:bg-green-700"
+              >
+                إسناد
+              </button>
+            </li>
+          ))}
+
+        </ul>
+      )}
+    </div>
+  </div>
+)}
+
         </div>
       )}
 
