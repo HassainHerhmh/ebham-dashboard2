@@ -161,12 +161,31 @@ const loadInitialData = async () => {
     setIsDetailsModalOpen(true);
   };
 
-  const updateOrderStatus = async (orderId: number, newStatus: string) => {
-    try {
-      const res = await api.put(`/wassel-orders/status/${orderId}`, { status: newStatus });
-      if (res.data.success) { loadInitialData(); }
-    } catch (e) { alert("خطأ في تحديث الحالة"); }
-  };
+const updateOrderStatus = async (orderId: number, newStatus: string) => {
+  try {
+
+    const res = await api.put(
+      `/wassel-orders/manual/status/${orderId}`,
+      { status: newStatus }
+    );
+
+    if (res.data.success) {
+      loadInitialData();
+    } else {
+      alert(res.data.error || "فشل التحديث");
+    }
+
+  } catch (e: any) {
+
+    console.error("Status Error:", e.response?.data || e);
+
+    alert(
+      e.response?.data?.error ||
+      "خطأ أثناء تحديث الحالة"
+    );
+  }
+};
+
 
   const openEdit = (order: any) => {
     setEditingOrder(order);
