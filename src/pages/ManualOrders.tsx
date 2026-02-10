@@ -258,6 +258,7 @@ const ManualOrders: React.FC = () => {
               <tr>
                 <th className="p-4">رقم</th>
                 <th className="text-right">العميل</th>
+                <th className="text-right">كابتن التوصيل</th>
                 <th className="text-right">المحل</th>
                 <th className="font-black italic text-green-600">المبلغ</th>
                 <th>نوع الدفع</th>
@@ -271,6 +272,9 @@ const ManualOrders: React.FC = () => {
                 <tr key={o.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors">
                   <td className="p-4 font-bold text-gray-400">#{o.id}</td>
                   <td className="p-4 text-right font-black text-gray-800 dark:text-white">{o.customer_name}</td>
+                  <td className="p-4 text-right font-bold text-indigo-600">
+                    {o.captain_name || <span className="text-gray-300 font-normal">لم يسند</span>}
+                  </td>
                   <td className="p-4 text-right font-bold text-orange-600">{o.restaurant_name || "شراء مباشر"}</td>
                   <td className="p-4 font-black text-gray-900 dark:text-white">{Number(o.total_amount).toLocaleString()} ريال</td>
                   <td className="p-4">
@@ -280,7 +284,7 @@ const ManualOrders: React.FC = () => {
                   </td>
                   <td className="p-3">
                     <div className="flex flex-col gap-2 items-center">
-                      <select value={o.status} onChange={(e) => updateOrderStatus(o.id, e.target.value)} className="border rounded-lg px-2 py-1 text-[10px] bg-white shadow-sm outline-none focus:ring-1 focus:ring-blue-300 w-full max-w-[120px] font-bold">
+                      <select value={o.status} onChange={(e) => updateOrderStatus(o.id, e.target.value)} className="border rounded-lg px-2 py-1 text-[10px] bg-white shadow-sm outline-none w-full max-w-[120px] font-bold">
                         <option value="pending">اعتماد</option>
                         <option value="processing">قيد المعالجة</option>
                         <option value="ready">جاهز</option>
@@ -339,7 +343,7 @@ const ManualOrders: React.FC = () => {
         </div>
       )}
 
-      {/* مودال الإضافة والتعديل (نفس ستايلك السابق) */}
+      {/* مودال الإضافة والتعديل */}
       {showModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-[100] p-4 animate-in fade-in">
           <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] w-full max-w-6xl max-h-[92vh] overflow-hidden shadow-2xl flex flex-col border dark:border-gray-700">
@@ -386,268 +390,16 @@ const ManualOrders: React.FC = () => {
         </div>
       )}
 
-  
-      {/* 🟡 مودال الفاتورة (Details) */}
-
+      {/* مودال تفاصيل الفاتورة */}
       {isDetailsModalOpen && selectedOrderDetails && (
-
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[100] p-4">
-
-          <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] shadow-2xl w-full max-w-4xl flex flex-col max-h-[92vh] overflow-hidden border dark:border-gray-700 transition-all">
-
-            
-
-            <div className="p-5 border-b dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
-
-              <h2 className="text-lg font-black dark:text-white flex items-center gap-2">🧾 فاتورة الطلب اليدوي #{selectedOrderDetails.id}</h2>
-
-              <button onClick={() => setIsDetailsModalOpen(false)} className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-full transition-colors"><X size={24}/></button>
-
-            </div>
-
-
-
-            <div ref={printRef} className="p-6 overflow-y-auto space-y-6 dark:text-white">
-
-              <div className="text-center space-y-1 mb-8 border-b pb-4 no-print">
-
-                <h1 className="text-2xl font-black text-indigo-600 tracking-tighter">فاتورة مبيعات مباشرة</h1>
-
-              </div>
-
-
-
-              {(() => {
-
-                // معالجة بيانات المطاعم للعرض الموحد
-
-                const restaurants = selectedOrderDetails.restaurants || [{
-
-                    name: selectedOrderDetails.restaurant_name || "شراء مباشر",
-
-                    total: Number(selectedOrderDetails.total_amount) - Number(selectedOrderDetails.delivery_fee || 0),
-
-                    items: selectedOrderDetails.items || []
-
-                }];
-
-                const delivery = Number(selectedOrderDetails.delivery_fee || 0);
-
-                const grandTotal = Number(selectedOrderDetails.total_amount || 0);
-
-
-
-                return (
-
-                  <>
-
-                    {restaurants.map((r: any, idx: number) => (
-
-                      <div key={idx} className="mb-6 border dark:border-gray-700 rounded-2xl p-4 bg-gray-50/30 dark:bg-gray-900/20">
-
-                        <h3 className="font-black text-md mb-3 text-indigo-600 flex items-center gap-2">🏪 المورد: {r.name}</h3>
-
-                        <table className="w-full text-sm">
-
-                          <thead className="bg-white dark:bg-gray-800 text-gray-400 text-[10px] font-black uppercase">
-
-                            <tr>
-
-                              <th className="p-3 text-right">المنتج</th>
-
-                              <th className="p-3">السعر</th>
-
-                              <th className="p-3">الكمية</th>
-
-                              <th className="p-3 text-left">الإجمالي</th>
-
-                            </tr>
-
-                          </thead>
-
-                          <tbody className="divide-y dark:divide-gray-700">
-
-                            {(r.items || []).map((p: any, i: number) => (
-
-                              <tr key={i} className="hover:bg-white dark:hover:bg-gray-800/50">
-
-                                <td className="py-3 px-3 text-right font-black">{p.product_name || p.name}</td>
-
-                                <td className="py-3 px-3 font-bold">{Number(p.price).toLocaleString()}</td>
-
-                                <td className="py-3 px-3 font-bold">{p.qty || p.quantity}</td>
-
-                                <td className="py-3 px-3 text-left font-black text-green-600">{Number(p.total || p.subtotal).toLocaleString()} ريال</td>
-
-                              </tr>
-
-                            ))}
-
-                          </tbody>
-
-                        </table>
-
-                        <div className="mt-3 text-left font-black text-xs text-gray-500 border-t pt-2">
-
-                           إجمالي الصنف: {Number(r.total).toLocaleString()} ريال
-
-                        </div>
-
-                      </div>
-
-                    ))}
-
-
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-                      <div className="border dark:border-gray-700 p-4 rounded-3xl bg-indigo-50/20 dark:bg-indigo-900/10 space-y-2 shadow-inner">
-
-                        <div className="flex justify-between text-sm"><span>📦 إجمالي المشتريات:</span><span className="font-bold">{(grandTotal - delivery).toLocaleString()} ريال</span></div>
-
-                        <div className="flex justify-between text-sm"><span>🚚 رسوم التوصيل:</span><span className="font-bold">{delivery.toLocaleString()} ريال</span></div>
-
-                        <div className="flex justify-between text-xl font-black text-indigo-600 border-t pt-2 mt-2"><span>💰 المجموع الكلي:</span><span>{grandTotal.toLocaleString()} ريال</span></div>
-
-                      </div>
-
-                      <div className="border dark:border-gray-700 p-4 rounded-3xl space-y-2 text-sm">
-
-                        <h4 className="font-black mb-1 flex items-center gap-2 border-b pb-2"><CreditCard size={16}/> تفاصيل الدفع</h4>
-
-                        <p>وسيلة السداد: <span className="font-black text-indigo-600">{selectedOrderDetails.payment_method === 'wallet' ? 'من الرصيد' : 'عند الاستلام'}</span></p>
-
-                        <p className="text-gray-400">الحالة المالية: <span className="text-green-600 font-black">مكتملة</span></p>
-
-                      </div>
-
-                    </div>
-
-
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-                   <div className="border dark:border-gray-700 p-4 rounded-3xl space-y-2">
-
-
-
-  <h3 className="text-xs font-black uppercase text-gray-400 mb-2">
-
-    👤 بيانات العميل
-
-  </h3>
-
-
-
-  <p className="font-black">
-
-    {selectedOrderDetails.customer_name}
-
-  </p>
-
-
-
-  {/* العنوان */}
-
-  <p className="text-xs text-gray-600 italic leading-relaxed">
-
-    📍 {selectedOrderDetails.area || ""} <br />
-
-    {selectedOrderDetails.to_address}
-
-  </p>
-
-
-
-  {/* رابط الخريطة */}
-
-  {selectedOrderDetails.latitude && selectedOrderDetails.longitude && (
-
-    <a
-
-      href={`https://www.google.com/maps?q=${selectedOrderDetails.latitude},${selectedOrderDetails.longitude}`}
-
-      target="_blank"
-
-      rel="noopener noreferrer"
-
-      className="flex items-center gap-1 mt-2 text-blue-600 hover:text-blue-800 text-xs font-black underline"
-
-    >
-
-      📌 فتح الموقع على الخريطة
-
-    </a>
-
-  )}
-
-
-
-</div>
-
-
-
-                      <div className="border dark:border-gray-700 p-4 rounded-3xl bg-yellow-50/30 dark:bg-yellow-900/10">
-
-                        <h3 className="text-xs font-black uppercase text-yellow-600 mb-1">📝 ملاحظات إضافية</h3>
-
-                        <p className="text-xs italic leading-relaxed">{selectedOrderDetails.notes || selectedOrderDetails.note || "لا توجد ملاحظات"}</p>
-
-                      </div>
-
-                    </div>
-
-                  </>
-
-                );
-
-              })()}
-
-            </div>
-
-
-
-            {/* ✅ تذييل المودال (Footer) */}
-
-            <div className="flex flex-col md:flex-row justify-between items-center p-5 border-t dark:border-gray-700 bg-gray-50/80 dark:bg-gray-900/50 gap-4">
-
-              <div className="text-sm">
-
-                <div className="flex items-center gap-2 mb-1">
-
-                  <span className="font-bold text-gray-700 dark:text-gray-400">الحالة:</span>
-
-                  <span className={`px-3 py-0.5 rounded-full text-[10px] font-black uppercase ${
-
-                    selectedOrderDetails.status === 'completed' ? 'bg-green-100 text-green-700' :
-
-                    selectedOrderDetails.status === 'cancelled' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
-
-                  }`}>{selectedOrderDetails.status}</span>
-
-                </div>
-
-                <div className="text-xs text-gray-600 dark:text-gray-400">
-
-                  <span className="font-bold">المستخدم: </span>
-
-                  <span className="font-medium text-black dark:text-white">{selectedOrderDetails.user_name || "—"}</span>
-
-                </div>
-
-                <div className="text-[10px] text-gray-400 dir-ltr mt-1">
-
-                  🕒 {new Date(selectedOrderDetails.updated_at || selectedOrderDetails.created_at || new Date()).toLocaleString('ar-YE')}
-
-                </div>
-
-              </div>
-
-
-
-              <div className="flex gap-3">
-
-                <button onClick={handlePrint} className="bg-indigo-600 text-white px-8 py-2.5 rounded-2xl font-black hover:bg-indigo-700 shadow-lg shadow-indigo-600/20 active:scale-95 transition-all flex items-center gap-2"><Printer size={18}/> طباعة الفاتورة</button>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[110] p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] shadow-2xl w-full max-w-4xl flex flex-col max-h-[92vh] overflow-hidden border dark:border-gray-700 animate-in fade-in zoom-in">
+            <div className="p-5 border-b dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50"><h2 className="text-lg font-black dark:text-white flex items-center gap-2">🧾 فاتورة الطلب اليدوي #{selectedOrderDetails.id}</h2><button onClick={() => setIsDetailsModalOpen(false)} className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-full transition-colors"><X size={24}/></button></div>
+            <div ref={printRef} className="p-8 overflow-y-auto space-y-8 dark:text-white"><div className="text-center mb-6 border-b pb-4"><h1 className="text-2xl font-black text-indigo-600 tracking-tighter">فاتورة مبيعات يدوية</h1></div><div className="grid grid-cols-2 gap-8"><div className="space-y-3"><p className="text-xs uppercase font-black text-gray-400">المرسل إليه:</p><p className="text-lg font-black">{selectedOrderDetails.customer_name}</p><p className="text-sm font-bold text-gray-500 italic">📍 {selectedOrderDetails.to_address}</p></div><div className="space-y-3 text-left"><p className="text-xs uppercase font-black text-gray-400">بيانات الفاتورة:</p><p className="font-bold">المورد: {selectedOrderDetails.restaurant_name || "شراء مباشر"}</p><p className="font-bold">وسيلة الدفع: {selectedOrderDetails.payment_method === 'wallet' ? 'من الرصيد' : 'كاش'}</p></div></div><table className="w-full text-sm border-2 rounded-2xl overflow-hidden"><thead className="bg-gray-50 dark:bg-gray-900 font-black"><tr><th className="p-4 text-right">المنتج</th><th className="p-4">الكمية</th><th className="p-4">السعر</th><th className="p-4 text-left">الإجمالي</th></tr></thead><tbody className="divide-y dark:divide-gray-700">{(selectedOrderDetails.items || []).map((p: any, i: number) => (<tr key={i}><td className="p-4 font-black">{p.name || p.product_name}</td><td className="p-4 text-center font-bold">{p.qty || p.quantity}</td><td className="p-4 text-center font-bold">{Number(p.price).toLocaleString()}</td><td className="p-4 text-left font-black text-green-600">{(Number(p.qty || p.quantity) * Number(p.price)).toLocaleString()} ريال</td></tr>))}</tbody></table><div className="flex justify-end pt-4"><div className="w-64 space-y-3 border-t-2 pt-4"><div className="flex justify-between text-sm"><span>رسوم التوصيل:</span><span className="font-bold">{Number(selectedOrderDetails.delivery_fee).toLocaleString()} ريال</span></div><div className="flex justify-between text-xl font-black text-indigo-600"><span>الإجمالي:</span><span>{Number(selectedOrderDetails.total_amount).toLocaleString()} ريال</span></div></div></div></div>
+            <div className="p-6 border-t dark:border-gray-700 bg-gray-50/80 dark:bg-gray-900/50 flex justify-end gap-3"><button onClick={handlePrint} className="bg-indigo-600 text-white px-8 py-3 rounded-2xl font-black hover:bg-indigo-700 shadow-lg flex items-center gap-2"><Printer size={18}/> طباعة</button><button onClick={() => setIsDetailsModalOpen(false)} className="bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-6 py-3 rounded-2xl font-black hover:bg-gray-300">إغلاق</button></div>
+          </div>
+        </div>
+      )}
 
       {/* الستايلات */}
       <style>{`
