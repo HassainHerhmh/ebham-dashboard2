@@ -202,6 +202,45 @@ const ManualOrders: React.FC = () => {
     } catch (e: any) { alert(e.response?.data?.message || "خطأ أثناء الحفظ"); }
   };
 
+
+
+  const renderPaymentIcon = (method: string) => {
+  switch (method) {
+    case "cod":
+      return (
+        <div className="flex items-center gap-1 text-green-600 font-bold bg-green-50 px-2 py-0.5 rounded-full border border-green-100 text-[10px]">
+          <Banknote size={10} /> الدقع عند الاستلام
+        </div>
+      );
+
+    case "wallet":
+      return (
+        <div className="flex items-center gap-1 text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100 text-[10px]">
+          <Wallet size={10} /> من رصيدي
+        </div>
+      );
+
+    case "bank":
+      return (
+        <div className="flex items-center gap-1 text-indigo-600 font-bold bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100 text-[10px]">
+          <Building2 size={10} /> إيداع بنكي
+        </div>
+      );
+
+    case "online":
+      return (
+        <div className="flex items-center gap-1 text-purple-600 font-bold bg-purple-50 px-2 py-0.5 rounded-full border border-purple-100 text-[10px]">
+          <CreditCard size={10} /> إلكتروني
+        </div>
+      );
+
+    default:
+      return (
+        <span className="text-gray-400 text-xs font-bold">—</span>
+      );
+  }
+};
+
   return (
     <div className="w-full min-h-screen bg-[#f8fafc] dark:bg-gray-900 p-4 transition-all" dir="rtl">
       
@@ -277,11 +316,10 @@ const ManualOrders: React.FC = () => {
                   </td>
                   <td className="p-4 text-right font-bold text-orange-600">{o.restaurant_name || "شراء مباشر"}</td>
                   <td className="p-4 font-black text-gray-900 dark:text-white">{Number(o.total_amount).toLocaleString()} ريال</td>
-                  <td className="p-4">
-                    <span className={`px-2 py-1 rounded-md text-[10px] font-black border ${o.payment_method === 'wallet' ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-green-50 text-green-600 border-green-100'}`}>
-                      {o.payment_method === 'wallet' ? 'محفظة' : 'نقداً'}
-                    </span>
-                  </td>
+            <td className="p-4 flex justify-center">
+  {renderPaymentIcon(o.payment_method)}
+</td>
+
                   <td className="p-3">
                     <div className="flex flex-col gap-2 items-center">
                       <select value={o.status} onChange={(e) => updateOrderStatus(o.id, e.target.value)} className="border rounded-lg px-2 py-1 text-[10px] bg-white shadow-sm outline-none w-full max-w-[120px] font-bold">
