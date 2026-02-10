@@ -591,6 +591,7 @@ const ManualOrders: React.FC = () => {
   </div>
 
 </div>
+</div>
 
 
     {/* Footer */}
