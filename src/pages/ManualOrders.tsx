@@ -139,14 +139,43 @@ const loadInitialData = async () => {
 
   const dateFilteredOrders = getFilteredByDateList(orders);
 
-  const filteredOrders = dateFilteredOrders.filter((o) => {
-    const matchSearch = o.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) || o.id.toString().includes(searchTerm);
-    const tabMatch = activeTab === "processing" ? ["confirmed", "processing"].includes(o.status) : o.status === activeTab;
-    return matchSearch && tabMatch;
-  });
+ const filteredOrders = dateFilteredOrders.filter((o) => {
 
-  const getStatusCounts = (status: OrderTab) =>
-    dateFilteredOrders.filter((o) => status === "processing" ? ["confirmed", "processing"].includes(o.status) : o.status === status).length;
+  const matchSearch =
+    o.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    o.id.toString().includes(searchTerm);
+
+  const statusMap: Record<string, string[]> = {
+    pending: ["pending"],
+    processing: ["processing", "confirmed"],
+    ready: ["ready"],
+    delivering: ["delivering"],
+    completed: ["completed"],
+    cancelled: ["cancelled"],
+  };
+
+  const tabMatch =
+    statusMap[activeTab]?.includes(o.status);
+
+  return matchSearch && tabMatch;
+});
+
+const getStatusCounts = (status: OrderTab) => {
+
+  const statusMap: Record<string, string[]> = {
+    pending: ["pending"],
+    processing: ["processing", "confirmed"],
+    ready: ["ready"],
+    delivering: ["delivering"],
+    completed: ["completed"],
+    cancelled: ["cancelled"],
+  };
+
+  return dateFilteredOrders.filter((o) =>
+    statusMap[status]?.includes(o.status)
+  ).length;
+};
+
 
   /* ======================
       العمليات (Actions)
