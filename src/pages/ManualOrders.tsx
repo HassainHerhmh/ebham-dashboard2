@@ -69,22 +69,43 @@ const ManualOrders: React.FC = () => {
   /* ======================
       تحميل البيانات (API)
   ====================== */
-  const loadInitialData = async () => {
-    try {
-      setLoading(true);
-      const [ordersRes, custRes, restRes] = await Promise.all([
-        api.get("/wassel-orders/manual/manual-list"),
-        api.get("/customers"),
-        api.get("/restaurants"),
-          api.get("/wassel-orders/banks") // ✅ جلب البنوك
+const loadInitialData = async () => {
+  try {
+    setLoading(true);
 
-      ]);
-      setOrders(ordersRes.data?.orders || []);
-      setCustomers(custRes.data.customers || []);
-      const manualRestaurants = (restRes.data?.restaurants || []).filter((r: any) => r.display_type === "manual");
-      setAgents(manualRestaurants);
-    } catch (e) { console.error("❌ Error loading data", e); } finally { setLoading(false); }
-  };
+    const [
+      ordersRes,
+      custRes,
+      restRes,
+      banksRes // ✅ استقبل البنوك
+    ] = await Promise.all([
+
+      api.get("/wassel-orders/manual/manual-list"),
+      api.get("/customers"),
+      api.get("/restaurants"),
+      api.get("/wassel-orders/banks")
+
+    ]);
+
+    setOrders(ordersRes.data?.orders || []);
+    setCustomers(custRes.data.customers || []);
+
+    const manualRestaurants =
+      (restRes.data?.restaurants || [])
+        .filter((r: any) => r.display_type === "manual");
+
+    setAgents(manualRestaurants);
+
+    // ✅ أهم سطر
+    setBanks(banksRes.data?.banks || []);
+
+  } catch (e) {
+    console.error("❌ Error loading data", e);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   useEffect(() => { loadInitialData(); }, []);
 
