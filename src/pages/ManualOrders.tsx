@@ -390,16 +390,193 @@ const ManualOrders: React.FC = () => {
         </div>
       )}
 
-      {/* مودال تفاصيل الفاتورة */}
-      {isDetailsModalOpen && selectedOrderDetails && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[110] p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] shadow-2xl w-full max-w-4xl flex flex-col max-h-[92vh] overflow-hidden border dark:border-gray-700 animate-in fade-in zoom-in">
-            <div className="p-5 border-b dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50"><h2 className="text-lg font-black dark:text-white flex items-center gap-2">🧾 فاتورة الطلب اليدوي #{selectedOrderDetails.id}</h2><button onClick={() => setIsDetailsModalOpen(false)} className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-full transition-colors"><X size={24}/></button></div>
-            <div ref={printRef} className="p-8 overflow-y-auto space-y-8 dark:text-white"><div className="text-center mb-6 border-b pb-4"><h1 className="text-2xl font-black text-indigo-600 tracking-tighter">فاتورة مبيعات يدوية</h1></div><div className="grid grid-cols-2 gap-8"><div className="space-y-3"><p className="text-xs uppercase font-black text-gray-400">المرسل إليه:</p><p className="text-lg font-black">{selectedOrderDetails.customer_name}</p><p className="text-sm font-bold text-gray-500 italic">📍 {selectedOrderDetails.to_address}</p></div><div className="space-y-3 text-left"><p className="text-xs uppercase font-black text-gray-400">بيانات الفاتورة:</p><p className="font-bold">المورد: {selectedOrderDetails.restaurant_name || "شراء مباشر"}</p><p className="font-bold">وسيلة الدفع: {selectedOrderDetails.payment_method === 'wallet' ? 'من الرصيد' : 'كاش'}</p></div></div><table className="w-full text-sm border-2 rounded-2xl overflow-hidden"><thead className="bg-gray-50 dark:bg-gray-900 font-black"><tr><th className="p-4 text-right">المنتج</th><th className="p-4">الكمية</th><th className="p-4">السعر</th><th className="p-4 text-left">الإجمالي</th></tr></thead><tbody className="divide-y dark:divide-gray-700">{(selectedOrderDetails.items || []).map((p: any, i: number) => (<tr key={i}><td className="p-4 font-black">{p.name || p.product_name}</td><td className="p-4 text-center font-bold">{p.qty || p.quantity}</td><td className="p-4 text-center font-bold">{Number(p.price).toLocaleString()}</td><td className="p-4 text-left font-black text-green-600">{(Number(p.qty || p.quantity) * Number(p.price)).toLocaleString()} ريال</td></tr>))}</tbody></table><div className="flex justify-end pt-4"><div className="w-64 space-y-3 border-t-2 pt-4"><div className="flex justify-between text-sm"><span>رسوم التوصيل:</span><span className="font-bold">{Number(selectedOrderDetails.delivery_fee).toLocaleString()} ريال</span></div><div className="flex justify-between text-xl font-black text-indigo-600"><span>الإجمالي:</span><span>{Number(selectedOrderDetails.total_amount).toLocaleString()} ريال</span></div></div></div></div>
-            <div className="p-6 border-t dark:border-gray-700 bg-gray-50/80 dark:bg-gray-900/50 flex justify-end gap-3"><button onClick={handlePrint} className="bg-indigo-600 text-white px-8 py-3 rounded-2xl font-black hover:bg-indigo-700 shadow-lg flex items-center gap-2"><Printer size={18}/> طباعة</button><button onClick={() => setIsDetailsModalOpen(false)} className="bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-6 py-3 rounded-2xl font-black hover:bg-gray-300">إغلاق</button></div>
-          </div>
+    {/* ===== مودال تفاصيل الطلب (تصميم مطور) ===== */}
+{isDetailsModalOpen && selectedOrderDetails && (
+
+<div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[120] p-4">
+
+  <div className="bg-white dark:bg-gray-800 rounded-[2rem] shadow-2xl w-full max-w-5xl max-h-[92vh] overflow-hidden flex flex-col border">
+
+    {/* Header */}
+    <div className="p-5 border-b flex justify-between items-center bg-gray-50 dark:bg-gray-900">
+
+      <h2 className="text-xl font-black text-indigo-600">
+        🧾 فاتورة الطلب #{selectedOrderDetails.id}
+      </h2>
+
+      <button
+        onClick={() => setIsDetailsModalOpen(false)}
+        className="p-2 hover:bg-red-100 rounded-full"
+      >
+        <X size={22}/>
+      </button>
+
+    </div>
+
+    {/* Body */}
+    <div ref={printRef} className="flex-1 overflow-y-auto p-6 space-y-6">
+
+      {/* معلومات العميل */}
+      <div className="grid md:grid-cols-2 gap-4">
+
+        <div className="border rounded-2xl p-4 bg-gray-50">
+          <h3 className="font-black mb-2">👤 العميل</h3>
+
+          <p><b>الاسم:</b> {selectedOrderDetails.customer_name}</p>
+          <p><b>الهاتف:</b> {selectedOrderDetails.customer_phone}</p>
+          <p><b>العنوان:</b> {selectedOrderDetails.customer_address}</p>
         </div>
-      )}
+
+        <div className="border rounded-2xl p-4 bg-white">
+          <h3 className="font-black mb-2">💳 الدفع</h3>
+
+          <p>
+            الطريقة:
+            <span className="text-indigo-600 font-bold ml-1">
+              {selectedOrderDetails.payment_method === "wallet"
+                ? "محفظة"
+                : "كاش"}
+            </span>
+          </p>
+
+          <p className="mt-2 text-green-600 font-bold">
+            الحالة: مكتملة
+          </p>
+        </div>
+
+      </div>
+
+      {/* المنتجات */}
+      <div className="border rounded-2xl overflow-hidden">
+
+        <div className="bg-gray-100 p-3 font-black text-gray-600">
+          📦 تفاصيل الطلب
+        </div>
+
+        <table className="w-full text-sm text-center">
+
+          <thead className="bg-gray-50 font-bold">
+            <tr>
+              <th className="p-3 text-right">المنتج</th>
+              <th>الكمية</th>
+              <th>السعر</th>
+              <th className="text-left">الإجمالي</th>
+            </tr>
+          </thead>
+
+          <tbody className="divide-y">
+
+            {(selectedOrderDetails.items || []).map((p,i)=>(
+              <tr key={i} className="hover:bg-gray-50">
+
+                <td className="p-3 text-right font-bold">
+                  {p.name || p.product_name}
+                </td>
+
+                <td>{p.qty || p.quantity}</td>
+
+                <td>{Number(p.price).toLocaleString()}</td>
+
+                <td className="text-left font-black text-green-600">
+                  {(Number(p.qty||p.quantity)*Number(p.price)).toLocaleString()} ريال
+                </td>
+
+              </tr>
+            ))}
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+      {/* الإجماليات */}
+      <div className="grid md:grid-cols-2 gap-4">
+
+        <div className="border rounded-2xl p-4 bg-indigo-50">
+
+          <div className="flex justify-between text-sm">
+            <span>المشتريات</span>
+            <span className="font-bold">
+              {(Number(selectedOrderDetails.total_amount) -
+               Number(selectedOrderDetails.delivery_fee)).toLocaleString()}
+            </span>
+          </div>
+
+          <div className="flex justify-between text-sm">
+            <span>التوصيل</span>
+            <span className="font-bold">
+              {Number(selectedOrderDetails.delivery_fee).toLocaleString()}
+            </span>
+          </div>
+
+          <div className="flex justify-between text-xl font-black text-indigo-600 border-t mt-2 pt-2">
+            <span>الإجمالي</span>
+            <span>
+              {Number(selectedOrderDetails.total_amount).toLocaleString()} ريال
+            </span>
+          </div>
+
+        </div>
+
+        {/* ملاحظات */}
+        <div className="border rounded-2xl p-4 bg-yellow-50">
+
+          <h3 className="font-black mb-2">📝 ملاحظات</h3>
+
+          <p className="text-sm">
+            {selectedOrderDetails.note || "لا توجد ملاحظات"}
+          </p>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    {/* Footer */}
+    <div className="p-5 border-t bg-gray-50 flex justify-between items-center">
+
+      <div className="text-sm text-gray-600">
+
+        <p>
+          الحالة:
+          <span className="ml-1 font-bold text-blue-600">
+            {selectedOrderDetails.status}
+          </span>
+        </p>
+
+        <p>
+          المستخدم: {(selectedOrderDetails as any).user_name || "—"}
+        </p>
+
+      </div>
+
+      <div className="flex gap-3">
+
+        <button
+          onClick={handlePrint}
+          className="bg-indigo-600 text-white px-6 py-2 rounded-xl font-bold hover:bg-indigo-700"
+        >
+          <Printer size={16}/> طباعة
+        </button>
+
+        <button
+          onClick={()=>setIsDetailsModalOpen(false)}
+          className="bg-gray-400 text-white px-5 py-2 rounded-xl font-bold"
+        >
+          إغلاق
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+)}
+
 
       {/* الستايلات */}
       <style>{`
