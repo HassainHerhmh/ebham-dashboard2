@@ -164,10 +164,10 @@ const loadInitialData = async () => {
 const updateOrderStatus = async (orderId: number, newStatus: string) => {
   try {
 
-const res = await api.put(
-  `/wassel-orders/status/${orderId}`,
-  { status: newStatus }
-);
+const res = await api.put(`/wassel-orders/manual/status/${orderId}`, {
+  status: newStatus
+});
+
 
 
     if (res.data.success) {
