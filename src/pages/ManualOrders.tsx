@@ -416,123 +416,182 @@ const ManualOrders: React.FC = () => {
     {/* Body */}
     <div ref={printRef} className="flex-1 overflow-y-auto p-6 space-y-6">
 
-      {/* معلومات العميل */}
-      <div className="grid md:grid-cols-2 gap-4">
+{/* معلومات العميل + المحل */}
+<div className="grid md:grid-cols-2 gap-4">
 
-        <div className="border rounded-2xl p-4 bg-gray-50">
-          <h3 className="font-black mb-2">👤 العميل</h3>
+  {/* بيانات العميل */}
+  <div className="border rounded-2xl p-4 bg-gray-50">
 
-          <p><b>الاسم:</b> {selectedOrderDetails.customer_name}</p>
-          <p><b>الهاتف:</b> {selectedOrderDetails.customer_phone}</p>
-          <p><b>العنوان:</b> {selectedOrderDetails.customer_address}</p>
-        </div>
+    <h3 className="font-black mb-3 flex items-center gap-2">
+      👤 بيانات العميل
+    </h3>
 
-        <div className="border rounded-2xl p-4 bg-white">
-          <h3 className="font-black mb-2">💳 الدفع</h3>
+    <p className="mb-1">
+      <b>الاسم:</b> {selectedOrderDetails.customer_name || "—"}
+    </p>
 
-          <p>
-            الطريقة:
-            <span className="text-indigo-600 font-bold ml-1">
-              {selectedOrderDetails.payment_method === "wallet"
-                ? "محفظة"
-                : "كاش"}
-            </span>
-          </p>
+    <p className="mb-1">
+      <b>الهاتف:</b> {selectedOrderDetails.customer_phone || "—"}
+    </p>
 
-          <p className="mt-2 text-green-600 font-bold">
-            الحالة: مكتملة
-          </p>
-        </div>
+    <p className="mb-1">
+      <b>الحي:</b>{" "}
+      {selectedOrderDetails.neighborhood_name || "غير محدد"}
+    </p>
 
-      </div>
+    <p className="mb-2 text-sm text-gray-600 leading-relaxed">
+      <b>العنوان:</b>{" "}
+      {selectedOrderDetails.customer_address ||
+        selectedOrderDetails.to_address ||
+        "—"}
+    </p>
 
-      {/* المنتجات */}
-      <div className="border rounded-2xl overflow-hidden">
+    {/* زر GPS */}
+    {(selectedOrderDetails.latitude &&
+      selectedOrderDetails.longitude) ? (
 
-        <div className="bg-gray-100 p-3 font-black text-gray-600">
-          📦 تفاصيل الطلب
-        </div>
+      <a
+        href={`https://www.google.com/maps?q=${selectedOrderDetails.latitude},${selectedOrderDetails.longitude}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-2 mt-2 text-blue-600 font-bold text-sm hover:underline"
+      >
+        📍 فتح الموقع على الخريطة
+      </a>
 
-        <table className="w-full text-sm text-center">
+    ) : selectedOrderDetails.map_url ? (
 
-          <thead className="bg-gray-50 font-bold">
-            <tr>
-              <th className="p-3 text-right">المنتج</th>
-              <th>الكمية</th>
-              <th>السعر</th>
-              <th className="text-left">الإجمالي</th>
-            </tr>
-          </thead>
+      <a
+        href={selectedOrderDetails.map_url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-2 mt-2 text-blue-600 font-bold text-sm hover:underline"
+      >
+        📍 فتح الموقع على الخريطة
+      </a>
 
-          <tbody className="divide-y">
+    ) : null}
 
-            {(selectedOrderDetails.items || []).map((p,i)=>(
-              <tr key={i} className="hover:bg-gray-50">
+  </div>
 
-                <td className="p-3 text-right font-bold">
-                  {p.name || p.product_name}
-                </td>
 
-                <td>{p.qty || p.quantity}</td>
+  {/* بيانات المحل */}
+  <div className="border rounded-2xl p-4 bg-white">
 
-                <td>{Number(p.price).toLocaleString()}</td>
+    <h3 className="font-black mb-3 flex items-center gap-2">
+      🏪 بيانات المحل
+    </h3>
 
-                <td className="text-left font-black text-green-600">
-                  {(Number(p.qty||p.quantity)*Number(p.price)).toLocaleString()} ريال
-                </td>
+    <p className="mb-1">
+      <b>الاسم:</b>{" "}
+      {selectedOrderDetails.restaurant_name || "شراء مباشر"}
+    </p>
 
-              </tr>
-            ))}
+    <p className="mb-1">
+      <b>الهاتف:</b>{" "}
+      {selectedOrderDetails.restaurant_phone || "—"}
+    </p>
 
-          </tbody>
+    {selectedOrderDetails.restaurant_address && (
+      <p className="text-sm text-gray-600 leading-relaxed">
+        <b>العنوان:</b> {selectedOrderDetails.restaurant_address}
+      </p>
+    )}
 
-        </table>
+  </div>
 
-      </div>
+</div>
 
-      {/* الإجماليات */}
-      <div className="grid md:grid-cols-2 gap-4">
 
-        <div className="border rounded-2xl p-4 bg-indigo-50">
+{/* المنتجات */}
+<div className="border rounded-2xl overflow-hidden">
 
-          <div className="flex justify-between text-sm">
-            <span>المشتريات</span>
-            <span className="font-bold">
-              {(Number(selectedOrderDetails.total_amount) -
-               Number(selectedOrderDetails.delivery_fee)).toLocaleString()}
-            </span>
-          </div>
+  <div className="bg-gray-100 p-3 font-black text-gray-600">
+    📦 تفاصيل الطلب
+  </div>
 
-          <div className="flex justify-between text-sm">
-            <span>التوصيل</span>
-            <span className="font-bold">
-              {Number(selectedOrderDetails.delivery_fee).toLocaleString()}
-            </span>
-          </div>
+  <table className="w-full text-sm text-center">
 
-          <div className="flex justify-between text-xl font-black text-indigo-600 border-t mt-2 pt-2">
-            <span>الإجمالي</span>
-            <span>
-              {Number(selectedOrderDetails.total_amount).toLocaleString()} ريال
-            </span>
-          </div>
+    <thead className="bg-gray-50 font-bold">
+      <tr>
+        <th className="p-3 text-right">المنتج</th>
+        <th>الكمية</th>
+        <th>السعر</th>
+        <th className="text-left">الإجمالي</th>
+      </tr>
+    </thead>
 
-        </div>
+    <tbody className="divide-y">
 
-        {/* ملاحظات */}
-        <div className="border rounded-2xl p-4 bg-yellow-50">
+      {(selectedOrderDetails.items || []).map((p,i)=>(
+        <tr key={i} className="hover:bg-gray-50">
 
-          <h3 className="font-black mb-2">📝 ملاحظات</h3>
+          <td className="p-3 text-right font-bold">
+            {p.name || p.product_name}
+          </td>
 
-          <p className="text-sm">
-            {selectedOrderDetails.note || "لا توجد ملاحظات"}
-          </p>
+          <td>{p.qty || p.quantity}</td>
 
-        </div>
+          <td>{Number(p.price).toLocaleString()}</td>
 
-      </div>
+          <td className="text-left font-black text-green-600">
+            {(Number(p.qty||p.quantity)*Number(p.price)).toLocaleString()} ريال
+          </td>
 
+        </tr>
+      ))}
+
+    </tbody>
+
+  </table>
+
+</div>
+
+
+{/* الإجماليات + الملاحظات */}
+<div className="grid md:grid-cols-2 gap-4">
+
+  {/* الإجماليات */}
+  <div className="border rounded-2xl p-4 bg-indigo-50">
+
+    <div className="flex justify-between text-sm">
+      <span>المشتريات</span>
+      <span className="font-bold">
+        {(Number(selectedOrderDetails.total_amount) -
+         Number(selectedOrderDetails.delivery_fee)).toLocaleString()}
+      </span>
     </div>
+
+    <div className="flex justify-between text-sm">
+      <span>التوصيل</span>
+      <span className="font-bold">
+        {Number(selectedOrderDetails.delivery_fee).toLocaleString()}
+      </span>
+    </div>
+
+    <div className="flex justify-between text-xl font-black text-indigo-600 border-t mt-2 pt-2">
+      <span>الإجمالي</span>
+      <span>
+        {Number(selectedOrderDetails.total_amount).toLocaleString()} ريال
+      </span>
+    </div>
+
+  </div>
+
+
+  {/* الملاحظات */}
+  <div className="border rounded-2xl p-4 bg-yellow-50">
+
+    <h3 className="font-black mb-2">📝 ملاحظات</h3>
+
+    <p className="text-sm leading-relaxed">
+      {selectedOrderDetails.note || "لا توجد ملاحظات"}
+    </p>
+
+  </div>
+
+</div>
+
 
     {/* Footer */}
     <div className="p-5 border-t bg-gray-50 flex justify-between items-center">
