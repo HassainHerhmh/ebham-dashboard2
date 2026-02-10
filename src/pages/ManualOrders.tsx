@@ -27,7 +27,8 @@ const ManualOrders: React.FC = () => {
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedOrderDetails, setSelectedOrderDetails] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  
+  const [banks, setBanks] = useState<any[]>([]);
+
   const [activeTab, setActiveTab] = useState<OrderTab>("pending");
   const [dateFilter, setDateFilter] = useState<DateFilter>("today");
   const [editingOrder, setEditingOrder] = useState<any>(null);
@@ -57,6 +58,8 @@ const ManualOrders: React.FC = () => {
     delivery_fee: 0,
     notes: "",
     payment_method: "cod",
+      bank_id: "", // ✅ مهم
+
   });
 
   const handlePrint = useReactToPrint({
@@ -73,6 +76,8 @@ const ManualOrders: React.FC = () => {
         api.get("/wassel-orders/manual/manual-list"),
         api.get("/customers"),
         api.get("/restaurants")
+          api.get("/wassel-orders/banks") // ✅ جلب البنوك
+
       ]);
       setOrders(ordersRes.data?.orders || []);
       setCustomers(custRes.data.customers || []);
@@ -151,6 +156,8 @@ const ManualOrders: React.FC = () => {
       delivery_fee: Number(order.delivery_fee || 0),
       notes: order.notes || "",
       payment_method: order.payment_method || "cod",
+        bank_id: order.bank_id || "", // ✅
+
     });
     setItems(order.items || []);
     setShowModal(true);
@@ -193,7 +200,12 @@ const ManualOrders: React.FC = () => {
   const saveOrder = async () => {
     if (!form.customer_id || items.length === 0) return alert("يرجى اختيار عميل وإضافة منتجات");
     try {
-      const payload = { ...form, items, total_amount: calculateTotal() };
+const payload = {
+  ...form,
+  bank_id: form.bank_id, // ✅
+  items,
+  total_amount: calculateTotal(),
+};
       if (editingOrder) { await api.put(`/wassel-orders/manual/${editingOrder.id}`, payload); } 
       else { await api.post("/wassel-orders/manual", payload); }
       setShowModal(false);
@@ -400,10 +412,131 @@ const ManualOrders: React.FC = () => {
                   <div><label className="text-[11px] font-black text-gray-400 mb-2 block uppercase tracking-wider">العميل</label><select className="custom-select border-r-4 border-blue-500 font-bold" value={form.customer_id} onChange={(e)=>setForm({...form, customer_id: e.target.value})}><option value="">-- اختر العميل --</option>{customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
                   <div><label className="text-[11px] font-black text-gray-400 mb-2 block uppercase tracking-wider">المحل المورد</label><select className="custom-select border-r-4 border-orange-500 font-bold" value={form.restaurant_id} onChange={(e)=>setForm({...form, restaurant_id: e.target.value})}><option value="">-- شراء مباشر --</option>{agents.map(r => <option key={r.id} value={r.id}>🏪 {r.name}</option>)}</select></div>
                   <div><label className="text-[11px] font-black text-gray-400 mb-2 block uppercase tracking-wider">عنوان التوصيل</label><select className="custom-select font-bold" value={form.to_address} onChange={(e)=>setForm({...form, to_address: e.target.value})}><option value="">-- اختر العنوان --</option>{addresses.map(a => <option key={a.id} value={a.address}>{a.address}</option>)}</select></div>
-                  <div className="pt-2">
-                    <label className="text-[13px] font-black text-[#58647a] dark:text-gray-300 mb-3 block tracking-wider">وسيلة الدفع:</label>
-                    <div className="flex gap-2">{[{id: 'cod', label: 'كاش', icon: Banknote}, {id: 'wallet', label: 'رصيد', icon: Wallet}].map(method => (<button key={method.id} type="button" onClick={() => setForm({...form, payment_method: method.id})} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl border-2 font-black transition-all text-[11px] ${form.payment_method === method.id ? 'bg-[#5b51ef] border-[#5b51ef] text-white shadow-lg' : 'bg-white dark:bg-gray-800 border-gray-200 text-gray-500'}`}><method.icon size={16}/> {method.label}</button>))}</div>
-                  </div>
+                {/* 💳 وسيلة الدفع */}
+<div className="border p-4 rounded-2xl bg-gray-50 space-y-3">
+
+  <p className="font-bold text-sm text-gray-600 flex items-center gap-2">
+    💳 وسيلة الدفع:
+  </p>
+
+  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+
+    {[
+      { id: "cod", label: "عند الاستلام", icon: <Banknote size={14}/> },
+      { id: "wallet", label: "من الرصيد", icon: <Wallet size={14}/> },
+      { id: "bank", label: "إيداع بنكي", icon: <Building2 size={14}/> },
+      { id: "online", label: "دفع إلكتروني", icon: <CreditCard size={14}/> }
+    ].map((method) => (
+
+      <button
+        key={method.id}
+        type="button"
+        onClick={() =>
+          setForm({ ...form, payment_method: method.id })
+        }
+
+        className={`flex items-center justify-center gap-1 py-2 px-1
+        rounded-xl text-[10px] font-bold border transition-all
+
+        ${
+          form.payment_method === method.id
+            ? "bg-indigo-600 text-white border-indigo-600 shadow-md"
+            : "bg-white text-gray-500 border-gray-200 hover:bg-gray-50"
+        }`}
+      >
+
+        {method.icon}
+        {method.label}
+
+      </button>
+
+    ))}
+
+  </div>
+
+
+  {/* 🏦 اختيار البنك */}
+  {form.payment_method === "bank" && (
+
+    <div className="mt-3 animate-in fade-in">
+
+      <label className="text-[10px] font-bold text-gray-400">
+        🏦 البنك المحول إليه
+      </label>
+
+      <select
+        className="w-full p-2 border rounded-lg text-xs bg-white outline-none
+        focus:ring-1 focus:ring-indigo-300"
+
+        value={form.bank_id || ""}
+
+        onChange={(e) =>
+          setForm({ ...form, bank_id: e.target.value })
+        }
+      >
+
+        <option value="">-- اختر البنك --</option>
+
+        {banks.map((b: any) => (
+          <option key={b.id} value={b.id}>
+            {b.name}
+          </option>
+        ))}
+
+      </select>
+
+    </div>
+  )}
+
+
+  {/* 💰 عرض الرصيد */}
+  {form.payment_method === "wallet" && customerBalance && (
+
+    <div
+      className={`mt-3 p-3 rounded-2xl border-2 text-[11px]
+
+      ${
+        calculateTotal() >
+        (customerBalance.balance + customerBalance.credit_limit)
+
+          ? "bg-red-50 border-red-200"
+          : "bg-emerald-50 border-emerald-200"
+      }`}
+    >
+
+      <div className="flex justify-between mb-1">
+
+        <span className="font-bold text-gray-600">
+          الرصيد:
+        </span>
+
+        <span className="font-black text-emerald-600">
+          {Number(customerBalance.balance).toLocaleString()} ريال
+        </span>
+
+      </div>
+
+
+      <div className="flex justify-between border-t pt-1">
+
+        <span className="font-bold text-blue-700">
+          المتاح:
+        </span>
+
+        <span className="font-black text-blue-800">
+          {(
+            Number(customerBalance.balance) +
+            Number(customerBalance.credit_limit)
+          ).toLocaleString()} ريال
+        </span>
+
+      </div>
+
+    </div>
+  )}
+
+</div>
+
                   <div><label className="text-[11px] font-black text-gray-400 mb-2 block italic tracking-tighter">رسوم التوصيل</label><input type="number" className="custom-select font-black text-green-600" value={form.delivery_fee} onChange={(e)=>setForm({...form, delivery_fee: Number(e.target.value)})} /></div>
                 </div>
                 {customerBalance && (<div className="p-5 bg-blue-600 rounded-3xl shadow-xl text-white text-center"><p className="text-[10px] font-bold opacity-80 mb-1">الرصيد الفعلي المتاح</p><p className="text-2xl font-black">{(Number(customerBalance.balance) + Number(customerBalance.credit_limit)).toLocaleString()} <span className="text-xs">ريال</span></p></div>)}
