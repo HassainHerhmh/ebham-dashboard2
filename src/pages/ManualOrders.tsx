@@ -75,7 +75,7 @@ const ManualOrders: React.FC = () => {
       const [ordersRes, custRes, restRes] = await Promise.all([
         api.get("/wassel-orders/manual/manual-list"),
         api.get("/customers"),
-        api.get("/restaurants")
+        api.get("/restaurants"),
           api.get("/wassel-orders/banks") // ✅ جلب البنوك
 
       ]);
