@@ -17,7 +17,7 @@ interface OrderItem {
   price: number;
 }
 
-type OrderTab = "pending" | "processing" | "ready" | "shipping" | "completed" | "cancelled";
+type OrderTab = "pending" | "processing" | "ready" | "delivering" | "completed" | "cancelled";
 type DateFilter = "all" | "today" | "week";
 
 const ManualOrders: React.FC = () => {
@@ -330,7 +330,7 @@ const payload = {
             { k: "pending", l: "اعتماد", icon: <Clock size={14}/> },
             { k: "processing", l: "معالجة", icon: <AlertCircle size={14}/> },
             { k: "ready", l: "جاهز", icon: <CheckCircle size={14}/> },
-            { k: "shipping", l: "توصيل", icon: <Truck size={14}/> },
+            { k: "delivering", l: "توصيل", icon: <Truck size={14}/> },
             { k: "completed", l: "مكتمل", icon: <CheckCircle size={14}/> },
             { k: "cancelled", l: "ملغي", icon: <X size={14}/> },
           ].map((t) => (
@@ -379,7 +379,7 @@ const payload = {
                         <option value="pending">اعتماد</option>
                         <option value="processing">قيد المعالجة</option>
                         <option value="ready">جاهز</option>
-                        <option value="shipping">توصيل</option>
+                        <option value="delivering">توصيل</option>
                         <option value="completed">مكتمل</option>
                         <option value="cancelled">إلغاء</option>
                       </select>
