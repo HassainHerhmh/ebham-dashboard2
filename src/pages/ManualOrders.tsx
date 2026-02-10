@@ -387,8 +387,8 @@ const payload = {
                       <div className="flex gap-1">
                         {o.status === "pending" && <button onClick={() => updateOrderStatus(o.id, "processing")} className="bg-green-600 text-white px-2 py-1 rounded text-[10px] font-bold hover:bg-green-700">اعتماد</button>}
                         {["processing", "ready"].includes(o.status) && <button onClick={() => openCaptainModal(o.id)} className="bg-indigo-600 text-white px-2 py-1 rounded text-[10px] font-bold flex items-center gap-1"><UserCheck size={10}/> كابتن</button>}
-                        {o.status === "ready" && <button onClick={() => updateOrderStatus(o.id, "shipping")} className="bg-orange-600 text-white px-2 py-1 rounded text-[10px] font-bold flex items-center gap-1"><Truck size={10}/> توصيل</button>}
-                        {o.status === "shipping" && <button onClick={() => updateOrderStatus(o.id, "completed")} className="bg-green-700 text-white px-2 py-1 rounded text-[10px] font-bold">تم التسليم</button>}
+                        {o.status === "ready" && <button onClick={() => updateOrderStatus(o.id, "delivering")} className="bg-orange-600 text-white px-2 py-1 rounded text-[10px] font-bold flex items-center gap-1"><Truck size={10}/> توصيل</button>}
+                        {o.status === "delivering" && <button onClick={() => updateOrderStatus(o.id, "completed")} className="bg-green-700 text-white px-2 py-1 rounded text-[10px] font-bold">تم التسليم</button>}
                       </div>
                     </div>
                   </td>
