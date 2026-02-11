@@ -7,6 +7,7 @@ import {
   CheckCircle, Clock, Truck, AlertCircle, Printer, Edit, UserCheck
 } from "lucide-react";
 import { useReactToPrint } from 'react-to-print';
+import { Calendar } from "lucide-react";
 
 /* ======================
     الأنواع (Types)
@@ -17,7 +18,14 @@ interface OrderItem {
   price: number;
 }
 
-type OrderTab = "pending" | "processing" | "ready" | "delivering" | "completed" | "cancelled";
+type OrderTab =
+  | "pending"
+  | "scheduled"
+  | "processing"
+  | "ready"
+  | "delivering"
+  | "completed"
+  | "cancelled";
 type DateFilter = "all" | "today" | "week";
 
 const ManualOrders: React.FC = () => {
@@ -124,64 +132,111 @@ setSlots(slotsRes.data.slots || []);
     }
   }, [form.customer_id]);
 
-  /* ======================
-      الفلترة والتاريخ
-  ====================== */
-  const getFilteredByDateList = (list: any[]) => {
-    const now = new Date();
-    const todayStr = now.toLocaleDateString("en-CA");
+ /* ======================
+   الفلترة والتاريخ
+====================== */
 
-    return list.filter((o) => {
-      if (!o.created_at) return true;
-      const orderDate = new Date(o.created_at);
-      const orderDateStr = orderDate.toLocaleDateString("en-CA");
-      if (dateFilter === "today") return orderDateStr === todayStr;
-      if (dateFilter === "week") {
-        const weekAgo = new Date();
-        weekAgo.setDate(now.getDate() - 7);
-        return orderDate >= weekAgo;
-      }
-      return true;
-    });
-  };
+// فلترة حسب اليوم / الأسبوع
+const getFilteredByDateList = (list: any[]) => {
+  const now = new Date();
+  const todayStr = now.toLocaleDateString("en-CA");
 
-  const dateFilteredOrders = getFilteredByDateList(orders);
+  return list.filter((o) => {
+    if (!o.created_at) return true;
 
- const filteredOrders = dateFilteredOrders.filter((o) => {
+    const orderDate = new Date(o.created_at);
+    const orderDateStr =
+      orderDate.toLocaleDateString("en-CA");
 
-  const matchSearch =
-    o.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    o.id.toString().includes(searchTerm);
+    if (dateFilter === "today") {
+      return orderDateStr === todayStr;
+    }
 
-  const statusMap: Record<string, string[]> = {
-    pending: ["pending"],
-    processing: ["processing", "confirmed"],
-    ready: ["ready"],
-    delivering: ["delivering"],
-    completed: ["completed"],
-    cancelled: ["cancelled"],
-  };
+    if (dateFilter === "week") {
+      const weekAgo = new Date();
+      weekAgo.setDate(now.getDate() - 7);
 
-  const tabMatch =
-    statusMap[activeTab]?.includes(o.status);
+      return orderDate >= weekAgo;
+    }
 
-  return matchSearch && tabMatch;
-});
+    return true;
+  });
+};
 
+
+// البيانات بعد فلترة التاريخ
+const dateFilteredOrders =
+  getFilteredByDateList(orders);
+
+
+// خريطة الحالات
+const statusMap: Record<string, string[]> = {
+  pending: ["pending"],
+  scheduled: ["pending"], // المجدولة = pending + وقت
+  processing: ["processing", "confirmed"],
+  ready: ["ready"],
+  delivering: ["delivering"],
+  completed: ["completed"],
+  cancelled: ["cancelled"],
+};
+
+
+// الطلبات المعروضة
+const filteredOrders = dateFilteredOrders
+
+  // فلترة
+  .filter((o) => {
+
+    const matchSearch =
+      o.customer_name
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      o.id.toString().includes(searchTerm);
+
+    let tabMatch =
+      statusMap[activeTab]?.includes(o.status);
+
+
+    // تبويب المجدولة فقط
+    if (activeTab === "scheduled") {
+      tabMatch =
+        o.status === "pending" &&
+        !!o.scheduled_time;
+    }
+
+    return matchSearch && tabMatch;
+  })
+
+  // ترتيب حسب وقت الجدولة
+  .sort((a, b) => {
+
+    if (!a.scheduled_time && !b.scheduled_time) return 0;
+    if (!a.scheduled_time) return 1;
+    if (!b.scheduled_time) return -1;
+
+    return (
+      new Date(a.scheduled_time).getTime() -
+      new Date(b.scheduled_time).getTime()
+    );
+  });
+
+
+// عدّاد التبويبات
 const getStatusCounts = (status: OrderTab) => {
 
-  const statusMap: Record<string, string[]> = {
-    pending: ["pending"],
-    processing: ["processing", "confirmed"],
-    ready: ["ready"],
-    delivering: ["delivering"],
-    completed: ["completed"],
-    cancelled: ["cancelled"],
-  };
+  return dateFilteredOrders.filter((o) => {
 
-  return dateFilteredOrders.filter((o) =>
-    statusMap[status]?.includes(o.status)
-  ).length;
+    // المجدولة
+    if (status === "scheduled") {
+      return (
+        o.status === "pending" &&
+        !!o.scheduled_time
+      );
+    }
+
+    return statusMap[status]?.includes(o.status);
+
+  }).length;
 };
 
 
@@ -308,6 +363,7 @@ const filteredSlots = slots.filter(s => {
 });
 
 
+
   const renderPaymentIcon = (method: string) => {
   switch (method) {
     case "cod":
@@ -343,6 +399,62 @@ const filteredSlots = slots.filter(s => {
         <span className="text-gray-400 text-xs font-bold">—</span>
       );
   }
+};
+/* ======================
+   أدوات الجدولة
+====================== */
+
+// تنسيق (اليوم / غدًا + وقت)
+const formatSchedule = (dateStr: string) => {
+  if (!dateStr) return "—";
+
+  const d = new Date(dateStr);
+
+  const today = new Date();
+  today.setHours(0,0,0,0);
+
+  const tomorrow = new Date(today);
+  tomorrow.setDate(today.getDate() + 1);
+
+  const day = new Date(d);
+  day.setHours(0,0,0,0);
+
+  let label = "—";
+
+  if (day.getTime() === today.getTime()) {
+    label = "اليوم";
+  } 
+  else if (day.getTime() === tomorrow.getTime()) {
+    label = "غدًا";
+  }
+
+  const time = d.toLocaleTimeString("ar-YE", {
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+
+  return `${label} ${time}`;
+};
+
+
+// هل وقت الطلب جاء؟
+const canProcessNow = (scheduled: string) => {
+  if (!scheduled) return true;
+
+  return new Date() >= new Date(scheduled);
+};
+
+
+// تنبيه قبل الموعد بـ 30 دقيقة
+const isNearSchedule = (scheduled: string) => {
+  if (!scheduled) return false;
+
+  const now = new Date().getTime();
+  const time = new Date(scheduled).getTime();
+
+  const diff = time - now;
+
+  return diff > 0 && diff <= 30 * 60 * 1000;
 };
 
   return (
@@ -384,6 +496,7 @@ const filteredSlots = slots.filter(s => {
             { k: "delivering", l: "توصيل", icon: <Truck size={14}/> },
             { k: "completed", l: "مكتمل", icon: <CheckCircle size={14}/> },
             { k: "cancelled", l: "ملغي", icon: <X size={14}/> },
+             { k: "scheduled", l: "مجدولة", icon: <Calendar size={14}/> },
           ].map((t) => (
             <button key={t.k} onClick={() => setActiveTab(t.k as any)} className={`px-4 py-2 rounded-lg border-b-4 transition-all flex items-center gap-2 ${activeTab === t.k ? "bg-blue-50 border-blue-600 text-blue-700 font-bold shadow-sm" : "bg-white border-transparent text-gray-500 hover:bg-gray-50"}`}>
               {t.icon} {t.l}
@@ -408,6 +521,8 @@ const filteredSlots = slots.filter(s => {
                 <th>الحالة والإجراء</th>
                 <th>عرض</th>
                 <th>المستخدم</th>
+                <th>الجدولة</th>
+
               </tr>
             </thead>
             <tbody className="divide-y dark:divide-gray-700">
@@ -436,7 +551,45 @@ const filteredSlots = slots.filter(s => {
                       </select>
                       
                       <div className="flex gap-1">
-                        {o.status === "pending" && <button onClick={() => updateOrderStatus(o.id, "processing")} className="bg-green-600 text-white px-2 py-1 rounded text-[10px] font-bold hover:bg-green-700">اعتماد</button>}
+{o.status === "pending" && (
+
+  <button
+
+    disabled={
+      o.scheduled_time &&
+      !canProcessNow(o.scheduled_time)
+    }
+
+    onClick={async () => {
+
+      if (
+        o.scheduled_time &&
+        !canProcessNow(o.scheduled_time)
+      ) {
+        alert("⏰ لم يحن وقت التنفيذ بعد");
+        return;
+      }
+
+      await updateOrderStatus(o.id, "processing");
+
+      setActiveTab("processing");
+    }}
+
+    className={`px-2 py-1 rounded text-[10px] font-bold
+
+    ${
+      o.scheduled_time &&
+      !canProcessNow(o.scheduled_time)
+
+        ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+        : "bg-green-600 text-white hover:bg-green-700"
+    }`}
+  >
+
+    اعتماد
+
+  </button>
+)}
                         {["processing", "ready"].includes(o.status) && <button onClick={() => openCaptainModal(o.id)} className="bg-indigo-600 text-white px-2 py-1 rounded text-[10px] font-bold flex items-center gap-1"><UserCheck size={10}/> كابتن</button>}
                         {o.status === "ready" && <button onClick={() => updateOrderStatus(o.id, "delivering")} className="bg-orange-600 text-white px-2 py-1 rounded text-[10px] font-bold flex items-center gap-1"><Truck size={10}/> توصيل</button>}
                         {o.status === "delivering" && <button onClick={() => updateOrderStatus(o.id, "completed")} className="bg-green-700 text-white px-2 py-1 rounded text-[10px] font-bold">تم التسليم</button>}
@@ -456,6 +609,20 @@ const filteredSlots = slots.filter(s => {
                       </button>
                     </div>
                   </td>
+                  <td className="p-4 text-xs font-bold text-indigo-600">
+
+  {o.scheduled_time
+    ? formatSchedule(o.scheduled_time)
+    : "—"}
+
+  {isNearSchedule(o.scheduled_time) && (
+    <div className="text-[10px] text-orange-600">
+      ⏰ قريب الموعد
+    </div>
+  )}
+
+</td>
+
                 </tr>
               ))}
             </tbody>
