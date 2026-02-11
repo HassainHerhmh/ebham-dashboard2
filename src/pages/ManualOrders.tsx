@@ -571,25 +571,34 @@ const isNearSchedule = (scheduled: string) => {
 
   <button
 
-    disabled={
-      o.scheduled_time &&
-      !canProcessNow(o.scheduled_time)
-    }
+   disabled={false}
 
-    onClick={async () => {
+onClick={async () => {
 
-      if (
-        o.scheduled_time &&
-        !canProcessNow(o.scheduled_time)
-      ) {
-        alert("⏰ لم يحن وقت التنفيذ بعد");
-        return;
-      }
+  // لو الطلب مجدول ولسه وقته ما جاء
+  if (
+    o.scheduled_time &&
+    new Date() < new Date(o.scheduled_time)
+  ) {
 
-      await updateOrderStatus(o.id, "processing");
+    const time = new Date(o.scheduled_time)
+      .toLocaleTimeString("ar-YE", {
+        hour: "2-digit",
+        minute: "2-digit"
+      });
 
-      setActiveTab("processing");
-    }}
+    const ok = window.confirm(
+      `⏰ هذا الطلب مجدول للساعة ${time}\n\nهل أنت متأكد من اعتماده الآن؟`
+    );
+
+    if (!ok) return;
+  }
+
+  await updateOrderStatus(o.id, "processing");
+
+  setActiveTab("processing");
+}}
+
 
     className={`px-2 py-1 rounded text-[10px] font-bold
 
