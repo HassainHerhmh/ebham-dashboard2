@@ -1414,16 +1414,22 @@ onClick={async () => {
     </div>
 
   </div>
+  
 {/* 🔔 مودال الإشعارات */}
 {showNotifications && (
 
-  <div className="fixed inset-0 bg-black/30 z-[300] flex justify-end">
+  <div className="fixed inset-0 bg-black/30 z-[9999] flex justify-end">
 
+    {/* خلفية للإغلاق */}
+    <div
+      className="flex-1"
+      onClick={() => setShowNotifications(false)}
+    />
+
+    {/* القائمة */}
     <div className="w-80 h-full bg-white shadow-xl p-4 animate-in slide-in-from-right">
 
-      {/* Header */}
       <div className="flex justify-between items-center border-b pb-2 mb-3">
-
         <h3 className="font-black text-lg">🔔 الإشعارات</h3>
 
         <button
@@ -1432,10 +1438,8 @@ onClick={async () => {
         >
           ✖
         </button>
-
       </div>
 
-      {/* List */}
       <div className="space-y-3 overflow-y-auto h-[90%]">
 
         {notifications.length === 0 && (
@@ -1449,8 +1453,8 @@ onClick={async () => {
           <div
             key={n.id}
             onClick={() =>
-              setNotifications((prev) =>
-                prev.map((x) =>
+              setNotifications(prev =>
+                prev.map(x =>
                   x.id === n.id
                     ? { ...x, read: true }
                     : x
@@ -1459,7 +1463,6 @@ onClick={async () => {
             }
 
             className={`p-3 rounded-xl border cursor-pointer text-xs
-
               ${
                 n.read
                   ? "bg-gray-50"
@@ -1467,7 +1470,6 @@ onClick={async () => {
               }
             `}
           >
-
             <p className="font-bold">{n.title}</p>
 
             <p className="text-gray-600 mt-1 whitespace-pre-line">
@@ -1488,6 +1490,7 @@ onClick={async () => {
 
   </div>
 )}
+
 
 </div>
 )}
