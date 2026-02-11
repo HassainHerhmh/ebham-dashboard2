@@ -814,49 +814,64 @@ const isNearSchedule = (scheduled: string) => {
 </div>
 
 
-
-                    {/* ⏰ الجدولة */}
+{/* ⏰ الجدولة */}
 <div className="border p-4 rounded-2xl bg-gray-50 space-y-3">
 
-  {/* Tabs */}
-  <div className="flex gap-2">
-{/* زر الآن */}
-<button
-  onClick={() =>
-    setForm({
-      ...form,
-      scheduled_time: "" // فارغ = الآن
-    })
-  }
-  className={`w-full py-2 rounded-lg font-bold text-sm
-    ${
-      !form.scheduled_time
-        ? "bg-blue-600 text-white"
-        : "bg-gray-200"
-    }
-  `}
->
-  🚀 الآن
-</button>
+  {/* زر الآن */}
+  <button
+    onClick={() => {
+      setForm({
+        ...form,
+        scheduled_time: ""
+      });
+      setDayTab("today");
+    }}
 
+    className={`w-full py-3 rounded-xl font-bold text-sm transition shadow
+
+      ${
+        !form.scheduled_time
+          ? "bg-blue-600 text-white"
+          : "bg-gray-200 hover:bg-gray-300"
+      }
+    `}
+  >
+    🚀 الآن
+  </button>
+
+
+  {/* اليوم / غدًا */}
+  <div className="grid grid-cols-2 gap-2">
+
+    {/* اليوم */}
     <button
       onClick={()=>setDayTab("today")}
-      className={`flex-1 py-2 rounded-lg font-bold
-      ${dayTab==="today"
-        ?"bg-lime-500 text-white"
-        :"bg-gray-200"
-      }`}
+
+      className={`py-2 rounded-lg font-bold text-sm transition
+
+        ${
+          dayTab==="today"
+            ? "bg-lime-500 text-white shadow"
+            : "bg-gray-200 hover:bg-gray-300"
+        }
+      `}
     >
       اليوم
     </button>
 
+
+    {/* غدًا */}
     <button
       onClick={()=>setDayTab("tomorrow")}
-      className={`flex-1 py-2 rounded-lg font-bold
-      ${dayTab==="tomorrow"
-        ?"bg-lime-500 text-white"
-        :"bg-gray-200"
-      }`}
+
+      className={`py-2 rounded-lg font-bold text-sm transition
+
+        ${
+          dayTab==="tomorrow"
+            ? "bg-lime-500 text-white shadow"
+            : "bg-gray-200 hover:bg-gray-300"
+        }
+      `}
     >
       غدًا
     </button>
@@ -864,10 +879,12 @@ const isNearSchedule = (scheduled: string) => {
   </div>
 
 
-  {/* Slots Grid */}
+  {/* الأوقات */}
   <div className="grid grid-cols-2 gap-3">
 
     {filteredSlots.map((s,i)=>{
+
+      const startISO = new Date(s.start).toISOString();
 
       const start = new Date(s.start);
       const end   = new Date(s.end);
@@ -888,22 +905,27 @@ const isNearSchedule = (scheduled: string) => {
         <button
           key={i}
 
-          onClick={()=>
+          onClick={() =>
             setForm({
               ...form,
-scheduled_time: new Date(s.start).toISOString()
+              scheduled_time: startISO
             })
           }
 
-          className={`p-3 rounded-xl border text-xs font-bold
-          ${
-form.scheduled_time === new Date(s.start).toISOString()
-              ?"bg-lime-500 text-white border-lime-500"
-              :"bg-white border-gray-200"
-          }`}
+          className={`p-3 rounded-xl border text-xs font-bold transition
+
+            ${
+              form.scheduled_time === startISO
+                ? "bg-lime-500 text-white border-lime-500 shadow"
+                : "bg-white border-gray-200 hover:bg-gray-50"
+            }
+          `}
         >
 
-          <div>اليوم</div>
+          <div>
+            {dayTab==="today" ? "اليوم" : "غدًا"}
+          </div>
+
           <div>{label}</div>
 
         </button>
@@ -914,7 +936,7 @@ form.scheduled_time === new Date(s.start).toISOString()
   </div>
 
 </div>
-                  
+
 
                   <div><label className="text-[11px] font-black text-gray-400 mb-2 block italic tracking-tighter">رسوم التوصيل</label><input type="number" className="custom-select font-black text-green-600" value={form.delivery_fee} onChange={(e)=>setForm({...form, delivery_fee: Number(e.target.value)})} /></div>
                 </div>
