@@ -473,6 +473,16 @@ const isNearSchedule = (scheduled: string) => {
   return diff > 0 && diff <= 30 * 60 * 1000;
 };
 
+
+const formatTime = (t) => {
+  if (!t) return null;
+
+  return new Date(t).toLocaleTimeString("ar-YE", {
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+};
+
   return (
     <div className="w-full min-h-screen bg-[#f8fafc] dark:bg-gray-900 p-4 transition-all" dir="rtl">
       
@@ -636,9 +646,42 @@ onClick={async () => {
                   </td>
                   <td className="p-4 text-xs font-bold text-indigo-600">
 
-  {o.scheduled_time
-    ? formatSchedule(o.scheduled_time)
-    : "—"}
+<div className="text-[10px] text-right space-y-1">
+
+  {/* قبل التنفيذ */}
+  {o.status === "pending" && o.scheduled_time && (
+    <div className="text-indigo-600">
+      📅 {formatSchedule(o.scheduled_time)}
+    </div>
+  )}
+
+  {/* بعد التنفيذ */}
+  {o.processing_at && (
+    <div>⚙️ معالجة: {formatTime(o.processing_at)}</div>
+  )}
+
+  {o.ready_at && (
+    <div>✅ جاهز: {formatTime(o.ready_at)}</div>
+  )}
+
+  {o.delivering_at && (
+    <div>🚚 توصيل: {formatTime(o.delivering_at)}</div>
+  )}
+
+  {o.completed_at && (
+    <div className="text-green-600">
+      ✔️ مكتمل: {formatTime(o.completed_at)}
+    </div>
+  )}
+
+  {o.cancelled_at && (
+    <div className="text-red-600">
+      ❌ ملغي: {formatTime(o.cancelled_at)}
+    </div>
+  )}
+
+</div>
+
 
   {isNearSchedule(o.scheduled_time) && (
     <div className="text-[10px] text-orange-600">
