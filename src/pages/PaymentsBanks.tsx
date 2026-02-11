@@ -119,43 +119,57 @@ const BankDeposits: React.FC = () => {
   }, [isMainAdminBranch, user]);
 
 
+const saveMethod = async () => {
 
-  const saveMethod = async () => {
+  if (!company || !accountNumber || !accountId) {
+    return alert("يرجى إكمال البيانات الأساسية");
+  }
 
-    if (!company || !accountNumber || !accountId) {
-      return alert("يرجى إكمال البيانات الأساسية");
+  try {
+
+    let methodId = editingId;
+
+    /* 1️⃣ حفظ / تحديث البنك */
+    if (editingId) {
+
+      await api.put(`/payment-methods/${editingId}`, {
+        company,
+        account_number: accountNumber,
+        owner_name: ownerName,
+        address
+      });
+
+    } else {
+
+      const res = await api.post("/payment-methods", {
+        company,
+        account_number: accountNumber,
+        owner_name: ownerName,
+        address
+      });
+
+      methodId = res.data.id;
     }
 
-    const payload = {
-      company,
-      account_number: accountNumber,
-      owner_name: ownerName,
-      address,
 
-      account_id: Number(accountId),
+    /* 2️⃣ حفظ الربط مع الفرع */
+    await api.post("/payment-methods/assign-branch-account", {
+      payment_method_id: methodId,
+      branch_id: user.branch_id,
+      account_id: Number(accountId)
+    });
 
-      branch_id: isMainAdminBranch
-        ? (branchId ? Number(branchId) : null)
-        : user?.branch_id,
-    };
 
-    try {
+    resetForm();
+    setModalOpen(false);
+    loadMethods();
 
-      if (editingId) {
-        await api.put(`/payment-methods/${editingId}`, payload);
-      } else {
-        await api.post("/payment-methods", payload);
-      }
+  } catch (e) {
 
-      resetForm();
-      setModalOpen(false);
-      loadMethods();
-
-    } catch (e) {
-
-      alert("حدث خطأ أثناء الحفظ");
-    }
-  };
+    console.error(e);
+    alert("حدث خطأ أثناء الحفظ");
+  }
+};
 
 
 
