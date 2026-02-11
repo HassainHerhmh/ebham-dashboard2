@@ -1415,7 +1415,24 @@ onClick={async () => {
 
   </div>
   
-{/* 🔔 مودال الإشعارات */}
+
+
+</div>
+)}
+
+
+      {/* الستايلات */}
+      <style>{`
+        .custom-select { width: 100%; padding: 12px; border-radius: 15px; border: 1px solid #e2e8f0; font-size: 13px; font-weight: 700; outline: none; background: #ffffff; appearance: none; transition: border-color 0.2s; }
+        .dark .custom-select { background: #1f2937; border-color: #374151; color: #fff; }
+        .custom-select:focus { border-color: #f97316; }
+        @media print { .no-print { display: none !important; } }
+        .animate-in { animation: fadeIn 0.25s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+        .animate-pulse-slow { animation: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+      `}</style>
+
+      {/* 🔔 مودال الإشعارات */}
 {showNotifications && (
 
   <div className="fixed inset-0 bg-black/30 z-[9999] flex justify-end">
@@ -1423,11 +1440,11 @@ onClick={async () => {
     {/* خلفية للإغلاق */}
     <div
       className="flex-1"
-      onClick={() => setShowNotifications(false)}
+onClick={() => setShowNotifications(prev => !prev)}
     />
 
     {/* القائمة */}
-    <div className="w-80 h-full bg-white shadow-xl p-4 animate-in slide-in-from-right">
+    <div className="w-80 h-full bg-white shadow-xl p-4">
 
       <div className="flex justify-between items-center border-b pb-2 mb-3">
         <h3 className="font-black text-lg">🔔 الإشعارات</h3>
@@ -1476,7 +1493,7 @@ onClick={async () => {
               {n.body}
             </p>
 
-            <p className="text-[10px] text-gray-400 mt-1">
+<p className="text-[10px] text-gray-400 mt-1">
               {new Date(n.time).toLocaleTimeString("ar-YE")}
             </p>
 
@@ -1491,21 +1508,6 @@ onClick={async () => {
   </div>
 )}
 
-
-</div>
-)}
-
-
-      {/* الستايلات */}
-      <style>{`
-        .custom-select { width: 100%; padding: 12px; border-radius: 15px; border: 1px solid #e2e8f0; font-size: 13px; font-weight: 700; outline: none; background: #ffffff; appearance: none; transition: border-color 0.2s; }
-        .dark .custom-select { background: #1f2937; border-color: #374151; color: #fff; }
-        .custom-select:focus { border-color: #f97316; }
-        @media print { .no-print { display: none !important; } }
-        .animate-in { animation: fadeIn 0.25s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
-        .animate-pulse-slow { animation: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
-      `}</style>
     </div>
   );
 };
