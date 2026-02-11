@@ -350,17 +350,31 @@ const payload = {
 const todayStr =
   new Date().toISOString().split("T")[0];
 
-const filteredSlots = slots.filter(s => {
+const filteredSlots = slots.filter((s) => {
 
-  const d =
-    new Date(s.start)
-      .toISOString()
-      .split("T")[0];
+  const date = new Date(s.start);
 
-  return dayTab==="today"
-    ? d===todayStr
-    : d!==todayStr;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const tomorrow = new Date(today);
+  tomorrow.setDate(today.getDate() + 1);
+
+  const slotDay = new Date(date);
+  slotDay.setHours(0, 0, 0, 0);
+
+
+  if (dayTab === "today") {
+    return slotDay.getTime() === today.getTime();
+  }
+
+  if (dayTab === "tomorrow") {
+    return slotDay.getTime() === tomorrow.getTime();
+  }
+
+  return false;
 });
+
 
 
 
