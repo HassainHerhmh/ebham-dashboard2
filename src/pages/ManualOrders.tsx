@@ -580,7 +580,59 @@ const filteredSlots = slots.filter(s => {
     </div>
   )}
 
-  {/* ⏰ الجدولة */}
+
+
+  {/* 💰 عرض الرصيد */}
+  {form.payment_method === "wallet" && customerBalance && (
+
+    <div
+      className={`mt-3 p-3 rounded-2xl border-2 text-[11px]
+
+      ${
+        calculateTotal() >
+        (customerBalance.balance + customerBalance.credit_limit)
+
+          ? "bg-red-50 border-red-200"
+          : "bg-emerald-50 border-emerald-200"
+      }`}
+    >
+
+      <div className="flex justify-between mb-1">
+
+        <span className="font-bold text-gray-600">
+          الرصيد:
+        </span>
+
+        <span className="font-black text-emerald-600">
+          {Number(customerBalance.balance).toLocaleString()} ريال
+        </span>
+
+      </div>
+
+
+      <div className="flex justify-between border-t pt-1">
+
+        <span className="font-bold text-blue-700">
+          المتاح:
+        </span>
+
+        <span className="font-black text-blue-800">
+          {(
+            Number(customerBalance.balance) +
+            Number(customerBalance.credit_limit)
+          ).toLocaleString()} ريال
+        </span>
+
+      </div>
+
+    </div>
+  )}
+
+</div>
+
+
+
+                    {/* ⏰ الجدولة */}
 <div className="border p-4 rounded-2xl bg-gray-50 space-y-3">
 
   {/* Tabs */}
@@ -661,55 +713,7 @@ const filteredSlots = slots.filter(s => {
   </div>
 
 </div>
-
-
-  {/* 💰 عرض الرصيد */}
-  {form.payment_method === "wallet" && customerBalance && (
-
-    <div
-      className={`mt-3 p-3 rounded-2xl border-2 text-[11px]
-
-      ${
-        calculateTotal() >
-        (customerBalance.balance + customerBalance.credit_limit)
-
-          ? "bg-red-50 border-red-200"
-          : "bg-emerald-50 border-emerald-200"
-      }`}
-    >
-
-      <div className="flex justify-between mb-1">
-
-        <span className="font-bold text-gray-600">
-          الرصيد:
-        </span>
-
-        <span className="font-black text-emerald-600">
-          {Number(customerBalance.balance).toLocaleString()} ريال
-        </span>
-
-      </div>
-
-
-      <div className="flex justify-between border-t pt-1">
-
-        <span className="font-bold text-blue-700">
-          المتاح:
-        </span>
-
-        <span className="font-black text-blue-800">
-          {(
-            Number(customerBalance.balance) +
-            Number(customerBalance.credit_limit)
-          ).toLocaleString()} ريال
-        </span>
-
-      </div>
-
-    </div>
-  )}
-
-</div>
+                  
 
                   <div><label className="text-[11px] font-black text-gray-400 mb-2 block italic tracking-tighter">رسوم التوصيل</label><input type="number" className="custom-select font-black text-green-600" value={form.delivery_fee} onChange={(e)=>setForm({...form, delivery_fee: Number(e.target.value)})} /></div>
                 </div>
