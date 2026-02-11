@@ -48,6 +48,8 @@ const [dayTab,setDayTab] = useState("today");
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [showCaptainModal, setShowCaptainModal] = useState(false);
   const [captainsLoading, setCaptainsLoading] = useState(false);
+const [notifications, setNotifications] = useState([]);
+const [showNotifications, setShowNotifications] = useState(false);
 
   // بيانات المودال
   const [customers, setCustomers] = useState<any[]>([]);
@@ -387,6 +389,36 @@ const filteredSlots = slots.filter((s) => {
   return false;
 });
 
+const notifyUser = (title, body) => {
+
+  const newNotification = {
+    id: Date.now() + Math.random(),
+    title,
+    body,
+    time: new Date(),
+    read: false
+  };
+
+  // حفظ في القائمة
+setNotifications(prev => 
+  [newNotification, ...prev].slice(0, 50)
+);
+
+  // إشعار المتصفح
+  if ("Notification" in window) {
+
+    if (Notification.permission === "granted") {
+
+      new Notification(title, { body });
+
+    } else if (Notification.permission !== "denied") {
+
+      Notification.requestPermission();
+
+    }
+
+  }
+};
 
 // فحص التأخير + التنبيهات
 const checkDelaysAndSchedules = () => {
@@ -433,7 +465,9 @@ const checkDelaysAndSchedules = () => {
       baseTime = o.ready_at;
     }
 
-    if (!baseTime) return;
+if (!baseTime) {
+  return;
+}
 
     const start = new Date(baseTime).getTime();
     const diff = now - start;
@@ -598,7 +632,22 @@ useEffect(() => {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+<div className="flex items-center gap-2">
+
+  {/* زر الإشعارات */}
+  <button
+    onClick={() => setShowNotifications(true)}
+    className="relative p-2 rounded-xl bg-gray-100 hover:bg-gray-200"
+  >
+    🔔
+
+    {notifications.filter(n => !n.read).length > 0 && (
+      <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] px-1.5 rounded-full">
+        {notifications.filter(n => !n.read).length}
+      </span>
+    )}
+  </button>
+
              <div className="relative no-print">
                 <Search className="absolute right-3 top-2.5 text-gray-400" size={16} />
                 <input type="text" placeholder="بحث سريع..." className="pr-10 pl-4 py-2 bg-gray-50 dark:bg-gray-700 border dark:border-gray-600 rounded-xl text-sm outline-none focus:ring-2 ring-orange-500/20 dark:text-white w-64 transition-all" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
@@ -1358,6 +1407,80 @@ onClick={async () => {
     </div>
 
   </div>
+{/* 🔔 مودال الإشعارات */}
+{showNotifications && (
+
+  <div className="fixed inset-0 bg-black/30 z-[300] flex justify-end">
+
+    <div className="w-80 h-full bg-white shadow-xl p-4 animate-in slide-in-from-right">
+
+      {/* Header */}
+      <div className="flex justify-between items-center border-b pb-2 mb-3">
+
+        <h3 className="font-black text-lg">🔔 الإشعارات</h3>
+
+        <button
+          onClick={() => setShowNotifications(false)}
+          className="text-gray-400 hover:text-black"
+        >
+          ✖
+        </button>
+
+      </div>
+
+      {/* List */}
+      <div className="space-y-3 overflow-y-auto h-[90%]">
+
+        {notifications.length === 0 && (
+          <p className="text-center text-gray-400 text-sm">
+            لا توجد إشعارات
+          </p>
+        )}
+
+        {notifications.map((n) => (
+
+          <div
+            key={n.id}
+            onClick={() =>
+              setNotifications((prev) =>
+                prev.map((x) =>
+                  x.id === n.id
+                    ? { ...x, read: true }
+                    : x
+                )
+              )
+            }
+
+            className={`p-3 rounded-xl border cursor-pointer text-xs
+
+              ${
+                n.read
+                  ? "bg-gray-50"
+                  : "bg-yellow-50 border-yellow-300"
+              }
+            `}
+          >
+
+            <p className="font-bold">{n.title}</p>
+
+            <p className="text-gray-600 mt-1 whitespace-pre-line">
+              {n.body}
+            </p>
+
+            <p className="text-[10px] text-gray-400 mt-1">
+              {new Date(n.time).toLocaleTimeString("ar-YE")}
+            </p>
+
+          </div>
+
+        ))}
+
+      </div>
+
+    </div>
+
+  </div>
+)}
 
 </div>
 )}
