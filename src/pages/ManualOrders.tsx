@@ -94,7 +94,7 @@ const loadInitialData = async () => {
     setCustomers(custRes.data.customers || []);
 
     const slotsRes =
-  await api.get("/wassel-orders/available-slots");
+  await api.get("/wassel-orders/manual/available-slots");
 
 setSlots(slotsRes.data.slots || []);
 
