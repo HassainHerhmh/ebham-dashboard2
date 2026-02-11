@@ -547,7 +547,7 @@ const formatTime = (t) => {
                 <th>الحالة والإجراء</th>
                 <th>عرض</th>
                 <th>المستخدم</th>
-                <th>الجدولة</th>
+                <th>وقت الحركة</th>
 
               </tr>
             </thead>
