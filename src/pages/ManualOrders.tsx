@@ -338,6 +338,8 @@ const payload = {
   bank_id: form.bank_id, // ✅
   items,
   total_amount: calculateTotal(),
+    status: form.scheduled_time ? "pending" : "pending"
+
 };
       if (editingOrder) { await api.put(`/wassel-orders/manual/${editingOrder.id}`, payload); } 
       else { await api.post("/wassel-orders/manual", payload); }
@@ -818,6 +820,24 @@ const isNearSchedule = (scheduled: string) => {
 
   {/* Tabs */}
   <div className="flex gap-2">
+{/* زر الآن */}
+<button
+  onClick={() =>
+    setForm({
+      ...form,
+      scheduled_time: "" // فارغ = الآن
+    })
+  }
+  className={`w-full py-2 rounded-lg font-bold text-sm
+    ${
+      !form.scheduled_time
+        ? "bg-blue-600 text-white"
+        : "bg-gray-200"
+    }
+  `}
+>
+  🚀 الآن
+</button>
 
     <button
       onClick={()=>setDayTab("today")}
