@@ -60,7 +60,10 @@ const [dayTab,setDayTab] = useState("today");
   const [newItemName, setNewItemName] = useState("");
 
   const printRef = useRef<HTMLDivElement>(null);
-
+const notifiedRef = useRef({
+  delayed: new Set(),
+  near: new Set()
+});
   const [form, setForm] = useState({
     customer_id: "",
     restaurant_id: "",
@@ -77,6 +80,11 @@ const [dayTab,setDayTab] = useState("today");
     content: () => printRef.current,
   });
 
+
+
+
+
+  
   /* ======================
       تحميل البيانات (API)
   ====================== */
@@ -100,6 +108,8 @@ const loadInitialData = async () => {
 
     setOrders(ordersRes.data?.orders || []);
     setCustomers(custRes.data.customers || []);
+notifiedRef.current.delayed.clear();
+notifiedRef.current.near.clear();
 
     const slotsRes =
   await api.get("/wassel-orders/manual/available-slots");
@@ -378,6 +388,74 @@ const filteredSlots = slots.filter((s) => {
 });
 
 
+// فحص التأخير + التنبيهات
+const checkDelaysAndSchedules = () => {
+
+  const now = Date.now();
+
+  orders.forEach((o) => {
+
+    /* =========================
+       ⏰ قرب موعد الجدولة
+    ========================= */
+    if (o.scheduled_time && o.status === "pending") {
+
+      const scheduled = new Date(o.scheduled_time).getTime();
+      const diff = scheduled - now;
+
+      // قبل 30 دقيقة
+      if (
+        diff > 0 &&
+        diff <= 30 * 60 * 1000 &&
+        !notifiedRef.current.near.has(o.id)
+      ) {
+
+        notifyUser(
+          `⏰ قرب موعد الطلب #${o.id}`,
+          `${o.customer_name} بعد ${Math.ceil(diff / 60000)} دقيقة`
+        );
+
+        notifiedRef.current.near.add(o.id);
+      }
+    }
+
+
+    /* =========================
+       ⚠️ تأخير التنفيذ
+    ========================= */
+    let baseTime = null;
+
+    if (o.status === "processing") {
+      baseTime = o.processing_at;
+    }
+
+    if (o.status === "ready") {
+      baseTime = o.ready_at;
+    }
+
+    if (!baseTime) return;
+
+    const start = new Date(baseTime).getTime();
+    const diff = now - start;
+
+    // أكثر من 30 دقيقة
+    if (
+      diff >= 30 * 60 * 1000 &&
+      !notifiedRef.current.delayed.has(o.id)
+    ) {
+
+      notifyUser(
+        `⚠️ طلب متأخر #${o.id}`,
+        `العميل: ${o.customer_name}
+الكابتن: ${o.captain_name || "غير معين"}
+تأخر ${Math.floor(diff / 60000)} دقيقة`
+      );
+
+      notifiedRef.current.delayed.add(o.id);
+    }
+
+  });
+};
 
 
   const renderPaymentIcon = (method: string) => {
@@ -482,6 +560,29 @@ const formatTime = (t) => {
     minute: "2-digit"
   });
 };
+
+
+
+
+useEffect(() => {
+
+  if (orders.length) {
+    checkDelaysAndSchedules();
+  }
+
+  const timer = setInterval(() => {
+
+    if (orders.length) {
+      checkDelaysAndSchedules();
+    }
+
+  }, 60000);
+
+  return () => clearInterval(timer);
+
+}, [orders]);
+
+
 
   return (
     <div className="w-full min-h-screen bg-[#f8fafc] dark:bg-gray-900 p-4 transition-all" dir="rtl">
