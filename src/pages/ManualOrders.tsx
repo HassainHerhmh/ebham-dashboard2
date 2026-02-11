@@ -32,6 +32,8 @@ const ManualOrders: React.FC = () => {
   const [activeTab, setActiveTab] = useState<OrderTab>("pending");
   const [dateFilter, setDateFilter] = useState<DateFilter>("today");
   const [editingOrder, setEditingOrder] = useState<any>(null);
+const [slots,setSlots] = useState<any[]>([]);
+const [dayTab,setDayTab] = useState("today");
 
   // Captain Assign
   const [captains, setCaptains] = useState<any[]>([]);
@@ -59,6 +61,7 @@ const ManualOrders: React.FC = () => {
     notes: "",
     payment_method: "cod",
       bank_id: "", // ✅ مهم
+  scheduled_time: "", // ⭐ مهم جداً
 
   });
 
@@ -89,6 +92,11 @@ const loadInitialData = async () => {
 
     setOrders(ordersRes.data?.orders || []);
     setCustomers(custRes.data.customers || []);
+
+    const slotsRes =
+  await api.get("/wassel-orders/available-slots");
+
+setSlots(slotsRes.data.slots || []);
 
     const manualRestaurants =
       (restRes.data?.restaurants || [])
@@ -284,6 +292,20 @@ const payload = {
     } catch (e: any) { alert(e.response?.data?.message || "خطأ أثناء الحفظ"); }
   };
 
+const todayStr =
+  new Date().toISOString().split("T")[0];
+
+const filteredSlots = slots.filter(s => {
+
+  const d =
+    new Date(s.start)
+      .toISOString()
+      .split("T")[0];
+
+  return dayTab==="today"
+    ? d===todayStr
+    : d!==todayStr;
+});
 
 
   const renderPaymentIcon = (method: string) => {
@@ -557,6 +579,88 @@ const payload = {
 
     </div>
   )}
+
+  {/* ⏰ الجدولة */}
+<div className="border p-4 rounded-2xl bg-gray-50 space-y-3">
+
+  {/* Tabs */}
+  <div className="flex gap-2">
+
+    <button
+      onClick={()=>setDayTab("today")}
+      className={`flex-1 py-2 rounded-lg font-bold
+      ${dayTab==="today"
+        ?"bg-lime-500 text-white"
+        :"bg-gray-200"
+      }`}
+    >
+      اليوم
+    </button>
+
+    <button
+      onClick={()=>setDayTab("tomorrow")}
+      className={`flex-1 py-2 rounded-lg font-bold
+      ${dayTab==="tomorrow"
+        ?"bg-lime-500 text-white"
+        :"bg-gray-200"
+      }`}
+    >
+      غدًا
+    </button>
+
+  </div>
+
+
+  {/* Slots Grid */}
+  <div className="grid grid-cols-2 gap-3">
+
+    {filteredSlots.map((s,i)=>{
+
+      const start = new Date(s.start);
+      const end   = new Date(s.end);
+
+      const label =
+        start.toLocaleTimeString("ar-YE",{
+          hour:"2-digit",
+          minute:"2-digit"
+        })+
+        " - "+
+        end.toLocaleTimeString("ar-YE",{
+          hour:"2-digit",
+          minute:"2-digit"
+        });
+
+      return (
+
+        <button
+          key={i}
+
+          onClick={()=>
+            setForm({
+              ...form,
+              scheduled_time: s.start
+            })
+          }
+
+          className={`p-3 rounded-xl border text-xs font-bold
+          ${
+            form.scheduled_time===s.start
+              ?"bg-lime-500 text-white border-lime-500"
+              :"bg-white border-gray-200"
+          }`}
+        >
+
+          <div>اليوم</div>
+          <div>{label}</div>
+
+        </button>
+
+      );
+    })}
+
+  </div>
+
+</div>
 
 
   {/* 💰 عرض الرصيد */}
