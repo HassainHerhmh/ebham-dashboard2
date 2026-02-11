@@ -690,13 +690,13 @@ const filteredSlots = slots.filter(s => {
           onClick={()=>
             setForm({
               ...form,
-              scheduled_time: s.start
+scheduled_time: new Date(s.start).toISOString()
             })
           }
 
           className={`p-3 rounded-xl border text-xs font-bold
           ${
-            form.scheduled_time===s.start
+form.scheduled_time === new Date(s.start).toISOString()
               ?"bg-lime-500 text-white border-lime-500"
               :"bg-white border-gray-200"
           }`}
