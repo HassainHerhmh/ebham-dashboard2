@@ -82,9 +82,43 @@ const notifiedRef = useRef({
     content: () => printRef.current,
   });
 
+const notifyUser = (title, body) => {
+
+  const newNotification = {
+    id: Date.now() + Math.random(),
+    title,
+    body,
+    time: new Date(),
+    read: false
+  };
+
+  // حفظ في القائمة
+setNotifications(prev => 
+  [newNotification, ...prev].slice(0, 50)
+);
+
+  // إشعار المتصفح
+  if ("Notification" in window) {
+
+    if (Notification.permission === "granted") {
+
+      new Notification(title, { body });
+
+    } else if (Notification.permission !== "denied") {
+
+      Notification.requestPermission();
+
+    }
+
+  }
+};
 
 
+useEffect(() => {
 
+  notifyUser("اختبار", "تم تشغيل النظام بنجاح ✅");
+
+}, []);
 
   
   /* ======================
@@ -136,6 +170,8 @@ setSlots(slotsRes.data.slots || []);
 
 
   useEffect(() => { loadInitialData(); }, []);
+
+  
 
   useEffect(() => {
     if (form.customer_id) {
@@ -389,36 +425,7 @@ const filteredSlots = slots.filter((s) => {
   return false;
 });
 
-const notifyUser = (title, body) => {
 
-  const newNotification = {
-    id: Date.now() + Math.random(),
-    title,
-    body,
-    time: new Date(),
-    read: false
-  };
-
-  // حفظ في القائمة
-setNotifications(prev => 
-  [newNotification, ...prev].slice(0, 50)
-);
-
-  // إشعار المتصفح
-  if ("Notification" in window) {
-
-    if (Notification.permission === "granted") {
-
-      new Notification(title, { body });
-
-    } else if (Notification.permission !== "denied") {
-
-      Notification.requestPermission();
-
-    }
-
-  }
-};
 
 // فحص التأخير + التنبيهات
 const checkDelaysAndSchedules = () => {
