@@ -28,6 +28,14 @@ interface WasselOrder {
   captain_name?: string;
   creator_name?: string; 
   updater_name?: string; 
+scheduled_at?: string | null;
+  processing_at?: string | null;
+ready_at?: string | null;
+delivering_at?: string | null;
+completed_at?: string | null;
+cancelled_at?: string | null;
+
+
 }
 
 interface Captain {
@@ -37,7 +45,7 @@ interface Captain {
   completed_today: number;
 }
 
-type OrderTab = "pending" | "processing" | "delivering" | "completed" | "cancelled";
+type OrderTab = "pending"   | "scheduled" | "processing" | "delivering" | "completed" | "cancelled";
 type DateFilter = "all" | "today" | "week";
 
 const WasselOrders: React.FC = () => {
@@ -49,7 +57,9 @@ const WasselOrders: React.FC = () => {
   const [addresses, setAddresses] = useState<any[]>([]);
   const [banks, setBanks] = useState<any[]>([]);
   const [customerBalance, setCustomerBalance] = useState<{current_balance: number, credit_limit: number} | null>(null);
-  
+  const [scheduleMode, setScheduleMode] =
+  useState<"now" | "today" | "tomorrow">("now");
+
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -136,7 +146,11 @@ const WasselOrders: React.FC = () => {
     delivering: dateFilteredOrders.filter(o => o.status === "delivering").length,
     completed: dateFilteredOrders.filter(o => o.status === "completed").length,
     cancelled: dateFilteredOrders.filter(o => o.status === "cancelled").length,
-  };
+ scheduled: dateFilteredOrders.filter(o => o.status === "scheduled").length,
+ // ✅ مجدولة
+
+
+};
 
   const visibleOrders = dateFilteredOrders.filter(o => {
     switch (activeTab) {
@@ -145,8 +159,7 @@ const WasselOrders: React.FC = () => {
       case "delivering": return o.status === "delivering";
       case "completed": return o.status === "completed";
       case "cancelled": return o.status === "cancelled";
-      default: return true;
-    }
+      case "scheduled":return o.status === "scheduled";}
   });
 
   const loadOrders = async () => {
@@ -243,7 +256,9 @@ const WasselOrders: React.FC = () => {
       to_address: o.to_address, to_lat: o.to_lat, to_lng: o.to_lng,
       delivery_fee: o.delivery_fee || 0, extra_fee: o.extra_fee || 0, notes: o.notes || "",
       payment_method: o.payment_method || "cod",
-      bank_id: ""
+     
+  bank_id: "",        // ✅ هنا فاصلة
+  scheduled_at: "" // ✅ حقل الجدولة
     });
     setShowModal(true);
   };
@@ -271,12 +286,22 @@ const WasselOrders: React.FC = () => {
         return alert("يرجى اختيار البنك المحول إليه");
       }
 
-      const payload = { 
-        ...form, 
-        delivery_fee: Number(form.delivery_fee), extra_fee: Number(form.extra_fee),
-        from_address_id: fromMode === "map" ? null : form.from_address_id,
-        to_address_id: toMode === "map" ? null : form.to_address_id,
-      };
+   // تحديد الحالة حسب الجدولة
+let status = "pending"; // افتراضي: الآن
+
+if (scheduleMode !== "now" && form.scheduled_at) {
+  status = "scheduled"; // مجدول
+}
+
+const payload = { 
+  ...form,
+  status, // 👈 مهم جدًا
+  delivery_fee: Number(form.delivery_fee),
+  extra_fee: Number(form.extra_fee),
+  from_address_id: fromMode === "map" ? null : form.from_address_id,
+  to_address_id: toMode === "map" ? null : form.to_address_id,
+};
+
 
       if (editingOrder) await api.put(`/wassel-orders/${editingOrder.id}`, payload);
       else await api.post("/wassel-orders", payload);
@@ -287,18 +312,54 @@ const WasselOrders: React.FC = () => {
   };
 
   const renderActions = (o: WasselOrder) => {
-    if (activeTab === "pending") return <button onClick={() => updateOrderStatus(o.id, "confirmed")} className="bg-green-600 text-white px-2 py-1 rounded text-xs hover:bg-green-700 transition shadow-sm">إعتماد</button>;
-    
-    if (activeTab === "processing") return (
+
+  // لو الطلب مجدول
+  if (o.status === "scheduled") {
+    return (
+      <button
+        onClick={() => confirmScheduleApprove(o)}
+        className="bg-indigo-600 text-white px-2 py-1 rounded text-xs hover:bg-indigo-700"
+      >
+        اعتماد
+      </button>
+    );
+  }
+
+  // طلب عادي
+  if (o.status === "pending") {
+    return (
+      <button
+        onClick={() => updateOrderStatus(o.id, "confirmed")}
+        className="bg-green-600 text-white px-2 py-1 rounded text-xs hover:bg-green-700"
+      >
+        اعتماد
+      </button>
+    ); 
+  }
+
+  if (activeTab === "processing") {
+    return (
       <div className="flex gap-1 justify-center">
-         <button onClick={() => openCaptainModal(o.id)} className="bg-indigo-600 text-white px-2 py-1 rounded text-xs flex items-center gap-1 hover:bg-indigo-700 transition shadow-sm"><UserCheck size={12}/> كابتن</button>
-         <button onClick={() => updateOrderStatus(o.id, "delivering")} className="bg-orange-600 text-white px-2 py-1 rounded text-xs flex items-center gap-1 hover:bg-orange-700 transition shadow-sm"><Truck size={12}/> توصيل</button>
+        <button
+          onClick={() => openCaptainModal(o.id)}
+          className="bg-indigo-600 text-white px-2 py-1 rounded text-xs"
+        >
+          كابتن
+        </button>
+
+        <button
+          onClick={() => updateOrderStatus(o.id, "delivering")}
+          className="bg-orange-600 text-white px-2 py-1 rounded text-xs"
+        >
+          توصيل
+        </button>
       </div>
     );
+  }
 
-    if (activeTab === "delivering") return <button onClick={() => updateOrderStatus(o.id, "completed")} className="bg-green-600 text-white px-2 py-1 rounded text-xs hover:bg-green-700 transition shadow-sm">تم التسليم</button>;
-    return "—";
-  };
+  return "—";
+};
+
 
   const renderPaymentIcon = (method: string) => {
     switch(method) {
@@ -309,6 +370,119 @@ const WasselOrders: React.FC = () => {
       default: return '—';
     }
   };
+/* ================= Scheduling (موحد) ================= */
+
+// جلب الساعات
+const [slots, setSlots] = useState<any[]>([]);
+
+// اليوم / غدًا
+const [dayTab, setDayTab] = useState<"today" | "tomorrow">("today");
+
+
+useEffect(() => {
+  api.get("/wassel-orders/manual/available-slots")
+    .then(res => setSlots(res.data.slots || []))
+    .catch(err => console.error("Slots Error:", err));
+}, []);
+
+
+/* فلترة الساعات حسب اليوم */
+const filteredSlots = slots.filter((s) => {
+
+  const date = new Date(s.start);
+
+  const today = new Date();
+  today.setHours(0,0,0,0);
+
+  const tomorrow = new Date(today);
+  tomorrow.setDate(today.getDate()+1);
+
+  const slotDay = new Date(date);
+  slotDay.setHours(0,0,0,0);
+
+  if (dayTab === "today") {
+    return slotDay.getTime() === today.getTime();
+  }
+
+  if (dayTab === "tomorrow") {
+    return slotDay.getTime() === tomorrow.getTime();
+  }
+
+  return false;
+});
+
+
+/* جلب الساعات */
+useEffect(() => {
+
+  api.get("/wassel-orders/manual/available-slots")
+    .then(res => setSlots(res.data.slots || []))
+    .catch(err => console.error("Slots Error:", err));
+
+}, []);
+
+
+// ================= Format schedule =================
+
+/* ======================
+   أدوات الوقت
+====================== */
+
+const formatTime = (t?: string | null) => {
+  if (!t) return null;
+
+  return new Date(t).toLocaleTimeString("ar-YE", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+const formatSchedule = (dateStr?: string | null) => {
+  if (!dateStr) return "—";
+
+  const d = new Date(dateStr);
+
+  const today = new Date();
+  today.setHours(0,0,0,0);
+
+  const tomorrow = new Date(today);
+  tomorrow.setDate(today.getDate()+1);
+
+  const day = new Date(d);
+  day.setHours(0,0,0,0);
+
+  let label = "—";
+
+  if (day.getTime() === today.getTime()) {
+    label = "اليوم";
+  } 
+  else if (day.getTime() === tomorrow.getTime()) {
+    label = "غدًا";
+  }
+
+  const time = d.toLocaleTimeString("ar-YE", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  return `${label} ${time}`;
+};
+
+
+const confirmScheduleApprove = (order: WasselOrder) => {
+
+  const timeText = formatSchedule(order.scheduled_at);
+
+  const ok = window.confirm(
+    `⚠️ هذا الطلب مجدول\n\nموعده: ${timeText}\n\nهل تريد اعتماده الآن؟`
+  );
+
+  if (!ok) return;
+
+  updateOrderStatus(order.id, "confirmed");
+};
+
+
 
   return (
     <div className="space-y-6" dir="rtl">
@@ -327,8 +501,13 @@ const WasselOrders: React.FC = () => {
         </div>
         <div className="flex gap-2 flex-wrap justify-center">
           {[
-            {k:"pending",l:"🟡 اعتماد"}, {k:"processing",l:"🔵 معالجة"},
-            {k:"delivering",l:"🚚 توصيل"}, {k:"completed",l:"✅ مكتمل"}, {k:"cancelled",l:"❌ ملغي"}
+            {k:"pending",l:"🟡 اعتماد"}, 
+            {k:"processing",l:"🔵 معالجة"},
+            {k:"delivering",l:"🚚 توصيل"}, 
+            {k:"completed",l:"✅ مكتمل"}, 
+            {k:"cancelled",l:"❌ ملغي"},
+            {k:"scheduled",l:"📅 مجدولة"} // ✅ جديد
+
           ].map(t=>(
             <button key={t.k} onClick={()=>setActiveTab(t.k as any)} className={`px-4 py-2 rounded-lg border-b-4 transition-all ${activeTab===t.k?"bg-blue-50 border-blue-600 text-blue-700":"bg-white border-transparent text-gray-500 hover:bg-gray-50"}`}>{t.l} <span className="text-[10px] bg-white/50 px-1.5 rounded-full ml-1">({counts[t.k as keyof typeof counts]})</span></button>
           ))}
@@ -350,6 +529,9 @@ const WasselOrders: React.FC = () => {
                 <th>الإجراء</th>
                 <th>المستخدم</th>
                 <th className="p-4">تحكم</th>
+                <th>وقت الحركة</th>
+
+
               </tr>
             </thead>
             <tbody className="divide-y text-gray-600">
@@ -406,7 +588,51 @@ const WasselOrders: React.FC = () => {
                     )}
                   </td>
 
-                  <td className="p-4"><button onClick={()=>openEdit(o)} className="text-blue-600 p-2 hover:bg-blue-100 rounded-xl transition-colors"><Edit size={16} /></button></td>
+    {/* عمود التحكم */}
+<td className="p-2 text-center">
+  <button
+    onClick={()=>openEdit(o)}
+    className="text-blue-600 p-2 hover:bg-blue-100 rounded-xl"
+  >
+    <Edit size={16}/>
+  </button>
+</td>
+
+{/* عمود وقت الحركة */}
+<td className="p-2 text-[10px] text-right space-y-1 font-bold text-indigo-600">
+
+  {/* قبل التنفيذ */}
+  {o.status === "scheduled" && o.scheduled_at&& (
+    <div>📅 {formatSchedule(o.scheduled_at)}</div>
+  )}
+
+  {/* بعد التنفيذ */}
+  {o.processing_at && (
+    <div>⚙️ معالجة: {formatTime(o.processing_at)}</div>
+  )}
+
+  {o.ready_at && (
+    <div>✅ جاهز: {formatTime(o.ready_at)}</div>
+  )}
+
+  {o.delivering_at && (
+    <div>🚚 توصيل: {formatTime(o.delivering_at)}</div>
+  )}
+
+  {o.completed_at && (
+    <div className="text-green-600">
+      ✔️ مكتمل: {formatTime(o.completed_at)}
+    </div>
+  )}
+
+  {o.cancelled_at && (
+    <div className="text-red-600">
+      ❌ ملغي: {formatTime(o.cancelled_at)}
+    </div>
+  )}
+
+</td>
+
                 </tr>
               ))}
             </tbody>
@@ -493,6 +719,136 @@ const WasselOrders: React.FC = () => {
                 </button>
               )}
             </div>
+{/* ================= الجدولة ================= */}
+<div className="border p-4 rounded-2xl bg-gray-50 space-y-3">
+
+  <p className="font-bold text-sm text-gray-600">
+    ⏰ وقت التوصيل
+  </p>
+
+{/* الآن */}
+<button
+  onClick={() => {
+    setScheduleMode("now");
+    setForm({ ...form, scheduled_at: "" });
+  }}
+
+  className={`w-full py-3 rounded-xl font-bold text-sm transition
+
+    ${
+      scheduleMode === "now"
+        ? "bg-lime-500 text-white"
+        : "bg-gray-200 hover:bg-gray-300"
+    }
+  `}
+>
+  🚀 الآن
+</button>
+
+
+
+
+  {/* اليوم / غدًا */}
+  <div className="grid grid-cols-2 gap-2">
+
+<button
+  onClick={() => setScheduleMode("today")}
+
+  className={`py-2 rounded-lg font-bold text-sm transition
+
+    ${
+      scheduleMode === "today"
+        ? "bg-lime-500 text-white"
+        : "bg-gray-200 hover:bg-gray-300"
+    }
+  `}
+>
+  اليوم
+</button>
+
+
+<button
+  onClick={() => setScheduleMode("tomorrow")}
+
+  className={`py-2 rounded-lg font-bold text-sm transition
+
+    ${
+      scheduleMode === "tomorrow"
+        ? "bg-lime-500 text-white"
+        : "bg-gray-200 hover:bg-gray-300"
+    }
+  `}
+>
+  غدًا
+</button>
+
+
+  </div>
+
+
+  {/* الساعات */}
+  <div className="grid grid-cols-2 gap-3 max-h-40 overflow-y-auto">
+
+    {filteredSlots.map((s, i) => {
+
+      const startISO = new Date(s.start).toISOString();
+
+      const start = new Date(s.start);
+      const end   = new Date(s.end);
+
+      const label =
+        start.toLocaleTimeString("ar-YE", {
+          hour:"2-digit",
+          minute:"2-digit"
+        }) +
+        " - " +
+        end.toLocaleTimeString("ar-YE", {
+          hour:"2-digit",
+          minute:"2-digit"
+        });
+
+      return (
+
+        <button
+          key={i}
+          type="button"
+
+          onClick={() =>
+            setForm({
+              ...form,
+              scheduled_at: startISO
+            })
+          }
+
+          className={`p-2 rounded-xl border text-[11px] font-bold transition
+            ${
+              form.scheduled_at === startISO
+                ? "bg-lime-500 text-white border-lime-500"
+                : "bg-white border-gray-200 hover:bg-gray-50"
+            }
+          `}
+        >
+
+          <div>
+            {dayTab === "today" ? "اليوم" : "غدًا"}
+          </div>
+
+          <div>{label}</div>
+
+        </button>
+
+      );
+    })}
+
+    {filteredSlots.length === 0 && (
+      <div className="col-span-2 text-center text-gray-400 text-xs">
+        لا توجد أوقات متاحة
+      </div>
+    )}
+
+  </div>
+
+</div>
 
             <div className="border p-4 rounded-2xl bg-gray-50 space-y-3">
               <p className="font-bold text-sm text-gray-600 flex items-center gap-2">💳 وسيلة الدفع:</p>
