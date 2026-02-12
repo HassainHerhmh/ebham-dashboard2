@@ -36,6 +36,7 @@ const ManualOrders: React.FC = () => {
   const [selectedOrderDetails, setSelectedOrderDetails] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [banks, setBanks] = useState<any[]>([]);
+const [editingId, setEditingId] = useState<number | null>(null);
 
   const [activeTab, setActiveTab] = useState<OrderTab>("pending");
   const [dateFilter, setDateFilter] = useState<DateFilter>("today");
@@ -78,6 +79,8 @@ const notifiedRef = useRef({
 
   });
 
+
+
   const handlePrint = useReactToPrint({
     content: () => printRef.current,
   });
@@ -113,12 +116,25 @@ setNotifications(prev =>
   }
 };
 
+const resetForm = () => {
 
-useEffect(() => {
+  setForm({
+    customer_id: "",
+    restaurant_id: "",
+    to_address: "",
+    delivery_fee: 0,
+    notes: "",
+    payment_method: "cod",
+    bank_id: "",
+    scheduled_time: ""
+  });
 
-  notifyUser("اختبار", "تم تشغيل النظام بنجاح ✅");
+  setItems([]);
 
-}, []);
+  setEditingOrder(null);
+  setEditingId(null); // 👈 مهم
+};
+
 
   
   /* ======================
@@ -329,7 +345,15 @@ const res = await api.put(`/wassel-orders/manual/status/${orderId}`, {
 
 
   const openEdit = (order: any) => {
+
+  resetForm();
+
+  setTimeout(() => {
+
+    setEditingId(order.id); // 👈 مهم
+
     setEditingOrder(order);
+
     setForm({
       customer_id: order.customer_id || "",
       restaurant_id: order.restaurant_id || "",
@@ -337,12 +361,18 @@ const res = await api.put(`/wassel-orders/manual/status/${orderId}`, {
       delivery_fee: Number(order.delivery_fee || 0),
       notes: order.notes || "",
       payment_method: order.payment_method || "cod",
-        bank_id: order.bank_id || "", // ✅
-
+      bank_id: order.bank_id || "",
+      scheduled_time: order.scheduled_time || ""
     });
+
     setItems(order.items || []);
+
     setShowModal(true);
-  };
+
+  }, 0);
+};
+
+
 
   const openCaptainModal = (orderId: number) => {
     setSelectedOrderId(orderId);
@@ -378,24 +408,56 @@ const res = await api.put(`/wassel-orders/manual/status/${orderId}`, {
   const removeItem = (index: number) => setItems(items.filter((_, i) => i !== index));
   const calculateTotal = () => items.reduce((sum, item) => sum + (item.qty * item.price), 0) + Number(form.delivery_fee);
 
-  const saveOrder = async () => {
-    if (!form.customer_id || items.length === 0) return alert("يرجى اختيار عميل وإضافة منتجات");
-    try {
-const payload = {
-  ...form,
-  bank_id: form.bank_id, // ✅
-  items,
-  total_amount: calculateTotal(),
-    status: form.scheduled_time ? "pending" : "pending"
+const saveOrder = async () => {
 
+  if (!form.customer_id || items.length === 0)
+    return alert("يرجى اختيار عميل وإضافة منتجات");
+
+  try {
+
+    const payload = {
+      ...form,
+      items,
+      total_amount: calculateTotal(),
+    };
+
+    console.log("🚀 Saving:", editingId, payload); // للتأكد
+
+    if (editingId) {
+
+      // ✅ تحديث
+    await (api as any).manualOrders.update(
+  editingOrder.id,
+  payload
+);
+ 
+
+    } else {
+
+      // ✅ إضافة
+      await api.post(
+        "/wassel-orders/manual",
+        payload
+      );
+    }
+
+    setShowModal(false);
+
+    resetForm();
+
+    await loadInitialData();
+
+  } catch (e: any) {
+
+    console.error(e);
+
+    alert(
+      e.response?.data?.message ||
+      "خطأ أثناء الحفظ"
+    );
+  }
 };
-      if (editingOrder) { await api.put(`/wassel-orders/manual/${editingOrder.id}`, payload); } 
-      else { await api.post("/wassel-orders/manual", payload); }
-      setShowModal(false);
-      setEditingOrder(null);
-      loadInitialData();
-    } catch (e: any) { alert(e.response?.data?.message || "خطأ أثناء الحفظ"); }
-  };
+
 
 const todayStr =
   new Date().toISOString().split("T")[0];
@@ -886,7 +948,15 @@ onClick={async () => {
                 <div className="p-3 bg-orange-500 rounded-2xl text-white shadow-lg"><ShoppingCart size={24}/></div>
                 <div><h2 className="text-xl font-black dark:text-white uppercase">{editingOrder ? "✏️ تعديل الطلب" : "➕ تسجيل طلب يدوي"}</h2><p className="text-[10px] text-gray-400 font-bold italic">أكمل بيانات الطلب والمنتجات</p></div>
               </div>
-              <button onClick={() => setShowModal(false)} className="p-3 hover:bg-red-50 hover:text-red-500 rounded-2xl transition-all dark:text-gray-400"><X size={24}/></button>
+<button
+  onClick={() => {
+    setShowModal(false);
+    resetForm();   // 👈 مهم جدًا
+  }}
+  className="p-3 hover:bg-red-50 hover:text-red-500 rounded-2xl transition-all dark:text-gray-400"
+>
+  <X size={24}/>
+</button>
             </div>
 
             <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -1165,7 +1235,18 @@ onClick={async () => {
 
             <div className="p-6 border-t dark:border-gray-700 bg-white dark:bg-gray-900/50 flex flex-col md:flex-row justify-between items-center gap-6">
               <div className="flex items-center gap-8"><div className="text-right"><p className="text-[10px] text-gray-400 font-black mb-1 uppercase">إجمالي الأصناف</p><p className="text-xl font-bold dark:text-white">{items.reduce((s,i)=>s+(i.qty*i.price),0).toLocaleString()} ريال</p></div><div className="text-right"><p className="text-[10px] text-gray-400 font-black mb-1 uppercase text-orange-500 tracking-tighter italic">الإجمالي النهائي</p><p className="text-3xl font-black text-orange-500 leading-none">{calculateTotal().toLocaleString()} ريال</p></div></div>
-              <div className="flex gap-3"><button onClick={()=>setShowModal(false)} className="px-8 py-3 text-gray-400 font-black hover:text-red-500 transition-all">إلغاء</button><button onClick={saveOrder} disabled={items.length===0} className="bg-green-600 text-white px-12 py-4 rounded-3xl font-black hover:bg-green-700 transition active:scale-95 shadow-xl flex items-center gap-3"><Save size={20}/> {editingOrder ? "تحديث التعديلات" : "اعتماد الطلب"}</button></div>
+              <div className="flex gap-3">
+                <button
+  onClick={() => {
+    setShowModal(false);
+    resetForm();   // 👈 تنظيف البيانات
+  }}
+  className="px-8 py-3 text-gray-400 font-black hover:text-red-500 transition-all"
+>
+  إلغاء
+</button>
+
+              <button onClick={saveOrder} disabled={items.length===0} className="bg-green-600 text-white px-12 py-4 rounded-3xl font-black hover:bg-green-700 transition active:scale-95 shadow-xl flex items-center gap-3"><Save size={20}/> {editingOrder ? "تحديث التعديلات" : "اعتماد الطلب"}</button></div>
             </div>
           </div>
         </div>
