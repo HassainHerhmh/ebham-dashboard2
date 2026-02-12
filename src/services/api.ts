@@ -1184,5 +1184,10 @@ export const executeExchange = async (data: {
   // تحديث حالة الطلب اليدوي
   updateStatus: async (id: number, status: string) => 
     (await api.put(`/wassel-orders/manual/status/${id}`, { status })).data,
+  
+    // ✅ الجديد
+  update: async (id: number, data: any) =>
+    (await api.put(`/wassel-orders/manual/${id}`, data)).data,
 };
+
 export default api;
