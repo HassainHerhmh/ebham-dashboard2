@@ -26,6 +26,16 @@ interface Order {
   creator_name?: string; 
   updater_name?: string;
   branch_name?: string;
+
+  // ⏱️ أوقات الحركة
+  scheduled_at?: string | null;
+  processing_at?: string | null;
+  ready_at?: string | null;
+  delivering_at?: string | null;
+  completed_at?: string | null;
+  cancelled_at?: string | null;
+
+
 }
 
 interface Captain {
@@ -62,7 +72,7 @@ type DateFilter = "all" | "today" | "week";
 /* =====================
    Component & Socket
 ===================== */
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "http://localhost:8080";
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL?.trim();
 const socket = io(SOCKET_URL);
 
 function ToastNotifications() {
@@ -155,6 +165,17 @@ const Orders: React.FC = () => {
 
   // ========= إضافة طلب =========
   const [showAddOrderModal, setShowAddOrderModal] = useState(false);
+// ⏰ الجدولة
+const [scheduleMode, setScheduleMode] =
+  useState<"now" | "today" | "tomorrow">("now");
+
+const [slots, setSlots] = useState<any[]>([]);
+const [dayTab, setDayTab] =
+  useState<"today" | "tomorrow">("today");
+
+const [scheduledAt, setScheduledAt] =
+  useState<string | null>(null);
+
   const [customers, setCustomers] = useState<any[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const [addresses, setAddresses] = useState<any[]>([]);
@@ -184,6 +205,30 @@ const Orders: React.FC = () => {
       setAddresses([]);
     }
   }, [selectedCustomer]);
+
+// جلب أوقات الجدولة
+// جلب أوقات الجدولة
+useEffect(() => {
+
+  if (!showAddOrderModal) return;
+
+  api.get("/wassel-orders/manual/available-slots")
+    .then(res => {
+
+      if (res.data.success) {
+        setSlots(res.data.slots || []);
+      } else {
+        setSlots([]);
+      }
+
+    })
+    .catch(err => {
+      console.error("Slots Error:", err);
+      setSlots([]);
+    });
+
+}, [showAddOrderModal]);
+
 
   const fetchCustomerAddresses = async (customerId: number) => {
     try {
@@ -362,6 +407,35 @@ const openDetailsModal = async (orderId: number) => {
     }
   };
 
+// ================= فلترة أوقات الجدولة =================
+const filteredSlots = useMemo(() => {
+
+  return slots.filter((s) => {
+
+    const date = new Date(s.start);
+
+    const today = new Date();
+    today.setHours(0,0,0,0);
+
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate()+1);
+
+    const slotDay = new Date(date);
+    slotDay.setHours(0,0,0,0);
+
+    if (dayTab === "today") {
+      return slotDay.getTime() === today.getTime();
+    }
+
+    if (dayTab === "tomorrow") {
+      return slotDay.getTime() === tomorrow.getTime();
+    }
+
+    return false;
+  });
+
+}, [slots, dayTab]);
+
   // ====================================
   //         إضافة طلب جديد (متعدد المطاعم)
   // ====================================
@@ -479,6 +553,9 @@ const openDetailsModal = async (orderId: number) => {
       customer_id: selectedCustomer.id,
       address_id: selectedAddress.id,
       gps_link: gpsLink,
+
+scheduled_at: scheduleMode === "now" ? null : scheduledAt,
+
       payment_method: newOrderPaymentMethod,
       bank_id: newOrderPaymentMethod === "bank" ? selectedBankId : null,
       restaurants: groups.map((g) => ({
@@ -508,61 +585,78 @@ type OrderTab =
   | "delivering"
   | "completed"
   | "cancelled"
+  | "scheduled" // ✅ جديد
+
 
 
   const [activeTab, setActiveTab] = useState<OrderTab>("pending");
+ const [searchTerm, setSearchTerm] = useState("");
 
- const filterByTab = (list: Order[]) => {
-  switch (activeTab) {
+const filterByTab = (list: Order[]) => {
 
-    case "pending":
-      return list.filter((o) => o.status === "pending");
+  let filtered = list;
 
-    case "processing":
-      return list.filter(
-        (o) => o.status === "confirmed" || o.status === "preparing"
-      );
+  // 🔍 البحث
+  if (searchTerm) {
+    const t = searchTerm.toLowerCase();
 
-    case "ready":
-      return list.filter((o) => o.status === "ready");
+    filtered = filtered.filter(o =>
+      o.customer_name?.toLowerCase().includes(t) ||
+      o.id.toString().includes(t) ||
+      o.customer_phone?.includes(t)
+    );
+  }
 
-    case "delivering":
-      return list.filter((o) => o.status === "delivering");
+  switch (activeTab) {
 
-    case "completed":
-      return list.filter((o) => o.status === "completed");
+    case "scheduled":
+      return filtered.filter(o => o.status === "scheduled");
 
-    case "cancelled":
-      return list.filter((o) => o.status === "cancelled");
+    case "pending":
+      return filtered.filter(o => o.status === "pending");
 
+    case "processing":
+      return filtered.filter(
+        o => o.status === "confirmed" || o.status === "preparing"
+      );
 
+    case "ready":
+      return filtered.filter(o => o.status === "ready");
 
-    default:
-      return list;
-  }
+    case "delivering":
+      return filtered.filter(o => o.status === "delivering");
+
+    case "completed":
+      return filtered.filter(o => o.status === "completed");
+
+    case "cancelled":
+      return filtered.filter(o => o.status === "cancelled");
+
+    default:
+      return filtered;
+  }
 };
 
 const countByTab = (list: Order[]) => {
-  return {
-    pending: list.filter((o) => o.status === "pending").length,
+  return {
+    scheduled: list.filter(o => o.status === "scheduled").length, // ✅
 
-    processing: list.filter(
-      (o) => o.status === "confirmed" || o.status === "preparing"
-    ).length,
+    pending: list.filter(o => o.status === "pending").length,
 
-    ready: list.filter((o) => o.status === "ready").length,
+    processing: list.filter(
+      o => o.status === "confirmed" || o.status === "preparing"
+    ).length,
 
-    delivering: list.filter((o) => o.status === "delivering").length,
+    ready: list.filter(o => o.status === "ready").length,
 
-    completed: list.filter((o) => o.status === "completed").length,
+    delivering: list.filter(o => o.status === "delivering").length,
 
-    cancelled: list.filter((o) => o.status === "cancelled").length,
+    completed: list.filter(o => o.status === "completed").length,
 
-    wassel: list.filter((o) => o.order_type === "wassel").length,
-
-    manual: list.filter((o) => o.is_manual === 1).length,
-  };
+    cancelled: list.filter(o => o.status === "cancelled").length,
+  };
 };
+
 // العدادات
 const counts = useMemo(
   () => countByTab(orders),
@@ -575,6 +669,38 @@ const visibleOrders = useMemo(
   [orders, activeTab]
 );
 
+const formatScheduleTime = (dateStr?: string | null) => {
+  if (!dateStr) return "";
+
+  const d = new Date(dateStr);
+  const now = new Date();
+
+  const clean = (x: Date) =>
+    new Date(x.getFullYear(), x.getMonth(), x.getDate());
+
+  const today = clean(now);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(today.getDate() + 1);
+
+  const target = clean(d);
+
+  let dayLabel = "";
+
+  if (target.getTime() === today.getTime()) {
+    dayLabel = "اليوم";
+  } else if (target.getTime() === tomorrow.getTime()) {
+    dayLabel = "غدًا";
+  } else {
+    dayLabel = d.toLocaleDateString("ar-YE");
+  }
+
+  const time = d.toLocaleTimeString("ar-YE", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  return `${dayLabel} / ${time}`;
+};
 
   // ====================================
   //                JSX
@@ -704,10 +830,25 @@ const visibleOrders = useMemo(
             </button>
           </div>
         </div>
+<div className="flex justify-center my-3">
+  <input
+    type="text"
+    placeholder="🔍 بحث بالاسم / الهاتف / رقم الطلب"
+    value={searchTerm}
+    onChange={(e) => setSearchTerm(e.target.value)}
+    className="
+      w-80 px-4 py-2 rounded-full text-sm
+      border border-gray-300
+      focus:ring-2 focus:ring-blue-400
+      outline-none
+      text-center
+    "
+  />
+</div>
 
         {/* تبويبات الحالات */}
 {/* تبويبات الحالات - ستعرض الآن الأرقام بناءً على فلتر اليوم/الأسبوع */}
-<div className="flex gap-2 flex-wrap">
+<div className="flex gap-2 flex-wrap justify-center my-4">
   {[
     { key: "pending", label: "🟡 اعتماد" },
     { key: "processing", label: "🔵 قيد المعالجة" },
@@ -715,6 +856,8 @@ const visibleOrders = useMemo(
     { key: "delivering", label: "🚚 قيد التوصيل" },
     { key: "completed", label: "✅ مكتمل" },
     { key: "cancelled", label: "❌ ملغي" },
+      { key: "scheduled", label: "📅 مجدولة" }, // ✅ جديد
+
   ].map((t) => (
     <button
       key={t.key}
@@ -768,7 +911,10 @@ const visibleOrders = useMemo(
                 <th className="px-2">الحالة</th>
                 <th className="px-2">تفاصيل</th>
                 <th className="px-2">تعيين كابتن</th>
+                 <th className="px-2">وقت الحركة</th>
+
                 <th className="px-2">المستخدم</th>
+
                 {isAdminBranch && <th className="px-2">الفرع</th>}
               </tr>
             </thead>
@@ -815,7 +961,39 @@ const visibleOrders = useMemo(
                     </button>
                   </td>
                   <td className="px-2">{renderActions(o)}</td>
-                  
+                  <td className="px-2 text-[11px] text-right space-y-1 font-bold text-indigo-600">
+
+ {o.scheduled_at && (
+  <div>📅 {formatScheduleTime(o.scheduled_at)}</div>
+)}
+
+
+  {o.processing_at && (
+    <div>⚙️ {new Date(o.processing_at).toLocaleTimeString("ar-YE")}</div>
+  )}
+
+  {o.ready_at && (
+    <div>✅ {new Date(o.ready_at).toLocaleTimeString("ar-YE")}</div>
+  )}
+
+  {o.delivering_at && (
+    <div>🚚 {new Date(o.delivering_at).toLocaleTimeString("ar-YE")}</div>
+  )}
+
+  {o.completed_at && (
+    <div className="text-green-600">
+      ✔️ {new Date(o.completed_at).toLocaleTimeString("ar-YE")}
+    </div>
+  )}
+
+  {o.cancelled_at && (
+    <div className="text-red-600">
+      ❌ {new Date(o.cancelled_at).toLocaleTimeString("ar-YE")}
+    </div>
+  )}
+
+</td>
+
                   {/* ✅ عمود المستخدم بتطبيق آلية التتبع */}
                   <td className="px-2 text-sm text-gray-700 font-medium">
                     {o.updater_name ? (
@@ -1031,7 +1209,7 @@ const visibleOrders = useMemo(
                    <div className="border p-3 rounded bg-yellow-50">
   <h3 className="font-bold mb-1">📝 ملاحظات الطلب</h3>
   <p className="text-gray-700">
-    {selectedOrderDetails.note || "لا توجد ملاحظات"}
+    {selectedOrderDetails.notes || "لا توجد ملاحظات"}
   </p>
 </div>
 
@@ -1152,8 +1330,112 @@ const visibleOrders = useMemo(
                   {`${a.neighborhood_name || "بدون حي"} - ${a.address || ""}`}
                 </option>
               ))}
+
+
+
             </select>
 
+{/* ================= الجدولة ================= */}
+<div className="border p-3 rounded bg-gray-50 mt-4 space-y-3">
+
+  <h3 className="font-bold text-sm text-gray-700">
+    ⏰ وقت التوصيل
+  </h3>
+
+  {/* الآن */}
+  <button
+    type="button"
+    onClick={() => {
+      setScheduleMode("now");
+      setScheduledAt(null);
+    }}
+    className={`w-full py-2 rounded font-bold text-sm ${
+      scheduleMode === "now"
+        ? "bg-lime-500 text-white"
+        : "bg-gray-200"
+    }`}
+  >
+    🚀 الآن
+  </button>
+
+  {/* اليوم / غدًا */}
+  <div className="grid grid-cols-2 gap-2">
+
+    <button
+      type="button"
+      onClick={() => {
+        setScheduleMode("today");
+        setDayTab("today");
+      }}
+      className={`py-2 rounded text-sm font-bold ${
+        scheduleMode==="today"
+          ? "bg-lime-500 text-white"
+          : "bg-gray-200"
+      }`}
+    >
+      اليوم
+    </button>
+
+    <button
+      type="button"
+      onClick={() => {
+        setScheduleMode("tomorrow");
+        setDayTab("tomorrow");
+      }}
+      className={`py-2 rounded text-sm font-bold ${
+        scheduleMode==="tomorrow"
+          ? "bg-lime-500 text-white"
+          : "bg-gray-200"
+      }`}
+    >
+      غدًا
+    </button>
+
+  </div>
+
+  {/* الساعات */}
+  <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto">
+
+    {filteredSlots.map((s, i) => {
+
+      const startISO = new Date(s.start).toISOString();
+
+      const start = new Date(s.start);
+      const end = new Date(s.end);
+
+      const label =
+        start.toLocaleTimeString("ar-YE",{hour:"2-digit",minute:"2-digit"}) +
+        " - " +
+        end.toLocaleTimeString("ar-YE",{hour:"2-digit",minute:"2-digit"});
+
+      return (
+
+        <button
+          key={i}
+          type="button"
+          onClick={() => setScheduledAt(startISO)}
+          className={`p-2 rounded border text-[11px] font-bold ${
+            scheduledAt === startISO
+              ? "bg-lime-500 text-white border-lime-500"
+              : "bg-white"
+          }`}
+        >
+          <div>{dayTab === "today" ? "اليوم" : "غدًا"}</div>
+          <div>{label}</div>
+        </button>
+
+      );
+    })}
+
+    {filteredSlots.length === 0 && (
+      <div className="col-span-2 text-center text-gray-400 text-xs">
+        لا توجد أوقات متاحة
+      </div>
+    )}
+
+  </div>
+
+</div>
             <h3 className="font-bold mb-2">💳 طريقة الدفع</h3>
             <div className="flex gap-3 flex-wrap mb-3">
               {[
