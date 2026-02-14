@@ -79,8 +79,7 @@ const [displayType, setDisplayType] = useState("product"); // "product" أو "ma
   const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
   const [selectedType, setSelectedType] = useState<number | "">("");
   const [selectedBranch, setSelectedBranch] = useState<number | "">("");
-const [latitude, setLatitude] = useState("");
-const [longitude, setLongitude] = useState("");
+
 
   const [storeSchedule, setStoreSchedule] = useState<ScheduleItem[]>(
     daysOfWeek.map((day) => ({ day, start: "", end: "", closed: false }))
@@ -220,6 +219,11 @@ const handleEdit = (r: Restaurant) => {
     image_url: r.image_url || "",
   });
 
+    // ✅ مهم جدًا
+  setMapUrl(r.map_url || "");
+  setLatitude(r.latitude || "");
+  setLongitude(r.longitude || "");
+  
     setImageUrl(r.image_url || ""); 
        setDisplayType(r.display_type || "product"); // تعبئة القيمة عند التعديل
   const categoryIds = r.category_ids
