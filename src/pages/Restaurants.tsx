@@ -79,6 +79,8 @@ const [displayType, setDisplayType] = useState("product"); // "product" أو "ma
   const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
   const [selectedType, setSelectedType] = useState<number | "">("");
   const [selectedBranch, setSelectedBranch] = useState<number | "">("");
+const [latitude, setLatitude] = useState("");
+const [longitude, setLongitude] = useState("");
 
   const [storeSchedule, setStoreSchedule] = useState<ScheduleItem[]>(
     daysOfWeek.map((day) => ({ day, start: "", end: "", closed: false }))
@@ -304,6 +306,26 @@ useEffect(() => {
     setAgents(list);
   });
 }, []);
+
+  function extractLatLng(url) {
+  const match = url.match(/@([-0-9.]+),([-0-9.]+)/);
+  if (match) {
+    return {
+      lat: match[1],
+      lng: match[2]
+    };
+  }
+
+  const qMatch = url.match(/q=([-0-9.]+),([-0-9.]+)/);
+  if (qMatch) {
+    return {
+      lat: qMatch[1],
+      lng: qMatch[2]
+    };
+  }
+
+  return null;
+}
 
   
   return (
@@ -637,7 +659,18 @@ useEffect(() => {
     type="text"
     placeholder="رابط الموقع من Google Maps"
     value={mapUrl}
-    onChange={(e) => setMapUrl(e.target.value)}
+   onChange={(e) => {
+  const value = e.target.value;
+  setMapUrl(value);
+
+  const location = extractLatLng(value);
+
+  if (location) {
+    setLatitude(location.lat);
+    setLongitude(location.lng);
+  }
+}}
+
     className="border rounded-lg px-3 py-2 w-full col-span-1"
   />
 
@@ -655,6 +688,23 @@ useEffect(() => {
       />
     </label>
   </div>
+<div className="col-span-2 grid grid-cols-2 gap-3">
+  <input
+    type="text"
+    placeholder="خط العرض (Latitude)"
+    value={latitude}
+    readOnly
+    className="border rounded-lg px-3 py-2 w-full bg-gray-100"
+  />
+
+  <input
+    type="text"
+    placeholder="خط الطول (Longitude)"
+    value={longitude}
+    readOnly
+    className="border rounded-lg px-3 py-2 w-full bg-gray-100"
+  />
+</div>
 
 {/* مدة التوصيل */}
 <div className="border p-3 rounded-lg col-span-2">
