@@ -82,6 +82,7 @@ function ToastNotifications() {
     console.log("🔌 Trying socket connection to:", SOCKET_URL);
 
     const handler = (data: any) => {
+  console.log("🔥 Notification Arrived:", data); // <--- أضف هذا
       const id = Date.now();
       setToasts((prev) => [...prev, { ...data, id }]);
 
