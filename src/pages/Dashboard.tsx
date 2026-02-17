@@ -1,8 +1,11 @@
 import React from 'react'
+import { io, Socket } from "socket.io-client"
+
 import StatCard from '../components/StatCard'
 import { useApp } from '../contexts/AppContext'
 import { useApi } from '../hooks/useApi'
 import api from '../services/api'
+
 import {
   Users,
   ShoppingBag,
@@ -23,8 +26,9 @@ import {
   Cell
 } from 'recharts'
 
-/* ✅ مهم */
-import { io, Socket } from "socket.io-client"
+
+const SOCKET_URL = "https://ebham-backend-production.up.railway.app"
+
 
 const Dashboard: React.FC = () => {
 
@@ -32,79 +36,82 @@ const Dashboard: React.FC = () => {
 
   const stats = state.stats
 
-  /* =========================
-     Notifications State
-  ========================= */
+  const socketRef = React.useRef<Socket | null>(null)
 
-  const [notifications, setNotifications] = React.useState<any[]>([])
 
   /* =========================
-     Socket Connection
+     تحميل الإحصائيات
   ========================= */
+  React.useEffect(() => {
+    actions.loadStats()
+  }, [])
 
+
+  /* =========================
+     الاتصال بـ Socket.IO
+  ========================= */
   React.useEffect(() => {
 
-    const socket: Socket = io(
-      "https://ebham-backend-production.up.railway.app"
-    )
+    const socket = io(SOCKET_URL, {
+      transports: ["websocket"],
+      reconnection: true,
+      reconnectionAttempts: 10
+    })
+
+    socketRef.current = socket
 
     socket.on("connect", () => {
-
       console.log("✅ Socket connected:", socket.id)
+    })
+
+    socket.on("disconnect", () => {
+      console.log("❌ Socket disconnected")
+    })
+
+    /* =========================
+       استقبال إشعارات لوحة التحكم
+    ========================= */
+    socket.on("admin_notification", (data: any) => {
+
+      console.log("📢 Admin notification received:", data)
+
+      // عرض alert مؤقت
+      alert(data.message)
+
+      // إعادة تحميل الإحصائيات
+      actions.loadStats()
 
     })
 
-    socket.on("admin_notification", (data) => {
-
-      console.log("🔔 Admin notification:", data)
-
-      setNotifications(prev => [
-
-        {
-          id: Date.now(),
-          message: data.message
-        },
-
-        ...prev
-
-      ])
-
-    })
 
     return () => {
-
       socket.disconnect()
-
     }
 
   }, [])
 
-  /* =========================
-     Load stats
-  ========================= */
 
-  React.useEffect(() => {
-
-    actions.loadStats()
-
-  }, [])
 
   /* =========================
-     API
+     جلب الطلبات الأخيرة
   ========================= */
-
   const { data: recentOrders } = useApi(
     () => api.orders.getOrders({ limit: 10, sort: 'desc' }),
     []
   )
 
-  const { data: salesData } = useApi(
-    () => api.reports.getSalesReport(),
-    []
-  )
 
-  /* ========================= */
+  /* =========================
+     تقرير المبيعات
+  ========================= */
+  const { data: salesData } =
+    useApi(() => api.reports.getSalesReport(), [])
 
+
+
+  /* =========================
+     معالجة الطلبات
+  ========================= */
   const ordersList =
     Array.isArray(recentOrders?.orders)
       ? recentOrders.orders
@@ -112,92 +119,78 @@ const Dashboard: React.FC = () => {
         ? recentOrders
         : []
 
+
+
+  /* =========================
+     بيانات الرسم
+  ========================= */
   const orderStatusData = [
+
     { name: 'مكتملة', value: 400, color: '#10b981' },
+
     { name: 'قيد التوصيل', value: 300, color: '#3b82f6' },
+
     { name: 'ملغية', value: 200, color: '#ef4444' },
+
     { name: 'في الانتظار', value: 100, color: '#f59e0b' }
+
   ]
 
+
+  /* =========================
+     ألوان الحالة
+  ========================= */
   const getStatusColor = (status: string) => {
 
     switch (status) {
 
+      case 'completed':
       case 'مكتمل':
         return 'bg-green-100 text-green-800'
 
+      case 'delivering':
       case 'قيد التوصيل':
         return 'bg-blue-100 text-blue-800'
 
+      case 'pending':
       case 'في الانتظار':
         return 'bg-yellow-100 text-yellow-800'
 
+      case 'cancelled':
       case 'ملغي':
         return 'bg-red-100 text-red-800'
 
       default:
         return 'bg-gray-100 text-gray-800'
-
     }
 
   }
+
+
 
   return (
 
     <div className="space-y-6">
 
-      {/* =========================
-         Header
-      ========================= */}
 
+      {/* Header */}
       <div className="flex items-center justify-between">
 
         <h1 className="text-2xl font-bold text-gray-900">
-
           لوحة التحكم
-
         </h1>
 
         <div className="text-sm text-gray-500">
-
-          آخر تحديث: الآن
-
+          متصل realtime
         </div>
 
       </div>
 
 
-      {/* =========================
-         Notifications UI
-      ========================= */}
 
-      {notifications.length > 0 && (
-
-        <div className="space-y-2">
-
-          {notifications.slice(0, 5).map((n) => (
-
-            <div
-              key={n.id}
-              className="bg-blue-600 text-white px-4 py-3 rounded-lg shadow animate-pulse"
-            >
-
-              🔔 {n.message}
-
-            </div>
-
-          ))}
-
-        </div>
-
-      )}
-
-
-      {/* =========================
-         Stats Cards
-      ========================= */}
-
+      {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
 
         <StatCard
           title="إجمالي الطلبات اليوم"
@@ -208,6 +201,7 @@ const Dashboard: React.FC = () => {
           color="primary"
         />
 
+
         <StatCard
           title="العملاء النشطون"
           value={stats?.activeCustomers?.toString() || "0"}
@@ -216,6 +210,7 @@ const Dashboard: React.FC = () => {
           icon={Users}
           color="secondary"
         />
+
 
         <StatCard
           title="الكباتن المتاحون"
@@ -226,6 +221,7 @@ const Dashboard: React.FC = () => {
           color="warning"
         />
 
+
         <StatCard
           title="إجمالي المبيعات"
           value={`${stats?.totalSales?.toLocaleString() || "0"} ريال`}
@@ -235,21 +231,19 @@ const Dashboard: React.FC = () => {
           color="success"
         />
 
+
       </div>
 
 
-      {/* =========================
-         Charts
-      ========================= */}
 
+      {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
 
         <div className="bg-white rounded-xl shadow-lg p-6">
 
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
-
+          <h2 className="text-lg font-semibold mb-4">
             المبيعات الأسبوعية
-
           </h2>
 
           <ResponsiveContainer width="100%" height={300}>
@@ -279,12 +273,11 @@ const Dashboard: React.FC = () => {
         </div>
 
 
+
         <div className="bg-white rounded-xl shadow-lg p-6">
 
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
-
+          <h2 className="text-lg font-semibold mb-4">
             حالة الطلبات
-
           </h2>
 
           <ResponsiveContainer width="100%" height={300}>
@@ -302,10 +295,7 @@ const Dashboard: React.FC = () => {
 
                 {orderStatusData.map((entry, index) => (
 
-                  <Cell
-                    key={index}
-                    fill={entry.color}
-                  />
+                  <Cell key={index} fill={entry.color} />
 
                 ))}
 
@@ -322,21 +312,18 @@ const Dashboard: React.FC = () => {
       </div>
 
 
-      {/* =========================
-         Recent Orders
-      ========================= */}
 
+      {/* Orders Table */}
       <div className="bg-white rounded-xl shadow-lg">
 
         <div className="px-6 py-4 border-b">
 
           <h2 className="text-lg font-semibold">
-
             الطلبات الأخيرة
-
           </h2>
 
         </div>
+
 
         <div className="overflow-x-auto">
 
@@ -346,15 +333,11 @@ const Dashboard: React.FC = () => {
 
               <tr>
 
-                <th className="text-right py-3 px-6">
-                  رقم الطلب
+                <th className="py-3 px-6 text-right">
+                  رقم
                 </th>
 
-                <th className="text-right py-3 px-6">
-                  العميل
-                </th>
-
-                <th className="text-right py-3 px-6">
+                <th className="py-3 px-6 text-right">
                   الحالة
                 </th>
 
@@ -362,22 +345,16 @@ const Dashboard: React.FC = () => {
 
             </thead>
 
+
             <tbody>
 
               {ordersList.slice(0, 5).map((order: any) => (
 
-                <tr key={order.id}>
+                <tr key={order.id}
+                    className="border-b hover:bg-gray-50">
 
                   <td className="py-3 px-6">
-
                     #{order.id}
-
-                  </td>
-
-                  <td className="py-3 px-6">
-
-                    {order.customer_name}
-
                   </td>
 
                   <td className="py-3 px-6">
@@ -401,6 +378,8 @@ const Dashboard: React.FC = () => {
         </div>
 
       </div>
+
+
 
     </div>
 
