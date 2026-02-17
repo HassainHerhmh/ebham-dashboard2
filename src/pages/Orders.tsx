@@ -98,10 +98,10 @@ function ToastNotifications() {
       console.error("🔴 Socket connection error:", err.message);
     });
 
-    socket.on("notification", handler);
+socket.on("admin_notification", handler);
 
     return () => {
-      socket.off("notification", handler);
+socket.off("admin_notification", handler);
       socket.off("connect");
       socket.off("connect_error");
     };
