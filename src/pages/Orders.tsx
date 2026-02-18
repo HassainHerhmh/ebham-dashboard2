@@ -77,17 +77,18 @@ type DateFilter = "all" | "today" | "week";
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL?.trim();
 const socket = io(SOCKET_URL);
 
-// ========== مكون الخريطة (Live Tracking الحقيقي) ==========
+// ========== مكون الخريطة (Live Tracking مع أيقونة دباب) ==========
 const TrackingModal = ({ order, onClose }: { order: Order; onClose: () => void }) => {
   const mapRef = useRef<HTMLDivElement>(null);
-  const markerRef = useRef<google.maps.Marker | null>(null); // مرجع لماركر الكابتن
+  const markerRef = useRef<google.maps.Marker | null>(null);
   const [googleMapsReady, setGoogleMapsReady] = useState(false);
 
   // 1. تحميل الخريطة
   useEffect(() => {
     if (!window.google) {
       const script = document.createElement("script");
-      script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyD1Cg7YKXlWGMhVLjRKy0GmlL149_W08SQ&libraries=places`; // ⚠️ تأكد من مفتاحك
+      // ⚠️ تأكد من وضع مفتاح API الصحيح الخاص بك هنا
+      script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyD1Cg7YKXlWGMhVLjRKy0GmlL149_W08SQ&libraries=places`;
       script.async = true;
       script.defer = true;
       script.onload = () => setGoogleMapsReady(true);
@@ -97,7 +98,7 @@ const TrackingModal = ({ order, onClose }: { order: Order; onClose: () => void }
     }
   }, []);
 
-  // 2. تهيئة الخريطة والاستماع للسوكيت
+  // 2. تهيئة الخريطة
   useEffect(() => {
     if (googleMapsReady && mapRef.current && order.latitude && order.longitude) {
       const customerLoc = { lat: Number(order.latitude), lng: Number(order.longitude) };
@@ -111,36 +112,49 @@ const TrackingModal = ({ order, onClose }: { order: Order; onClose: () => void }
       new window.google.maps.Marker({
         position: customerLoc,
         map: map,
-        icon: "http://maps.google.com/mapfiles/ms/icons/red-dot.png", // لون أحمر للعميل
+        icon: "http://maps.google.com/mapfiles/ms/icons/red-dot.png", // نقطة حمراء للعميل
         title: "العميل"
       });
 
-      // 🛵 ماركر الكابتن (نبدأ بدون موقع حتى يصل أول تحديث)
+      // 🛵 أيقونة الدباب (سكوتر توصيل)
+      const scooterIcon = {
+        url: "https://cdn-icons-png.flaticon.com/512/7541/7541900.png", // رابط أيقونة دباب ملونة
+        scaledSize: new window.google.maps.Size(50, 50), // حجم الأيقونة
+        origin: new window.google.maps.Point(0, 0),
+        anchor: new window.google.maps.Point(25, 25) // نقطة الارتكاز في المنتصف
+      };
+
+      // إنشاء ماركر الكابتن (نضعه مبدئياً عند العميل حتى يصل التحديث)
       const captainMarker = new window.google.maps.Marker({
         map: map,
-        icon: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png", // لون أزرق للكابتن (أو صورة سكوتر)
+        position: customerLoc, // موقع مؤقت
+        icon: scooterIcon,
         title: "الكابتن",
-        position: customerLoc // مؤقتاً نضعه عند العميل حتى يتحرك، أو اتركه null
+        animation: window.google.maps.Animation.DROP // حركة عند الظهور
       });
       
       markerRef.current = captainMarker;
 
       // 📡 الاستماع للموقع الحقيقي من السيرفر
-      console.log(`Listening to channel: captain_location_${order.captain_id}`);
+      const channel = `captain_location_${order.captain_id}`;
+      console.log(`🔌 Listening to Socket Channel: ${channel}`);
       
-      socket.on(`captain_location_${order.captain_id}`, (data: any) => {
-         console.log("📍 New Captain Position:", data);
+      socket.on(channel, (data: any) => {
+         console.log("📍 Captain Moved:", data);
+         
          const newPos = { lat: Number(data.lat), lng: Number(data.lng) };
          
-         // تحديث مكان الكابتن
-         captainMarker.setPosition(newPos);
-         
-         // (اختياري) تحريك الخريطة لتشمل الكابتن والعميل
-         // map.panTo(newPos); 
+         if (markerRef.current) {
+             markerRef.current.setPosition(newPos);
+             
+             // (اختياري) جعل الخريطة تتبع الكابتن
+             // map.panTo(newPos); 
+         }
       });
 
+      // تنظيف عند الإغلاق
       return () => {
-        socket.off(`captain_location_${order.captain_id}`);
+        socket.off(channel);
       };
     }
   }, [googleMapsReady, order]);
@@ -148,15 +162,20 @@ const TrackingModal = ({ order, onClose }: { order: Order; onClose: () => void }
   return (
     <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50">
       <div className="bg-white rounded-lg p-4 w-full max-w-3xl h-[80vh] flex flex-col">
-        <div className="flex justify-between mb-2">
-          <h2 className="font-bold text-lg">
-             📍 تتبع مباشر للكابتن: {order.captain_name}
-          </h2>
-          <button onClick={onClose} className="bg-red-500 text-white px-3 rounded">إغلاق</button>
+        <div className="flex justify-between mb-2 border-b pb-2">
+          <div>
+             <h2 className="font-bold text-lg text-gray-800">
+                🛵 تتبع مباشر: {order.captain_name}
+             </h2>
+             <p className="text-xs text-gray-500">يتم تحديث موقع الدباب مباشرة...</p>
+          </div>
+          <button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white px-4 py-1 rounded h-10">
+            إغلاق ✖
+          </button>
         </div>
-        <div ref={mapRef} style={{ width: "100%", height: "100%", borderRadius: "10px" }} />
-        <div className="mt-2 text-center text-sm text-gray-600">
-          يتم تحديث الموقع مباشرة عند تحرك الكابتن...
+        
+        <div className="flex-1 relative bg-gray-100 rounded-lg overflow-hidden border border-gray-300">
+            <div ref={mapRef} style={{ width: "100%", height: "100%" }} />
         </div>
       </div>
     </div>
