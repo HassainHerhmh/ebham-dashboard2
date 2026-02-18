@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { Plus } from "lucide-react";
+import { Plus, MapPin } from "lucide-react"; // ✅ أضفنا MapPin
 import api from "../services/api";
 import { io } from "socket.io-client";
 
@@ -13,6 +13,7 @@ interface Order {
   customer_phone: string;
   stores_count: number;
   captain_name?: string;
+  captain_id?: number; // ✅ نحتاج معرف الكابتن للتتبع
   status: string;
   order_type?: string;
   is_manual?: number;
@@ -22,10 +23,13 @@ interface Order {
   created_at: string;
   payment_method_label?: string;
   user_name?: string; 
-  // ✅ الحقول الجديدة لآلية المستخدم
   creator_name?: string; 
   updater_name?: string;
   branch_name?: string;
+
+  // إحداثيات العميل (مهمة للخريطة)
+  latitude?: string | number;
+  longitude?: string | number;
 
   // ⏱️ أوقات الحركة
   scheduled_at?: string | null;
@@ -72,6 +76,105 @@ type DateFilter = "all" | "today" | "week";
 ===================== */
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL?.trim();
 const socket = io(SOCKET_URL);
+
+// ========== مكون الخريطة (جديد) ==========
+const TrackingModal = ({ order, onClose }: { order: Order; onClose: () => void }) => {
+  const mapRef = useRef<HTMLDivElement>(null);
+  const [googleMapsReady, setGoogleMapsReady] = useState(false);
+
+  // 1. تحميل الخريطة
+  useEffect(() => {
+    if (!window.google) {
+      const script = document.createElement("script");
+      // ⚠️ استبدل YOUR_API_KEY بمفتاحك الحقيقي
+      script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyD1Cg7YKXlWGMhVLjRKy0GmlL149_W08SQ&libraries=places`;
+      script.async = true;
+      script.defer = true;
+      script.onload = () => setGoogleMapsReady(true);
+      document.head.appendChild(script);
+    } else {
+      setGoogleMapsReady(true);
+    }
+  }, []);
+
+  // 2. تهيئة الخريطة عند الجاهزية
+  useEffect(() => {
+    if (googleMapsReady && mapRef.current && order.latitude && order.longitude) {
+      const customerLoc = { lat: Number(order.latitude), lng: Number(order.longitude) };
+      
+      const map = new window.google.maps.Map(mapRef.current, {
+        zoom: 14,
+        center: customerLoc,
+      });
+
+      // ماركر العميل 🏠
+      new window.google.maps.Marker({
+        position: customerLoc,
+        map: map,
+        label: "🏠",
+        title: "العميل"
+      });
+
+      // ماركر الكابتن 🛵 (هنا نحتاج ربط السوكيت الحقيقي)
+      // هذا مثال لمحاكاة موقع الكابتن، في الواقع يجب أن يأتي من socket.on('captain_location')
+      const captainLoc = { 
+        lat: Number(order.latitude) + 0.005, // إزاحة بسيطة للمحاكاة
+        lng: Number(order.longitude) + 0.005 
+      };
+
+      const captainMarker = new window.google.maps.Marker({
+        position: captainLoc,
+        map: map,
+        label: "🛵",
+        title: "الكابتن"
+      });
+
+      // رسم المسار
+      const directionsService = new window.google.maps.DirectionsService();
+      const directionsRenderer = new window.google.maps.DirectionsRenderer({
+        map: map,
+        suppressMarkers: true
+      });
+
+      directionsService.route({
+        origin: captainLoc,
+        destination: customerLoc,
+        travelMode: window.google.maps.TravelMode.DRIVING
+      }, (result: any, status: any) => {
+        if (status === "OK") {
+          directionsRenderer.setDirections(result);
+        }
+      });
+
+      // 🔴 هنا تستقبل تحديثات موقع الكابتن الحية
+      socket.on(`captain_location_${order.captain_id}`, (data: any) => {
+         const newPos = { lat: Number(data.lat), lng: Number(data.lng) };
+         captainMarker.setPosition(newPos);
+      });
+
+      return () => {
+        socket.off(`captain_location_${order.captain_id}`);
+      };
+    }
+  }, [googleMapsReady, order]);
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50">
+      <div className="bg-white rounded-lg p-4 w-full max-w-3xl h-[80vh] flex flex-col">
+        <div className="flex justify-between mb-2">
+          <h2 className="font-bold text-lg">📍 تتبع الطلب #{order.id}</h2>
+          <button onClick={onClose} className="bg-red-500 text-white px-3 rounded">إغلاق</button>
+        </div>
+        <div ref={mapRef} style={{ width: "100%", height: "100%", borderRadius: "10px" }} />
+        <div className="mt-2 text-center text-sm text-gray-600">
+          العميل: {order.customer_name} | الكابتن: {order.captain_name}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ========== بقية الكود (ToastNotifications وغيرها) ==========
 
 function ToastNotifications() {
   const [toasts, setToasts] = useState<any[]>([]);
@@ -138,11 +241,14 @@ const Orders: React.FC = () => {
 
   const [dateFilter, setDateFilter] = useState<DateFilter>("all");
 
-  // ========= الكباتن =========
+  // ========= الكباتن والتتبع =========
   const [captains, setCaptains] = useState<Captain[]>([]);
   const [captainsLoading, setCaptainsLoading] = useState(true);
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [isCaptainModalOpen, setIsCaptainModalOpen] = useState(false);
+  
+  // 🆕 حالة التتبع
+  const [trackingOrder, setTrackingOrder] = useState<Order | null>(null);
 
   // ========= تفاصيل الطلب =========
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
@@ -234,7 +340,6 @@ const Orders: React.FC = () => {
   const fetchOrders = async () => {
     setLoading(true);
     try {
-      // نطلب 1000 طلب لنضمن وجود داتا كافية للفلترة في الفرونت
       const res = await api.orders.getOrders({ limit: 1000 });
       const list = Array.isArray(res.orders || res) ? res.orders || res : [];
       setOrders(list);
@@ -541,15 +646,8 @@ const Orders: React.FC = () => {
   const [activeTab, setActiveTab] = useState<OrderTab>("pending");
   const [searchTerm, setSearchTerm] = useState("");
 
-  /* ============================================================
-     🔥 (تصحيح هام): فصل الفلترة الزمنية لتستخدم في العدادات والجدول
-  ============================================================ */
-  
-  // 1️⃣ أولاً: فلترة البيانات حسب التاريخ (اليوم / أسبوع / الكل)
   const filteredByDateOrders = useMemo(() => {
     const now = new Date();
-    
-    // دالة مساعدة لمقارنة التواريخ (بدون الوقت)
     const isSameDay = (d1: Date, d2: Date) => 
       d1.getFullYear() === d2.getFullYear() &&
       d1.getMonth() === d2.getMonth() &&
@@ -573,9 +671,8 @@ const Orders: React.FC = () => {
     return orders; // all
   }, [orders, dateFilter]);
 
-  // 2️⃣ ثانياً: حساب العدادات بناءً على القائمة المفلترة زمنياً
   const counts = useMemo(() => {
-    const list = filteredByDateOrders; // ✅ نستخدم القائمة المفلترة هنا
+    const list = filteredByDateOrders; 
     return {
       scheduled: list.filter(o => o.status === "scheduled").length,
       pending: list.filter(o => o.status === "pending").length,
@@ -587,11 +684,9 @@ const Orders: React.FC = () => {
     };
   }, [filteredByDateOrders]);
 
-  // 3️⃣ ثالثاً: فلترة الجدول (تعتمد أيضاً على القائمة المفلترة زمنياً + التبويب + البحث)
   const visibleOrders = useMemo(() => {
-    let filtered = filteredByDateOrders; // ✅ نبدأ من القائمة المفلترة زمنياً
+    let filtered = filteredByDateOrders; 
 
-    // أ. فلترة البحث
     if (searchTerm) {
       const t = searchTerm.toLowerCase();
       filtered = filtered.filter(o =>
@@ -601,7 +696,6 @@ const Orders: React.FC = () => {
       );
     }
 
-    // ب. فلترة التبويب
     switch (activeTab) {
       case "scheduled": return filtered.filter(o => o.status === "scheduled");
       case "pending": return filtered.filter(o => o.status === "pending");
@@ -795,7 +889,22 @@ const Orders: React.FC = () => {
                   <td className="px-2">#{o.id}</td>
                   <td className="px-2">{o.customer_name}</td>
                   <td className="px-2">{o.stores_count} مطعم</td>
-                  <td className="px-2">{o.captain_name || "لم يُعيّن"}</td>
+                  
+                  {/* ✅ تعديل عمود الكابتن لإضافة زر التتبع */}
+                  <td className="px-2">
+                    <div className="flex flex-col items-center gap-1">
+                      <span>{o.captain_name || "لم يُعيّن"}</span>
+                      {o.status === "delivering" && o.latitude && o.longitude && (
+                        <button 
+                          onClick={() => setTrackingOrder(o)}
+                          className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 flex items-center gap-1"
+                        >
+                          <MapPin size={12} /> تتبع
+                        </button>
+                      )}
+                    </div>
+                  </td>
+
                   <td className="px-2">{formatAmount(o.total_amount)}</td>
                   <td className="px-2">{o.payment_method_label || "-"}</td>
                   <td className="px-2">
@@ -852,6 +961,14 @@ const Orders: React.FC = () => {
             </tbody>
           </table>
         </div>
+      )}
+
+      {/* ===== مودال التتبع (الجديد) ===== */}
+      {trackingOrder && (
+        <TrackingModal 
+          order={trackingOrder} 
+          onClose={() => setTrackingOrder(null)} 
+        />
       )}
 
       {/* ===== مودال تعيين الكابتن ===== */}
