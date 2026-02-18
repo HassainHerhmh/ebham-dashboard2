@@ -77,17 +77,17 @@ type DateFilter = "all" | "today" | "week";
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL?.trim();
 const socket = io(SOCKET_URL);
 
-// ========== مكون الخريطة (جديد) ==========
+// ========== مكون الخريطة (Live Tracking الحقيقي) ==========
 const TrackingModal = ({ order, onClose }: { order: Order; onClose: () => void }) => {
   const mapRef = useRef<HTMLDivElement>(null);
+  const markerRef = useRef<google.maps.Marker | null>(null); // مرجع لماركر الكابتن
   const [googleMapsReady, setGoogleMapsReady] = useState(false);
 
   // 1. تحميل الخريطة
   useEffect(() => {
     if (!window.google) {
       const script = document.createElement("script");
-      // ⚠️ استبدل YOUR_API_KEY بمفتاحك الحقيقي
-      script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyD1Cg7YKXlWGMhVLjRKy0GmlL149_W08SQ&libraries=places`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyD1Cg7YKXlWGMhVLjRKy0GmlL149_W08SQ&libraries=places`; // ⚠️ تأكد من مفتاحك
       script.async = true;
       script.defer = true;
       script.onload = () => setGoogleMapsReady(true);
@@ -97,59 +97,46 @@ const TrackingModal = ({ order, onClose }: { order: Order; onClose: () => void }
     }
   }, []);
 
-  // 2. تهيئة الخريطة عند الجاهزية
+  // 2. تهيئة الخريطة والاستماع للسوكيت
   useEffect(() => {
     if (googleMapsReady && mapRef.current && order.latitude && order.longitude) {
       const customerLoc = { lat: Number(order.latitude), lng: Number(order.longitude) };
       
       const map = new window.google.maps.Map(mapRef.current, {
-        zoom: 14,
+        zoom: 15,
         center: customerLoc,
       });
 
-      // ماركر العميل 🏠
+      // 🏠 ماركر العميل
       new window.google.maps.Marker({
         position: customerLoc,
         map: map,
-        label: "🏠",
+        icon: "http://maps.google.com/mapfiles/ms/icons/red-dot.png", // لون أحمر للعميل
         title: "العميل"
       });
 
-      // ماركر الكابتن 🛵 (هنا نحتاج ربط السوكيت الحقيقي)
-      // هذا مثال لمحاكاة موقع الكابتن، في الواقع يجب أن يأتي من socket.on('captain_location')
-      const captainLoc = { 
-        lat: Number(order.latitude) + 0.005, // إزاحة بسيطة للمحاكاة
-        lng: Number(order.longitude) + 0.005 
-      };
-
+      // 🛵 ماركر الكابتن (نبدأ بدون موقع حتى يصل أول تحديث)
       const captainMarker = new window.google.maps.Marker({
-        position: captainLoc,
         map: map,
-        label: "🛵",
-        title: "الكابتن"
+        icon: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png", // لون أزرق للكابتن (أو صورة سكوتر)
+        title: "الكابتن",
+        position: customerLoc // مؤقتاً نضعه عند العميل حتى يتحرك، أو اتركه null
       });
+      
+      markerRef.current = captainMarker;
 
-      // رسم المسار
-      const directionsService = new window.google.maps.DirectionsService();
-      const directionsRenderer = new window.google.maps.DirectionsRenderer({
-        map: map,
-        suppressMarkers: true
-      });
-
-      directionsService.route({
-        origin: captainLoc,
-        destination: customerLoc,
-        travelMode: window.google.maps.TravelMode.DRIVING
-      }, (result: any, status: any) => {
-        if (status === "OK") {
-          directionsRenderer.setDirections(result);
-        }
-      });
-
-      // 🔴 هنا تستقبل تحديثات موقع الكابتن الحية
+      // 📡 الاستماع للموقع الحقيقي من السيرفر
+      console.log(`Listening to channel: captain_location_${order.captain_id}`);
+      
       socket.on(`captain_location_${order.captain_id}`, (data: any) => {
+         console.log("📍 New Captain Position:", data);
          const newPos = { lat: Number(data.lat), lng: Number(data.lng) };
+         
+         // تحديث مكان الكابتن
          captainMarker.setPosition(newPos);
+         
+         // (اختياري) تحريك الخريطة لتشمل الكابتن والعميل
+         // map.panTo(newPos); 
       });
 
       return () => {
@@ -162,18 +149,19 @@ const TrackingModal = ({ order, onClose }: { order: Order; onClose: () => void }
     <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50">
       <div className="bg-white rounded-lg p-4 w-full max-w-3xl h-[80vh] flex flex-col">
         <div className="flex justify-between mb-2">
-          <h2 className="font-bold text-lg">📍 تتبع الطلب #{order.id}</h2>
+          <h2 className="font-bold text-lg">
+             📍 تتبع مباشر للكابتن: {order.captain_name}
+          </h2>
           <button onClick={onClose} className="bg-red-500 text-white px-3 rounded">إغلاق</button>
         </div>
         <div ref={mapRef} style={{ width: "100%", height: "100%", borderRadius: "10px" }} />
         <div className="mt-2 text-center text-sm text-gray-600">
-          العميل: {order.customer_name} | الكابتن: {order.captain_name}
+          يتم تحديث الموقع مباشرة عند تحرك الكابتن...
         </div>
       </div>
     </div>
   );
 };
-
 // ========== بقية الكود (ToastNotifications وغيرها) ==========
 
 function ToastNotifications() {
