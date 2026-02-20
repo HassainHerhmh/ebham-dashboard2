@@ -1033,9 +1033,12 @@ const confirmScheduleApprove = (order: WasselOrder) => {
             </div>
           </div>
         </div>
-      )}
-    </div>
-  );
-};
+            )}
+    </div>
+
+  </>
+);   // اغلاق return fragment
+
+};   // اغلاق component
 
 export default WasselOrders;
