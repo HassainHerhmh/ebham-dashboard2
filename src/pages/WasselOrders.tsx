@@ -2,7 +2,14 @@ import React, { useEffect, useState } from "react";
 import api from "../services/api";
 import { Plus, Edit, MapPin, DollarSign, UserCheck, Truck, CreditCard, Wallet, Landmark, Banknote } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { io } from "socket.io-client";
 
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL?.trim();
+
+const socket = io(SOCKET_URL, {
+  transports: ["websocket"],
+  autoConnect: true,
+});
 /* ======================
     Types
 ====================== */
@@ -43,6 +50,65 @@ interface Captain {
   name: string;
   pending_orders: number;
   completed_today: number;
+}
+function ToastNotifications() {
+
+  const [toasts, setToasts] = useState<any[]>([]);
+
+  useEffect(() => {
+
+    const handler = (data: any) => {
+
+      // فقط إشعارات وصل لي
+      if (
+        data.type !== "wassel_order_created" &&
+        data.type !== "wassel_assigned" &&
+        data.type !== "wassel_status"
+      ) return;
+
+      const id = Date.now();
+
+      setToasts(prev => [...prev, { ...data, id }]);
+
+      setTimeout(() => {
+
+        setToasts(prev => prev.filter(t => t.id !== id));
+
+      }, 5000);
+
+    };
+
+    socket.on("admin_notification", handler);
+
+    return () => {
+
+      socket.off("admin_notification", handler);
+
+    };
+
+  }, []);
+
+  return (
+
+    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 space-y-2 w-[420px]">
+
+      {toasts.map(t => (
+
+        <div
+          key={t.id}
+          className="bg-white border shadow-lg rounded px-4 py-3 text-sm"
+        >
+
+          🔔 {t.message}
+
+        </div>
+
+      ))}
+
+    </div>
+
+  );
+
 }
 
 type OrderTab = "pending"   | "scheduled" | "processing" | "delivering" | "completed" | "cancelled";
@@ -115,7 +181,31 @@ const WasselOrders: React.FC = () => {
       navigate(location.pathname, { replace: true, state: {} });
     }
   }, [location.state]);
+useEffect(() => {
 
+  const handler = (data: any) => {
+
+    if (
+      data.type === "wassel_order_created" ||
+      data.type === "wassel_assigned" ||
+      data.type === "wassel_status"
+    ) {
+
+      loadOrders();
+
+    }
+
+  };
+
+  socket.on("admin_notification", handler);
+
+  return () => {
+
+    socket.off("admin_notification", handler);
+
+  };
+
+}, []);
   /* ======================
       الفلترة والبيانات
   ====================== */
@@ -485,6 +575,9 @@ const confirmScheduleApprove = (order: WasselOrder) => {
 
 
   return (
+       <>
+      <ToastNotifications /> 
+           
     <div className="space-y-6" dir="rtl">
       <div className="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm">
         <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">📦 طلبات وصل لي</h1>
