@@ -101,16 +101,8 @@ const toggleStatus = async (ad:Ad)=>{
       ? "inactive"
       : "active"
 
-    await api.put(`/ads/${ad.id}`,{
-
-      name: ad.name,
-      type: ad.type,
-      image_url: ad.image_url,
-      discount_percent: ad.discount_percent,
-      start_date: ad.start_date,
-      end_date: ad.end_date,
-      status: newStatus
-
+    await api.patch(`/ads/${ad.id}/status`,{
+      status:newStatus
     })
 
     loadAds()
