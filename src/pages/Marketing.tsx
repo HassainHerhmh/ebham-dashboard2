@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import {
   TrendingUp,
-  Users,
   DollarSign,
   Percent,
   Eye,
@@ -10,43 +9,49 @@ import {
 
 import api from "../services/api";
 
-interface Campaign {
+interface Ad {
   id: number;
   name: string;
   type: string;
   status: string;
   views: number;
   clicks: number;
-  budget: number;
-  startDate: string;
+  image_url: string;
+  discount_percent: number;
+  start_date: string;
+  end_date: string;
 }
 
 const Marketing: React.FC = () => {
 
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-  const [name,setName] = useState("");
-  const [type,setType] = useState("promo");
-  const [budget,setBudget] = useState(0);
+  const [ads,setAds] = useState<Ad[]>([])
+
+  const [name,setName] = useState("")
+  const [type,setType] = useState("promo")
+  const [discount,setDiscount] = useState(0)
+  const [image,setImage] = useState("")
+  const [startDate,setStartDate] = useState("")
+  const [endDate,setEndDate] = useState("")
 
   /* =========================
      تحميل الإعلانات
   ========================= */
 
   useEffect(()=>{
-    loadCampaigns()
+    loadAds()
   },[])
 
-  const loadCampaigns = async () => {
+  const loadAds = async ()=>{
 
     try{
 
-      const res = await api.get("/campaigns");
+      const res = await api.get("/ads/admin")
 
-      setCampaigns(res.data)
+      setAds(res.data)
 
     }catch(err){
 
-      console.error("فشل تحميل الحملات",err)
+      console.error("فشل تحميل الإعلانات",err)
 
     }
 
@@ -56,48 +61,53 @@ const Marketing: React.FC = () => {
      إنشاء إعلان
   ========================= */
 
-  const createCampaign = async ()=>{
+  const createAd = async ()=>{
 
     try{
 
-      await api.post("/campaigns",{
+      await api.post("/ads",{
 
         name,
         type,
-        budget,
-        status:"active"
+        image_url:image,
+        discount_percent: type === "discount" ? discount : null,
+        start_date:startDate,
+        end_date:endDate
 
       })
 
       setName("")
-      setBudget(0)
+      setDiscount(0)
+      setImage("")
+      setStartDate("")
+      setEndDate("")
 
-      loadCampaigns()
+      loadAds()
 
     }catch(err){
 
-      console.error("فشل إنشاء الحملة",err)
+      console.error("فشل إنشاء الإعلان",err)
 
     }
 
   }
 
   /* =========================
-     تفعيل / تعطيل إعلان
+     تفعيل / إيقاف
   ========================= */
 
-  const toggleStatus = async (c:Campaign)=>{
+  const toggleStatus = async (ad:Ad)=>{
 
     try{
 
-      await api.put(`/campaigns/${c.id}`,{
+      await api.put(`/ads/${ad.id}`,{
 
-        ...c,
-        status:c.status === "active" ? "paused" : "active"
+        ...ad,
+        status: ad.status === "active" ? "paused" : "active"
 
       })
 
-      loadCampaigns()
+      loadAds()
 
     }catch(err){
 
@@ -111,13 +121,13 @@ const Marketing: React.FC = () => {
      الإحصائيات
   ========================= */
 
-  const totalViews = campaigns.reduce((sum,c)=> sum + (c.views || 0),0)
+  const totalViews = ads.reduce((sum,a)=> sum + (a.views || 0),0)
 
-  const totalClicks = campaigns.reduce((sum,c)=> sum + (c.clicks || 0),0)
+  const totalClicks = ads.reduce((sum,a)=> sum + (a.clicks || 0),0)
 
-  const totalBudget = campaigns.reduce((sum,c)=> sum + (c.budget || 0),0)
-
-  const ctr = totalViews > 0 ? ((totalClicks / totalViews) * 100).toFixed(1) : "0.0"
+  const ctr = totalViews > 0
+  ? ((totalClicks / totalViews) * 100).toFixed(1)
+  : "0"
 
   return (
 
@@ -129,7 +139,7 @@ const Marketing: React.FC = () => {
 
         <h1 className="text-2xl font-bold flex items-center gap-2">
 
-          <TrendingUp className="w-7 h-7" />
+          <TrendingUp className="w-7 h-7"/>
 
           إدارة الإعلانات
 
@@ -137,10 +147,9 @@ const Marketing: React.FC = () => {
 
       </div>
 
-
       {/* إنشاء إعلان */}
 
-      <div className="bg-white p-6 rounded-xl shadow-lg grid md:grid-cols-4 gap-4">
+      <div className="bg-white p-6 rounded-xl shadow-lg grid md:grid-cols-3 gap-4">
 
         <input
         placeholder="اسم الإعلان"
@@ -161,17 +170,42 @@ const Marketing: React.FC = () => {
 
         </select>
 
+        {type === "discount" && (
+
+          <input
+          type="number"
+          placeholder="نسبة الخصم %"
+          value={discount}
+          onChange={(e)=>setDiscount(Number(e.target.value))}
+          className="border rounded-lg p-2"
+          />
+
+        )}
+
         <input
-        type="number"
-        placeholder="الميزانية"
-        value={budget}
-        onChange={(e)=>setBudget(Number(e.target.value))}
+        placeholder="رابط صورة الإعلان"
+        value={image}
+        onChange={(e)=>setImage(e.target.value)}
+        className="border rounded-lg p-2"
+        />
+
+        <input
+        type="date"
+        value={startDate}
+        onChange={(e)=>setStartDate(e.target.value)}
+        className="border rounded-lg p-2"
+        />
+
+        <input
+        type="date"
+        value={endDate}
+        onChange={(e)=>setEndDate(e.target.value)}
         className="border rounded-lg p-2"
         />
 
         <button
-        onClick={createCampaign}
-        className="bg-blue-600 text-white rounded-lg px-4"
+        onClick={createAd}
+        className="bg-blue-600 text-white rounded-lg px-4 py-2"
         >
 
           إنشاء الإعلان
@@ -180,12 +214,11 @@ const Marketing: React.FC = () => {
 
       </div>
 
-
       {/* الإحصائيات */}
 
-      <div className="grid md:grid-cols-4 gap-4">
+      <div className="grid md:grid-cols-3 gap-4">
 
-        <div className="bg-white p-6 rounded-xl shadow-lg flex justify-between">
+        <div className="bg-white p-6 rounded-xl shadow flex justify-between">
 
           <div>
 
@@ -195,11 +228,11 @@ const Marketing: React.FC = () => {
 
           </div>
 
-          <Eye />
+          <Eye/>
 
         </div>
 
-        <div className="bg-white p-6 rounded-xl shadow-lg flex justify-between">
+        <div className="bg-white p-6 rounded-xl shadow flex justify-between">
 
           <div>
 
@@ -209,11 +242,11 @@ const Marketing: React.FC = () => {
 
           </div>
 
-          <MousePointer />
+          <MousePointer/>
 
         </div>
 
-        <div className="bg-white p-6 rounded-xl shadow-lg flex justify-between">
+        <div className="bg-white p-6 rounded-xl shadow flex justify-between">
 
           <div>
 
@@ -223,30 +256,15 @@ const Marketing: React.FC = () => {
 
           </div>
 
-          <Percent />
-
-        </div>
-
-        <div className="bg-white p-6 rounded-xl shadow-lg flex justify-between">
-
-          <div>
-
-            <p className="text-gray-500 text-sm">الميزانية</p>
-
-            <p className="text-xl font-bold">{totalBudget}</p>
-
-          </div>
-
-          <DollarSign />
+          <Percent/>
 
         </div>
 
       </div>
 
-
       {/* جدول الإعلانات */}
 
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+      <div className="bg-white rounded-xl shadow overflow-hidden">
 
         <table className="w-full">
 
@@ -254,15 +272,13 @@ const Marketing: React.FC = () => {
 
             <tr>
 
-              <th className="p-3 text-right">اسم الإعلان</th>
+              <th className="p-3 text-right">الإعلان</th>
 
               <th className="p-3 text-right">النوع</th>
 
               <th className="p-3 text-right">المشاهدات</th>
 
               <th className="p-3 text-right">النقرات</th>
-
-              <th className="p-3 text-right">الميزانية</th>
 
               <th className="p-3 text-right">الحالة</th>
 
@@ -274,56 +290,57 @@ const Marketing: React.FC = () => {
 
           <tbody>
 
-            {campaigns.map((c)=>{
+            {ads.map(ad=>{
 
-              const rate = c.views > 0
-              ? ((c.clicks / c.views) * 100).toFixed(1)
+              const rate = ad.views > 0
+              ? ((ad.clicks / ad.views) * 100).toFixed(1)
               : "0"
 
               return(
 
-                <tr key={c.id} className="border-t">
+                <tr key={ad.id} className="border-t">
 
-                  <td className="p-3 font-semibold">
+                  <td className="p-3 flex items-center gap-3">
 
-                    {c.name}
+                    {ad.image_url && (
 
-                  </td>
+                      <img
+                      src={ad.image_url}
+                      className="w-12 h-12 rounded object-cover"
+                      />
 
-                  <td className="p-3">
+                    )}
 
-                    {c.type === "promo" ? "ترويجي" : "خصم"}
-
-                  </td>
-
-                  <td className="p-3">
-
-                    {c.views}
+                    {ad.name}
 
                   </td>
 
                   <td className="p-3">
 
-                    {c.clicks} ({rate}%)
+                    {ad.type === "promo"
+                      ? "ترويجي"
+                      : `خصم ${ad.discount_percent}%`
+                    }
 
                   </td>
 
                   <td className="p-3">
 
-                    {c.budget}
+                    {ad.views}
 
                   </td>
 
                   <td className="p-3">
 
-                    {c.status === "active" ?
+                    {ad.clicks} ({rate}%)
 
-                      <span className="text-green-600">مفعل</span>
+                  </td>
 
-                      :
+                  <td className="p-3">
 
-                      <span className="text-red-500">متوقف</span>
-
+                    {ad.status === "active"
+                      ? <span className="text-green-600">مفعل</span>
+                      : <span className="text-red-500">متوقف</span>
                     }
 
                   </td>
@@ -331,21 +348,13 @@ const Marketing: React.FC = () => {
                   <td className="p-3">
 
                     <button
-
-                    onClick={()=>toggleStatus(c)}
-
+                    onClick={()=>toggleStatus(ad)}
                     className="bg-gray-200 px-3 py-1 rounded"
-
                     >
 
-                      {c.status === "active" ?
-
-                        "إيقاف"
-
-                        :
-
-                        "تفعيل"
-
+                      {ad.status === "active"
+                        ? "إيقاف"
+                        : "تفعيل"
                       }
 
                     </button>
