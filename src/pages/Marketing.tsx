@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
 import {
   TrendingUp,
-  DollarSign,
   Percent,
   Eye,
-  MousePointer
+  MousePointer,
+  Plus
 } from "lucide-react";
 
 import api from "../services/api";
@@ -26,6 +26,8 @@ const Marketing: React.FC = () => {
 
   const [ads,setAds] = useState<Ad[]>([])
 
+  const [showModal,setShowModal] = useState(false)
+
   const [name,setName] = useState("")
   const [type,setType] = useState("promo")
   const [discount,setDiscount] = useState(0)
@@ -33,9 +35,7 @@ const Marketing: React.FC = () => {
   const [startDate,setStartDate] = useState("")
   const [endDate,setEndDate] = useState("")
 
-  /* =========================
-     تحميل الإعلانات
-  ========================= */
+  /* تحميل الإعلانات */
 
   useEffect(()=>{
     loadAds()
@@ -51,15 +51,13 @@ const Marketing: React.FC = () => {
 
     }catch(err){
 
-      console.error("فشل تحميل الإعلانات",err)
+      console.error(err)
 
     }
 
   }
 
-  /* =========================
-     إنشاء إعلان
-  ========================= */
+  /* إنشاء إعلان */
 
   const createAd = async ()=>{
 
@@ -70,11 +68,13 @@ const Marketing: React.FC = () => {
         name,
         type,
         image_url:image,
-        discount_percent: type === "discount" ? discount : null,
+        discount_percent:type==="discount"?discount:null,
         start_date:startDate,
         end_date:endDate
 
       })
+
+      setShowModal(false)
 
       setName("")
       setDiscount(0)
@@ -86,15 +86,13 @@ const Marketing: React.FC = () => {
 
     }catch(err){
 
-      console.error("فشل إنشاء الإعلان",err)
+      console.error(err)
 
     }
 
   }
 
-  /* =========================
-     تفعيل / إيقاف
-  ========================= */
+  /* تفعيل / تعطيل */
 
   const toggleStatus = async (ad:Ad)=>{
 
@@ -103,7 +101,7 @@ const Marketing: React.FC = () => {
       await api.put(`/ads/${ad.id}`,{
 
         ...ad,
-        status: ad.status === "active" ? "paused" : "active"
+        status: ad.status==="active"?"paused":"active"
 
       })
 
@@ -117,19 +115,17 @@ const Marketing: React.FC = () => {
 
   }
 
-  /* =========================
-     الإحصائيات
-  ========================= */
+  /* الإحصائيات */
 
-  const totalViews = ads.reduce((sum,a)=> sum + (a.views || 0),0)
+  const totalViews = ads.reduce((sum,a)=> sum+(a.views||0),0)
 
-  const totalClicks = ads.reduce((sum,a)=> sum + (a.clicks || 0),0)
+  const totalClicks = ads.reduce((sum,a)=> sum+(a.clicks||0),0)
 
-  const ctr = totalViews > 0
-  ? ((totalClicks / totalViews) * 100).toFixed(1)
-  : "0"
+  const ctr = totalViews>0
+  ?((totalClicks/totalViews)*100).toFixed(1)
+  :"0"
 
-  return (
+  return(
 
     <div className="space-y-6">
 
@@ -145,70 +141,14 @@ const Marketing: React.FC = () => {
 
         </h1>
 
-      </div>
-
-      {/* إنشاء إعلان */}
-
-      <div className="bg-white p-6 rounded-xl shadow-lg grid md:grid-cols-3 gap-4">
-
-        <input
-        placeholder="اسم الإعلان"
-        value={name}
-        onChange={(e)=>setName(e.target.value)}
-        className="border rounded-lg p-2"
-        />
-
-        <select
-        value={type}
-        onChange={(e)=>setType(e.target.value)}
-        className="border rounded-lg p-2"
-        >
-
-          <option value="promo">إعلان ترويجي</option>
-
-          <option value="discount">إعلان خصم</option>
-
-        </select>
-
-        {type === "discount" && (
-
-          <input
-          type="number"
-          placeholder="نسبة الخصم %"
-          value={discount}
-          onChange={(e)=>setDiscount(Number(e.target.value))}
-          className="border rounded-lg p-2"
-          />
-
-        )}
-
-        <input
-        placeholder="رابط صورة الإعلان"
-        value={image}
-        onChange={(e)=>setImage(e.target.value)}
-        className="border rounded-lg p-2"
-        />
-
-        <input
-        type="date"
-        value={startDate}
-        onChange={(e)=>setStartDate(e.target.value)}
-        className="border rounded-lg p-2"
-        />
-
-        <input
-        type="date"
-        value={endDate}
-        onChange={(e)=>setEndDate(e.target.value)}
-        className="border rounded-lg p-2"
-        />
-
         <button
-        onClick={createAd}
-        className="bg-blue-600 text-white rounded-lg px-4 py-2"
+        onClick={()=>setShowModal(true)}
+        className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg"
         >
 
-          إنشاء الإعلان
+          <Plus size={18}/>
+
+          إنشاء إعلان
 
         </button>
 
@@ -250,7 +190,7 @@ const Marketing: React.FC = () => {
 
           <div>
 
-            <p className="text-gray-500 text-sm">نسبة النقر</p>
+            <p className="text-gray-500 text-sm">CTR</p>
 
             <p className="text-xl font-bold">{ctr}%</p>
 
@@ -292,9 +232,9 @@ const Marketing: React.FC = () => {
 
             {ads.map(ad=>{
 
-              const rate = ad.views > 0
-              ? ((ad.clicks / ad.views) * 100).toFixed(1)
-              : "0"
+              const rate = ad.views>0
+              ?((ad.clicks/ad.views)*100).toFixed(1)
+              :"0"
 
               return(
 
@@ -317,30 +257,22 @@ const Marketing: React.FC = () => {
 
                   <td className="p-3">
 
-                    {ad.type === "promo"
-                      ? "ترويجي"
-                      : `خصم ${ad.discount_percent}%`
+                    {ad.type==="promo"
+                    ?"ترويجي"
+                    :`خصم ${ad.discount_percent}%`
                     }
 
                   </td>
 
-                  <td className="p-3">
+                  <td className="p-3">{ad.views}</td>
 
-                    {ad.views}
-
-                  </td>
+                  <td className="p-3">{ad.clicks} ({rate}%)</td>
 
                   <td className="p-3">
 
-                    {ad.clicks} ({rate}%)
-
-                  </td>
-
-                  <td className="p-3">
-
-                    {ad.status === "active"
-                      ? <span className="text-green-600">مفعل</span>
-                      : <span className="text-red-500">متوقف</span>
+                    {ad.status==="active"
+                    ?<span className="text-green-600">مفعل</span>
+                    :<span className="text-red-500">متوقف</span>
                     }
 
                   </td>
@@ -352,10 +284,7 @@ const Marketing: React.FC = () => {
                     className="bg-gray-200 px-3 py-1 rounded"
                     >
 
-                      {ad.status === "active"
-                        ? "إيقاف"
-                        : "تفعيل"
-                      }
+                      {ad.status==="active"?"إيقاف":"تفعيل"}
 
                     </button>
 
@@ -372,6 +301,100 @@ const Marketing: React.FC = () => {
         </table>
 
       </div>
+
+      {/* مودل إضافة إعلان */}
+
+      {showModal && (
+
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+
+          <div className="bg-white w-[450px] rounded-xl p-6 space-y-4">
+
+            <h2 className="text-lg font-bold">
+
+              إضافة إعلان جديد
+
+            </h2>
+
+            <input
+            placeholder="اسم الإعلان"
+            value={name}
+            onChange={(e)=>setName(e.target.value)}
+            className="w-full border rounded-lg p-2"
+            />
+
+            <select
+            value={type}
+            onChange={(e)=>setType(e.target.value)}
+            className="w-full border rounded-lg p-2"
+            >
+
+              <option value="promo">إعلان ترويجي</option>
+
+              <option value="discount">إعلان خصم</option>
+
+            </select>
+
+            {type==="discount" && (
+
+              <input
+              type="number"
+              placeholder="نسبة الخصم"
+              value={discount}
+              onChange={(e)=>setDiscount(Number(e.target.value))}
+              className="w-full border rounded-lg p-2"
+              />
+
+            )}
+
+            <input
+            placeholder="رابط صورة الإعلان"
+            value={image}
+            onChange={(e)=>setImage(e.target.value)}
+            className="w-full border rounded-lg p-2"
+            />
+
+            <input
+            type="date"
+            value={startDate}
+            onChange={(e)=>setStartDate(e.target.value)}
+            className="w-full border rounded-lg p-2"
+            />
+
+            <input
+            type="date"
+            value={endDate}
+            onChange={(e)=>setEndDate(e.target.value)}
+            className="w-full border rounded-lg p-2"
+            />
+
+            <div className="flex justify-end gap-3">
+
+              <button
+              onClick={()=>setShowModal(false)}
+              className="px-4 py-2 bg-gray-200 rounded"
+              >
+
+                إلغاء
+
+              </button>
+
+              <button
+              onClick={createAd}
+              className="px-4 py-2 bg-blue-600 text-white rounded"
+              >
+
+                حفظ الإعلان
+
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      )}
 
     </div>
 
