@@ -93,27 +93,35 @@ const Marketing: React.FC = () => {
 
   /* تفعيل / تعطيل */
 
-  const toggleStatus = async (ad:Ad)=>{
+const toggleStatus = async (ad:Ad)=>{
 
-    try{
+  try{
 
-      const newStatus = ad.status==="active"
+    const newStatus = ad.status === "active"
       ? "inactive"
       : "active"
 
-      await api.put(`/ads/${ad.id}`,{
-        status:newStatus
-      })
+    await api.put(`/ads/${ad.id}`,{
 
-      loadAds()
+      name: ad.name,
+      type: ad.type,
+      image_url: ad.image_url,
+      discount_percent: ad.discount_percent,
+      start_date: ad.start_date,
+      end_date: ad.end_date,
+      status: newStatus
 
-    }catch(err){
+    })
 
-      console.error(err)
+    loadAds()
 
-    }
+  }catch(err){
+
+    console.error(err)
 
   }
+
+}
 
   /* الإحصائيات */
 
@@ -255,10 +263,12 @@ const Marketing: React.FC = () => {
 
                   <td className="p-3">
 
-                    {ad.type==="promo"
-                    ?"ترويجي"
-                    :`خصم ${ad.discount_percent}%`
-                    }
+                 {ad.type==="promo"
+? "ترويجي"
+: ad.discount_percent
+  ? `خصم ${ad.discount_percent}%`
+  : "خصم"
+}
 
                   </td>
 
