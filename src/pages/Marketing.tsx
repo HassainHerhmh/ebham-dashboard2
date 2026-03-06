@@ -25,7 +25,6 @@ interface Ad {
 const Marketing: React.FC = () => {
 
   const [ads,setAds] = useState<Ad[]>([])
-
   const [showModal,setShowModal] = useState(false)
 
   const [name,setName] = useState("")
@@ -98,11 +97,12 @@ const Marketing: React.FC = () => {
 
     try{
 
+      const newStatus = ad.status==="active"
+      ? "inactive"
+      : "active"
+
       await api.put(`/ads/${ad.id}`,{
-
-        ...ad,
-        status: ad.status==="active"?"paused":"active"
-
+        status:newStatus
       })
 
       loadAds()
@@ -213,15 +213,10 @@ const Marketing: React.FC = () => {
             <tr>
 
               <th className="p-3 text-right">الإعلان</th>
-
               <th className="p-3 text-right">النوع</th>
-
               <th className="p-3 text-right">المشاهدات</th>
-
               <th className="p-3 text-right">النقرات</th>
-
               <th className="p-3 text-right">الحالة</th>
-
               <th className="p-3 text-right">إدارة</th>
 
             </tr>
@@ -246,7 +241,10 @@ const Marketing: React.FC = () => {
 
                       <img
                       src={ad.image_url}
-                      className="w-12 h-12 rounded object-cover"
+                      className="w-12 h-12 rounded object-cover border"
+                      onError={(e:any)=>{
+                        e.target.src="https://via.placeholder.com/60"
+                      }}
                       />
 
                     )}
@@ -330,7 +328,6 @@ const Marketing: React.FC = () => {
             >
 
               <option value="promo">إعلان ترويجي</option>
-
               <option value="discount">إعلان خصم</option>
 
             </select>
@@ -354,6 +351,20 @@ const Marketing: React.FC = () => {
             className="w-full border rounded-lg p-2"
             />
 
+            {/* معاينة الصورة */}
+
+            {image && (
+
+              <img
+              src={image}
+              className="w-full h-40 object-cover rounded border"
+              onError={(e:any)=>{
+                e.target.style.display="none"
+              }}
+              />
+
+            )}
+
             <input
             type="date"
             value={startDate}
@@ -374,18 +385,14 @@ const Marketing: React.FC = () => {
               onClick={()=>setShowModal(false)}
               className="px-4 py-2 bg-gray-200 rounded"
               >
-
                 إلغاء
-
               </button>
 
               <button
               onClick={createAd}
               className="px-4 py-2 bg-blue-600 text-white rounded"
               >
-
                 حفظ الإعلان
-
               </button>
 
             </div>
