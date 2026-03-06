@@ -58,38 +58,44 @@ const Marketing: React.FC = () => {
 
   /* إنشاء إعلان */
 
-  const createAd = async ()=>{
+ const createAd = async ()=>{
 
-    try{
+  try{
 
-      await api.post("/ads",{
+    await api.post("/ads",{
 
-        name,
-        type,
-        image_url:image,
-        discount_percent:type==="discount"?discount:null,
-        start_date:startDate,
-        end_date:endDate
+      name,
+      type,
+      image_url:image,
+      discount_percent:type==="discount"?discount:null,
 
-      })
+      start_date:startDate
+        ? startDate + " 00:00:00"
+        : null,
 
-      setShowModal(false)
+      end_date:endDate
+        ? endDate + " 23:59:59"
+        : null
 
-      setName("")
-      setDiscount(0)
-      setImage("")
-      setStartDate("")
-      setEndDate("")
+    })
 
-      loadAds()
+    setShowModal(false)
 
-    }catch(err){
+    setName("")
+    setDiscount(0)
+    setImage("")
+    setStartDate("")
+    setEndDate("")
 
-      console.error(err)
+    loadAds()
 
-    }
+  }catch(err){
+
+    console.error(err)
 
   }
+
+}
 
   /* تفعيل / تعطيل */
 
@@ -243,7 +249,7 @@ const toggleStatus = async (ad:Ad)=>{
                       src={ad.image_url}
                       className="w-12 h-12 rounded object-cover border"
                       onError={(e:any)=>{
-                        e.target.src="https://via.placeholder.com/60"
+                        e.target.src="https://dummyimage.com/60x60/eeeeee/000000&text=Ad"
                       }}
                       />
 
