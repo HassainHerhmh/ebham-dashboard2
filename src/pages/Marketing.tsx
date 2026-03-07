@@ -68,50 +68,67 @@ const Marketing: React.FC = () => {
 
   }
 
-  const loadRestaurants = async ()=>{
+const loadRestaurants = async () => {
 
-    try{
+  try{
 
-const res = await api.get("/restaurants/list")
-  setRestaurants(res.data.restaurants || res.data)
+    const res = await api.get("/restaurants/list")
 
-    }catch(err){
+    const list =
+      Array.isArray(res.data)
+        ? res.data
+        : res.data.restaurants || []
 
-      console.error(err)
+    setRestaurants(list)
 
-    }
+  }catch(err){
 
-  }
-
-  const loadCategories = async (restaurantId:number)=>{
-
-    try{
-
-      const res = await api.get(`/categories?restaurant_id=${restaurantId}`)
-      setCategories(res.data)
-
-    }catch(err){
-
-      console.error(err)
-
-    }
+    console.error(err)
 
   }
 
-  const loadProducts = async (categoryId:number)=>{
+}
+  
+const loadCategories = async (restaurantId:number)=>{
 
-    try{
+  try{
 
-      const res = await api.get(`/products?category_id=${categoryId}`)
-      setProducts(res.data)
+    const res = await api.get(`/categories?restaurant_id=${restaurantId}`)
 
-    }catch(err){
+    const list =
+      Array.isArray(res.data)
+        ? res.data
+        : res.data.categories || []
 
-      console.error(err)
+    setCategories(list)
 
-    }
+  }catch(err){
+
+    console.error(err)
 
   }
+
+}
+const loadProducts = async (categoryId:number)=>{
+
+  try{
+
+    const res = await api.get(`/products?category_id=${categoryId}`)
+
+    const list =
+      Array.isArray(res.data)
+        ? res.data
+        : res.data.products || []
+
+    setProducts(list)
+
+  }catch(err){
+
+    console.error(err)
+
+  }
+
+}
 
   /* إنشاء إعلان */
 
