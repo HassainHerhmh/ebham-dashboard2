@@ -113,8 +113,7 @@ const loadProducts = async (categoryId:number)=>{
 
   try{
 
-    const res = await api.get(`/products?category_id=${categoryId}`)
-
+const res = await api.get(`/products/by-category/${categoryId}`)
     const list =
       Array.isArray(res.data)
         ? res.data
