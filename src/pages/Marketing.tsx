@@ -72,8 +72,8 @@ const Marketing: React.FC = () => {
 
     try{
 
-      const res = await api.get("/restaurants")
-      setRestaurants(res.data)
+     const res = await api.get("/restaurants")
+setRestaurants(res.data.restaurants || res.data)
 
     }catch(err){
 
