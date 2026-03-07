@@ -156,19 +156,41 @@ const Marketing: React.FC = () => {
     }
   }
 
-  const editAd = (ad:Ad)=>{
+ const editAd = (ad:Ad)=>{
 
-    setEditingId(ad.id)
-    setName(ad.name)
-    setDescription(ad.description)
-    setType(ad.type)
-    setDiscount(ad.discount_percent || 0)
-    setImage(ad.image_url || "")
-    setStartDate(ad.start_date?.split(" ")[0] || "")
-    setEndDate(ad.end_date?.split(" ")[0] || "")
+  setEditingId(ad.id)
 
-    setShowModal(true)
+  setName(ad.name)
+  setDescription(ad.description)
+  setType(ad.type)
+
+  setDiscount(ad.discount_percent || 0)
+
+  setImage(ad.image_url || "")
+
+  setStartDate(ad.start_date ? ad.start_date.slice(0,10) : "")
+  setEndDate(ad.end_date ? ad.end_date.slice(0,10) : "")
+
+  /* مهم جداً */
+
+  setRestaurantId(ad.restaurant_id || null)
+  setCategoryId(ad.category_id || null)
+
+  /* تحميل الفئات إذا كان فيه مطعم */
+
+  if(ad.restaurant_id){
+    loadCategories(ad.restaurant_id)
   }
+
+  /* تحميل المنتجات إذا كان فيه فئة */
+
+  if(ad.category_id){
+    loadProducts(ad.category_id)
+  }
+
+  setShowModal(true)
+
+}
 
   const toggleStatus = async (ad:Ad)=>{
     try{
