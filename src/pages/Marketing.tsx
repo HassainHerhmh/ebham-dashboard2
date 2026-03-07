@@ -12,6 +12,7 @@ import api from "../services/api";
 interface Ad {
   id: number;
   name: string;
+  description: string
   type: string;
   status: string;
   views: number;
@@ -21,7 +22,6 @@ interface Ad {
   start_date: string;
   end_date: string;
 }
-
 const Marketing: React.FC = () => {
 
   const [ads,setAds] = useState<Ad[]>([])
@@ -222,6 +222,7 @@ const toggleStatus = async (ad:Ad)=>{
             <tr>
 
               <th className="p-3 text-right">الإعلان</th>
+              <th className="p-3 text-right">النص</th>
               <th className="p-3 text-right">النوع</th>
               <th className="p-3 text-right">المشاهدات</th>
               <th className="p-3 text-right">النقرات</th>
@@ -261,7 +262,7 @@ const toggleStatus = async (ad:Ad)=>{
                     {ad.name}
 
                   </td>
-
+               <td className="p-3">{ad.description}</td>
                   <td className="p-3">
 
                  {ad.type==="promo"
