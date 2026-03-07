@@ -12,7 +12,7 @@ import api from "../services/api";
 interface Ad {
   id: number;
   name: string;
-  description: string
+  description: string;
   type: string;
   status: string;
   views: number;
@@ -22,11 +22,13 @@ interface Ad {
   start_date: string;
   end_date: string;
 }
+
 const Marketing: React.FC = () => {
 
   const [ads,setAds] = useState<Ad[]>([])
   const [showModal,setShowModal] = useState(false)
- const [description,setDescription] = useState("")
+
+  const [description,setDescription] = useState("")
   const [name,setName] = useState("")
   const [type,setType] = useState("promo")
   const [discount,setDiscount] = useState(0)
@@ -34,10 +36,21 @@ const Marketing: React.FC = () => {
   const [startDate,setStartDate] = useState("")
   const [endDate,setEndDate] = useState("")
 
-  /* تحميل الإعلانات */
+  /* خصم المطاعم */
+
+  const [restaurants,setRestaurants] = useState<any[]>([])
+  const [categories,setCategories] = useState<any[]>([])
+  const [products,setProducts] = useState<any[]>([])
+
+  const [restaurantId,setRestaurantId] = useState<number | null>(null)
+  const [categoryId,setCategoryId] = useState<number | null>(null)
+  const [productIds,setProductIds] = useState<number[]>([])
+
+  /* تحميل البيانات */
 
   useEffect(()=>{
     loadAds()
+    loadRestaurants()
   },[])
 
   const loadAds = async ()=>{
@@ -45,8 +58,52 @@ const Marketing: React.FC = () => {
     try{
 
       const res = await api.get("/ads/admin")
-
       setAds(res.data)
+
+    }catch(err){
+
+      console.error(err)
+
+    }
+
+  }
+
+  const loadRestaurants = async ()=>{
+
+    try{
+
+      const res = await api.get("/restaurants")
+      setRestaurants(res.data)
+
+    }catch(err){
+
+      console.error(err)
+
+    }
+
+  }
+
+  const loadCategories = async (restaurantId:number)=>{
+
+    try{
+
+      const res = await api.get(`/categories?restaurant_id=${restaurantId}`)
+      setCategories(res.data)
+
+    }catch(err){
+
+      console.error(err)
+
+    }
+
+  }
+
+  const loadProducts = async (categoryId:number)=>{
+
+    try{
+
+      const res = await api.get(`/products?category_id=${categoryId}`)
+      setProducts(res.data)
 
     }catch(err){
 
@@ -58,71 +115,79 @@ const Marketing: React.FC = () => {
 
   /* إنشاء إعلان */
 
-const createAd = async ()=>{
+  const createAd = async ()=>{
 
-  try{
+    try{
 
-    await api.post("/ads",{
+      await api.post("/ads",{
 
-      name,
-      description,
-      type,
-      image_url:image,
-      discount_percent:type==="discount"?discount:null,
+        name,
+        description,
+        type,
+        image_url:image,
 
-      start_date:startDate
-        ? startDate + " 00:00:00"
-        : null,
+        restaurant_id:restaurantId,
+        category_id:categoryId,
+        product_ids:productIds,
 
-      end_date:endDate
-        ? endDate + " 23:59:59"
-        : null
+        discount_percent:type==="discount"?discount:null,
 
-    })
+        start_date:startDate
+          ? startDate + " 00:00:00"
+          : null,
 
-    setShowModal(false)
+        end_date:endDate
+          ? endDate + " 23:59:59"
+          : null
 
-    setName("")
-    setDescription("")
-    setDiscount(0)
-    setImage("")
-    setStartDate("")
-    setEndDate("")
+      })
 
-    loadAds()
+      setShowModal(false)
 
-  }catch(err){
+      setName("")
+      setDescription("")
+      setDiscount(0)
+      setImage("")
+      setStartDate("")
+      setEndDate("")
+      setRestaurantId(null)
+      setCategoryId(null)
+      setProductIds([])
 
-    console.error(err)
+      loadAds()
+
+    }catch(err){
+
+      console.error(err)
+
+    }
 
   }
-
-}
 
   /* تفعيل / تعطيل */
 
-const toggleStatus = async (ad:Ad)=>{
+  const toggleStatus = async (ad:Ad)=>{
 
-  try{
+    try{
 
-    const newStatus = ad.status === "active"
-      ? "inactive"
-      : "active"
+      const newStatus = ad.status === "active"
+        ? "inactive"
+        : "active"
 
-  await api.put(`/ads/${ad.id}`,{
-  ...ad,
-  status:newStatus
-})
+      await api.put(`/ads/${ad.id}`,{
+        ...ad,
+        status:newStatus
+      })
 
-    loadAds()
+      loadAds()
 
-  }catch(err){
+    }catch(err){
 
-    console.error(err)
+      console.error(err)
+
+    }
 
   }
-
-}
 
   /* الإحصائيات */
 
@@ -262,15 +327,17 @@ const toggleStatus = async (ad:Ad)=>{
                     {ad.name}
 
                   </td>
-               <td className="p-3">{ad.description}</td>
+
+                  <td className="p-3">{ad.description}</td>
+
                   <td className="p-3">
 
-                 {ad.type==="promo"
-? "ترويجي"
-: ad.discount_percent
-  ? `خصم ${ad.discount_percent}%`
-  : "خصم"
-}
+                  {ad.type==="promo"
+                  ? "ترويجي"
+                  : ad.discount_percent
+                  ? `خصم ${ad.discount_percent}%`
+                  : "خصم"
+                  }
 
                   </td>
 
@@ -314,109 +381,179 @@ const toggleStatus = async (ad:Ad)=>{
 
       {/* مودل إضافة إعلان */}
 
- {showModal && (
+      {showModal && (
 
-  <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
 
-    <div className="bg-white w-[450px] rounded-xl p-6 space-y-4">
+          <div className="bg-white w-[450px] rounded-xl p-6 space-y-4">
 
-      <h2 className="text-lg font-bold">
-        إضافة إعلان جديد
-      </h2>
+            <h2 className="text-lg font-bold">
+              إضافة إعلان جديد
+            </h2>
 
-      <input
-      placeholder="اسم الإعلان"
-      value={name}
-      onChange={(e)=>setName(e.target.value)}
-      className="w-full border rounded-lg p-2"
-      />
+            <input
+            placeholder="اسم الإعلان"
+            value={name}
+            onChange={(e)=>setName(e.target.value)}
+            className="w-full border rounded-lg p-2"
+            />
 
-      <textarea
-      placeholder="نص الإعلان"
-      value={description}
-      onChange={(e)=>setDescription(e.target.value)}
-      className="w-full border rounded-lg p-2"
-      />
+            <textarea
+            placeholder="نص الإعلان"
+            value={description}
+            onChange={(e)=>setDescription(e.target.value)}
+            className="w-full border rounded-lg p-2"
+            />
 
-      <select
-      value={type}
-      onChange={(e)=>setType(e.target.value)}
-      className="w-full border rounded-lg p-2"
-      >
+            <select
+            value={type}
+            onChange={(e)=>setType(e.target.value)}
+            className="w-full border rounded-lg p-2"
+            >
 
-        <option value="promo">إعلان ترويجي</option>
-        <option value="discount">إعلان خصم</option>
+              <option value="promo">إعلان ترويجي</option>
+              <option value="discount">إعلان خصم</option>
 
-      </select>
+            </select>
 
-      {type==="discount" && (
+            {type==="discount" && (
 
-        <input
-        type="number"
-        placeholder="نسبة الخصم"
-        value={discount}
-        onChange={(e)=>setDiscount(Number(e.target.value))}
-        className="w-full border rounded-lg p-2"
-        />
+              <>
+              <select
+              value={restaurantId || ""}
+              onChange={(e)=>{
+                const id = Number(e.target.value)
+                setRestaurantId(id)
+                loadCategories(id)
+              }}
+              className="w-full border rounded-lg p-2"
+              >
+
+              <option value="">اختر المطعم</option>
+
+              {restaurants.map(r=>(
+                <option key={r.id} value={r.id}>
+                  {r.name}
+                </option>
+              ))}
+
+              </select>
+
+              {restaurantId && (
+
+                <select
+                value={categoryId || ""}
+                onChange={(e)=>{
+                  const id = Number(e.target.value)
+                  setCategoryId(id)
+                  loadProducts(id)
+                }}
+                className="w-full border rounded-lg p-2"
+                >
+
+                <option value="">كل الفئات</option>
+
+                {categories.map(c=>(
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+
+                </select>
+
+              )}
+
+              {categoryId && (
+
+                <select
+                multiple
+                onChange={(e)=>{
+
+                  const options = Array.from(e.target.selectedOptions)
+                  setProductIds(options.map(o=>Number(o.value)))
+
+                }}
+                className="w-full border rounded-lg p-2 h-32"
+                >
+
+                {products.map(p=>(
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+
+                </select>
+
+              )}
+
+              <input
+              type="number"
+              placeholder="نسبة الخصم"
+              value={discount}
+              onChange={(e)=>setDiscount(Number(e.target.value))}
+              className="w-full border rounded-lg p-2"
+              />
+
+              </>
+
+            )}
+
+            <input
+            placeholder="رابط صورة الإعلان"
+            value={image}
+            onChange={(e)=>setImage(e.target.value)}
+            className="w-full border rounded-lg p-2"
+            />
+
+            {image && (
+
+              <img
+              src={image}
+              className="w-full h-40 object-cover rounded border"
+              onError={(e:any)=>{
+                e.target.style.display="none"
+              }}
+              />
+
+            )}
+
+            <input
+            type="date"
+            value={startDate}
+            onChange={(e)=>setStartDate(e.target.value)}
+            className="w-full border rounded-lg p-2"
+            />
+
+            <input
+            type="date"
+            value={endDate}
+            onChange={(e)=>setEndDate(e.target.value)}
+            className="w-full border rounded-lg p-2"
+            />
+
+            <div className="flex justify-end gap-3">
+
+              <button
+              onClick={()=>setShowModal(false)}
+              className="px-4 py-2 bg-gray-200 rounded"
+              >
+                إلغاء
+              </button>
+
+              <button
+              onClick={createAd}
+              className="px-4 py-2 bg-blue-600 text-white rounded"
+              >
+                حفظ الإعلان
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
 
       )}
-
-      <input
-      placeholder="رابط صورة الإعلان"
-      value={image}
-      onChange={(e)=>setImage(e.target.value)}
-      className="w-full border rounded-lg p-2"
-      />
-
-      {image && (
-
-        <img
-        src={image}
-        className="w-full h-40 object-cover rounded border"
-        onError={(e:any)=>{
-          e.target.style.display="none"
-        }}
-        />
-
-      )}
-
-      <input
-      type="date"
-      value={startDate}
-      onChange={(e)=>setStartDate(e.target.value)}
-      className="w-full border rounded-lg p-2"
-      />
-
-      <input
-      type="date"
-      value={endDate}
-      onChange={(e)=>setEndDate(e.target.value)}
-      className="w-full border rounded-lg p-2"
-      />
-
-      <div className="flex justify-end gap-3">
-
-        <button
-        onClick={()=>setShowModal(false)}
-        className="px-4 py-2 bg-gray-200 rounded"
-        >
-          إلغاء
-        </button>
-
-        <button
-        onClick={createAd}
-        className="px-4 py-2 bg-blue-600 text-white rounded"
-        >
-          حفظ الإعلان
-        </button>
-
-      </div>
-
-    </div>
-
-  </div>
-
-)}
 
     </div>
 
