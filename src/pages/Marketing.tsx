@@ -26,7 +26,7 @@ const Marketing: React.FC = () => {
 
   const [ads,setAds] = useState<Ad[]>([])
   const [showModal,setShowModal] = useState(false)
-
+ const [description,setDescription] = useState("")
   const [name,setName] = useState("")
   const [type,setType] = useState("promo")
   const [discount,setDiscount] = useState(0)
@@ -58,13 +58,14 @@ const Marketing: React.FC = () => {
 
   /* إنشاء إعلان */
 
- const createAd = async ()=>{
+const createAd = async ()=>{
 
   try{
 
     await api.post("/ads",{
 
       name,
+      description,
       type,
       image_url:image,
       discount_percent:type==="discount"?discount:null,
@@ -82,6 +83,7 @@ const Marketing: React.FC = () => {
     setShowModal(false)
 
     setName("")
+    setDescription("")
     setDiscount(0)
     setImage("")
     setStartDate("")
@@ -311,106 +313,109 @@ const toggleStatus = async (ad:Ad)=>{
 
       {/* مودل إضافة إعلان */}
 
-      {showModal && (
+ {showModal && (
 
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+  <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
 
-          <div className="bg-white w-[450px] rounded-xl p-6 space-y-4">
+    <div className="bg-white w-[450px] rounded-xl p-6 space-y-4">
 
-            <h2 className="text-lg font-bold">
+      <h2 className="text-lg font-bold">
+        إضافة إعلان جديد
+      </h2>
 
-              إضافة إعلان جديد
+      <input
+      placeholder="اسم الإعلان"
+      value={name}
+      onChange={(e)=>setName(e.target.value)}
+      className="w-full border rounded-lg p-2"
+      />
 
-            </h2>
+      <textarea
+      placeholder="نص الإعلان"
+      value={description}
+      onChange={(e)=>setDescription(e.target.value)}
+      className="w-full border rounded-lg p-2"
+      />
 
-            <input
-            placeholder="اسم الإعلان"
-            value={name}
-            onChange={(e)=>setName(e.target.value)}
-            className="w-full border rounded-lg p-2"
-            />
+      <select
+      value={type}
+      onChange={(e)=>setType(e.target.value)}
+      className="w-full border rounded-lg p-2"
+      >
 
-            <select
-            value={type}
-            onChange={(e)=>setType(e.target.value)}
-            className="w-full border rounded-lg p-2"
-            >
+        <option value="promo">إعلان ترويجي</option>
+        <option value="discount">إعلان خصم</option>
 
-              <option value="promo">إعلان ترويجي</option>
-              <option value="discount">إعلان خصم</option>
+      </select>
 
-            </select>
+      {type==="discount" && (
 
-            {type==="discount" && (
-
-              <input
-              type="number"
-              placeholder="نسبة الخصم"
-              value={discount}
-              onChange={(e)=>setDiscount(Number(e.target.value))}
-              className="w-full border rounded-lg p-2"
-              />
-
-            )}
-
-            <input
-            placeholder="رابط صورة الإعلان"
-            value={image}
-            onChange={(e)=>setImage(e.target.value)}
-            className="w-full border rounded-lg p-2"
-            />
-
-            {/* معاينة الصورة */}
-
-            {image && (
-
-              <img
-              src={image}
-              className="w-full h-40 object-cover rounded border"
-              onError={(e:any)=>{
-                e.target.style.display="none"
-              }}
-              />
-
-            )}
-
-            <input
-            type="date"
-            value={startDate}
-            onChange={(e)=>setStartDate(e.target.value)}
-            className="w-full border rounded-lg p-2"
-            />
-
-            <input
-            type="date"
-            value={endDate}
-            onChange={(e)=>setEndDate(e.target.value)}
-            className="w-full border rounded-lg p-2"
-            />
-
-            <div className="flex justify-end gap-3">
-
-              <button
-              onClick={()=>setShowModal(false)}
-              className="px-4 py-2 bg-gray-200 rounded"
-              >
-                إلغاء
-              </button>
-
-              <button
-              onClick={createAd}
-              className="px-4 py-2 bg-blue-600 text-white rounded"
-              >
-                حفظ الإعلان
-              </button>
-
-            </div>
-
-          </div>
-
-        </div>
+        <input
+        type="number"
+        placeholder="نسبة الخصم"
+        value={discount}
+        onChange={(e)=>setDiscount(Number(e.target.value))}
+        className="w-full border rounded-lg p-2"
+        />
 
       )}
+
+      <input
+      placeholder="رابط صورة الإعلان"
+      value={image}
+      onChange={(e)=>setImage(e.target.value)}
+      className="w-full border rounded-lg p-2"
+      />
+
+      {image && (
+
+        <img
+        src={image}
+        className="w-full h-40 object-cover rounded border"
+        onError={(e:any)=>{
+          e.target.style.display="none"
+        }}
+        />
+
+      )}
+
+      <input
+      type="date"
+      value={startDate}
+      onChange={(e)=>setStartDate(e.target.value)}
+      className="w-full border rounded-lg p-2"
+      />
+
+      <input
+      type="date"
+      value={endDate}
+      onChange={(e)=>setEndDate(e.target.value)}
+      className="w-full border rounded-lg p-2"
+      />
+
+      <div className="flex justify-end gap-3">
+
+        <button
+        onClick={()=>setShowModal(false)}
+        className="px-4 py-2 bg-gray-200 rounded"
+        >
+          إلغاء
+        </button>
+
+        <button
+        onClick={createAd}
+        className="px-4 py-2 bg-blue-600 text-white rounded"
+        >
+          حفظ الإعلان
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+)}
 
     </div>
 
