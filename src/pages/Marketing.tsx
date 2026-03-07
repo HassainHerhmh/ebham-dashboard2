@@ -9,19 +9,23 @@ import {
 
 import api from "../services/api";
 
+
 interface Ad {
-  id: number;
-  name: string;
-  description: string;
-  type: string;
-  status: string;
-  views: number;
-  clicks: number;
-  image_url: string;
-  discount_percent: number;
-  start_date: string;
-  end_date: string;
-  restaurant_name?: string;
+  id:number
+  name:string
+  description:string
+  type:string
+  status:string
+  views:number
+  clicks:number
+  image_url:string
+  discount_percent:number
+  start_date:string
+  end_date:string
+
+  restaurant_id?:number
+  category_id?:number
+  restaurant_name?:string
 }
 
 const Marketing: React.FC = () => {
