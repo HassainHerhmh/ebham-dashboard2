@@ -396,180 +396,160 @@ const res = await api.get(`/products/by-category/${categoryId}`)
       </div>
 
       {/* مودل إضافة إعلان */}
+{showModal && (
 
-      {showModal && (
+<div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
 
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+<div className="bg-white w-full max-w-2xl rounded-xl p-6 max-h-[80vh] overflow-y-auto">
 
-          <div className="bg-white w-[450px] rounded-xl p-6 space-y-4">
+<h2 className="text-lg font-bold mb-4">
+إضافة إعلان جديد
+</h2>
 
-            <h2 className="text-lg font-bold">
-              إضافة إعلان جديد
-            </h2>
+<div className="grid grid-cols-2 gap-4">
 
-            <input
-            placeholder="اسم الإعلان"
-            value={name}
-            onChange={(e)=>setName(e.target.value)}
-            className="w-full border rounded-lg p-2"
-            />
+<input
+placeholder="اسم الإعلان"
+value={name}
+onChange={(e)=>setName(e.target.value)}
+className="col-span-2 border rounded-lg p-2"
+/>
 
-            <textarea
-            placeholder="نص الإعلان"
-            value={description}
-            onChange={(e)=>setDescription(e.target.value)}
-            className="w-full border rounded-lg p-2"
-            />
+<textarea
+placeholder="نص الإعلان"
+value={description}
+onChange={(e)=>setDescription(e.target.value)}
+className="col-span-2 border rounded-lg p-2"
+/>
 
-            <select
-            value={type}
-            onChange={(e)=>setType(e.target.value)}
-            className="w-full border rounded-lg p-2"
-            >
+<select
+value={type}
+onChange={(e)=>setType(e.target.value)}
+className="col-span-2 border rounded-lg p-2"
+>
+<option value="promo">إعلان ترويجي</option>
+<option value="discount">إعلان خصم</option>
+</select>
 
-              <option value="promo">إعلان ترويجي</option>
-              <option value="discount">إعلان خصم</option>
+{type==="discount" && (
+<>
 
-            </select>
+<select
+value={restaurantId || ""}
+onChange={(e)=>{
+const id = Number(e.target.value)
+setRestaurantId(id)
+loadCategories(id)
+}}
+className="border rounded-lg p-2"
+>
+<option value="">اختر المطعم</option>
+{restaurants.map(r=>(
+<option key={r.id} value={r.id}>
+{r.name}
+</option>
+))}
+</select>
 
-            {type==="discount" && (
+<select
+value={categoryId || ""}
+onChange={(e)=>{
+const id = Number(e.target.value)
+setCategoryId(id)
+loadProducts(id)
+}}
+className="border rounded-lg p-2"
+>
+<option value="">كل الفئات</option>
+{categories.map(c=>(
+<option key={c.id} value={c.id}>
+{c.name}
+</option>
+))}
+</select>
 
-              <>
-              <select
-              value={restaurantId || ""}
-              onChange={(e)=>{
-                const id = Number(e.target.value)
-                setRestaurantId(id)
-                loadCategories(id)
-              }}
-              className="w-full border rounded-lg p-2"
-              >
+<select
+multiple
+onChange={(e)=>{
+const options = Array.from(e.target.selectedOptions)
+setProductIds(options.map(o=>Number(o.value)))
+}}
+className="col-span-2 border rounded-lg p-2 h-28"
+>
+{products.map(p=>(
+<option key={p.id} value={p.id}>
+{p.name}
+</option>
+))}
+</select>
 
-              <option value="">اختر المطعم</option>
+<input
+type="number"
+placeholder="نسبة الخصم"
+value={discount}
+onChange={(e)=>setDiscount(Number(e.target.value))}
+className="col-span-2 border rounded-lg p-2"
+/>
 
-              {restaurants.map(r=>(
-                <option key={r.id} value={r.id}>
-                  {r.name}
-                </option>
-              ))}
+</>
+)}
 
-              </select>
+<input
+placeholder="رابط صورة الإعلان"
+value={image}
+onChange={(e)=>setImage(e.target.value)}
+className="col-span-2 border rounded-lg p-2"
+/>
 
-              {restaurantId && (
+{image && (
+<img
+src={image}
+className="col-span-2 w-full h-40 object-cover rounded border"
+onError={(e)=>{
+e.target.style.display="none"
+}}
+/>
+)}
 
-                <select
-                value={categoryId || ""}
-                onChange={(e)=>{
-                  const id = Number(e.target.value)
-                  setCategoryId(id)
-                  loadProducts(id)
-                }}
-                className="w-full border rounded-lg p-2"
-                >
+<input
+type="date"
+value={startDate}
+onChange={(e)=>setStartDate(e.target.value)}
+className="border rounded-lg p-2"
+/>
 
-                <option value="">كل الفئات</option>
+<input
+type="date"
+value={endDate}
+onChange={(e)=>setEndDate(e.target.value)}
+className="border rounded-lg p-2"
+/>
 
-                {categories.map(c=>(
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
+</div>
 
-                </select>
+<div className="flex justify-end gap-3 mt-6">
 
-              )}
+<button
+onClick={()=>setShowModal(false)}
+className="px-4 py-2 bg-gray-200 rounded"
+>
+إلغاء
+</button>
 
-              {categoryId && (
+<button
+onClick={createAd}
+className="px-4 py-2 bg-blue-600 text-white rounded"
+>
+حفظ الإعلان
+</button>
 
-                <select
-                multiple
-                onChange={(e)=>{
+</div>
 
-                  const options = Array.from(e.target.selectedOptions)
-                  setProductIds(options.map(o=>Number(o.value)))
+</div>
 
-                }}
-                className="w-full border rounded-lg p-2 h-32"
-                >
+</div>
 
-                {products.map(p=>(
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-
-                </select>
-
-              )}
-
-              <input
-              type="number"
-              placeholder="نسبة الخصم"
-              value={discount}
-              onChange={(e)=>setDiscount(Number(e.target.value))}
-              className="w-full border rounded-lg p-2"
-              />
-
-              </>
-
-            )}
-
-            <input
-            placeholder="رابط صورة الإعلان"
-            value={image}
-            onChange={(e)=>setImage(e.target.value)}
-            className="w-full border rounded-lg p-2"
-            />
-
-            {image && (
-
-              <img
-              src={image}
-              className="w-full h-40 object-cover rounded border"
-              onError={(e:any)=>{
-                e.target.style.display="none"
-              }}
-              />
-
-            )}
-
-            <input
-            type="date"
-            value={startDate}
-            onChange={(e)=>setStartDate(e.target.value)}
-            className="w-full border rounded-lg p-2"
-            />
-
-            <input
-            type="date"
-            value={endDate}
-            onChange={(e)=>setEndDate(e.target.value)}
-            className="w-full border rounded-lg p-2"
-            />
-
-            <div className="flex justify-end gap-3">
-
-              <button
-              onClick={()=>setShowModal(false)}
-              className="px-4 py-2 bg-gray-200 rounded"
-              >
-                إلغاء
-              </button>
-
-              <button
-              onClick={createAd}
-              className="px-4 py-2 bg-blue-600 text-white rounded"
-              >
-                حفظ الإعلان
-              </button>
-
-            </div>
-
-          </div>
-
-        </div>
-
-      )}
+)}
 
     </div>
 
