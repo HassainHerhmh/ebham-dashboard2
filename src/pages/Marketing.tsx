@@ -309,12 +309,14 @@ const Marketing: React.FC = () => {
                     }
                   </td>
 
-                  <td className="p-3 text-sm">
-                    {ad.start_date && ad.end_date
-                      ? `${ad.start_date.split(" ")[0]} - ${ad.end_date.split(" ")[0]}`
-                      : "-"
-                    }
-                  </td>
+                <td className="p-3 text-sm">
+
+{ad.start_date && ad.end_date
+  ? `${ad.start_date.slice(0,10)} - ${ad.end_date.slice(0,10)}`
+  : "-"
+}
+
+</td>
 
                   <td className="p-3">{ad.views}</td>
 
