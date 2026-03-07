@@ -48,7 +48,18 @@ const Marketing: React.FC = () => {
   const [restaurantId,setRestaurantId] = useState<number | null>(null)
   const [categoryId,setCategoryId] = useState<number | null>(null)
   const [productIds,setProductIds] = useState<number[]>([])
+const [showCouponModal,setShowCouponModal] = useState(false)
 
+const [couponCode,setCouponCode] = useState("")
+const [couponType,setCouponType] = useState("total")
+
+const [couponPercent,setCouponPercent] = useState(0)
+const [couponAmount,setCouponAmount] = useState(0)
+
+const [couponStart,setCouponStart] = useState("")
+const [couponEnd,setCouponEnd] = useState("")
+
+const [maxUses,setMaxUses] = useState(100)
   const [editingId,setEditingId] = useState<number | null>(null)
 
   useEffect(()=>{
@@ -218,27 +229,77 @@ const Marketing: React.FC = () => {
   ?((totalClicks/totalViews)*100).toFixed(1)
   :"0"
 
+
+  const createCoupon = async ()=>{
+
+try{
+
+await api.post("/coupons",{
+
+code:couponCode,
+
+apply_on:couponType,
+
+discount_percent:couponPercent,
+
+discount_amount:couponAmount,
+
+start_date:couponStart,
+
+end_date:couponEnd,
+
+max_uses:maxUses
+
+})
+
+setShowCouponModal(false)
+
+setCouponCode("")
+setCouponPercent(0)
+setCouponAmount(0)
+setCouponType("total")
+setCouponStart("")
+setCouponEnd("")
+setMaxUses(100)
+
+}catch(err){
+console.error(err)
+}
+
+}
+  
   return(
 
     <div className="space-y-6">
 
-      <div className="flex justify-between items-center">
+    <div className="flex justify-between items-center">
 
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <TrendingUp className="w-7 h-7"/>
-          إدارة الإعلانات
-        </h1>
+<h1 className="text-2xl font-bold flex items-center gap-2">
+<TrendingUp className="w-7 h-7"/>
+إدارة الإعلانات
+</h1>
 
-        <button
-        onClick={()=>setShowModal(true)}
-        className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg"
-        >
-          <Plus size={18}/>
-          إنشاء إعلان
-        </button>
+<div className="flex gap-3">
 
-      </div>
+<button
+onClick={()=>setShowModal(true)}
+className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg"
+>
+<Plus size={18}/>
+إنشاء إعلان
+</button>
 
+<button
+onClick={()=>setShowCouponModal(true)}
+className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg"
+>
+<Percent size={18}/>
+إنشاء كود خصم
+</button>
+
+</div>
+
+</div>
       <div className="grid md:grid-cols-3 gap-4">
 
         <div className="bg-white p-6 rounded-xl shadow flex justify-between">
@@ -561,6 +622,101 @@ className="px-4 py-2 bg-blue-600 text-white rounded"
 
 )}
 
+  {showCouponModal && (
+
+<div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+
+<div className="bg-white w-full max-w-lg rounded-xl p-6">
+
+<h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+<Percent/> إنشاء كود خصم
+</h2>
+
+<div className="space-y-3">
+
+<input
+placeholder="كود الخصم"
+value={couponCode}
+onChange={(e)=>setCouponCode(e.target.value.toUpperCase())}
+className="w-full border rounded-lg p-2"
+/>
+
+<select
+value={couponType}
+onChange={(e)=>setCouponType(e.target.value)}
+className="w-full border rounded-lg p-2"
+>
+<option value="total">خصم على الإجمالي</option>
+<option value="delivery">خصم على التوصيل</option>
+</select>
+
+<input
+type="number"
+placeholder="نسبة الخصم %"
+value={couponPercent}
+onChange={(e)=>setCouponPercent(Number(e.target.value))}
+className="w-full border rounded-lg p-2"
+/>
+
+<input
+type="number"
+placeholder="مبلغ الخصم (اختياري)"
+value={couponAmount}
+onChange={(e)=>setCouponAmount(Number(e.target.value))}
+className="w-full border rounded-lg p-2"
+/>
+
+<input
+type="number"
+placeholder="عدد مرات استخدام الكود"
+value={maxUses}
+onChange={(e)=>setMaxUses(Number(e.target.value))}
+className="w-full border rounded-lg p-2"
+/>
+
+<div className="grid grid-cols-2 gap-3">
+
+<input
+type="datetime-local"
+value={couponStart}
+onChange={(e)=>setCouponStart(e.target.value)}
+className="border rounded-lg p-2"
+/>
+
+<input
+type="datetime-local"
+value={couponEnd}
+onChange={(e)=>setCouponEnd(e.target.value)}
+className="border rounded-lg p-2"
+/>
+
+</div>
+
+</div>
+
+<div className="flex justify-end gap-3 mt-6">
+
+<button
+onClick={()=>setShowCouponModal(false)}
+className="px-4 py-2 bg-gray-200 rounded"
+>
+إلغاء
+</button>
+
+<button
+onClick={createCoupon}
+className="px-4 py-2 bg-green-600 text-white rounded"
+>
+إنشاء الكود
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+)}
     </div>
 
   )
