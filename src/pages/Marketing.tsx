@@ -275,14 +275,9 @@ const loadCustomers = async ()=>{
 
 try{
 
-const res = await api.get("/customers/admin")
+const res = await api.get("/customers")
 
-const list =
-Array.isArray(res.data)
-? res.data
-: res.data.customers || []
-
-setCustomers(list)
+setCustomers(res.data.customers || [])
 
 }catch(err){
 console.error(err)
