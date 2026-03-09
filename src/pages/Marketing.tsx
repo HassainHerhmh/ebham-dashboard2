@@ -233,20 +233,28 @@ loadRestaurants()
   ?((totalClicks/totalViews)*100).toFixed(1)
   :"0"
 
+const createCoupon = async ()=>{
 
-  const createCoupon = async ()=>{
+const formatDate = (date:string)=>{
+if(!date) return null
+return new Date(date).toISOString().slice(0,19).replace("T"," ")
+}
 
 try{
 
 await api.post("/coupons",{
 
-code:couponCode,
-apply_on:couponType,
-discount_percent:couponPercent,
-discount_amount:couponAmount,
-start_date:couponStart,
-end_date:couponEnd,
-max_uses:maxUses,
+code: couponCode,
+apply_on: couponType,
+
+discount_percent: couponPercent || 0,
+discount_amount: couponAmount || 0,
+
+start_date: formatDate(couponStart),
+end_date: formatDate(couponEnd),
+
+max_uses: maxUses || 100,
+
 users: couponTarget === "users" ? selectedUsers : []
 
 })
@@ -263,7 +271,7 @@ setCouponStart("")
 setCouponEnd("")
 setMaxUses(100)
 setSelectedUsers([])
-  
+
 }catch(err){
 console.error(err)
 }
