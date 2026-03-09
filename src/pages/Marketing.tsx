@@ -55,7 +55,9 @@ const [couponType,setCouponType] = useState("total")
 
 const [couponPercent,setCouponPercent] = useState(0)
 const [couponAmount,setCouponAmount] = useState(0)
-
+const [customers,setCustomers] = useState<any[]>([])
+const [couponTarget,setCouponTarget] = useState("all")
+const [selectedUsers,setSelectedUsers] = useState<number[]>([])
 const [couponStart,setCouponStart] = useState("")
 const [couponEnd,setCouponEnd] = useState("")
 
@@ -248,7 +250,9 @@ start_date:couponStart,
 
 end_date:couponEnd,
 
-max_uses:maxUses
+max_uses:maxUses,
+
+users: couponTarget === "users" ? selectedUsers : []
 
 })
 
@@ -267,7 +271,24 @@ console.error(err)
 }
 
 }
-  
+  const loadCustomers = async ()=>{
+
+try{
+
+const res = await api.get("/customers")
+
+const list =
+Array.isArray(res.data)
+? res.data
+: res.data.customers || []
+
+setCustomers(list)
+
+}catch(err){
+console.error(err)
+}
+
+}
   return(
 
     <div className="space-y-6">
@@ -290,7 +311,10 @@ className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg"
 </button>
 
 <button
-onClick={()=>setShowCouponModal(true)}
+onClick={()=>{
+setShowCouponModal(true)
+loadCustomers()
+}}
 className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg"
 >
 <Percent size={18}/>
@@ -649,6 +673,50 @@ className="w-full border rounded-lg p-2"
 <option value="total">خصم على الإجمالي</option>
 <option value="delivery">خصم على التوصيل</option>
 </select>
+<select
+value={couponTarget}
+onChange={(e)=>setCouponTarget(e.target.value)}
+className="w-full border rounded-lg p-2"
+>
+
+<option value="all">
+لكل العملاء
+</option>
+
+<option value="users">
+عملاء محددين
+</option>
+
+</select>
+{couponTarget === "users" && (
+
+<select
+multiple
+className="w-full border rounded-lg p-2 h-32"
+onChange={(e)=>{
+
+const options = Array.from(e.target.selectedOptions)
+
+setSelectedUsers(
+options.map(o=>Number(o.value))
+)
+
+}}
+>
+
+{customers.map(c=>(
+
+<option key={c.id} value={c.id}>
+
+{c.name} - {c.phone}
+
+</option>
+
+))}
+
+</select>
+
+)}
 
 <input
 type="number"
