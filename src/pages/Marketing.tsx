@@ -360,7 +360,9 @@ className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg"
       </div>
 
       <div className="bg-white rounded-xl shadow overflow-hidden">
-
+      <h2 className="text-lg font-bold p-4 border-b">
+أكواد الخصم
+</h2>
         <table className="w-full">
 
           <thead className="bg-gray-50">
