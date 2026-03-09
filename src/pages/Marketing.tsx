@@ -40,7 +40,7 @@ const Marketing: React.FC = () => {
   const [image,setImage] = useState("")
   const [startDate,setStartDate] = useState("")
   const [endDate,setEndDate] = useState("")
-
+ const [coupons,setCoupons] = useState<any[]>([])
   const [restaurants,setRestaurants] = useState<any[]>([])
   const [categories,setCategories] = useState<any[]>([])
   const [products,setProducts] = useState<any[]>([])
@@ -64,11 +64,13 @@ const [couponEnd,setCouponEnd] = useState("")
 const [maxUses,setMaxUses] = useState(100)
   const [editingId,setEditingId] = useState<number | null>(null)
 
-  useEffect(()=>{
-    loadAds()
-    loadRestaurants()
-  },[])
+useEffect(()=>{
 
+loadAds()
+loadCoupons()
+loadRestaurants()
+
+},[])
   const loadAds = async ()=>{
     try{
       const res = await api.get("/ads/admin")
@@ -239,22 +241,17 @@ try{
 await api.post("/coupons",{
 
 code:couponCode,
-
 apply_on:couponType,
-
 discount_percent:couponPercent,
-
 discount_amount:couponAmount,
-
 start_date:couponStart,
-
 end_date:couponEnd,
-
 max_uses:maxUses,
-
 users: couponTarget === "users" ? selectedUsers : []
 
 })
+
+loadCoupons()
 
 setShowCouponModal(false)
 
@@ -265,6 +262,21 @@ setCouponType("total")
 setCouponStart("")
 setCouponEnd("")
 setMaxUses(100)
+setSelectedUsers([])
+  
+}catch(err){
+console.error(err)
+}
+
+}
+
+  const loadCoupons = async ()=>{
+
+try{
+
+const res = await api.get("/coupons")
+
+setCoupons(res.data || [])
 
 }catch(err){
 console.error(err)
@@ -472,6 +484,64 @@ className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg"
 
       </div>
 
+      <div className="bg-white rounded-xl shadow overflow-hidden mt-6">
+
+<h2 className="text-lg font-bold p-4 border-b">
+أكواد الخصم
+</h2>
+
+<table className="w-full">
+
+<thead className="bg-gray-50">
+
+<tr>
+<th className="p-3 text-right">الكود</th>
+<th className="p-3 text-right">الخصم</th>
+<th className="p-3 text-right">النوع</th>
+<th className="p-3 text-right">الاستخدام</th>
+<th className="p-3 text-right">الفترة</th>
+</tr>
+
+</thead>
+
+<tbody>
+
+{coupons.map(c=>(
+<tr key={c.id} className="border-t">
+
+<td className="p-3 font-bold">
+{c.code}
+</td>
+
+<td className="p-3">
+{c.discount_percent
+? `${c.discount_percent}%`
+: `${c.discount_amount}`}
+</td>
+
+<td className="p-3">
+{c.apply_on === "delivery"
+? "خصم توصيل"
+: "خصم إجمالي"}
+</td>
+
+<td className="p-3">
+{c.used_count || 0} / {c.max_uses}
+</td>
+
+<td className="p-3 text-sm">
+{c.start_date?.slice(0,10)} - {c.end_date?.slice(0,10)}
+</td>
+
+</tr>
+))}
+
+</tbody>
+
+</table>
+
+</div>
+      
 {/* مودل إضافة إعلان */}
 
 {showModal && (
