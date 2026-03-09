@@ -271,11 +271,11 @@ console.error(err)
 }
 
 }
-  const loadCustomers = async ()=>{
+const loadCustomers = async ()=>{
 
 try{
 
-const res = await api.get("/customers")
+const res = await api.get("/customers/admin")
 
 const list =
 Array.isArray(res.data)
