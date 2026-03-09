@@ -283,6 +283,41 @@ console.error(err)
 }
 
 }
+  const deleteCoupon = async (id:number)=>{
+
+if(!confirm("هل تريد حذف الكود؟")) return
+
+try{
+
+await api.delete(`/coupons/${id}`)
+
+loadCoupons()
+
+}catch(err){
+console.error(err)
+}
+
+}
+  const toggleCoupon = async (c:any)=>{
+
+try{
+
+const newStatus = c.status === "active"
+? "inactive"
+: "active"
+
+await api.put(`/coupons/${c.id}`,{
+...c,
+status:newStatus
+})
+
+loadCoupons()
+
+}catch(err){
+console.error(err)
+}
+
+}
 const loadCustomers = async ()=>{
 
 try{
@@ -502,6 +537,8 @@ className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg"
 <th className="p-3 text-right">النوع</th>
 <th className="p-3 text-right">الاستخدام</th>
 <th className="p-3 text-right">الفترة</th>
+<th className="p-3 text-right">الحالة</th>
+<th className="p-3 text-right">الإجراءات</th>
 </tr>
 
 </thead>
@@ -533,6 +570,37 @@ className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg"
 
 <td className="p-3 text-sm">
 {c.start_date?.slice(0,10)} - {c.end_date?.slice(0,10)}
+</td>
+
+<td className="p-3">
+{c.status === "active"
+? <span className="text-green-600">مفعل</span>
+: <span className="text-red-500">متوقف</span>}
+</td>
+
+<td className="p-3 flex gap-2">
+
+<button
+onClick={()=>toggleCoupon(c)}
+className="bg-gray-200 px-3 py-1 rounded"
+>
+{c.status==="active"?"إيقاف":"تفعيل"}
+</button>
+
+<button
+onClick={()=>editCoupon(c)}
+className="bg-blue-500 text-white px-3 py-1 rounded"
+>
+تعديل
+</button>
+
+<button
+onClick={()=>deleteCoupon(c.id)}
+className="bg-red-500 text-white px-3 py-1 rounded"
+>
+حذف
+</button>
+
 </td>
 
 </tr>
