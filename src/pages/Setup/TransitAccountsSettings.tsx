@@ -100,8 +100,8 @@ useEffect(() => {
         الحسابات الوسيطة (Transit)
       </h2>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Field
+<div className="grid grid-cols-1 md:grid-cols-2 gap-4 auto-rows-fr">
+  <Field
           label="حساب وسيط إيرادات العمولات"
           value={commissionIncome}
           onChange={setCommissionIncome}
@@ -111,6 +111,12 @@ useEffect(() => {
           value={courierCommission}
           onChange={setCourierCommission}
         />
+
+          <Field
+  label="حساب وسيط دعم التسويق والعروض"
+  value={couponDiscount}
+  onChange={setCouponDiscount}
+/>
         <Field
           label="حساب وسيط اعتماد الحوالات"
           value={transferGuarantee}
@@ -133,11 +139,7 @@ useEffect(() => {
   onChange={setCustomerCredit}
 />
 
-        <Field
-  label="حساب وسيط دعم التسويق والعروض"
-  value={couponDiscount}
-  onChange={setCouponDiscount}
-/>
+
       </div>
        
       <div className="flex justify-end">
