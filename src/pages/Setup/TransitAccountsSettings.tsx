@@ -16,7 +16,7 @@ const TransitAccountsSettings = () => {
   const [currencyExchange, setCurrencyExchange] = useState<number | "">("");
   const [customerGuarantee, setCustomerGuarantee] = useState<number | "">("");
 const [customerCredit, setCustomerCredit] = useState<number | "">("");
-
+const [couponDiscount, setCouponDiscount] = useState<number | "">("");
 
 
 
@@ -42,6 +42,7 @@ useEffect(() => {
     setCurrencyExchange(d.currency_exchange_account || "");
     setCustomerGuarantee(d.customer_guarantee_account || "");
    setCustomerCredit(d.customer_credit_account || "");
+    setCouponDiscount(d.coupon_discount_account || "");
 
   })();
 }, []);
@@ -54,7 +55,7 @@ useEffect(() => {
       currency_exchange_account: currencyExchange || null,
         customer_guarantee_account: customerGuarantee || null, // 🆕
         customer_credit_account: customerCredit || null, // 🆕
-
+       coupon_discount_account: couponDiscount || null,
     };
 
     try {
@@ -132,6 +133,11 @@ useEffect(() => {
   onChange={setCustomerCredit}
 />
 
+        <Field
+  label="حساب وسيط دعم التسويق والعروض"
+  value={couponDiscount}
+  onChange={setCouponDiscount}
+/>
       </div>
        
       <div className="flex justify-end">
