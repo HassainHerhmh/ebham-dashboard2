@@ -1017,12 +1017,15 @@ const Orders: React.FC = () => {
             <div ref={printRef} className="p-6 overflow-y-auto">
               <h2 className="text-lg font-bold mb-4 text-center">🧾 فاتورة الطلب #{selectedOrderDetails.id}</h2>
               {(() => {
-                const restaurants = selectedOrderDetails.restaurants || [];
-                const allRestaurantsTotal = restaurants.reduce((sum: number, r: any) => sum + (r.total || 0), 0);
-                const delivery = Number(selectedOrderDetails.delivery_fee || 0);
-                const extraStore = Number(selectedOrderDetails.extra_store_fee || 0);
-                const grandTotal = allRestaurantsTotal + delivery + extraStore;
+               const allRestaurantsTotal = restaurants.reduce((sum: number, r: any) => sum + (r.total || 0), 0);
 
+const delivery = Number(selectedOrderDetails.delivery_fee || 0);
+const extraStore = Number(selectedOrderDetails.extra_store_fee || 0);
+
+const discount = Number((selectedOrderDetails as any).discount_amount || 0);
+const couponCode = (selectedOrderDetails as any).coupon_code || null;
+
+const grandTotal = allRestaurantsTotal + delivery + extraStore - discount;
                 return (
                   <>
                     {restaurants.map((r: any, idx: number) => (
@@ -1048,10 +1051,24 @@ const Orders: React.FC = () => {
                     ))}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                       <div className="border p-3 rounded bg-gray-50">
-                        <p>🧮 إجمالي المطاعم: {allRestaurantsTotal.toFixed(2)} ريال</p>
-                        <p>📦 رسوم التوصيل: {delivery.toFixed(2)} ريال</p>
-                        {extraStore > 0 && <p>🏪 رسوم المحل الإضافي: {extraStore.toFixed(2)} ريال</p>}
-                        <p className="text-lg font-bold text-blue-600">💰 الإجمالي الكلي: {grandTotal.toFixed(2)} ريال</p>
+                    <p>🧮 إجمالي المطاعم: {allRestaurantsTotal.toFixed(2)} ريال</p>
+
+<p>📦 رسوم التوصيل: {delivery.toFixed(2)} ريال</p>
+
+{extraStore > 0 && (
+<p>🏪 رسوم المحل الإضافي: {extraStore.toFixed(2)} ريال</p>
+)}
+
+{discount > 0 && (
+<p className="text-red-600 font-bold">
+🎟 خصم الكوبون {couponCode ? `(${couponCode})` : ""} :
+- {discount.toFixed(2)} ريال
+</p>
+)}
+
+<p className="text-lg font-bold text-blue-600">
+💰 الإجمالي الكلي: {grandTotal.toFixed(2)} ريال
+</p>
                       </div>
                       <div className="border p-3 rounded bg-white">
                         <h4 className="font-bold mb-2">💳 تفاصيل الدفع</h4>
