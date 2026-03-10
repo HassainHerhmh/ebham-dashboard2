@@ -1017,8 +1017,11 @@ const Orders: React.FC = () => {
             <div ref={printRef} className="p-6 overflow-y-auto">
               <h2 className="text-lg font-bold mb-4 text-center">🧾 فاتورة الطلب #{selectedOrderDetails.id}</h2>
               {(() => {
-               const allRestaurantsTotal = restaurants.reduce((sum: number, r: any) => sum + (r.total || 0), 0);
-
+const allRestaurantsTotal =
+  (selectedOrderDetails.restaurants || []).reduce(
+    (sum: number, r: any) => sum + (r.total || 0),
+    0
+  );
 const delivery = Number(selectedOrderDetails.delivery_fee || 0);
 const extraStore = Number(selectedOrderDetails.extra_store_fee || 0);
 
@@ -1028,8 +1031,8 @@ const couponCode = (selectedOrderDetails as any).coupon_code || null;
 const grandTotal = allRestaurantsTotal + delivery + extraStore - discount;
                 return (
                   <>
-                    {restaurants.map((r: any, idx: number) => (
-                      <div key={idx} className="mb-6 border rounded p-3">
+{(selectedOrderDetails.restaurants || []).map((r: any, idx: number) => (
+                        <div key={idx} className="mb-6 border rounded p-3">
                         <h3 className="font-bold text-lg mb-2">🏪 {r.name}</h3>
                         <table className="w-full mb-2 border">
                           <thead className="bg-gray-100">
@@ -1096,8 +1099,8 @@ const grandTotal = allRestaurantsTotal + delivery + extraStore - discount;
                     <div className="grid grid-cols-2 gap-3 mt-4">
                       <div className="border p-3 rounded">
                         <h3 className="font-bold mb-2">🏪 المطاعم المشاركة</h3>
-                        {restaurants.map((r: any, i: number) => (
-                          <div key={i} className="mb-2 text-sm">
+{(selectedOrderDetails.restaurants || []).map((r: any, i: number) => (
+                            <div key={i} className="mb-2 text-sm">
                             <p>الاسم: {r.name}</p>
                             <p>الهاتف: {r.phone}</p>
                             {r.map_url && <a href={r.map_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">عرض على الخريطة 🌍</a>}
