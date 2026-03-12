@@ -151,11 +151,10 @@ const loadInitialData = async () => {
       banksRes // ✅ استقبل البنوك
     ] = await Promise.all([
 
-      api.get("/wassel-orders/manual/manual-list"),
+     api.get("/manual-orders/manual-list"),
       api.get("/customers"),
       api.get("/restaurants"),
-      api.get("/wassel-orders/banks")
-
+api.get("/banks")
     ]);
 
     setOrders(ordersRes.data?.orders || []);
@@ -164,7 +163,7 @@ notifiedRef.current.delayed.clear();
 notifiedRef.current.near.clear();
 
     const slotsRes =
-  await api.get("/wassel-orders/manual/available-slots");
+  await api.get("/manual-orders/available-slots");
 
 setSlots(slotsRes.data.slots || []);
 
@@ -320,7 +319,7 @@ const getStatusCounts = (status: OrderTab) => {
 const updateOrderStatus = async (orderId: number, newStatus: string) => {
   try {
 
-const res = await api.put(`/wassel-orders/manual/status/${orderId}`, {
+const res = await api.put(`/manual-orders/status/${orderId}`, {
   status: newStatus
 });
 
@@ -435,10 +434,10 @@ const saveOrder = async () => {
     } else {
 
       // ✅ إضافة
-      await api.post(
-        "/wassel-orders/manual",
-        payload
-      );
+   await api.post(
+  "/manual-orders",
+  payload
+);
     }
 
     setShowModal(false);
@@ -1447,7 +1446,7 @@ onClick={async () => {
     <h3 className="font-black mb-2">📝 ملاحظات</h3>
 
     <p className="text-sm leading-relaxed">
-      {selectedOrderDetails.note || "لا توجد ملاحظات"}
+{selectedOrderDetails.notes || "لا توجد ملاحظات"}
     </p>
 
   </div>
