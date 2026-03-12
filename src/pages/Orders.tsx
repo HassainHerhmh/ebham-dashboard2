@@ -185,7 +185,7 @@ const TrackingModal = ({ order, onClose }: { order: Order; onClose: () => void }
 
 function ToastNotifications() {
   const [toasts, setToasts] = useState<any[]>([]);
-
+  
   useEffect(() => {
     console.log("🔌 Trying socket connection to:", SOCKET_URL);
 
@@ -241,7 +241,7 @@ const Orders: React.FC = () => {
 
   const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
   const isAdminBranch = !!currentUser?.is_admin_branch;
-
+ const [updatingOrders, setUpdatingOrders] = useState<{[key:number]:boolean}>({})
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [cancelOrderId, setCancelOrderId] = useState<number | null>(null);
   const [cancelReason, setCancelReason] = useState("");
@@ -421,14 +421,28 @@ const Orders: React.FC = () => {
     }
   };
 
-  const updateOrderStatus = async (orderId: number, newStatus: string) => {
-    try {
-      await api.orders.updateStatus(orderId, newStatus);
-      fetchOrders();
-    } catch (error) {
-      console.error("❌ خطأ في تحديث الحالة:", error);
-    }
-  };
+const updateOrderStatus = async (orderId: number, newStatus: string) => {
+
+  if (updatingOrders[orderId]) return; // منع التكرار
+
+  setUpdatingOrders(prev => ({ ...prev, [orderId]: true }));
+
+  try {
+
+    await api.orders.updateStatus(orderId, newStatus);
+
+    fetchOrders();
+
+  } catch (error) {
+
+    console.error("❌ خطأ في تحديث الحالة:", error);
+
+  } finally {
+
+    setUpdatingOrders(prev => ({ ...prev, [orderId]: false }));
+
+  }
+};
 
   const openDetailsModal = async (orderId: number) => {
     try {
@@ -914,19 +928,26 @@ const Orders: React.FC = () => {
 
                   <td className="px-2">{formatAmount(o.total_amount)}</td>
                   <td className="px-2">{o.payment_method_label || "-"}</td>
-                  <td className="px-2">
-                    {o.status === "completed" || o.status === "cancelled" ? (
+                 <td className="px-2">
+  {updatingOrders[o.id] && (
+    <div className="text-xs text-blue-600 mb-1">
+      جاري التحديث...
+    </div>
+  )}
+
+  {o.status === "completed" || o.status === "cancelled" ? (
                       <span className={`px-2 py-1 rounded text-sm font-semibold ${
                         o.status === "completed" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
                       }`}>
                         {o.status === "completed" ? "مكتمل" : "ملغي"}
                       </span>
                     ) : (
-                      <select
-                        value={o.status}
-                        onChange={(e) => updateOrderStatus(o.id, e.target.value)}
-                        className="border rounded px-2 py-1 text-sm"
-                      >
+                    <select
+  value={o.status}
+  disabled={updatingOrders[o.id]}
+  onChange={(e) => updateOrderStatus(o.id, e.target.value)}
+  className="border rounded px-2 py-1 text-sm"
+>
                         <option value="pending">قيد الانتظار</option>
                         <option value="confirmed">مؤكد</option>
                         <option value="preparing">قيد التحضير</option>
