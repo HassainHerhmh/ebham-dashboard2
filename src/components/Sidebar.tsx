@@ -44,7 +44,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const [settingsOpen, setSettingsOpen] = useState(false);
 const [reportsOpen, setReportsOpen] = useState(false);
 const [ordersOpen, setOrdersOpen] = useState(false);
-
+const [collapsed, setCollapsed] = useState(false);
   const areasGroup: MenuItem[] = [
     { key: "settings", label: "رسوم التوصيل", path: "/settings/delivery-fees" },
     { key: "neighborhoods", label: "الأحياء", path: "/neighborhoods" },
@@ -89,27 +89,44 @@ const isPathActive = (path: string) => {
   const activeClass = "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-semibold shadow-sm";
 
   return (
-    <aside
-      className={`fixed inset-y-0 right-0 transform ${
-        isOpen ? "translate-x-0" : "translate-x-full"
-      } md:translate-x-0 md:static md:w-64 bg-white dark:bg-gray-800 border-l dark:border-gray-700 shadow-xl z-50 transition-all duration-300`}
-    >
+ <aside
+  className={`fixed inset-y-0 right-0 transform ${
+    isOpen ? "translate-x-0" : "translate-x-full"
+  } md:translate-x-0 md:static ${
+    collapsed ? "md:w-20" : "md:w-64"
+  } bg-white dark:bg-gray-800 border-l dark:border-gray-700 shadow-xl z-50 transition-all duration-300`}
+>
       <div className="h-full flex flex-col">
         {/* الهيدر الخاص بالسايدبار */}
-        <div className="p-5 border-b dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/50">
-          <h2 className="text-xl font-bold text-gray-800 dark:text-white">لوحة الإدارة</h2>
-          <button className="md:hidden text-gray-500" onClick={onClose}>✕</button>
-        </div>
+     <div className="p-5 border-b dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/50">
+  
+  {!collapsed && (
+    <h2 className="text-xl font-bold text-gray-800 dark:text-white">
+      لوحة الإدارة
+    </h2>
+  )}
+
+  <button
+    onClick={() => setCollapsed(!collapsed)}
+    className="text-gray-500 hover:text-gray-700"
+  >
+    ☰
+  </button>
+
+</div>
 
         <nav className="flex-1 overflow-y-auto p-4 space-y-1 custom-scrollbar">
           
           {/* لوحة التحكم */}
           {canShow("dashboard") && (
-            <Link to="/" onClick={onClose}
-              className={`${linkBase} ${isPathActive("/") ? activeClass : ""}`}>
-              <LayoutDashboard size={18} />
-              <span>لوحة التحكم</span>
-            </Link>
+          <Link
+  to="/"
+  onClick={onClose}
+  className={`${linkBase} ${isPathActive("/") ? activeClass : ""}`}
+>
+  <LayoutDashboard size={18} />
+  {!collapsed && <span>لوحة التحكم</span>}
+</Link>
           )}
 
           {/* المستخدمين */}
