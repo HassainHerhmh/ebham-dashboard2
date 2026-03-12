@@ -424,11 +424,10 @@ const saveOrder = async () => {
 
     if (editingId) {
 
-      // ✅ تحديث
-    await (api as any).manualOrders.update(
-  editingOrder.id,
-  payload
-);
+  await api.put(
+    `/manual-orders/${editingOrder.id}`,
+    payload
+  );
  
 
     } else {
