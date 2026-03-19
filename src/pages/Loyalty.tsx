@@ -21,17 +21,17 @@ export default function Loyalty() {
   }, []);
 
   const loadData = async () => {
-    const res = await api.get("/api/admin/loyalty-logs");
+    const res = await api.get("/loyalty/admin/loyalty-logs");
     if (res.data.success) setData(res.data.data);
   };
 
   const loadSettings = async () => {
-    const res = await api.get("/api/admin/loyalty-settings");
+    const res = await api.get("/loyalty/admin/loyalty-settings");
     if (res.data) setSettings(res.data);
   };
 
   const saveSettings = async () => {
-    await api.post("/api/admin/loyalty-settings", settings);
+    await api.post("/loyalty/admin/loyalty-settings");
     setIsModalOpen(false);
   };
 
