@@ -20,20 +20,20 @@ export default function Loyalty() {
     loadSettings();
   }, []);
 
-  const loadData = async () => {
-    const res = await api.get("/loyalty/admin/loyalty-logs");
-    if (res.data.success) setData(res.data.data);
-  };
-
+ const loadData = async () => {
+  const res = await api.get("/loyalty/admin/loyalty-logs");
+  if (res.data.success) setData(res.data.data);
+};
+  
 // جلب
 const loadSettings = async () => {
-  const res = await api.get("/api/loyalty/settings");
+  const res = await api.get("/loyalty/settings");
   if (res.data) setSettings(res.data);
 };
 
 // حفظ
 const saveSettings = async () => {
-  await api.put("/api/loyalty/settings", settings);
+  await api.put("/loyalty/settings", settings);
   setIsModalOpen(false);
 };
   // فلترة
