@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import api from "../services/api";
 import { Settings } from "lucide-react";
-
+import { Settings, X } from "lucide-react";
 const BRAND = "#16a34a";
 
 export default function Loyalty() {
@@ -108,8 +108,19 @@ export default function Loyalty() {
       {/* ===== Modal ===== */}
       {isModalOpen && (
         <div style={styles.modalOverlay}>
-          <div style={styles.modal}>
+<div style={styles.modal}>
 
+  {/* زر إغلاق */}
+  <div style={styles.modalHeader}>
+    <h3 style={{ margin: 0 }}>إعدادات الولاء</h3>
+
+    <button
+      onClick={() => setIsModalOpen(false)}
+      style={styles.closeBtn}
+    >
+      <X size={18} />
+    </button>
+  </div>
             <h3>إعدادات الولاء</h3>
 
             {/* المربع الأول */}
