@@ -52,7 +52,7 @@ import ReceiptTypes from "./pages/Setup/ReceiptTypes";
 import PaymentTypes from "./pages/Setup/PaymentTypes";
 import JournalTypes from "./pages/Setup/JournalTypes";
 import TransitAccountsSettings from "./pages/Setup/TransitAccountsSettings";
-
+import Loyalty from "./pages/Loyalty";
 
 // العمليات
 import Operations from "./pages/Operations";
@@ -134,7 +134,14 @@ const App: React.FC = () => {
                    <Route path="/payments/banks"element={<ProtectedRoute section="payments"><PaymentsBanks /></ProtectedRoute>}/>
                   <Route path="/payments/wallet"element={<ProtectedRoute section="payments"><PaymentsWallet /></ProtectedRoute>}/>
                     <Route path="/reports/commissions" element={<CommissionReport />} />
-
+<Route
+  path="/loyalty"
+  element={
+    <ProtectedRoute section="marketing">
+      <Loyalty />
+    </ProtectedRoute>
+  }
+/>
 
 
 
