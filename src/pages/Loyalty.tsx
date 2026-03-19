@@ -25,16 +25,15 @@ export default function Loyalty() {
     if (res.data.success) setData(res.data.data);
   };
 
-  const loadSettings = async () => {
-    const res = await api.get("/loyalty/admin/loyalty-settings");
-    if (res.data) setSettings(res.data);
-  };
+const loadSettings = async () => {
+  const res = await api.get("/api/loyalty/admin/loyalty-settings");
+  if (res.data) setSettings(res.data);
+};
 
-  const saveSettings = async () => {
-    await api.post("/loyalty/admin/loyalty-settings");
-    setIsModalOpen(false);
-  };
-
+const saveSettings = async () => {
+  await api.post("/api/loyalty/admin/loyalty-settings", settings);
+  setIsModalOpen(false);
+};
   // فلترة
   const filtered = data.filter((item) => {
     if (filter === "today") {
