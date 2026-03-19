@@ -17,7 +17,6 @@ Megaphone,
 BarChart3,
 Wallet
 } from "lucide-react";
-const [marketingOpen, setMarketingOpen] = useState(false);
 import { hasPermission } from "../utils/permissions";
 
 interface SidebarProps {
@@ -49,6 +48,7 @@ const [agentsOpen,setAgentsOpen] = useState(false);
 const [settingsOpen,setSettingsOpen] = useState(false);
 const [reportsOpen,setReportsOpen] = useState(false);
 const [ordersOpen,setOrdersOpen] = useState(false);
+const [marketingOpen, setMarketingOpen] = useState(false);
 
 const areasGroup: MenuItem[] = [
 { key:"settings", label:"رسوم التوصيل", path:"/settings/delivery-fees" },
