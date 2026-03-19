@@ -17,7 +17,7 @@ Megaphone,
 BarChart3,
 Wallet
 } from "lucide-react";
-
+const [marketingOpen, setMarketingOpen] = useState(false);
 import { hasPermission } from "../utils/permissions";
 
 interface SidebarProps {
