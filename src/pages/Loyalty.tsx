@@ -25,13 +25,15 @@ export default function Loyalty() {
     if (res.data.success) setData(res.data.data);
   };
 
+// جلب
 const loadSettings = async () => {
-  const res = await api.get("/api/loyalty/admin/loyalty-settings");
+  const res = await api.get("/api/loyalty/settings");
   if (res.data) setSettings(res.data);
 };
 
+// حفظ
 const saveSettings = async () => {
-  await api.post("/api/loyalty/admin/loyalty-settings", settings);
+  await api.put("/api/loyalty/settings", settings);
   setIsModalOpen(false);
 };
   // فلترة
