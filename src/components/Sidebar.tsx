@@ -230,14 +230,50 @@ className={`${linkBaseSmall} ${isPathActive("/orders/manual") ? activeClass : ""
 
 {canShow("marketing") && (
 
-<Link
-to="/marketing"
-onClick={onClose}
-className={`${linkBase} ${isPathActive("/marketing") ? activeClass : ""}`}
->
-<Megaphone size={18}/>
-{!collapsed && <span>التسويق</span>}
-</Link>
+<div className="space-y-1">
+
+  <div
+    onClick={() => setMarketingOpen(!marketingOpen)}
+    className={`${linkBase} cursor-pointer flex items-center justify-between`}
+  >
+
+    <div className="flex items-center gap-2">
+      <Megaphone size={18}/>
+      {!collapsed && <span>التسويق</span>}
+    </div>
+
+    {!collapsed &&
+      (marketingOpen ? <ChevronUp size={18}/> : <ChevronDown size={18}/>)
+    }
+
+  </div>
+
+  {marketingOpen && !collapsed && (
+
+    <div className="ml-6 space-y-1">
+
+      <Link
+        to="/marketing"
+        onClick={onClose}
+        className={`${linkBaseSmall} ${isPathActive("/marketing") ? activeClass : ""}`}
+      >
+        📢 اعلانات وعروض
+      </Link>
+
+      <Link
+        to="/loyalty"
+        onClick={onClose}
+        className={`${linkBaseSmall} ${isPathActive("/loyalty") ? activeClass : ""}`}
+      >
+        ⭐ نقاط الولاء
+      </Link>
+
+    </div>
+
+  )}
+
+</div>
+
 )}
 
 {/* reports */}
