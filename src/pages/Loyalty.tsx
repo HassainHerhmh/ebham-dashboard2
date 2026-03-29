@@ -45,9 +45,9 @@ const saveSettings = async () => {
   });
 
   const totalPoints = filtered.reduce((sum, i) => sum + i.points, 0);
-  const totalAmount = filtered.reduce((sum, i) => sum + i.amount, 0);
-
+const totalAmount = filtered.reduce((sum, i) => sum + parseFloat(i.amount), 0);
   return (
+    
     <div>
 
       {/* ===== Header ===== */}
@@ -71,7 +71,7 @@ const saveSettings = async () => {
       {/* ===== Stats ===== */}
       <div style={styles.stats}>
         <div>⭐ مجموع النقاط: {totalPoints}</div>
-        <div>💰 مجموع الصرف: {totalAmount} ريال</div>
+<div>💰 مجموع الصرف: {totalAmount.toLocaleString()} ريال</div>
       </div>
 
       {/* ===== Table ===== */}
