@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from "react";
 import api from "../services/api";
+import { getRoleLabel, roleOptions } from "../config/permissions";
+import { hasPermission, normalizeRole } from "../utils/permissions";
 
 interface User {
   id: number;
   name: string;
   email?: string;
   phone?: string;
-  role: string;
+  role: string | { name?: string };
   status: string;
   image_url?: string;
   branch_id?: number | null;
@@ -24,6 +26,9 @@ const Users: React.FC = () => {
     : null;
 
   const isAdminBranch = Boolean(currentUser?.is_admin_branch);
+  const canAddUsers = hasPermission(currentUser, "users", "add");
+  const canEditUsers = hasPermission(currentUser, "users", "edit");
+  const canDeleteUsers = hasPermission(currentUser, "users", "delete");
 
   const [users, setUsers] = useState<User[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
@@ -36,15 +41,14 @@ const Users: React.FC = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [image, setImage] = useState<File | null>(null);
-  const [role, setRole] = useState("admin");
+  const [role, setRole] = useState("employee");
   const [branchId, setBranchId] = useState<number | "">("");
 
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const headers: any = {};
+      const headers: Record<string, string> = {};
 
-      // الإدارة العامة لا ترسل فرع افتراضيًا
       if (isAdminBranch) {
         const selectedBranch = localStorage.getItem("branch_id");
         if (selectedBranch && selectedBranch !== "all") {
@@ -81,28 +85,28 @@ const Users: React.FC = () => {
     setPassword("");
     setConfirmPassword("");
     setImage(null);
-    setRole("admin");
+    setRole("employee");
     setBranchId("");
     setIsModalOpen(true);
   };
 
-  const openEditModal = (u: User) => {
-    setEditingUser(u);
-    setName(u.name);
-    setIdentifier(u.email || u.phone || "");
-    setRole(u.role);
-    setBranchId(u.branch_id || "");
+  const openEditModal = (user: User) => {
+    setEditingUser(user);
+    setName(user.name);
+    setIdentifier(user.email || user.phone || "");
+    setRole(normalizeRole(user.role) || "employee");
+    setBranchId(user.branch_id || "");
     setPassword("");
     setConfirmPassword("");
     setImage(null);
     setIsModalOpen(true);
   };
 
-  const handleSaveUser = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSaveUser = async (event: React.FormEvent) => {
+    event.preventDefault();
 
     if (!editingUser && password !== confirmPassword) {
-      alert("❌ كلمتا المرور غير متطابقتين");
+      alert("كلمتا المرور غير متطابقتين");
       return;
     }
 
@@ -128,11 +132,11 @@ const Users: React.FC = () => {
     }
 
     if (editingUser) {
-      await api.users.updateUser(editingUser.id, formData);
-      alert("✔ تم التعديل");
+      await (api as any).users.updateUser(editingUser.id, formData);
+      alert("تم التعديل");
     } else {
-      await api.users.addUser(formData);
-      alert("✔ تم الإضافة");
+      await (api as any).users.addUser(formData);
+      alert("تمت الإضافة");
     }
 
     setIsModalOpen(false);
@@ -141,19 +145,19 @@ const Users: React.FC = () => {
 
   const deleteUser = async (id: number) => {
     if (!window.confirm("هل تريد حذف المستخدم؟")) return;
-    await api.users.deleteUser(id);
+    await (api as any).users.deleteUser(id);
     fetchUsers();
   };
 
   const disableUser = async (id: number) => {
     if (!window.confirm("هل تريد تعطيل المستخدم؟")) return;
-    await api.users.disableUser(id);
+    await (api as any).users.disableUser(id);
     fetchUsers();
   };
 
   const resetUserPassword = async (id: number) => {
     if (!window.confirm("إنشاء كلمة مرور جديدة؟")) return;
-    const res = await api.users.resetPassword(id);
+    const res = await (api as any).users.resetPassword(id);
     if (res.success) {
       await navigator.clipboard.writeText(res.new_password);
       alert(`كلمة المرور الجديدة: ${res.new_password}\nتم نسخها`);
@@ -164,12 +168,14 @@ const Users: React.FC = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">إدارة المستخدمين</h1>
-        <button
-          onClick={openAddModal}
-          className="bg-green-600 text-white px-4 py-2 rounded"
-        >
-          إضافة مستخدم
-        </button>
+        {canAddUsers && (
+          <button
+            onClick={openAddModal}
+            className="bg-green-600 text-white px-4 py-2 rounded"
+          >
+            إضافة مستخدم
+          </button>
+        )}
       </div>
 
       <div className="bg-white rounded-xl shadow overflow-hidden">
@@ -188,48 +194,54 @@ const Users: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {users.map((u, i) => (
-                <tr key={u.id} className="border-t">
-                  <td className="p-3">{i + 1}</td>
-                  <td className="p-3">{u.name}</td>
-                  <td className="p-3">{u.role}</td>
-                  <td className="p-3">{u.branch_name || "-"}</td>
+              {users.map((user, index) => (
+                <tr key={user.id} className="border-t">
+                  <td className="p-3">{index + 1}</td>
+                  <td className="p-3">{user.name}</td>
+                  <td className="p-3">{getRoleLabel(normalizeRole(user.role))}</td>
+                  <td className="p-3">{user.branch_name || "-"}</td>
                   <td className="p-3">
                     <span
                       className={
-                        u.status === "active"
+                        user.status === "active"
                           ? "text-green-600 font-semibold"
                           : "text-red-600 font-semibold"
                       }
                     >
-                      {u.status === "active" ? "نشط" : "معطل"}
+                      {user.status === "active" ? "نشط" : "معطل"}
                     </span>
                   </td>
                   <td className="p-3 flex gap-2">
-                    <button
-                      onClick={() => openEditModal(u)}
-                      className="text-gray-600 hover:underline"
-                    >
-                      تعديل
-                    </button>
-                    <button
-                      onClick={() => resetUserPassword(u.id)}
-                      className="text-purple-600 hover:underline"
-                    >
-                      كلمة المرور
-                    </button>
-                    <button
-                      onClick={() => disableUser(u.id)}
-                      className="text-blue-600 hover:underline"
-                    >
-                      تعطيل
-                    </button>
-                    <button
-                      onClick={() => deleteUser(u.id)}
-                      className="text-red-600 hover:underline"
-                    >
-                      حذف
-                    </button>
+                    {canEditUsers && (
+                      <>
+                        <button
+                          onClick={() => openEditModal(user)}
+                          className="text-gray-600 hover:underline"
+                        >
+                          تعديل
+                        </button>
+                        <button
+                          onClick={() => resetUserPassword(user.id)}
+                          className="text-purple-600 hover:underline"
+                        >
+                          كلمة المرور
+                        </button>
+                        <button
+                          onClick={() => disableUser(user.id)}
+                          className="text-blue-600 hover:underline"
+                        >
+                          تعطيل
+                        </button>
+                      </>
+                    )}
+                    {canDeleteUsers && (
+                      <button
+                        onClick={() => deleteUser(user.id)}
+                        className="text-red-600 hover:underline"
+                      >
+                        حذف
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -250,7 +262,7 @@ const Users: React.FC = () => {
                 className="border p-2 w-full"
                 placeholder="الاسم"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(event) => setName(event.target.value)}
                 required
               />
 
@@ -258,7 +270,7 @@ const Users: React.FC = () => {
                 className="border p-2 w-full"
                 placeholder="البريد أو رقم الجوال"
                 value={identifier}
-                onChange={(e) => setIdentifier(e.target.value)}
+                onChange={(event) => setIdentifier(event.target.value)}
                 required
               />
 
@@ -269,7 +281,7 @@ const Users: React.FC = () => {
                     className="border p-2 w-full"
                     placeholder="كلمة المرور"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(event) => setPassword(event.target.value)}
                     required
                   />
                   <input
@@ -277,7 +289,7 @@ const Users: React.FC = () => {
                     className="border p-2 w-full"
                     placeholder="تأكيد كلمة المرور"
                     value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    onChange={(event) => setConfirmPassword(event.target.value)}
                     required
                   />
                 </>
@@ -286,28 +298,27 @@ const Users: React.FC = () => {
               <select
                 className="border p-2 w-full"
                 value={role}
-                onChange={(e) => setRole(e.target.value)}
+                onChange={(event) => setRole(event.target.value)}
               >
-                <option value="admin">أدمن</option>
-                <option value="service">موظف خدمة</option>
-                <option value="accountant">محاسب</option>
-                <option value="marketer">مسوق</option>
-                <option value="captain">كابتن</option>
-                <option value="agent">وكيل</option>
+                {roleOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
               </select>
 
               {isAdminBranch && (
                 <select
                   className="border p-2 w-full"
                   value={branchId}
-                  onChange={(e) =>
-                    setBranchId(e.target.value ? Number(e.target.value) : "")
+                  onChange={(event) =>
+                    setBranchId(event.target.value ? Number(event.target.value) : "")
                   }
                 >
                   <option value="">اختر الفرع</option>
-                  {branches.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.name}
+                  {branches.map((branch) => (
+                    <option key={branch.id} value={branch.id}>
+                      {branch.name}
                     </option>
                   ))}
                 </select>
@@ -315,7 +326,7 @@ const Users: React.FC = () => {
 
               <input
                 type="file"
-                onChange={(e) => setImage(e.target.files?.[0] || null)}
+                onChange={(event) => setImage(event.target.files?.[0] || null)}
               />
 
               <div className="flex justify-end gap-2">

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 
 import {
@@ -6,18 +6,22 @@ ChevronDown,
 ChevronLeft,
 ChevronUp,
 Settings,
-Store,
 CreditCard,
 DollarSign,
+GitBranch,
 LayoutDashboard,
 Users,
 UserCircle,
+ShieldCheck,
 ClipboardList,
 Megaphone,
 BarChart3,
-Wallet
+Wallet,
+MapPin,
+Truck,
+Briefcase
 } from "lucide-react";
-import { hasPermission } from "../utils/permissions";
+import { hasPermission, normalizeRole } from "../utils/permissions";
 
 interface SidebarProps {
 isOpen: boolean;
@@ -38,7 +42,12 @@ const user = localStorage.getItem("user")
 ? JSON.parse(localStorage.getItem("user")!)
 : null;
 
-const isAdmin = user?.role?.toLowerCase() === "admin";
+const isAdmin =
+normalizeRole(user?.role) === "admin" ||
+user?.is_admin === true ||
+user?.is_admin === 1 ||
+user?.is_admin_branch === true ||
+user?.is_admin_branch === 1;
 
 const [collapsed,setCollapsed] = useState(false);
 
@@ -72,7 +81,6 @@ const agentsGroup: MenuItem[] = [
 ];
 
 const settingsGroup: MenuItem[] = [
-{ key:"stores", label:"المتاجر", path:"/settings/stores" },
 { key:"payment", label:"الدفع", path:"/settings/payment" },
 { key:"currency", label:"العملات", path:"/settings/currency" },
 { key:"branches", label:"الفروع", path:"/settings/branches" },
@@ -98,9 +106,9 @@ return (
 <aside
 className={`fixed inset-y-0 right-0 transform ${
 isOpen ? "translate-x-0" : "translate-x-full"
-} md:translate-x-0 md:static ${
-collapsed ? "md:w-20" : "md:w-64"
-} bg-white dark:bg-gray-800 border-l dark:border-gray-700 shadow-xl z-50 transition-all duration-300`}
+} md:translate-x-0 md:sticky md:top-0 ${
+collapsed ? "w-20 md:w-20" : "w-64 md:w-64"
+} h-screen max-h-screen overflow-hidden bg-white dark:bg-gray-800 border-l dark:border-gray-700 shadow-xl z-50 transition-all duration-300`}
 >
 
 <div className="h-full flex flex-col">
@@ -122,11 +130,11 @@ className="text-gray-500 hover:text-gray-700"
 
 >
 
-☰ </button>
+☰</button>
 
 </div>
 
-<nav className="flex-1 overflow-y-auto p-4 space-y-1 custom-scrollbar">
+<nav className="flex-1 overflow-y-auto p-4 pb-8 space-y-1 custom-scrollbar overscroll-contain">
 
 {/* dashboard */}
 
@@ -146,6 +154,7 @@ className={`${linkBase} ${isPathActive("/") ? activeClass : ""}`}
 
 {canShow("users") && (
 
+<div className="space-y-1">
 <Link
 to="/users"
 onClick={onClose}
@@ -154,6 +163,18 @@ className={`${linkBase} ${isPathActive("/users") ? activeClass : ""}`}
 <Users size={18}/>
 {!collapsed && <span>المستخدمين</span>}
 </Link>
+
+{!collapsed && (
+<Link
+to="/users/permissions"
+onClick={onClose}
+className={`${linkBaseSmall} mr-4 ${isPathActive("/users/permissions") ? activeClass : ""}`}
+>
+<ShieldCheck size={16}/>
+<span>الصلاحيات</span>
+</Link>
+)}
+</div>
 )}
 
 {/* customers */}
@@ -172,7 +193,7 @@ className={`${linkBase} ${isPathActive("/customers") ? activeClass : ""}`}
 
 {/* orders */}
 
-{canShow("orders") && (
+{(canShow("orders") || canShow("wassel_orders") || canShow("manual_orders")) && (
 
 <div className="space-y-1">
 
@@ -196,6 +217,7 @@ className={`${linkBase} cursor-pointer flex items-center justify-between`}
 
 <div className="ml-6 space-y-1">
 
+{canShow("orders") && (
 <Link
 to="/orders"
 onClick={onClose}
@@ -203,7 +225,9 @@ className={`${linkBaseSmall} ${isPathActive("/orders") ? activeClass : ""}`}
 >
 📋 كل الطلبات
 </Link>
+)}
 
+{canShow("wassel_orders") && (
 <Link
 to="/orders/wassel"
 onClick={onClose}
@@ -211,7 +235,9 @@ className={`${linkBaseSmall} ${isPathActive("/orders/wassel") ? activeClass : ""
 >
 📦 طلبات وصل لي
 </Link>
+)}
 
+{canShow("manual_orders") && (
 <Link
 to="/orders/manual"
 onClick={onClose}
@@ -219,6 +245,7 @@ className={`${linkBaseSmall} ${isPathActive("/orders/manual") ? activeClass : ""
 >
 ✍️ طلبات يدوية
 </Link>
+)}
 
 </div>
 )}
@@ -228,7 +255,7 @@ className={`${linkBaseSmall} ${isPathActive("/orders/manual") ? activeClass : ""
 
 {/* marketing */}
 
-{canShow("marketing") && (
+{(canShow("marketing") || canShow("loyalty")) && (
 
 <div className="space-y-1">
 
@@ -257,9 +284,10 @@ className={`${linkBaseSmall} ${isPathActive("/orders/manual") ? activeClass : ""
         onClick={onClose}
         className={`${linkBaseSmall} ${isPathActive("/marketing") ? activeClass : ""}`}
       >
-        📢 اعلانات وعروض
+        📢 إعلانات وعروض
       </Link>
 
+      {canShow("loyalty") && (
       <Link
         to="/loyalty"
         onClick={onClose}
@@ -267,6 +295,7 @@ className={`${linkBaseSmall} ${isPathActive("/orders/manual") ? activeClass : ""
       >
         ⭐ نقاط الولاء
       </Link>
+      )}
 
     </div>
 
@@ -278,7 +307,7 @@ className={`${linkBaseSmall} ${isPathActive("/orders/manual") ? activeClass : ""
 
 {/* reports */}
 
-{canShow("reports") && (
+{(canShow("reports") || canShow("commission_reports") || canShow("agent_reports") || canShow("captain_reports")) && (
 
 <div className="space-y-1">
 
@@ -302,21 +331,53 @@ onClick={()=>setReportsOpen(!reportsOpen)}
 
 <div className="ml-6 space-y-1">
 
+{canShow("reports") && (
+<Link
+to="/reports"
+onClick={onClose}
+className={`${linkBaseSmall} ${isPathActive("/reports") && !isPathActive("/reports/commissions") ? activeClass : ""}`}
+>
+📊 تقرير العمليات
+</Link>
+)}
+
+{canShow("commission_reports") && (
 <Link
 to="/reports/commissions"
 onClick={onClose}
 className={`${linkBaseSmall} ${isPathActive("/reports/commissions") ? activeClass : ""}`}
 >
-📊 تقرير العمولات
+📑 تقرير العمولات
 </Link>
+)}
 
-</div>
+{canShow("agent_reports") && (
+<Link
+to="/reports/agents"
+onClick={onClose}
+className={`${linkBaseSmall} ${isPathActive("/reports/agents") ? activeClass : ""}`}
+>
+🧾 تقارير الوكلاء
+</Link>
+)}
+
+{canShow("captain_reports") && (
+<Link
+to="/reports/captains"
+onClick={onClose}
+className={`${linkBaseSmall} ${isPathActive("/reports/captains") ? activeClass : ""}`}
+>
+🛵 تقارير الكباتن
+</Link>
 )}
 
 </div>
 )}
 
-{/* إعدادات التوصيل */}
+</div>
+)}
+
+{/* ط¥ط¹ط¯ط§ط¯ط§طھ ط§ظ„طھظˆطµظٹظ„ */}
 
 {(isAdmin || areasGroup.some(i=>canShow(i.key))) && (
 
@@ -327,7 +388,7 @@ className={`${linkBase} cursor-pointer flex justify-between`}
 onClick={()=>setAreasOpen(!areasOpen)}
 >
 
-<span>{!collapsed && "إعدادات التوصيل"}</span>
+<span className="flex items-center gap-2"><MapPin size={18}/>{!collapsed && "إعدادات التوصيل"}</span>
 
 {!collapsed &&
 (areasOpen ? <ChevronDown size={16}/> : <ChevronLeft size={16}/>)
@@ -357,7 +418,7 @@ className={`${linkBase} mr-2 py-2 text-sm ${isPathActive(i.path) ? activeClass :
 </div>
 )}
 
-{/* تهيئة المحلات */}
+{/* طھظ‡ظٹط¦ط© ط§ظ„ظ…ط­ظ„ط§طھ */}
 
 {(isAdmin || deliveryGroup.some(i=>canShow(i.key))) && (
 
@@ -368,7 +429,7 @@ className={`${linkBase} cursor-pointer flex justify-between`}
 onClick={()=>setDeliveryOpen(!deliveryOpen)}
 >
 
-<span>{!collapsed && "تهيئة المحلات"}</span>
+<span className="flex items-center gap-2"><Truck size={18}/>{!collapsed && "تهيئة المحلات"}</span>
 
 {!collapsed &&
 (deliveryOpen ? <ChevronDown size={16}/> : <ChevronLeft size={16}/>)
@@ -398,7 +459,7 @@ className={`${linkBase} mr-2 py-2 text-sm ${isPathActive(i.path) ? activeClass :
 </div>
 )}
 
-{/* الوكلاء */}
+{/* ط§ظ„ظˆظƒظ„ط§ط، */}
 
 {(isAdmin || agentsGroup.some(i=>canShow(i.key))) && (
 
@@ -409,7 +470,7 @@ className={`${linkBase} cursor-pointer flex justify-between`}
 onClick={()=>setAgentsOpen(!agentsOpen)}
 >
 
-<span>{!collapsed && "تهيئة الوكلاء/الكباتن"}</span>
+<span className="flex items-center gap-2"><Briefcase size={18}/>{!collapsed && "تهيئة الوكلاء/الكباتن"}</span>
 
 {!collapsed &&
 (agentsOpen ? <ChevronDown size={16}/> : <ChevronLeft size={16}/>)
@@ -439,7 +500,7 @@ className={`${linkBase} mr-2 py-2 text-sm ${isPathActive(i.path) ? activeClass :
 </div>
 )}
 
-{/* الإعدادات */}
+{/* ط§ظ„ط¥ط¹ط¯ط§ط¯ط§طھ */}
 
 {(isAdmin || settingsGroup.some(i=>canShow(i.key))) && (
 
@@ -473,9 +534,9 @@ to={i.path}
 onClick={onClose}
 className={`${linkBase} mr-2 py-2 text-sm ${isPathActive(i.path) ? activeClass : ""}`}
 >
-{i.key==="stores" && <Store size={14}/>}
 {i.key==="payment" && <CreditCard size={14}/>}
 {i.key==="currency" && <DollarSign size={14}/>}
+{i.key==="branches" && <GitBranch size={14}/>}
 <span>{i.label}</span>
 </Link>
 ))}
@@ -486,7 +547,7 @@ className={`${linkBase} mr-2 py-2 text-sm ${isPathActive(i.path) ? activeClass :
 </div>
 )}
 
-{/* الحسابات */}
+{/* ط§ظ„ط­ط³ط§ط¨ط§طھ */}
 
 {canShow("accounts") && (
 
@@ -511,3 +572,4 @@ className={`${linkBase} ${isPathActive("/accounts") ? activeClass : ""}`}
 };
 
 export default Sidebar;
+

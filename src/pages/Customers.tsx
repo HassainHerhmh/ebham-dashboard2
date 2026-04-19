@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+﻿import React, { useState, useEffect, useRef } from "react";
 import api from "../services/api";
 
 interface Branch {
@@ -17,14 +17,16 @@ interface Customer {
   branch_name?: string;
   is_active?: number; // 1: نشط, 0: محظور
   last_login?: string; // تاريخ ووقت
-  is_online?: number; // 1: متصل (حسب النشاط), 0: غير متصل
+  is_online?: number; // 1: متصل, 0: غير متصل
 }
 
 interface Address {
   id: number;
   customer_id: number;
   customer_name: string;
+  district_id?: number | string;
   district_name?: string;
+  location_type?: string;
   address?: string;
   gps_link?: string;
   latitude?: string;
@@ -32,6 +34,132 @@ interface Address {
   branch_id?: number;
   branch_name?: string;
 }
+
+const GOOGLE_MAPS_KEY = "AIzaSyD1Cg7YKXlWGMhVLjRKy0GmlL149_W08SQ";
+const DEFAULT_MAP_CENTER = { lat: 15.369445, lng: 44.191006 };
+
+const BRANCH_MAP_CENTERS: Record<string, { lat: number; lng: number }> = {
+  "صنعاء": { lat: 15.369445, lng: 44.191006 },
+  "عدن": { lat: 12.785497, lng: 45.018654 },
+  "شيخ عثمان": { lat: 12.886905, lng: 44.987622 },
+  "المنصورة": { lat: 12.85184, lng: 44.9818 },
+  "عتق": { lat: 14.53767, lng: 46.83187 },
+  "شبوة": { lat: 14.53767, lng: 46.83187 },
+  "المكلا": { lat: 14.54248, lng: 49.12424 },
+  "سيئون": { lat: 15.94194, lng: 48.78708 },
+  "تعز": { lat: 13.57952, lng: 44.02091 },
+  "إب": { lat: 13.96667, lng: 44.18333 },
+  "ذمار": { lat: 14.54274, lng: 44.40514 },
+  "الحديدة": { lat: 14.79781, lng: 42.95452 },
+};
+
+const getBranchMapCenter = (branchName?: string) => {
+  const normalized = String(branchName || "").trim();
+  if (!normalized) return DEFAULT_MAP_CENTER;
+
+  const direct = BRANCH_MAP_CENTERS[normalized];
+  if (direct) return direct;
+
+  const partialKey = Object.keys(BRANCH_MAP_CENTERS).find((key) =>
+    normalized.includes(key) || key.includes(normalized)
+  );
+
+  return partialKey ? BRANCH_MAP_CENTERS[partialKey] : DEFAULT_MAP_CENTER;
+};
+
+const AddressPickerMap = ({
+  lat,
+  lng,
+  branchName,
+  onPick,
+}: {
+  lat: string;
+  lng: string;
+  branchName?: string;
+  onPick: (lat: string, lng: string) => void;
+}) => {
+  const mapRef = useRef<HTMLDivElement | null>(null);
+  const mapInstanceRef = useRef<any>(null);
+  const markerRef = useRef<any>(null);
+  const [googleMapsReady, setGoogleMapsReady] = useState(false);
+
+  useEffect(() => {
+    if ((window as any).google?.maps) {
+      setGoogleMapsReady(true);
+      return;
+    }
+
+    const existingScript = document.getElementById("google-maps-script");
+    if (existingScript) {
+      existingScript.addEventListener("load", () => setGoogleMapsReady(true));
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.id = "google-maps-script";
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_KEY}&libraries=places`;
+    script.async = true;
+    script.defer = true;
+    script.onload = () => setGoogleMapsReady(true);
+    document.head.appendChild(script);
+  }, []);
+
+  useEffect(() => {
+    if (!googleMapsReady || !mapRef.current || !(window as any).google?.maps) return;
+
+    const maps = (window as any).google.maps;
+    const hasCoords = lat && lng && !isNaN(Number(lat)) && !isNaN(Number(lng));
+    const center = hasCoords
+      ? { lat: Number(lat), lng: Number(lng) }
+      : getBranchMapCenter(branchName);
+
+    if (!mapInstanceRef.current) {
+      mapInstanceRef.current = new maps.Map(mapRef.current, {
+        zoom: hasCoords ? 16 : 12,
+        center,
+      });
+    } else {
+      mapInstanceRef.current.setCenter(center);
+      if (hasCoords) {
+        mapInstanceRef.current.setZoom(16);
+      }
+    }
+
+    if (markerRef.current) {
+      markerRef.current.setMap(null);
+      markerRef.current = null;
+    }
+
+    if (hasCoords) {
+      markerRef.current = new maps.Marker({
+        position: center,
+        map: mapInstanceRef.current,
+        draggable: false,
+        icon: "http://maps.google.com/mapfiles/ms/icons/red-dot.png",
+        title: "الموقع المحدد",
+      });
+    }
+
+    maps.event.clearListeners(mapInstanceRef.current, "click");
+    mapInstanceRef.current.addListener("click", (event: any) => {
+      const pickedLat = event.latLng.lat().toFixed(6);
+      const pickedLng = event.latLng.lng().toFixed(6);
+      onPick(pickedLat, pickedLng);
+    });
+  }, [googleMapsReady, lat, lng, branchName, onPick]);
+
+  return (
+    <div className="mb-2">
+      <div
+        ref={mapRef}
+        className="w-full h-64 border rounded overflow-hidden bg-gray-100"
+      />
+      <p className="text-xs text-gray-500 mt-2">
+        اضغط على الخريطة لتحديد الموقع بدقة
+      </p>
+    </div>
+  );
+};
 
 const Customers: React.FC = () => {
   const currentUser = localStorage.getItem("user")
@@ -68,9 +196,9 @@ const Customers: React.FC = () => {
   const [isStatusPageOpen, setIsStatusPageOpen] = useState(false);
   const [statusSearchName, setStatusSearchName] = useState("");
   
-  // 1. فلتر حالة الحساب (نشط / محظور)
+  // 1. فلتر حالة الحساب
   const [filterAccountStatus, setFilterAccountStatus] = useState("all"); 
-  // 2. فلتر الاتصال (متصل / غير متصل)
+  // 2. فلتر الاتصال
   const [filterConnection, setFilterConnection] = useState("all"); 
   
   const [statusFilterDate, setStatusFilterDate] = useState("");
@@ -114,7 +242,7 @@ const Customers: React.FC = () => {
       (a.address || "").toLowerCase().includes(searchAddress.toLowerCase())
   );
 
-  // ===== حساب الإحصائيات (Statistics) =====
+  // ===== الإحصائيات =====
   const stats = {
     total: customers.length,
     online: customers.filter((c) => c.is_online === 1).length,
@@ -131,12 +259,12 @@ const Customers: React.FC = () => {
       .toLowerCase()
       .includes(statusSearchName.toLowerCase());
 
-    // 2. فلتر حالة الحساب (نشط/محظور)
+    // 2. فلتر حالة الحساب
     let matchAccount = true;
     if (filterAccountStatus === "active") matchAccount = c.is_active === 1;
     if (filterAccountStatus === "blocked") matchAccount = c.is_active === 0;
 
-    // 3. فلتر الاتصال (متصل/غير متصل)
+    // 3. فلتر الاتصال
     let matchConnection = true;
     if (filterConnection === "online") matchConnection = c.is_online === 1;
     if (filterConnection === "offline") matchConnection = c.is_online === 0;
@@ -198,23 +326,23 @@ const Customers: React.FC = () => {
   };
 
   // =========================================================
-  // عرض صفحة حالة العملاء (Status Page)
+  // صفحة حالة العملاء
   // =========================================================
   if (isStatusPageOpen) {
     return (
       <div className="p-6 space-y-6 bg-gray-50 min-h-screen" dir="rtl">
         <div className="flex justify-between items-center mb-4">
-          <h1 className="text-2xl font-bold text-gray-800">📊 حالة العملاء والاتصال</h1>
+          <h1 className="text-2xl font-bold text-gray-800">حالة العملاء والاتصال</h1>
           
           <div className="flex gap-2">
-            {/* زر التحديث الجديد */}
+            {/* زر تحديث البيانات */}
             <button
                 onClick={fetchCustomers}
                 className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition flex items-center gap-2 shadow"
                 disabled={loading}
             >
-                <span className={loading ? "animate-spin" : ""}>🔄</span>
-                {loading ? "جاري التحديث..." : "تحديث البيانات"}
+                <span className={loading ? "animate-spin" : ""}>↻</span>
+                {loading ? "جارٍ التحديث..." : "تحديث البيانات"}
             </button>
 
             {/* زر الرجوع */}
@@ -222,12 +350,12 @@ const Customers: React.FC = () => {
                 onClick={() => setIsStatusPageOpen(false)}
                 className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 transition flex items-center gap-2 shadow"
             >
-                <span>↩️</span> رجوع للقائمة
+                <span>↩</span> رجوع للقائمة
             </button>
           </div>
         </div>
 
-        {/* --- شريط الإحصائيات --- */}
+        {/* --- الإحصائيات --- */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div className="bg-white p-4 rounded-lg shadow border-r-4 border-blue-500 flex justify-between items-center">
                 <div>
@@ -257,7 +385,7 @@ const Customers: React.FC = () => {
             </div>
         </div>
 
-        {/* --- شريط الفلاتر --- */}
+        {/* --- ط´ط±ظٹط· ط§ظ„ظپظ„ط§طھط± --- */}
         <div className="bg-white p-5 rounded shadow-lg grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
             <label className="block text-xs font-bold text-gray-700 mb-1">
@@ -273,7 +401,7 @@ const Customers: React.FC = () => {
 
           <div>
             <label className="block text-xs font-bold text-gray-700 mb-1">
-              حالة الاتصال (Online)
+              حالة الاتصال
             </label>
             <select
               className="border p-2 rounded w-full bg-gray-50"
@@ -281,8 +409,8 @@ const Customers: React.FC = () => {
               onChange={(e) => setFilterConnection(e.target.value)}
             >
               <option value="all">الكل</option>
-              <option value="online">🟢 متصل الآن فقط</option>
-              <option value="offline">⚪ غير متصل</option>
+              <option value="online">متصل الآن فقط</option>
+              <option value="offline">غير متصل</option>
             </select>
           </div>
 
@@ -296,8 +424,8 @@ const Customers: React.FC = () => {
               onChange={(e) => setFilterAccountStatus(e.target.value)}
             >
               <option value="all">الكل</option>
-              <option value="active">✅ الحسابات النشطة</option>
-              <option value="blocked">🚫 الحسابات المحظورة</option>
+              <option value="active">الحسابات النشطة</option>
+              <option value="blocked">الحسابات المحظورة</option>
             </select>
           </div>
 
@@ -314,8 +442,8 @@ const Customers: React.FC = () => {
           </div>
         </div>
 
-        {/* --- الجدول --- */}
-  {/* --- الجدول --- */}
+        {/* --- ط§ظ„ط¬ط¯ظˆظ„ --- */}
+  {/* --- ط§ظ„ط¬ط¯ظˆظ„ --- */}
 <div className="bg-white rounded shadow overflow-hidden">
   <table className="w-full text-center">
     <thead className="bg-gray-100 border-b">
@@ -330,17 +458,17 @@ const Customers: React.FC = () => {
           وقت آخر دخول
         </th>
 
-        {/* ✅ عدد الطلبات */}
+        {/* âœ… ط¹ط¯ط¯ ط§ظ„ط·ظ„ط¨ط§طھ */}
         <th className="p-4 text-sm font-semibold text-gray-600">
           عدد الطلبات
         </th>
 
-        {/* ✅ آخر طلب */}
+        {/* âœ… ط¢ط®ط± ط·ظ„ط¨ */}
         <th className="p-4 text-sm font-semibold text-gray-600">
           آخر طلب
         </th>
 
-        {/* ✅ تاريخ التسجيل */}
+        {/* âœ… طھط§ط±ظٹط® ط§ظ„طھط³ط¬ظٹظ„ */}
         <th className="p-4 text-sm font-semibold text-gray-600">
           تاريخ التسجيل
         </th>
@@ -356,12 +484,12 @@ const Customers: React.FC = () => {
         filteredStatusCustomers.map((c) => (
           <tr key={c.id} className="hover:bg-blue-50 transition">
 
-            {/* الاسم */}
+            {/* ط§ظ„ط§ط³ظ… */}
             <td className="p-3 font-medium text-gray-800">
               {c.name}
             </td>
 
-            {/* حالة الاتصال */}
+            {/* ط­ط§ظ„ط© ط§ظ„ط§طھطµط§ظ„ */}
             <td className="p-3">
               {c.is_online_calculated === 1 ? (
                 <div className="flex items-center justify-center gap-2 bg-green-50 w-fit mx-auto px-3 py-1 rounded-full border border-green-200">
@@ -380,43 +508,43 @@ const Customers: React.FC = () => {
               )}
             </td>
 
-            {/* آخر دخول */}
+            {/* ط¢ط®ط± ط¯ط®ظˆظ„ */}
             <td className="p-3 text-gray-600 text-sm" dir="ltr">
               {c.last_login || "-"}
             </td>
 
-            {/* عدد الطلبات */}
+            {/* ط¹ط¯ط¯ ط§ظ„ط·ظ„ط¨ط§طھ */}
             <td className="p-3 font-bold text-orange-600">
               {c.orders_count || 0}
             </td>
 
-            {/* آخر طلب */}
+            {/* ط¢ط®ط± ط·ظ„ط¨ */}
             <td className="p-3 text-gray-600 text-sm" dir="ltr">
               {c.last_order_date
                 ? new Date(c.last_order_date).toLocaleDateString("en-GB")
                 : "-"}
             </td>
 
-            {/* تاريخ التسجيل */}
+            {/* طھط§ط±ظٹط® ط§ظ„طھط³ط¬ظٹظ„ */}
             <td className="p-3 text-gray-600 text-sm" dir="ltr">
               {c.register_date
                 ? new Date(c.register_date).toLocaleDateString("en-GB")
                 : "-"}
             </td>
 
-            {/* حالة الحساب */}
+            {/* ط­ط§ظ„ط© ط§ظ„ط­ط³ط§ط¨ */}
             <td className="p-3">
               {c.is_active === 0 ? (
                 <span className="bg-red-100 text-red-800 text-xs px-2 py-1 rounded font-bold border border-red-200">
-                  🚫 معطل
+                  معطل
                 </span>
               ) : (c as any).is_logged_in === 1 ? (
                 <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded font-bold border border-blue-200">
-                  ✅ نشط
+                  نشط
                 </span>
               ) : (
                 <span className="bg-gray-200 text-gray-600 text-xs px-2 py-1 rounded font-bold border border-gray-300">
-                  ⚪ غير نشط
+                  غير نشط
                 </span>
               )}
             </td>
@@ -426,7 +554,7 @@ const Customers: React.FC = () => {
       ) : (
         <tr>
           <td colSpan={7} className="p-8 text-center text-gray-500">
-            🔍 لا توجد نتائج مطابقة للفلاتر الحالية
+            لا توجد نتائج مطابقة للفلاتر الحالية
           </td>
         </tr>
       )}
@@ -439,12 +567,12 @@ const Customers: React.FC = () => {
   }
 
   // =========================================================
-  // العرض الرئيسي (Main Render)
+  // ط§ظ„ط¹ط±ط¶ ط§ظ„ط±ط¦ظٹط³ظٹ (Main Render)
   // =========================================================
   return (
     <div className="p-6 space-y-6" dir="rtl">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">📋 العملاء</h1>
+        <h1 className="text-2xl font-bold">العملاء</h1>
       </div>
 
       <div className="flex justify-between gap-2 flex-wrap">
@@ -453,7 +581,7 @@ const Customers: React.FC = () => {
             onClick={() => setIsAddCustomerOpen(true)}
             className="bg-green-600 text-white px-4 py-2 rounded shadow hover:bg-green-700 transition"
           >
-            ➕ إضافة عميل
+            إضافة عميل
           </button>
 
           <button
@@ -471,7 +599,7 @@ const Customers: React.FC = () => {
           }}
           className="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 transition"
         >
-          📍 إدارة العناوين
+          إدارة العناوين
         </button>
       </div>
 
@@ -551,22 +679,22 @@ const Customers: React.FC = () => {
               onClick={() => setIsAddressesOpen(false)}
               className="fixed top-2 right-2 bg-red-600 text-white w-6 h-6 text-xs rounded-full"
             >
-              ✖
+              ×
             </button>
 
             <div className="flex justify-between items-center mb-3">
-              <h2 className="text-xl font-bold">📍 إدارة العناوين</h2>
+              <h2 className="text-xl font-bold">إدارة العناوين</h2>
               <button
                 onClick={() => setIsAddAddressOpen(true)}
                 className="bg-green-600 text-white px-3 py-1 rounded"
               >
-                ➕ إضافة عنوان
+                إضافة عنوان
               </button>
             </div>
 
             <input
               className="border p-2 rounded w-full mb-3"
-              placeholder="🔍 بحث في العناوين"
+              placeholder="بحث في العناوين"
               value={searchAddress}
               onChange={(e) => setSearchAddress(e.target.value)}
             />
@@ -578,10 +706,11 @@ const Customers: React.FC = () => {
                   <th>الحي</th>
                   {isAdmin && <th>الفرع</th>}
                   <th>العنوان التفصيلي</th>
+                  <th>نوع الموقع</th>
                   <th>Latitude</th>
                   <th>Longitude</th>
                   <th>GPS</th>
-                  <th>إجراءات</th>
+                  <th>الإجراءات</th>
                 </tr>
               </thead>
               <tbody>
@@ -591,6 +720,7 @@ const Customers: React.FC = () => {
                     <td>{a.district_name || "-"}</td>
                     {isAdmin && <td>{a.branch_name || "-"}</td>}
                     <td>{a.address || "-"}</td>
+                    <td>{a.location_type || "-"}</td>
                     <td>{a.latitude || "-"}</td>
                     <td>{a.longitude || "-"}</td>
                     <td>
@@ -655,10 +785,10 @@ const Customers: React.FC = () => {
               onClick={() => setIsEditOpen(false)}
               className="absolute top-2 right-2 bg-red-600 text-white w-6 h-6 text-xs rounded-full"
             >
-              ✖
+              ×
             </button>
 
-            <h3 className="font-bold mb-3">✏️ تعديل العميل</h3>
+            <h3 className="font-bold mb-3">تعديل العميل</h3>
 
             <input
               className="border p-2 w-full mb-2"
@@ -720,6 +850,8 @@ const Customers: React.FC = () => {
       {isEditAddressOpen && editAddress && (
         <EditAddressModal
           address={editAddress}
+          customers={customers}
+          branches={branches}
           onClose={() => {
             setIsEditAddressOpen(false);
             setEditAddress(null);
@@ -737,7 +869,7 @@ const Customers: React.FC = () => {
 
 export default Customers;
 
-// ... (المودالات الأخرى تبقى كما هي: AddCustomerModal, AddAddressModal, EditAddressModal)
+// المودالات
 const AddCustomerModal = ({ branches, isAdmin, onClose, onSaved }: any) => {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -780,10 +912,10 @@ const AddCustomerModal = ({ branches, isAdmin, onClose, onSaved }: any) => {
           onClick={onClose}
           className="absolute top-2 right-2 bg-red-600 text-white w-6 h-6 text-xs rounded-full"
         >
-          ✖
+          ×
         </button>
 
-        <h3 className="font-bold mb-3">➕ إضافة عميل</h3>
+        <h3 className="font-bold mb-3">إضافة عميل</h3>
 
         <input
           className="border p-2 w-full mb-2"
@@ -855,7 +987,7 @@ const AddCustomerModal = ({ branches, isAdmin, onClose, onSaved }: any) => {
   );
 };
 
-/* ================= مودال إضافة عنوان (كما هو) ================= */
+/* ================= مودال إضافة عنوان ================= */
 
 const AddAddressModal = ({
   customers,
@@ -880,8 +1012,10 @@ const AddAddressModal = ({
   const [lat, setLat] = useState("");
   const [lng, setLng] = useState("");
   const [locationType, setLocationType] = useState("");
-
-  const mapRef = useRef<HTMLDivElement | null>(null);
+  const activeBranchName =
+    branches.find((b: any) => String(b.id) === String(branchId))?.name ||
+    currentUser?.branch_name ||
+    "";
 
   // جلب الأحياء حسب الفرع
   useEffect(() => {
@@ -893,24 +1027,17 @@ const AddAddressModal = ({
     });
   }, [branchId, userBranchId]);
 
-  const handleMapClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = (e.target as HTMLDivElement).getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    setLat((15 + y / 10).toFixed(6));
-    setLng((45 + x / 10).toFixed(6));
-  };
-
   const gpsLink =
     lat && lng
       ? `https://www.google.com/maps?q=${lat},${lng}`
       : "";
 
   const handleSave = async () => {
-    if (!customerId || !district) return alert("❌ البيانات ناقصة");
+    if (!customerId || !district) return alert("البيانات ناقصة");
 
     const res = await api.customers.addAddress({
       customer_id: Number(customerId),
+      branch_id: branchId ? Number(branchId) : null,
       district,
       location_type: locationType || null,
       address,
@@ -929,10 +1056,10 @@ const AddAddressModal = ({
           onClick={onClose}
           className="absolute top-2 right-2 bg-red-600 text-white w-6 h-6 text-xs rounded-full"
         >
-          ✖
+          ×
         </button>
 
-        <h3 className="text-lg font-bold mb-3">➕ إضافة عنوان</h3>
+        <h3 className="text-lg font-bold mb-3">إضافة عنوان</h3>
 
         <select
           className="border p-2 w-full mb-2"
@@ -970,8 +1097,6 @@ const AddAddressModal = ({
           <option value="">اختر الحي</option>
           {neighborhoods.map((n: any) => (
             <option key={n.id} value={n.id}>
-              {" "}
-              {/* التأكد من إرسال الـ ID */}
               {n.name}
             </option>
           ))}
@@ -1011,13 +1136,15 @@ const AddAddressModal = ({
           />
         </div>
 
-        <div
-          ref={mapRef}
-          onClick={handleMapClick}
-          className="w-full h-40 border rounded flex items-center justify-center text-gray-500 cursor-crosshair bg-gray-100 mb-2"
-        >
-          اضغط هنا لاختيار الموقع من الخريطة
-        </div>
+        <AddressPickerMap
+          lat={lat}
+          lng={lng}
+          branchName={activeBranchName}
+          onPick={(pickedLat, pickedLng) => {
+            setLat(pickedLat);
+            setLng(pickedLng);
+          }}
+        />
 
         {gpsLink && (
           <a
@@ -1041,21 +1168,67 @@ const AddAddressModal = ({
   );
 };
 
-/* ================= مودال تعديل عنوان (كما هو) ================= */
+/* ================= مودال تعديل عنوان ================= */
 
 const EditAddressModal = ({
   address,
+  customers,
+  branches,
   onClose,
   onSaved,
 }: {
   address: any;
+  customers: any[];
+  branches: any[];
   onClose: () => void;
   onSaved: () => void;
 }) => {
-  const [district, setDistrict] = useState(address.district_name || "");
+  const currentUser = localStorage.getItem("user")
+    ? JSON.parse(localStorage.getItem("user")!)
+    : null;
+
+  const isAdmin = Boolean(currentUser?.is_admin_branch);
+  const userBranchId = currentUser?.branch_id;
+
+  const [customerId, setCustomerId] = useState(String(address.customer_id || ""));
+  const [branchId, setBranchId] = useState(
+    String(address.branch_id || (isAdmin ? "" : userBranchId || ""))
+  );
+  const [neighborhoods, setNeighborhoods] = useState<any[]>([]);
+  const [district, setDistrict] = useState(String(address.district_id || ""));
+  const [locationType, setLocationType] = useState(address.location_type || "");
   const [addr, setAddr] = useState(address.address || "");
   const [lat, setLat] = useState(address.latitude || "");
   const [lng, setLng] = useState(address.longitude || "");
+  const activeBranchName =
+    branches.find((b: any) => String(b.id) === String(branchId))?.name ||
+    address.branch_name ||
+    currentUser?.branch_name ||
+    "";
+
+  useEffect(() => {
+    const bid = isAdmin ? branchId : userBranchId;
+    if (!bid) {
+      setNeighborhoods([]);
+      return;
+    }
+
+    api.get(`/neighborhoods/by-branch/${bid}`).then((res) => {
+      if (res.data.success) {
+        const list = res.data.neighborhoods || [];
+        setNeighborhoods(list);
+
+        if (!district && address.district_name) {
+          const matched = list.find(
+            (n: any) => String(n.name).trim() === String(address.district_name).trim()
+          );
+          if (matched) {
+            setDistrict(String(matched.id));
+          }
+        }
+      }
+    });
+  }, [branchId, userBranchId, isAdmin, district, address.district_name]);
 
   const gpsLink =
     lat && lng
@@ -1064,7 +1237,10 @@ const EditAddressModal = ({
 
   const handleSave = async () => {
     await api.put(`/customer-addresses/${address.id}`, {
+      customer_id: Number(customerId),
+      branch_id: branchId ? Number(branchId) : null,
       district,
+      location_type: locationType || null,
       address: addr,
       latitude: lat,
       longitude: lng,
@@ -1076,22 +1252,68 @@ const EditAddressModal = ({
 
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
-      <div className="bg-white w-full max-w-lg p-4 rounded relative">
+      <div className="bg-white w-full max-w-2xl p-4 rounded relative">
         <button
           onClick={onClose}
           className="absolute top-2 right-2 bg-red-600 text-white w-6 h-6 text-xs rounded-full"
         >
-          ✖
+          ×
         </button>
 
-        <h3 className="text-lg font-bold mb-3">✏️ تعديل العنوان</h3>
+        <h3 className="text-lg font-bold mb-3">تعديل العنوان</h3>
 
-        <input
+        <select
           className="border p-2 w-full mb-2"
-          placeholder="الحي"
+          value={customerId}
+          onChange={(e) => setCustomerId(e.target.value)}
+        >
+          <option value="">اختر عميل</option>
+          {customers.map((c: any) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+
+        {isAdmin && (
+          <select
+            className="border p-2 w-full mb-2"
+            value={branchId}
+            onChange={(e) => setBranchId(e.target.value)}
+          >
+            <option value="">اختر الفرع</option>
+            {branches.map((b: any) => (
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
+            ))}
+          </select>
+        )}
+
+        <select
+          className="border p-2 w-full mb-2"
           value={district}
           onChange={(e) => setDistrict(e.target.value)}
-        />
+        >
+          <option value="">اختر الحي</option>
+          {neighborhoods.map((n: any) => (
+            <option key={n.id} value={n.id}>
+              {n.name}
+            </option>
+          ))}
+        </select>
+
+        <select
+          className="border p-2 w-full mb-2"
+          value={locationType}
+          onChange={(e) => setLocationType(e.target.value)}
+        >
+          <option value="">اختر نوع الموقع</option>
+          <option value="شقة">شقة</option>
+          <option value="منزل">منزل</option>
+          <option value="محل">محل</option>
+          <option value="مكتب">مكتب</option>
+        </select>
 
         <input
           className="border p-2 w-full mb-2"
@@ -1114,6 +1336,16 @@ const EditAddressModal = ({
             onChange={(e) => setLng(e.target.value)}
           />
         </div>
+
+        <AddressPickerMap
+          lat={lat}
+          lng={lng}
+          branchName={activeBranchName}
+          onPick={(pickedLat, pickedLng) => {
+            setLat(pickedLat);
+            setLng(pickedLng);
+          }}
+        />
 
         {gpsLink && (
           <a

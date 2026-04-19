@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import api from "../services/api";
-import { Settings } from "lucide-react";
 import { Settings, X } from "lucide-react";
 const BRAND = "#16a34a";
 

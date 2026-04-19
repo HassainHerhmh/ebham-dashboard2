@@ -18,6 +18,17 @@ const getYemenToday = () => new Intl.DateTimeFormat('en-CA', {
 
 const today = getYemenToday();
 
+const getBalanceStatus = (balance: number) => balance >= 0 ? "له" : "عليه";
+const getBalanceStatusClass = (balance: number) =>
+  balance >= 0
+    ? "bg-green-100 text-green-700 dark:bg-green-900/40"
+    : "bg-red-100 text-red-700 dark:bg-red-900/40";
+const isOpeningRow = (row: Row | any) => row.account_name === "رصيد سابق" || row.is_opening;
+const getDisplayDebit = (row: Row | any) =>
+  isOpeningRow(row) ? (row.balance < 0 ? Math.abs(Number(row.balance || 0)) : 0) : Number(row.debit || 0);
+const getDisplayCredit = (row: Row | any) =>
+  isOpeningRow(row) ? (row.balance >= 0 ? Math.abs(Number(row.balance || 0)) : 0) : Number(row.credit || 0);
+
 const AccountStatement: React.FC = () => {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [mainAccounts, setMainAccounts] = useState<Account[]>([]);
@@ -94,8 +105,8 @@ const AccountStatement: React.FC = () => {
       'المستند': referenceTranslations[r.reference_type] || r.reference_type,
       'المرجع': r.reference_id || '',
       'الحساب': r.account_name,
-      'مدين': r.debit, 'دائن': r.credit, 'الرصيد': Math.abs(r.balance),
-      'الحالة': r.balance > 0 ? 'عليه' : 'له', 'البيان': r.notes
+      'مدين': getDisplayDebit(r), 'دائن': getDisplayCredit(r), 'الرصيد': Math.abs(r.balance),
+      'الحالة': getBalanceStatus(r.balance), 'البيان': r.notes
     })));
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Statement");
@@ -189,9 +200,8 @@ const AccountStatement: React.FC = () => {
           return Object.entries(grouped).map(([currencyName, list]: any) => {
             let tDeb = 0; let tCre = 0;
             list.forEach((r: any) => {
-              const isOp = r.account_name === "رصيد سابق" || r.is_opening;
-              if (isOp) { r.balance > 0 ? tDeb += Math.abs(r.balance) : tCre += Math.abs(r.balance); }
-              else { tDeb += Number(r.debit || 0); tCre += Number(r.credit || 0); }
+              tDeb += getDisplayDebit(r);
+              tCre += getDisplayCredit(r);
             });
 
             return (
@@ -218,18 +228,18 @@ const AccountStatement: React.FC = () => {
                   </thead>
                   <tbody className="divide-y dark:divide-gray-700">
                     {list.map((r: any, idx: number) => {
-                      const isOp = r.account_name === "رصيد سابق" || r.is_opening;
+                      const isOp = isOpeningRow(r);
                       return (
                         <tr key={idx} className={`hover:bg-green-50/40 dark:hover:bg-green-900/10 transition-colors ${isOp ? "bg-blue-50/50 dark:bg-blue-900/20 font-bold" : "dark:text-gray-300"}`}>
                           <td className="p-3 border-l dark:border-gray-700 text-xs font-mono">{isOp ? "—" : r.journal_date?.slice(0,10)}</td>
                           <td className="p-3 border-l dark:border-gray-700 font-bold">{isOp ? "رصيد سابق" : (referenceTranslations[r.reference_type] || r.reference_type)}</td>
                           <td className="p-3 border-l dark:border-gray-700 text-gray-400">{isOp ? "—" : r.reference_id}</td>
                           <td className="p-3 border-l dark:border-gray-700 text-right font-black text-gray-800 dark:text-white">{r.account_name}</td>
-                          <td className="p-3 border-l dark:border-gray-700 text-red-600 font-bold">{isOp ? (r.balance > 0 ? Math.abs(r.balance).toLocaleString() : "0.00") : Number(r.debit).toLocaleString()}</td>
-                          <td className="p-3 border-l dark:border-gray-700 text-green-600 font-bold">{isOp ? (r.balance < 0 ? Math.abs(r.balance).toLocaleString() : "0.00") : Number(r.credit).toLocaleString()}</td>
+                          <td className="p-3 border-l dark:border-gray-700 text-red-600 font-bold">{getDisplayDebit(r).toLocaleString()}</td>
+                          <td className="p-3 border-l dark:border-gray-700 text-green-600 font-bold">{getDisplayCredit(r).toLocaleString()}</td>
                           <td className="p-3 border-l dark:border-gray-700 font-black text-blue-900 dark:text-blue-400 bg-blue-50/10">{Math.abs(r.balance).toLocaleString()}</td>
                           <td className="p-3 border-l dark:border-gray-700">
-                            <span className={`px-2 py-0.5 rounded-md text-[10px] font-black ${r.balance > 0 ? "bg-red-100 text-red-700 dark:bg-red-900/40" : "bg-green-100 text-green-700 dark:bg-green-900/40"}`}>{r.balance > 0 ? "عليه" : "له"}</span>
+                            <span className={`px-2 py-0.5 rounded-md text-[10px] font-black ${getBalanceStatusClass(r.balance)}`}>{getBalanceStatus(r.balance)}</span>
                           </td>
                           <td className="p-3 text-right text-gray-600 dark:text-gray-400 font-medium leading-relaxed max-w-[400px] break-words">
                             {r.notes}

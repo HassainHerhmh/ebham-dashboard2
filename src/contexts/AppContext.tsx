@@ -16,6 +16,7 @@ interface Notification {
   type: "success" | "error" | "warning" | "info";
   timestamp: Date;
   isVisible: boolean;
+  isRead: boolean;
 }
 
 interface Stats {
@@ -45,6 +46,8 @@ interface AppActions {
     type: "success" | "error" | "warning" | "info"
   ) => void;
   hideNotification: (id: string) => void;
+  markNotificationRead: (id: string) => void;
+  markAllNotificationsRead: () => void;
   toggleRealTimeUpdates: () => void;
 }
 
@@ -65,6 +68,8 @@ type Action =
   | { type: "SET_ERROR"; payload: string | null }
   | { type: "ADD_NOTIFICATION"; payload: Notification }
   | { type: "HIDE_NOTIFICATION"; payload: string }
+  | { type: "MARK_NOTIFICATION_READ"; payload: string }
+  | { type: "MARK_ALL_NOTIFICATIONS_READ" }
   | { type: "TOGGLE_REAL_TIME_UPDATES" }
   | { type: "SET_USER"; payload: any | null };
 
@@ -88,7 +93,7 @@ function appReducer(state: AppState, action: Action): AppState {
     case "ADD_NOTIFICATION":
       return {
         ...state,
-        notifications: [...state.notifications, action.payload],
+        notifications: [...state.notifications, action.payload].slice(-100),
       };
     case "HIDE_NOTIFICATION":
       return {
@@ -96,6 +101,22 @@ function appReducer(state: AppState, action: Action): AppState {
         notifications: state.notifications.map((n) =>
           n.id === action.payload ? { ...n, isVisible: false } : n
         ),
+      };
+    case "MARK_NOTIFICATION_READ":
+      return {
+        ...state,
+        notifications: state.notifications.map((n) =>
+          n.id === action.payload ? { ...n, isRead: true, isVisible: false } : n
+        ),
+      };
+    case "MARK_ALL_NOTIFICATIONS_READ":
+      return {
+        ...state,
+        notifications: state.notifications.map((n) => ({
+          ...n,
+          isRead: true,
+          isVisible: false,
+        })),
       };
     case "TOGGLE_REAL_TIME_UPDATES":
       return { ...state, realTimeUpdates: !state.realTimeUpdates };
@@ -111,6 +132,36 @@ function appReducer(state: AppState, action: Action): AppState {
 ====================== */
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(appReducer, initialState);
+
+  useEffect(() => {
+    const savedNotifications = localStorage.getItem("dashboard_notifications");
+    if (!savedNotifications) return;
+
+    try {
+      const parsed = JSON.parse(savedNotifications);
+      if (!Array.isArray(parsed)) return;
+
+      parsed.forEach((notification) => {
+        dispatch({
+          type: "ADD_NOTIFICATION",
+          payload: {
+            ...notification,
+            timestamp: new Date(notification.timestamp),
+            isVisible: false,
+          },
+        });
+      });
+    } catch (error) {
+      console.error("Failed to load notifications:", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem(
+      "dashboard_notifications",
+      JSON.stringify(state.notifications)
+    );
+  }, [state.notifications]);
 
   const actions: AppActions = {
     loadStats: async () => {
@@ -167,6 +218,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         type,
         timestamp: new Date(),
         isVisible: true,
+        isRead: false,
       };
       dispatch({ type: "ADD_NOTIFICATION", payload: notification });
       setTimeout(() => {
@@ -176,6 +228,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     hideNotification: (id: string) => {
       dispatch({ type: "HIDE_NOTIFICATION", payload: id });
+    },
+
+    markNotificationRead: (id: string) => {
+      dispatch({ type: "MARK_NOTIFICATION_READ", payload: id });
+    },
+
+    markAllNotificationsRead: () => {
+      dispatch({ type: "MARK_ALL_NOTIFICATIONS_READ" });
     },
 
     toggleRealTimeUpdates: () => {

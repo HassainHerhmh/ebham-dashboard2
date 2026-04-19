@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import api from "../services/api";
+import { io } from "socket.io-client";
 import {  
   Plus, Trash2, Save, ShoppingCart,  
   X, Search, Eye, FileText,  
@@ -8,6 +9,14 @@ import {
 } from "lucide-react";
 import { useReactToPrint } from 'react-to-print';
 import { Calendar } from "lucide-react";
+import { useApp } from "../contexts/AppContext";
+
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL?.trim();
+
+const socket = io(SOCKET_URL, {
+  transports: ["websocket"],
+  autoConnect: true,
+});
 
 /* ======================
     الأنواع (Types)
@@ -26,11 +35,13 @@ type OrderTab =
   | "delivering"
   | "completed"
   | "cancelled";
-type DateFilter = "all" | "today" | "week";
+type DateFilter = "today" | "week";
 
 const ManualOrders: React.FC = () => {
+  const { actions } = useApp();
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [, setRefreshing] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedOrderDetails, setSelectedOrderDetails] = useState<any>(null);
@@ -49,8 +60,10 @@ const [dayTab,setDayTab] = useState("today");
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [showCaptainModal, setShowCaptainModal] = useState(false);
   const [captainsLoading, setCaptainsLoading] = useState(false);
-const [notifications, setNotifications] = useState([]);
-const [showNotifications, setShowNotifications] = useState(false);
+const [notifications, setNotifications] = useState<any[]>([]);
+const [cancelModalOpen, setCancelModalOpen] = useState(false);
+const [cancelOrderId, setCancelOrderId] = useState<number | null>(null);
+const [cancelReason, setCancelReason] = useState("");
 
   // بيانات المودال
   const [customers, setCustomers] = useState<any[]>([]);
@@ -85,7 +98,13 @@ const notifiedRef = useRef({
     content: () => printRef.current,
   });
 
+const addNotification = (title, body) => {
+  actions.addNotification(`${title}\n${body}`, "warning");
+};
+
 const notifyUser = (title, body) => {
+  addNotification(title, body);
+  return;
 
   const newNotification = {
     id: Date.now() + Math.random(),
@@ -140,9 +159,13 @@ const resetForm = () => {
   /* ======================
       تحميل البيانات (API)
   ====================== */
-const loadInitialData = async () => {
+const loadInitialData = async ({ silent = false }: { silent?: boolean } = {}) => {
   try {
-    setLoading(true);
+    if (silent) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
 
     const [
       ordersRes,
@@ -179,12 +202,40 @@ setSlots(slotsRes.data.slots || []);
   } catch (e) {
     console.error("❌ Error loading data", e);
   } finally {
-    setLoading(false);
+    if (silent) {
+      setRefreshing(false);
+    } else {
+      setLoading(false);
+    }
   }
 };
 
 
   useEffect(() => { loadInitialData(); }, []);
+
+  useEffect(() => {
+    const handler = (data: any) => {
+      if (
+        data.type !== "manual_order_created" &&
+        data.type !== "manual_order_status"
+      ) {
+        return;
+      }
+
+      addNotification(
+        "إشعار الطلبات اليدوية",
+        data.message || "يوجد تحديث جديد على الطلبات اليدوية"
+      );
+
+      loadInitialData({ silent: true });
+    };
+
+    socket.on("admin_notification", handler);
+
+    return () => {
+      socket.off("admin_notification", handler);
+    };
+  }, []);
 
   
 
@@ -222,7 +273,7 @@ const getFilteredByDateList = (list: any[]) => {
       return orderDate >= weekAgo;
     }
 
-    return true;
+    return false;
   });
 };
 
@@ -316,19 +367,56 @@ const getStatusCounts = (status: OrderTab) => {
     setIsDetailsModalOpen(true);
   };
 
-const updateOrderStatus = async (orderId: number, newStatus: string) => {
+const openCancelModal = (orderId: number) => {
+  setCancelOrderId(orderId);
+  setCancelReason("");
+  setCancelModalOpen(true);
+};
+
+const closeCancelModal = () => {
+  setCancelModalOpen(false);
+  setCancelOrderId(null);
+  setCancelReason("");
+};
+
+const confirmCancelOrder = async () => {
+  if (!cancelOrderId) return;
+  if (!cancelReason.trim()) {
+    alert("اكتب سبب الإلغاء");
+    return;
+  }
+
   try {
+    const res = await (api as any).manualOrders.cancelOrder(
+      cancelOrderId,
+      cancelReason.trim()
+    );
 
-const res = await api.put(`/manual-orders/status/${orderId}`, {
-  status: newStatus
-});
-
-
-
-    if (res.data.success) {
-      loadInitialData();
+    if (res.success) {
+      closeCancelModal();
+      loadInitialData({ silent: true });
     } else {
-      alert(res.data.error || "فشل التحديث");
+      alert(res.error || "فشل الإلغاء");
+    }
+  } catch (e: any) {
+    console.error("Cancel Error:", e.response?.data || e);
+    alert(e.response?.data?.error || "خطأ أثناء إلغاء الطلب");
+  }
+};
+
+const updateOrderStatus = async (orderId: number, newStatus: string) => {
+  if (newStatus === "cancelled") {
+    openCancelModal(orderId);
+    return;
+  }
+
+  try {
+    const res = await (api as any).manualOrders.updateStatus(orderId, newStatus);
+
+    if (res.success) {
+      loadInitialData({ silent: true });
+    } else {
+      alert(res.error || "فشل التحديث");
     }
 
   } catch (e: any) {
@@ -388,7 +476,7 @@ const res = await api.put(`/manual-orders/status/${orderId}`, {
     try {
       await api.post("/wassel-orders/assign", { orderId: selectedOrderId, captainId });
       setShowCaptainModal(false);
-      loadInitialData();
+      loadInitialData({ silent: true });
     } catch (e) { alert("خطأ في إسناد الكابتن"); }
   };
 
@@ -443,7 +531,7 @@ const saveOrder = async () => {
 
     resetForm();
 
-    await loadInitialData();
+    await loadInitialData({ silent: true });
 
   } catch (e: any) {
 
@@ -544,6 +632,28 @@ if (!baseTime) {
       diff >= 30 * 60 * 1000 &&
       !notifiedRef.current.delayed.has(o.id)
     ) {
+      notifyUser(
+        `تأخر الطلب #${o.id}`,
+        `رقم الطلب: #${o.id}
+نوع الطلب: يدوي
+العميل: ${o.customer_name}
+الكابتن: ${o.captain_name || "غير معين"}
+تأخر ${Math.floor(diff / 60000)} دقيقة`
+      );
+
+      notifiedRef.current.delayed.add(o.id);
+      return;
+
+      notifyUser(
+        `تأخر الطلب #${o.id}`,
+        `رقم الطلب: #${o.id}
+العميل: ${o.customer_name}
+الكابتن: ${o.captain_name || "غير معين"}
+تأخر ${Math.floor(diff / 60000)} دقيقة`
+      );
+
+      notifiedRef.current.delayed.add(o.id);
+      return;
 
       notifyUser(
         `⚠️ طلب متأخر #${o.id}`,
@@ -686,6 +796,7 @@ useEffect(() => {
 
 
   return (
+    <>
     <div className="w-full min-h-screen bg-[#f8fafc] dark:bg-gray-900 p-4 transition-all" dir="rtl">
       
       {/* 🟢 الهيدر وشريط الفلترة */}
@@ -703,8 +814,8 @@ useEffect(() => {
 
   {/* زر الإشعارات */}
   <button
-    onClick={() => setShowNotifications(true)}
-    className="relative p-2 rounded-xl bg-gray-100 hover:bg-gray-200"
+    onClick={() => {}}
+    className="hidden"
   >
     🔔
 
@@ -727,7 +838,7 @@ useEffect(() => {
 
         <div className="flex gap-2 justify-center border-b pb-3">
           {[{ k: "all", l: "الكل" }, { k: "today", l: "اليوم" }, { k: "week", l: "الأسبوع" }].map((t) => (
-            <button key={t.k} onClick={() => setDateFilter(t.k as any)} className={`px-4 py-1 rounded-full text-sm font-medium transition ${dateFilter === t.k ? "bg-indigo-600 text-white shadow-sm" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>{t.l}</button>
+            <button key={t.k} onClick={() => setDateFilter(t.k as any)} className={`${t.k === "all" ? "hidden " : ""}px-4 py-1 rounded-full text-sm font-medium transition ${dateFilter === t.k ? "bg-indigo-600 text-white shadow-sm" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>{t.l}</button>
           ))}
         </div>
 
@@ -769,7 +880,13 @@ useEffect(() => {
               </tr>
             </thead>
             <tbody className="divide-y dark:divide-gray-700">
-              {filteredOrders.map((o) => (
+              {filteredOrders.length === 0 ? (
+                <tr>
+                  <td colSpan={10} className="p-10 text-center text-gray-500 font-medium">
+                    لا يوجد طلبات حاليا
+                  </td>
+                </tr>
+              ) : filteredOrders.map((o) => (
                 <tr key={o.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors">
                   <td className="p-4 font-bold text-gray-400">#{o.id}</td>
                   <td className="p-4 text-right font-black text-gray-800 dark:text-white">{o.customer_name}</td>
@@ -1512,7 +1629,7 @@ onClick={async () => {
       `}</style>
 
       {/* 🔔 مودال الإشعارات */}
-{showNotifications && (
+{false && (
 
   <div className="fixed inset-0 bg-black/30 z-[9999] flex justify-end">
 
@@ -1587,7 +1704,31 @@ onClick={() => setShowNotifications(prev => !prev)}
   </div>
 )}
 
+{cancelModalOpen && (
+  <div className="fixed inset-0 bg-black/60 z-[10000] flex items-center justify-center">
+    <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl">
+      <h2 className="text-lg font-bold mb-3 text-gray-800">تأكيد إلغاء الطلب</h2>
+      <label className="block text-sm font-bold text-gray-700 mb-2">سبب الإلغاء</label>
+      <textarea
+        value={cancelReason}
+        onChange={(e) => setCancelReason(e.target.value)}
+        className="border w-full p-3 rounded-lg mb-4 min-h-[120px] outline-none focus:ring-2 focus:ring-red-300"
+        placeholder="اكتب سبب الإلغاء..."
+      />
+      <div className="flex justify-end gap-2">
+        <button type="button" onClick={closeCancelModal} className="bg-gray-400 text-white px-4 py-2 rounded">
+          إغلاق
+        </button>
+        <button type="button" onClick={confirmCancelOrder} className="bg-red-600 text-white px-4 py-2 rounded">
+          تأكيد الإلغاء
+        </button>
+      </div>
     </div>
+  </div>
+)}
+
+    </div>
+    </>
   );
 };
 

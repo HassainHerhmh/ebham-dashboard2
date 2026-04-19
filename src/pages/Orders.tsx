@@ -1,7 +1,9 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
+﻿import React, { useState, useEffect, useRef, useMemo } from "react";
 import { Plus, MapPin } from "lucide-react"; // ✅ أضفنا MapPin
 import api from "../services/api";
 import { io } from "socket.io-client";
+import { useApp } from "../contexts/AppContext";
+import { useResizableColumns } from "../hooks/useResizableColumns";
 
 /* =====================
    Interfaces
@@ -69,7 +71,7 @@ interface OrderDetails {
   updated_at?: string;
 }
 
-type DateFilter = "all" | "today" | "week";
+type DateFilter = "today" | "week";
 
 /* =====================
    Component & Socket
@@ -167,13 +169,16 @@ const TrackingModal = ({ order, onClose }: { order: Order; onClose: () => void }
              <h2 className="font-bold text-lg text-gray-800">
                 🛵 تتبع مباشر: {order.captain_name}
              </h2>
-             <p className="text-xs text-gray-500">يتم تحديث موقع الدباب مباشرة...</p>
+             <p className="text-sm text-gray-500">الطلب #{order.id}</p>
           </div>
-          <button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white px-4 py-1 rounded h-10">
-            إغلاق ✖
+          <button
+            type="button"
+            onClick={onClose}
+            className="bg-red-600 text-white px-3 py-1 rounded text-sm"
+          >
+            إغلاق
           </button>
         </div>
-        
         <div className="flex-1 relative bg-gray-100 rounded-lg overflow-hidden border border-gray-300">
             <div ref={mapRef} style={{ width: "100%", height: "100%" }} />
         </div>
@@ -181,7 +186,6 @@ const TrackingModal = ({ order, onClose }: { order: Order; onClose: () => void }
     </div>
   );
 };
-// ========== بقية الكود (ToastNotifications وغيرها) ==========
 
 function ToastNotifications() {
   const [toasts, setToasts] = useState<any[]>([]);
@@ -235,18 +239,105 @@ function ToastNotifications() {
 }
 
 const Orders: React.FC = () => {
+  const { actions } = useApp();
+  const resizeDirection =
+    typeof document !== "undefined" && document.documentElement.dir === "ltr"
+      ? "ltr"
+      : "rtl";
   // ========= الطلبات =========
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [, setRefreshing] = useState(false);
 
   const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
   const isAdminBranch = !!currentUser?.is_admin_branch;
+  const orderTableColumns = useMemo(() => {
+    const columns = [
+      { key: "id", label: "رقم" },
+      { key: "customer", label: "العميل" },
+      { key: "stores", label: "المطعم" },
+      { key: "captain", label: "الكابتن" },
+      { key: "amount", label: "المبلغ" },
+      { key: "payment", label: "نوع الدفع" },
+      { key: "status", label: "الحالة" },
+      { key: "details", label: "تفاصيل" },
+      { key: "assign", label: "تعيين كابتن" },
+      { key: "chat", label: "محادثة" },
+      { key: "timeline", label: "وقت الحركة" },
+      { key: "user", label: "المستخدم" },
+    ];
+
+    if (isAdminBranch) {
+      columns.push({ key: "branch", label: "الفرع" });
+    }
+
+    return columns;
+  }, [isAdminBranch]);
+  const initialOrderColumnWidths = useMemo(() => {
+    const widths = [90, 180, 120, 150, 120, 140, 150, 100, 220, 110, 190, 180];
+
+    if (isAdminBranch) {
+      widths.push(140);
+    }
+
+    return widths;
+  }, [isAdminBranch]);
+  const { columnWidths: orderColumnWidths, startResize: startOrderColumnResize } =
+    useResizableColumns(initialOrderColumnWidths, {
+      minWidths: initialOrderColumnWidths.map((width) =>
+        Math.max(80, Math.floor(width * 0.55))
+      ),
+      storageKey: isAdminBranch ? "orders-table-widths-admin" : "orders-table-widths",
+      direction: resizeDirection,
+    });
+  const getOrderResizeConfig = (index: number, side: "left" | "right") => {
+    if (orderTableColumns.length < 2) {
+      return { index: -1, invertDelta: false, mode: "pair" as const, edge: side };
+    }
+
+    const isOuterLeftEdge =
+      (resizeDirection === "rtl" && index === orderTableColumns.length - 1 && side === "left") ||
+      (resizeDirection === "ltr" && index === 0 && side === "left");
+    const isOuterRightEdge =
+      (resizeDirection === "rtl" && index === 0 && side === "right") ||
+      (resizeDirection === "ltr" && index === orderTableColumns.length - 1 && side === "right");
+
+    if (isOuterLeftEdge || isOuterRightEdge) {
+      return { index, invertDelta: false, mode: "single" as const, edge: side };
+    }
+
+    if (resizeDirection === "rtl") {
+      if (side === "left") {
+        return index < orderTableColumns.length - 1
+          ? { index, invertDelta: false, mode: "pair" as const, edge: side }
+          : { index: index - 1, invertDelta: true, mode: "pair" as const, edge: side };
+      }
+
+      return index > 0
+        ? { index: index - 1, invertDelta: false, mode: "pair" as const, edge: side }
+        : { index, invertDelta: true, mode: "pair" as const, edge: side };
+    }
+
+    if (side === "left") {
+      return index > 0
+        ? { index: index - 1, invertDelta: false, mode: "pair" as const, edge: side }
+        : { index, invertDelta: true, mode: "pair" as const, edge: side };
+    }
+
+    return index < orderTableColumns.length - 1
+      ? { index, invertDelta: false, mode: "pair" as const, edge: side }
+      : { index: index - 1, invertDelta: true, mode: "pair" as const, edge: side };
+  };
+  const ordersTableWidth = orderColumnWidths.reduce(
+    (totalWidth, width) => totalWidth + width,
+    0
+  );
  const [updatingOrders, setUpdatingOrders] = useState<{[key:number]:boolean}>({})
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [cancelOrderId, setCancelOrderId] = useState<number | null>(null);
   const [cancelReason, setCancelReason] = useState("");
 
-  const [dateFilter, setDateFilter] = useState<DateFilter>("all");
+  const [dateFilter, setDateFilter] = useState<DateFilter>("today");
 
   // ========= الكباتن والتتبع =========
   const [captains, setCaptains] = useState<Captain[]>([]);
@@ -292,6 +383,7 @@ const Orders: React.FC = () => {
   const [currentRestaurant, setCurrentRestaurant] = useState<any>(null);
 
   const printRef = useRef<HTMLDivElement>(null);
+  const liveRefreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [newOrderPaymentMethod, setNewOrderPaymentMethod] = useState<
     "cod" | "bank" | "electronic" | "wallet" | null
@@ -344,17 +436,25 @@ const Orders: React.FC = () => {
   /* =====================
        جلب البيانات
   ===================== */
-  const fetchOrders = async () => {
-    setLoading(true);
+  const fetchOrders = async ({ silent = false }: { silent?: boolean } = {}) => {
+    if (silent) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
+
     try {
       const res = await api.orders.getOrders({ limit: 1000 });
       const list = Array.isArray(res.orders || res) ? res.orders || res : [];
       setOrders(list);
     } catch (error) {
       console.error("❌ خطأ في جلب الطلبات:", error);
-      setOrders([]);
     } finally {
-      setLoading(false);
+      if (silent) {
+        setRefreshing(false);
+      } else {
+        setLoading(false);
+      }
     }
   };
 
@@ -382,6 +482,52 @@ const Orders: React.FC = () => {
       const list = Array.isArray(res.data.restaurants) ? res.data.restaurants : [];
       setRestaurants(list);
     });
+  }, []);
+
+  useEffect(() => {
+    const liveUpdateTypes = new Set([
+      "order_created",
+      "order_status_updated",
+      "captain_assigned",
+    ]);
+
+    const scheduleOrdersRefresh = () => {
+      if (liveRefreshTimerRef.current) {
+        clearTimeout(liveRefreshTimerRef.current);
+      }
+
+      liveRefreshTimerRef.current = setTimeout(() => {
+        fetchOrders({ silent: true });
+      }, 300);
+    };
+
+    const handleAdminNotification = (data: any) => {
+      if (!data?.type || !liveUpdateTypes.has(data.type)) {
+        return;
+      }
+
+      scheduleOrdersRefresh();
+    };
+
+    socket.on("admin_notification", handleAdminNotification);
+
+    return () => {
+      socket.off("admin_notification", handleAdminNotification);
+
+      if (liveRefreshTimerRef.current) {
+        clearTimeout(liveRefreshTimerRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        fetchOrders({ silent: true });
+      }
+    }, 5000);
+
+    return () => clearInterval(intervalId);
   }, []);
 
   useEffect(() => {
@@ -423,6 +569,11 @@ const Orders: React.FC = () => {
 
 const updateOrderStatus = async (orderId: number, newStatus: string) => {
 
+  if (newStatus === "cancelled") {
+    openCancelModal(orderId);
+    return;
+  }
+
   if (updatingOrders[orderId]) return; // منع التكرار
 
   setUpdatingOrders(prev => ({ ...prev, [orderId]: true }));
@@ -450,6 +601,50 @@ const updateOrderStatus = async (orderId: number, newStatus: string) => {
       const res = await api.orders.getOrderDetails(orderId);
       let details = res.order || res;
 
+      const enrichedRestaurants = (details.restaurants || []).map((restaurant: any) => {
+        const matchedRestaurant = restaurants.find(
+          (entry) =>
+            Number(entry.id) === Number(restaurant.id) ||
+            String(entry.name || "").trim() === String(restaurant.name || "").trim()
+        );
+
+        return {
+          ...restaurant,
+          phone:
+            restaurant.phone ||
+            matchedRestaurant?.phone ||
+            matchedRestaurant?.mobile ||
+            matchedRestaurant?.phone_number ||
+            matchedRestaurant?.restaurant_phone ||
+            null,
+        };
+      });
+
+      const restaurantDebug = {
+        orderId,
+        fromOrderDetails: details.restaurants || [],
+        fromRestaurantsApi: restaurants.map((restaurant: any) => ({
+          id: restaurant.id,
+          name: restaurant.name,
+          phone: restaurant.phone,
+          mobile: restaurant.mobile,
+          phone_number: restaurant.phone_number,
+          restaurant_phone: restaurant.restaurant_phone,
+        })),
+        enrichedRestaurants,
+      };
+
+      (window as any).__orderRestaurantDebug = restaurantDebug;
+
+      console.log(`Restaurant debug saved: window.__orderRestaurantDebug for order #${orderId}`);
+      console.table(restaurantDebug.fromOrderDetails);
+      console.table(restaurantDebug.enrichedRestaurants);
+
+      details = {
+        ...details,
+        restaurants: enrichedRestaurants,
+      };
+
       if (existingOrder) {
         details = {
           ...details,
@@ -470,10 +665,18 @@ const updateOrderStatus = async (orderId: number, newStatus: string) => {
     return isNaN(num) ? "-" : num.toFixed(2) + " ريال";
   };
 
-  const openCancelModal = (orderId: number) => {
+  const openCancelModal = (orderId: number, event?: React.MouseEvent) => {
+    event?.preventDefault();
+    event?.stopPropagation();
     setCancelOrderId(orderId);
     setCancelReason("");
     setCancelModalOpen(true);
+  };
+
+  const closeCancelModal = () => {
+    setCancelModalOpen(false);
+    setCancelOrderId(null);
+    setCancelReason("");
   };
 
   const confirmCancelOrder = async () => {
@@ -482,12 +685,8 @@ const updateOrderStatus = async (orderId: number, newStatus: string) => {
       return alert("اكتب سبب الإلغاء");
     }
     try {
-      await api.orders.updateStatus(cancelOrderId, "cancelled", {
-        reason: cancelReason,
-      });
-      setCancelModalOpen(false);
-      setCancelOrderId(null);
-      setCancelReason("");
+      await api.orders.cancelOrder(cancelOrderId, cancelReason.trim());
+      closeCancelModal();
       fetchOrders();
     } catch (err) {
       console.error("خطأ في إلغاء الطلب:", err);
@@ -528,6 +727,17 @@ const updateOrderStatus = async (orderId: number, newStatus: string) => {
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [products, setProducts] = useState<any[]>([]);
   const [showProductsModal, setShowProductsModal] = useState(false);
+
+  const openCustomerChat = (order: Order) => {
+    window.dispatchEvent(
+      new CustomEvent("open-support-chat", {
+        detail: {
+          customerName: order.customer_name,
+          customerPhone: order.customer_phone,
+        },
+      })
+    );
+  };
 
   const selectCustomer = async (customerId: number) => {
     const customer = customers.find((c) => c.id === customerId);
@@ -657,6 +867,7 @@ const updateOrderStatus = async (orderId: number, newStatus: string) => {
   // ========= تبويبات الحالات والفلترة =========
   type OrderTab =
     | "pending"
+    | "confirmed"
     | "processing"
     | "ready"
     | "delivering"
@@ -666,6 +877,7 @@ const updateOrderStatus = async (orderId: number, newStatus: string) => {
 
   const [activeTab, setActiveTab] = useState<OrderTab>("pending");
   const [searchTerm, setSearchTerm] = useState("");
+  const delayedOrdersRef = useRef<Set<number>>(new Set());
 
   const filteredByDateOrders = useMemo(() => {
     const now = new Date();
@@ -697,7 +909,8 @@ const updateOrderStatus = async (orderId: number, newStatus: string) => {
     return {
       scheduled: list.filter(o => o.status === "scheduled").length,
       pending: list.filter(o => o.status === "pending").length,
-      processing: list.filter(o => o.status === "confirmed" || o.status === "preparing").length,
+      confirmed: list.filter(o => o.status === "confirmed").length,
+      processing: list.filter(o => o.status === "processing" || o.status === "preparing").length,
       ready: list.filter(o => o.status === "ready").length,
       delivering: list.filter(o => o.status === "delivering").length,
       completed: list.filter(o => o.status === "completed").length,
@@ -720,7 +933,8 @@ const updateOrderStatus = async (orderId: number, newStatus: string) => {
     switch (activeTab) {
       case "scheduled": return filtered.filter(o => o.status === "scheduled");
       case "pending": return filtered.filter(o => o.status === "pending");
-      case "processing": return filtered.filter(o => o.status === "confirmed" || o.status === "preparing");
+      case "confirmed": return filtered.filter(o => o.status === "confirmed");
+      case "processing": return filtered.filter(o => o.status === "processing" || o.status === "preparing");
       case "ready": return filtered.filter(o => o.status === "ready");
       case "delivering": return filtered.filter(o => o.status === "delivering");
       case "completed": return filtered.filter(o => o.status === "completed");
@@ -746,6 +960,55 @@ const updateOrderStatus = async (orderId: number, newStatus: string) => {
     return `${dayLabel} / ${time}`;
   };
 
+  useEffect(() => {
+    const pushDelayToast = (order: Order, minutes: number) => {
+      if (delayedOrdersRef.current.has(order.id)) return;
+
+      delayedOrdersRef.current.add(order.id);
+      actions.addNotification(
+        `تأخر الطلب #${order.id}\nنوع الطلب: ${
+          order.order_type || "غير محدد"
+        }\nالكابتن: ${
+          order.captain_name || "غير معين"
+        }\nمدة التأخير: ${minutes} دقيقة`,
+        "warning"
+      );
+    };
+
+    const checkDelayedOrders = () => {
+      const now = Date.now();
+
+      orders.forEach((order) => {
+        if (order.status === "completed" || order.status === "cancelled") return;
+
+        let baseTime: string | null | undefined = null;
+
+        if (["confirmed", "processing", "preparing"].includes(order.status)) {
+          baseTime = order.processing_at;
+        } else if (order.status === "ready") {
+          baseTime = order.ready_at;
+        } else if (order.status === "delivering") {
+          baseTime = order.delivering_at;
+        }
+
+        if (!baseTime) return;
+
+        const diffMinutes = Math.floor((now - new Date(baseTime).getTime()) / 60000);
+
+        if (diffMinutes >= 30) {
+          pushDelayToast(order, diffMinutes);
+        }
+      });
+    };
+
+    if (orders.length) {
+      checkDelayedOrders();
+    }
+
+    const timer = setInterval(checkDelayedOrders, 60000);
+    return () => clearInterval(timer);
+  }, [orders, actions]);
+
   // ====================================
   //                JSX
   // ====================================
@@ -753,31 +1016,39 @@ const updateOrderStatus = async (orderId: number, newStatus: string) => {
     switch (activeTab) {
       case "pending":
         return (
-          <div className="flex gap-2 justify-center">
+          <div className="flex gap-2 justify-center shrink-0 whitespace-nowrap">
             <button onClick={() => updateOrderStatus(o.id, "confirmed")} className="bg-green-600 text-white px-2 py-1 rounded text-xs">اعتماد</button>
-            <button onClick={() => openCancelModal(o.id)} className="bg-red-600 text-white px-2 py-1 rounded text-xs">إلغاء</button>
+            <button type="button" onClick={(event) => openCancelModal(o.id, event)} className="bg-red-600 text-white px-2 py-1 rounded text-xs">إلغاء</button>
+          </div>
+        );
+      case "confirmed":
+        return (
+          <div className="flex gap-2 justify-center shrink-0 whitespace-nowrap">
+            <button onClick={() => updateOrderStatus(o.id, "processing")} className="bg-blue-600 text-white px-2 py-1 rounded text-xs">قيد التحضير</button>
+            <button onClick={() => openCaptainModal(o.id)} className="bg-green-600 text-white px-2 py-1 rounded text-xs">كابتن</button>
+            <button type="button" onClick={(event) => openCancelModal(o.id, event)} className="bg-red-600 text-white px-2 py-1 rounded text-xs">إلغاء</button>
           </div>
         );
       case "processing":
         return (
-          <div className="flex gap-2 justify-center">
+          <div className="flex gap-2 justify-center shrink-0 whitespace-nowrap">
             <button onClick={() => updateOrderStatus(o.id, "ready")} className="bg-blue-600 text-white px-2 py-1 rounded text-xs">جاهز</button>
             <button onClick={() => openCaptainModal(o.id)} className="bg-green-600 text-white px-2 py-1 rounded text-xs">كابتن</button>
-            <button onClick={() => updateOrderStatus(o.id, "cancelled")} className="bg-red-600 text-white px-2 py-1 rounded text-xs">إلغاء</button>
+            <button onClick={() => updateOrderStatus(o.id, "confirmed")} className="bg-gray-600 text-white px-2 py-1 rounded text-xs">رجوع للمعالجة</button>
           </div>
         );
       case "ready":
         return (
-          <div className="flex gap-2 justify-center">
+          <div className="flex gap-2 justify-center shrink-0 whitespace-nowrap">
             <button onClick={() => openCaptainModal(o.id)} className="bg-green-600 text-white px-2 py-1 rounded text-xs">تعيين كابتن</button>
-            <button onClick={() => updateOrderStatus(o.id, "preparing")} className="bg-gray-600 text-white px-2 py-1 rounded text-xs">رجوع للمعالجة</button>
+            <button onClick={() => updateOrderStatus(o.id, "processing")} className="bg-gray-600 text-white px-2 py-1 rounded text-xs">رجوع للتحضير</button>
           </div>
         );
       case "delivering":
         return (
-          <div className="flex gap-2 justify-center">
+          <div className="flex gap-2 justify-center shrink-0 whitespace-nowrap">
             <button onClick={() => updateOrderStatus(o.id, "completed")} className="bg-green-600 text-white px-2 py-1 rounded text-xs">تم التسليم</button>
-            <button onClick={() => updateOrderStatus(o.id, "cancelled")} className="bg-red-600 text-white px-2 py-1 rounded text-xs">إلغاء</button>
+            <button type="button" onClick={(event) => openCancelModal(o.id, event)} className="bg-red-600 text-white px-2 py-1 rounded text-xs">إلغاء</button>
           </div>
         );
       default:
@@ -818,7 +1089,7 @@ const updateOrderStatus = async (orderId: number, newStatus: string) => {
               <Plus className="w-4 h-4" /> إضافة طلب
             </button>
             <button
-              onClick={fetchOrders}
+              onClick={() => fetchOrders({ silent: true })}
               className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
             >
               🔄 تحديث
@@ -840,7 +1111,8 @@ const updateOrderStatus = async (orderId: number, newStatus: string) => {
         <div className="flex gap-2 flex-wrap justify-center my-4">
           {[
             { key: "pending", label: "🟡 اعتماد" },
-            { key: "processing", label: "🔵 قيد المعالجة" },
+            { key: "confirmed", label: "🔵 قيد المعالجة" },
+            { key: "processing", label: "🟠 قيد التحضير" },
             { key: "ready", label: "🟢 جاهز" },
             { key: "delivering", label: "🚚 قيد التوصيل" },
             { key: "completed", label: "✅ مكتمل" },
@@ -865,7 +1137,6 @@ const updateOrderStatus = async (orderId: number, newStatus: string) => {
         {/* فلترة زمنية */}
         <div className="flex gap-2 justify-center w-full">
           {[
-            { key: "all", label: "كل الطلبات" },
             { key: "today", label: "اليوم" },
             { key: "week", label: "هذا الأسبوع" },
           ].map((t) => (
@@ -887,25 +1158,73 @@ const updateOrderStatus = async (orderId: number, newStatus: string) => {
         <div className="p-6 text-center">⏳ جاري التحميل...</div>
       ) : (
         <div className="overflow-x-auto bg-white rounded-xl shadow-lg">
-          <table className="w-full table-fixed">
+          <table
+            className="table-fixed border-collapse"
+            style={{ width: `${ordersTableWidth}px`, minWidth: `${ordersTableWidth}px` }}
+          >
+<colgroup>
+  {orderColumnWidths.map((width, index) => (
+    <col key={orderTableColumns[index].key} style={{ width: `${width}px` }} />
+  ))}
+</colgroup>
             <thead className="bg-gray-50">
-              <tr className="text-center">
-                <th className="px-2">رقم</th>
-                <th className="px-2">العميل</th>
-                <th className="px-2">المطعم</th>
-                <th className="px-2">الكابتن</th>
-                <th className="px-2">المبلغ</th>
-                <th className="px-2">نوع الدفع</th>
-                <th className="px-2">الحالة</th>
-                <th className="px-2">تفاصيل</th>
-                <th className="px-2">تعيين كابتن</th>
-                <th className="px-2">وقت الحركة</th>
-                <th className="px-2">المستخدم</th>
-                {isAdminBranch && <th className="px-2">الفرع</th>}
-              </tr>
+          <tr className="text-center">
+  {orderTableColumns.map((column, index) => (
+    (() => {
+      const leftResize = getOrderResizeConfig(index, "left");
+      const rightResize = getOrderResizeConfig(index, "right");
+
+      return (
+    <th key={column.key} className="group relative px-2 py-3 whitespace-nowrap overflow-visible">
+      <span className="block truncate">{column.label}</span>
+      {leftResize.index >= 0 && (
+        <button
+          type="button"
+          onPointerDown={(event) =>
+            startOrderColumnResize(leftResize.index, event, {
+              invertDelta: leftResize.invertDelta,
+              mode: leftResize.mode,
+              edge: leftResize.edge,
+            })
+          }
+          className="absolute left-0 top-0 z-10 h-full w-4 cursor-col-resize touch-none"
+          aria-label={`تغيير عرض العمود من الجهة اليسرى ${column.label}`}
+          title="اسحب من اليسار لتغيير العرض"
+        >
+          <span className="absolute left-0 top-1/2 block h-[58%] w-px -translate-y-1/2 rounded-full bg-slate-300/80 transition-all group-hover:h-[72%] group-hover:bg-blue-400 hover:bg-blue-500" />
+        </button>
+      )}
+      {rightResize.index >= 0 && (
+        <button
+          type="button"
+          onPointerDown={(event) =>
+            startOrderColumnResize(rightResize.index, event, {
+              invertDelta: rightResize.invertDelta,
+              mode: rightResize.mode,
+              edge: rightResize.edge,
+            })
+          }
+          className="absolute right-0 top-0 z-10 h-full w-4 cursor-col-resize touch-none"
+          aria-label={`تغيير عرض عمود ${column.label}`}
+          title="اسحب لتغيير عرض العمود"
+        >
+          <span className="absolute right-0 top-1/2 block h-[58%] w-px -translate-y-1/2 rounded-full bg-slate-300/80 transition-all group-hover:h-[72%] group-hover:bg-blue-400 hover:bg-blue-500" />
+        </button>
+      )}
+    </th>
+      );
+    })()
+  ))}
+</tr>
             </thead>
             <tbody>
-              {visibleOrders.map((o) => (
+              {visibleOrders.length === 0 ? (
+                <tr>
+                  <td colSpan={isAdminBranch ? 13 : 12} className="px-6 py-12 text-center text-gray-500 font-medium">
+                    لا يوجد طلبات حاليا
+                  </td>
+                </tr>
+              ) : visibleOrders.map((o) => (
                 <tr key={o.id} className="border-b hover:bg-gray-50 text-center">
                   <td className="px-2">#{o.id}</td>
                   <td className="px-2">{o.customer_name}</td>
@@ -945,12 +1264,19 @@ const updateOrderStatus = async (orderId: number, newStatus: string) => {
                     <select
   value={o.status}
   disabled={updatingOrders[o.id]}
-  onChange={(e) => updateOrderStatus(o.id, e.target.value)}
+  onChange={(e) => {
+    if (e.target.value === "cancelled") {
+      openCancelModal(o.id);
+      return;
+    }
+
+    updateOrderStatus(o.id, e.target.value);
+  }}
   className="border rounded px-2 py-1 text-sm"
 >
                         <option value="pending">قيد الانتظار</option>
-                        <option value="confirmed">مؤكد</option>
-                        <option value="preparing">قيد التحضير</option>
+                        <option value="confirmed">قيد المعالجة</option>
+                        <option value="processing">قيد التحضير</option>
                         <option value="ready">جاهز</option>
                         <option value="delivering">قيد التوصيل</option>
                       </select>
@@ -959,15 +1285,29 @@ const updateOrderStatus = async (orderId: number, newStatus: string) => {
                   <td className="px-2">
                     <button onClick={() => openDetailsModal(o.id)} className="text-blue-600 hover:underline">عرض</button>
                   </td>
-                  <td className="px-2">{renderActions(o)}</td>
-                  <td className="px-2 text-[11px] text-right space-y-1 font-bold text-indigo-600">
-                    {o.scheduled_at && <div>📅 {formatScheduleTime(o.scheduled_at)}</div>}
-                    {o.processing_at && <div>⚙️ {new Date(o.processing_at).toLocaleTimeString("ar-YE")}</div>}
-                    {o.ready_at && <div>✅ {new Date(o.ready_at).toLocaleTimeString("ar-YE")}</div>}
-                    {o.delivering_at && <div>🚚 {new Date(o.delivering_at).toLocaleTimeString("ar-YE")}</div>}
-                    {o.completed_at && <div className="text-green-600">✔️ {new Date(o.completed_at).toLocaleTimeString("ar-YE")}</div>}
-                    {o.cancelled_at && <div className="text-red-600">❌ {new Date(o.cancelled_at).toLocaleTimeString("ar-YE")}</div>}
-                  </td>
+               <td className="px-2 min-w-[220px]">
+  <div className="flex items-center justify-center">
+    {renderActions(o)}
+  </div>
+</td>
+
+<td className="px-2">
+  <button
+    onClick={() => openCustomerChat(o)}
+    className="bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700 whitespace-nowrap"
+  >
+    محادثة
+  </button>
+</td>
+
+<td className="px-2 text-[11px] text-center  space-y-1 font-bold text-indigo-600">
+  {o.scheduled_at && <div>📅 {formatScheduleTime(o.scheduled_at)}</div>}
+  {o.processing_at && <div>⚙️ {new Date(o.processing_at).toLocaleTimeString("ar-YE")}</div>}
+  {o.ready_at && <div>✅ {new Date(o.ready_at).toLocaleTimeString("ar-YE")}</div>}
+  {o.delivering_at && <div>🚚 {new Date(o.delivering_at).toLocaleTimeString("ar-YE")}</div>}
+  {o.completed_at && <div className="text-green-600">✔️ {new Date(o.completed_at).toLocaleTimeString("ar-YE")}</div>}
+  {o.cancelled_at && <div className="text-red-600">❌ {new Date(o.cancelled_at).toLocaleTimeString("ar-YE")}</div>}
+</td>
                   <td className="px-2 text-sm text-gray-700 font-medium">
                     {o.updater_name ? (
                       <div className="flex flex-col items-center">
@@ -1123,11 +1463,17 @@ const grandTotal = allRestaurantsTotal + delivery + extraStore - discount;
 {(selectedOrderDetails.restaurants || []).map((r: any, i: number) => (
                             <div key={i} className="mb-2 text-sm">
                             <p>الاسم: {r.name}</p>
-                            <p>الهاتف: {r.phone}</p>
+                            <p>الهاتف: {r.phone || "غير متوفر"}</p>
                             {r.map_url && <a href={r.map_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">عرض على الخريطة 🌍</a>}
                             <hr className="my-2" />
                           </div>
                         ))}
+                        {selectedOrderDetails.status === "cancelled" && (selectedOrderDetails as any).cancel_reason && (
+                          <div className="mt-3 rounded border border-red-200 bg-red-50 p-3">
+                            <h4 className="mb-1 font-bold text-red-700">سبب الإلغاء</h4>
+                            <p className="text-sm text-red-700">{(selectedOrderDetails as any).cancel_reason}</p>
+                          </div>
+                        )}
                       </div>
                       <div className="flex flex-col gap-3">
                         <div className="border p-3 rounded">
@@ -1152,7 +1498,7 @@ const grandTotal = allRestaurantsTotal + delivery + extraStore - discount;
                 <div className="flex items-center gap-2 mb-1">
                   <span className="font-bold text-gray-700">الحالة:</span>
                   <span className={`px-2 py-0.5 rounded text-xs font-semibold ${selectedOrderDetails.status === 'completed' ? 'bg-green-100 text-green-700' : selectedOrderDetails.status === 'cancelled' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>
-                    {{ pending: "قيد الانتظار", confirmed: "مؤكد", preparing: "قيد التحضير", ready: "جاهز", delivering: "قيد التوصيل", completed: "مكتمل", cancelled: "ملغي" }[selectedOrderDetails.status as string] || selectedOrderDetails.status}
+                    {{ pending: "قيد الانتظار", confirmed: "قيد المعالجة", processing: "قيد التحضير", preparing: "قيد التحضير", ready: "جاهز", delivering: "قيد التوصيل", completed: "مكتمل", cancelled: "ملغي" }[selectedOrderDetails.status as string] || selectedOrderDetails.status}
                   </span>
                 </div>
                 <div className="text-sm text-gray-600"><span className="font-bold">المستخدم: </span><span className="font-medium text-black">{(selectedOrderDetails as any).user_name || "—"}</span></div>
@@ -1314,13 +1660,13 @@ const grandTotal = allRestaurantsTotal + delivery + extraStore - discount;
 
       {/* ===== مودال إلغاء الطلب ===== */}
       {cancelModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[200]">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
             <h2 className="text-lg font-bold mb-3">تأكيد إلغاء الطلب</h2>
             <textarea value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} className="border w-full p-2 rounded mb-4" placeholder="اكتب سبب الإلغاء..." />
             <div className="flex justify-end gap-2">
-              <button onClick={() => setCancelModalOpen(false)} className="bg-gray-400 text-white px-4 py-2 rounded">إغلاق</button>
-              <button onClick={confirmCancelOrder} className="bg-red-600 text-white px-4 py-2 rounded">تأكيد الإلغاء</button>
+              <button type="button" onClick={closeCancelModal} className="bg-gray-400 text-white px-4 py-2 rounded">إغلاق</button>
+              <button type="button" onClick={confirmCancelOrder} className="bg-red-600 text-white px-4 py-2 rounded">تأكيد الإلغاء</button>
             </div>
           </div>
         </div>

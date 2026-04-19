@@ -3,6 +3,7 @@ import React from "react";
 import Dashboard from "../pages/Dashboard";
 import Agents from "../pages/Agents";
 import Users from "../pages/Users";
+import UserPermissions from "../pages/UserPermissions";
 
 export const appRoutes = [
   {
@@ -19,5 +20,10 @@ export const appRoutes = [
     path: "/users",
     key: "users",
     element: <Users />,
+  },
+  {
+    path: "/users/permissions",
+    key: "users",
+    element: <UserPermissions />,
   },
 ];

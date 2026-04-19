@@ -7,7 +7,7 @@ import {
   Plus
 } from "lucide-react";
 
-import api from "../services/api";
+import api, { API_ORIGIN } from "../services/api";
 
 
 interface Ad {
@@ -63,6 +63,26 @@ const [couponEnd,setCouponEnd] = useState("")
 
 const [maxUses,setMaxUses] = useState(100)
   const [editingId,setEditingId] = useState<number | null>(null)
+
+const formatAdDate = (date:string, endOfDay = false)=>{
+if(!date) return undefined
+return `${date}T${endOfDay ? "23:59:59" : "00:00:00"}`
+}
+
+const toServerAdType = (value:string)=>{
+return value === "promo" ? "offer" : value
+}
+
+const toClientAdType = (value:string)=>{
+return value === "offer" || value === "banner" ? "promo" : value
+}
+
+const formatAdImageUrl = (url:string)=>{
+if(!url) return undefined
+if(url.startsWith("http://") || url.startsWith("https://")) return url
+if(url.startsWith("/")) return `${API_ORIGIN}${url}`
+return undefined
+}
 
 useEffect(()=>{
 
@@ -123,16 +143,16 @@ loadRestaurants()
     try{
 
       const payload = {
-        name,
-        description,
-        type,
-        image_url:image,
-        restaurant_id:restaurantId,
-        category_id:categoryId,
+        name:name.trim(),
+        description:description.trim() || undefined,
+        type:toServerAdType(type),
+        image_url:formatAdImageUrl(image),
+        restaurant_id:restaurantId || undefined,
+        category_id:categoryId || undefined,
         product_ids:productIds,
-        discount_percent:type==="discount"?discount:null,
-        start_date:startDate ? startDate + " 00:00:00" : null,
-        end_date:endDate ? endDate + " 23:59:59" : null
+        discount_percent:type==="discount"?discount:undefined,
+        start_date:formatAdDate(startDate),
+        end_date:formatAdDate(endDate,true)
       }
 
       if(editingId){
@@ -156,8 +176,17 @@ loadRestaurants()
 
       loadAds()
 
-    }catch(err){
+    }catch(err:any){
       console.error(err)
+      const validationMessage =
+        err?.response?.data?.errors
+          ?.map((item:any)=>item.msg || item.message)
+          .filter(Boolean)
+          .join("\n") ||
+        err?.response?.data?.error ||
+        "فشل حفظ الإعلان"
+
+      alert(validationMessage)
     }
   }
 
@@ -177,7 +206,7 @@ loadRestaurants()
 
   setName(ad.name)
   setDescription(ad.description)
-  setType(ad.type)
+  setType(toClientAdType(ad.type))
 
   setDiscount(ad.discount_percent || 0)
 
@@ -214,8 +243,7 @@ loadRestaurants()
         ? "inactive"
         : "active"
 
-      await api.put(`/ads/${ad.id}`,{
-        ...ad,
+      await api.patch(`/ads/${ad.id}/status`,{
         status:newStatus
       })
 
@@ -457,7 +485,7 @@ className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg"
                   <td className="p-3">{ad.description}</td>
 
                   <td className="p-3">
-                  {ad.type==="promo"
+                  {ad.type==="promo" || ad.type==="offer" || ad.type==="banner"
                   ? "ترويجي"
                   : ad.discount_percent
                   ? `خصم ${ad.discount_percent}%`

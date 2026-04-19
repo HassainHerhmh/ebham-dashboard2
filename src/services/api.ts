@@ -1,10 +1,14 @@
 import axios from "axios";
 
-const RAW_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+export const RAW_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
-const API_URL = RAW_URL.endsWith("/api")
+export const API_URL = RAW_URL.endsWith("/api")
   ? RAW_URL
   : `${RAW_URL}/api`;
+
+export const API_ORIGIN = API_URL.endsWith("/api")
+  ? API_URL.slice(0, -4)
+  : API_URL;
 
 const api = axios.create({
   baseURL: API_URL,
@@ -51,6 +55,12 @@ api.interceptors.request.use((config) => {
 
   resetPassword: async (id: number) =>
     (await api.post(`/users/${id}/reset-password`)).data,
+
+  getPermissions: async (id: number) =>
+    (await api.get(`/users/${id}/permissions`)).data,
+
+  updatePermissions: async (id: number, data: any) =>
+    (await api.put(`/users/${id}/permissions`, data)).data,
 };
 
 /* =========================
@@ -984,6 +994,10 @@ export const saveDeliverySettings = (data: any) =>
   updateStatus: async (id: number, status: string) =>
     (await api.put(`/orders/${id}/status`, { status })).data,
 
+  // إلغاء الطلب مع السبب
+  cancelOrder: async (id: number, reason: string) =>
+    (await api.put(`/orders/${id}/cancel`, { reason })).data,
+
   // تعيين كابتن للطلب
   assignCaptain: async (orderId: number, captainId: number) =>
     (
@@ -1148,6 +1162,14 @@ export const executeExchange = async (data: {
   updateStatus: async (id: number, status: string) => 
     (await api.put(`/wassel-orders/status/${id}`, { status })).data,
 
+  // إلغاء الطلب مع السبب
+  cancelOrder: async (id: number, reason: string) =>
+    (await api.put(`/wassel-orders/${id}/status`, {
+      status: "cancelled",
+      reason,
+      cancel_reason: reason,
+    })).data,
+
   // حذف طلب
   delete: async (id: number) => 
     (await api.delete(`/wassel-orders/${id}`)).data,
@@ -1184,6 +1206,14 @@ export const executeExchange = async (data: {
   // تحديث حالة الطلب اليدوي
   updateStatus: async (id: number, status: string) => 
     (await api.put(`/wassel-orders/manual/status/${id}`, { status })).data,
+
+  // إلغاء الطلب اليدوي مع السبب
+  cancelOrder: async (id: number, reason: string) =>
+    (await api.put(`/manual-orders/status/${id}`, {
+      status: "cancelled",
+      reason,
+      cancel_reason: reason,
+    })).data,
   
     // ✅ الجديد
   update: async (id: number, data: any) =>

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Plus, Trash2, Edit } from "lucide-react";
 import { appRoutes } from "../config/routes";
+import api, { API_ORIGIN } from "../services/api";
 
-const API_URL = import.meta.env.VITE_API_URL || "";
-const BASE_URL = API_URL.replace(/\/api$/, "");
+const BASE_URL = API_ORIGIN;
 
 
 
@@ -31,8 +31,7 @@ const [imageUrl, setImageUrl] = useState("");
   const fetchTypes = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/types`);
-      const data = await res.json();
+      const data = await (api as any).types.getTypes();
       if (data.success && Array.isArray(data.types)) {
         setTypes(data.types);
         setError(null);
@@ -67,14 +66,10 @@ const startEditType = (t: TypeItem) => {
     if (image) formData.append("image", image);
     if (imageUrl) formData.append("image_url", imageUrl);
 
-    const method = editId ? "PUT" : "POST";
-    const url = editId
-      ? `${API_URL}/types/${editId}`
-      : `${API_URL}/types`;
-
     try {
-      const res = await fetch(url, { method, body: formData });
-      const data = await res.json();
+      const data = editId
+        ? await (api as any).types.updateType(editId, formData)
+        : await (api as any).types.addType(formData);
       if (data.success) {
         alert(data.message || "✅ تم الحفظ");
         setIsModalOpen(false);
@@ -96,8 +91,7 @@ const startEditType = (t: TypeItem) => {
   const deleteType = async (id: number) => {
     if (!window.confirm("⚠️ هل تريد حذف هذا النوع؟")) return;
     try {
-      const res = await fetch(`${API_URL}/types/${id}`, { method: "DELETE" });
-      const data = await res.json();
+      const data = await (api as any).types.deleteType(id);
       if (data.success) {
         alert("🗑️ تم الحذف");
         fetchTypes();

@@ -1,6 +1,10 @@
 import React, { useState, useEffect, ChangeEvent, FormEvent } from "react";
 import { PlusCircle, Edit3, Trash2, X } from "lucide-react";
 import api from "../services/api"; //
+
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+const BASE_URL = API_URL.replace(/\/api$/, "");
+
 interface Category {
   id: number;
   name: string;
@@ -158,7 +162,7 @@ const handleUpdate = async (e: FormEvent) => {
       src={
         (cat.image_url || (cat as any).image)?.startsWith("http")
           ? (cat.image_url || (cat as any).image)
-          : `http://localhost:5000${cat.image_url || (cat as any).image}`
+          : `${BASE_URL}${cat.image_url || (cat as any).image}`
       }
       alt={cat.name}
       width={60}

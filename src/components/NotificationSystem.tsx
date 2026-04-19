@@ -8,6 +8,7 @@ interface Notification {
   message: string
   timestamp: Date
   isVisible: boolean
+  isRead: boolean
 }
 
 const NotificationSystem: React.FC = () => {
@@ -39,13 +40,16 @@ const NotificationSystem: React.FC = () => {
     }
   }
 
-  if (state.notifications.length === 0) return null
+  const visibleNotifications = state.notifications.filter((notification) => notification.isVisible)
+
+  if (visibleNotifications.length === 0) return null
 
   return (
     <div className="fixed top-4 left-4 z-50 space-y-2 max-w-sm">
-      {state.notifications.map((notification: Notification) => (
+      {visibleNotifications.map((notification: Notification) => (
         <div
           key={notification.id}
+          onClick={() => actions.markNotificationRead(notification.id)}
           className={`p-4 rounded-lg border shadow-lg transition-all duration-300 ${getBackgroundColor(notification.type)}`}
         >
           <div className="flex items-start justify-between">
@@ -61,7 +65,10 @@ const NotificationSystem: React.FC = () => {
               </div>
             </div>
             <button
-              onClick={() => actions.hideNotification(notification.id)}
+              onClick={(e) => {
+                e.stopPropagation()
+                actions.markNotificationRead(notification.id)
+              }}
               className="text-gray-400 hover:text-gray-600 transition-colors"
             >
               <X size={16} />

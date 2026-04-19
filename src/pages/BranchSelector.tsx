@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from "react";
 
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+const BASE_URL = API_URL.replace(/\/api$/, "");
+
 interface Branch {
   id: number;
   name: string;
@@ -10,7 +13,7 @@ const BranchSelector: React.FC = () => {
   const [selectedBranch, setSelectedBranch] = useState<string>("");
 
   useEffect(() => {
-    fetch("http://localhost:5000/branches", {
+    fetch(`${BASE_URL}/branches`, {
       headers: { "branch-name": "عتق" } // لجلب الفروع من أحد القواعد
     })
       .then((res) => res.json())

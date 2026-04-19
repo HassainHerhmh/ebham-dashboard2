@@ -5,9 +5,11 @@ import App from "./App";
 import { AppProvider } from "./contexts/AppContext";
 import "./index.css";
 
+const APP_BASE_PATH = "/dashboard";
+
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <BrowserRouter>
+    <BrowserRouter basename={APP_BASE_PATH}>
       <AppProvider>
         <App />
       </AppProvider>

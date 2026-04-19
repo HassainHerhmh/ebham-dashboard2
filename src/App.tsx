@@ -1,10 +1,13 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 
 import Sidebar from "./components/Sidebar";
 import Header from "./components/Header";
+import NotificationSystem from "./components/NotificationSystem";
 
 import Login from "./pages/Login";
+import AuthCallback from "./pages/AuthCallback";
+import CompleteProfile from "./pages/CompleteProfile";
 import Unauthorized from "./pages/Unauthorized";
 
 // الصفحات العامة
@@ -21,12 +24,15 @@ import Categories from "./pages/Categories";
 import Units from "./pages/Units";
 import Products from "./pages/Products";
 import Users from "./pages/Users";
+import UserPermissions from "./pages/UserPermissions";
 import DeliveryFeesSettings from "./pages/DeliveryFeesSettings";
 import Neighborhoods from "./pages/Neighborhoods";
 import PaymentsElectronic from "./pages/PaymentsElectronic";
 import PaymentsBanks from "./pages/PaymentsBanks";
 import PaymentsWallet from "./pages/PaymentsWallet";
 import CommissionReport from "./pages/CommissionReport";
+import AgentReports from "./pages/AgentReports";
+import CaptainReports from "./pages/CaptainReports";
 
 import WasselOrders from "./pages/WasselOrders";
 import MapPage from "./pages/MapPage";
@@ -73,12 +79,44 @@ import ProtectedRoute from "./routes/ProtectedRoute";
 
 const App: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [currentLanguage, setCurrentLanguage] = useState<"ar" | "en">(
+    localStorage.getItem("app_lang") === "en" ? "en" : "ar"
+  );
+
+  useEffect(() => {
+    const syncLanguage = () => {
+      const lang = localStorage.getItem("app_lang") === "en" ? "en" : "ar";
+      setCurrentLanguage(lang);
+      document.documentElement.lang = lang;
+      document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
+    };
+
+    syncLanguage();
+    window.addEventListener("app-language-change", syncLanguage);
+
+    return () => {
+      window.removeEventListener("app-language-change", syncLanguage);
+    };
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle(
+      "dark",
+      localStorage.getItem("theme") === "dark"
+    );
+  }, []);
 
   return (
-    <div className="min-h-screen bg-gray-100" dir="rtl">
+    <div
+      className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300"
+      dir={currentLanguage === "ar" ? "rtl" : "ltr"}
+    >
+      <NotificationSystem />
       <Routes>
         {/* ===== Login بدون Layout ===== */}
         <Route path="/login" element={<Login />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="/complete-profile" element={<CompleteProfile />} />
 
         {/* ===== Layout ===== */}
         <Route
@@ -91,7 +129,7 @@ const App: React.FC = () => {
               />
 
               <div className="flex-1 flex flex-col overflow-hidden">
-                <Header onMenuClick={() => setSidebarOpen(true)} />
+                <Header />
 
                 <main className="flex-1 overflow-y-auto p-6">
                   <Routes>
@@ -109,13 +147,13 @@ const App: React.FC = () => {
 <Route
   path="/orders/wassel"
   element={
-    <ProtectedRoute section="orders">
+    <ProtectedRoute section="wassel_orders">
       <WasselOrders />
     </ProtectedRoute>
   }
 />
 
-                    <Route path="/orders/manual" element={<ManualOrders />} />
+                    <Route path="/orders/manual" element={<ProtectedRoute section="manual_orders"><ManualOrders /></ProtectedRoute>} />
                     <Route path="/map-picker" element={<MapPage />} />
 
                     <Route path="/types" element={<ProtectedRoute section="types"><Types /></ProtectedRoute>} />
@@ -130,14 +168,17 @@ const App: React.FC = () => {
                     <Route path="/reports" element={<ProtectedRoute section="reports"><Reports /></ProtectedRoute>} />
                     <Route path="/neighborhoods" element={<ProtectedRoute section="neighborhoods"><Neighborhoods /></ProtectedRoute>} />
                     <Route path="/users" element={<ProtectedRoute section="users"><Users /></ProtectedRoute>} />             
+                    <Route path="/users/permissions" element={<ProtectedRoute section="users"><UserPermissions /></ProtectedRoute>} />
                    <Route path="/payments/electronic"element={<ProtectedRoute section="payments"><PaymentsElectronic /></ProtectedRoute>}/>
                    <Route path="/payments/banks"element={<ProtectedRoute section="payments"><PaymentsBanks /></ProtectedRoute>}/>
                   <Route path="/payments/wallet"element={<ProtectedRoute section="payments"><PaymentsWallet /></ProtectedRoute>}/>
-                    <Route path="/reports/commissions" element={<CommissionReport />} />
+                    <Route path="/reports/commissions" element={<ProtectedRoute section="commission_reports"><CommissionReport /></ProtectedRoute>} />
+                    <Route path="/reports/agents" element={<ProtectedRoute section="agent_reports"><AgentReports /></ProtectedRoute>} />
+                    <Route path="/reports/captains" element={<ProtectedRoute section="captain_reports"><CaptainReports /></ProtectedRoute>} />
 <Route
   path="/loyalty"
   element={
-    <ProtectedRoute section="marketing">
+    <ProtectedRoute section="loyalty">
       <Loyalty />
     </ProtectedRoute>
   }
@@ -203,7 +244,7 @@ const App: React.FC = () => {
   }
 />
 
-<Route path="/settings" element={<Navigate to="/settings/stores" replace />} />
+<Route path="/settings" element={<Navigate to="/settings/payment" replace />} />
 
 <Route path="/unauthorized" element={<Unauthorized />} />
 <Route path="*" element={<Unauthorized />} />

@@ -1,125 +1,203 @@
-import { useEffect, useState, Suspense } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-
-import {
-  MapContainer,
-  TileLayer,
-  Marker,
-  useMapEvents,
-  useMap,
-} from "react-leaflet";
-
-import "leaflet/dist/leaflet.css";
-import L from "leaflet";
-
-/* Fix marker icon */
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl:
-    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-  iconUrl:
-    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  shadowUrl:
-    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-});
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const BRAND_COLOR = "#fbbf24";
+const GOOGLE_MAPS_KEY = "AIzaSyD1Cg7YKXlWGMhVLjRKy0GmlL149_W08SQ";
+const DEFAULT_CENTER = { lat: 15.3694, lng: 44.191 };
+const BRANCH_MAP_CENTERS: Record<string, { lat: number; lng: number }> = {
+  "صنعاء": { lat: 15.369445, lng: 44.191006 },
+  "عدن": { lat: 12.785497, lng: 45.018654 },
+  "شيخ عثمان": { lat: 12.886905, lng: 44.987622 },
+  "المنصورة": { lat: 12.85184, lng: 44.9818 },
+  "عتق": { lat: 14.53767, lng: 46.83187 },
+  "شبوة": { lat: 14.53767, lng: 46.83187 },
+  "المكلا": { lat: 14.54248, lng: 49.12424 },
+  "سيئون": { lat: 15.94194, lng: 48.78708 },
+  "تعز": { lat: 13.57952, lng: 44.02091 },
+  "إب": { lat: 13.96667, lng: 44.18333 },
+  "ذمار": { lat: 14.54274, lng: 44.40514 },
+  "الحديدة": { lat: 14.79781, lng: 42.95452 },
+};
 
-/* Click handler */
-function ClickHandler({
-  onPick,
-}: {
-  onPick: (lat: number, lng: number) => void;
-}) {
-  useMapEvents({
-    click(e) {
-      onPick(e.latlng.lat, e.latlng.lng);
-    },
-  });
-
-  return null;
+declare global {
+  interface Window {
+    google: any;
+  }
 }
 
-/* Recenter map */
-function Recenter({ pos }: { pos: [number, number] }) {
-  const map = useMap();
+type MapTarget = "from" | "to";
 
-  useEffect(() => {
-    map.setView(pos, 15, { animate: true });
-  }, [pos]);
+function getBranchMapCenter(branchName?: string) {
+  const normalized = String(branchName || "").trim();
+  if (!normalized) return DEFAULT_CENTER;
 
-  return null;
+  const direct = BRANCH_MAP_CENTERS[normalized];
+  if (direct) return direct;
+
+  const partialKey = Object.keys(BRANCH_MAP_CENTERS).find(
+    (key) => normalized.includes(key) || key.includes(normalized)
+  );
+
+  return partialKey ? BRANCH_MAP_CENTERS[partialKey] : DEFAULT_CENTER;
+}
+
+function loadGoogleMaps(): Promise<void> {
+  if (window.google?.maps) {
+    return Promise.resolve();
+  }
+
+  const existing = document.getElementById("google-maps-script");
+  if (existing) {
+    return new Promise((resolve) => {
+      existing.addEventListener("load", () => resolve(), { once: true });
+    });
+  }
+
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.id = "google-maps-script";
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_KEY}&libraries=places`;
+    script.async = true;
+    script.defer = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("failed_to_load_google_maps"));
+    document.head.appendChild(script);
+  });
 }
 
 export default function MapPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const state = (location.state as any) || {};
 
-const state = location.state as any;
+  const target: MapTarget = state?.target || "from";
+  const returnTo = "/orders/wassel";
+  const savedUser = localStorage.getItem("user");
+  const currentUser = savedUser ? JSON.parse(savedUser) : null;
+  const selectedBranchName =
+    localStorage.getItem("selectedBranch") ||
+    localStorage.getItem("branch_name") ||
+    currentUser?.branch_name ||
+    "";
+  const branchCenter = getBranchMapCenter(selectedBranchName);
 
-const target = state?.target || "from";
-const returnTo = "/orders/wassel";
+  const mapRef = useRef<HTMLDivElement | null>(null);
+  const mapInstanceRef = useRef<any>(null);
+  const markerRef = useRef<any>(null);
+  const geocoderRef = useRef<any>(null);
 
-  const [pos, setPos] = useState<[number, number]>([15.3694, 44.191]);
-
+  const [mapsReady, setMapsReady] = useState(false);
+  const [pos, setPos] = useState(branchCenter);
   const [name, setName] = useState("");
   const [error, setError] = useState("");
-
-  /* نوع الخريطة */
-  const [mapType, setMapType] = useState<"normal" | "sat">("normal");
+  const [mapType, setMapType] = useState<"roadmap" | "satellite">("roadmap");
 
   const HEADER_HEIGHT = 130;
 
-  /* حفظ الموقع */
-const handleSave = () => {
-  if (!name.trim()) {
-    setError("اكتب اسم العنوان");
-    return;
-  }
+  useEffect(() => {
+    loadGoogleMaps()
+      .then(() => setMapsReady(true))
+      .catch(() => setError("تعذر تحميل خرائط Google"));
+  }, []);
 
-navigate(returnTo, {
-  state: {
-    from: "map",
-    target,
-    value: name,
-    lat: pos[0],
-    lng: pos[1],
-    reopenModal: true, // ✅ مهم
-  },
-});
-};
-
-
-
-
-  /* البحث */
-  const searchByName = async () => {
-    if (!name.trim()) return;
-
-    try {
-      const r = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(
-          name
-        )}`
-      );
-
-      const j = await r.json();
-
-      if (j[0]) {
-        setPos([
-          parseFloat(j[0].lat),
-          parseFloat(j[0].lon),
-        ]);
-      } else {
-        setError("لم يتم العثور على موقع");
+  useEffect(() => {
+    if (state?.lat && state?.lng) {
+      setPos({
+        lat: Number(state.lat),
+        lng: Number(state.lng),
+      });
+      if (state?.value) {
+        setName(String(state.value));
       }
-    } catch {
-      setError("فشل البحث");
+      return;
     }
+
+    setPos(branchCenter);
+  }, [state?.lat, state?.lng, state?.value, branchCenter.lat, branchCenter.lng]);
+
+  useEffect(() => {
+    if (!mapsReady || !mapRef.current || !window.google?.maps) return;
+
+    const maps = window.google.maps;
+
+    if (!mapInstanceRef.current) {
+      mapInstanceRef.current = new maps.Map(mapRef.current, {
+        center: pos,
+        zoom: 15,
+        mapTypeId: mapType,
+        streetViewControl: false,
+        fullscreenControl: false,
+      });
+
+      markerRef.current = new maps.Marker({
+        position: pos,
+        map: mapInstanceRef.current,
+        draggable: false,
+        icon: "http://maps.google.com/mapfiles/ms/icons/red-dot.png",
+      });
+
+      geocoderRef.current = new maps.Geocoder();
+
+      mapInstanceRef.current.addListener("click", (event: any) => {
+        const picked = {
+          lat: Number(event.latLng.lat().toFixed(6)),
+          lng: Number(event.latLng.lng().toFixed(6)),
+        };
+
+        setPos(picked);
+        setError("");
+      });
+    }
+  }, [mapsReady]);
+
+  useEffect(() => {
+    if (!mapInstanceRef.current || !markerRef.current || !window.google?.maps) return;
+
+    mapInstanceRef.current.setCenter(pos);
+    markerRef.current.setPosition(pos);
+  }, [pos]);
+
+  useEffect(() => {
+    if (!mapInstanceRef.current || !window.google?.maps) return;
+    mapInstanceRef.current.setMapTypeId(mapType);
+  }, [mapType]);
+
+  const handleSave = () => {
+    if (!name.trim()) {
+      setError("اكتب اسم العنوان");
+      return;
+    }
+
+    navigate(returnTo, {
+      state: {
+        from: "map",
+        target,
+        value: name,
+        lat: pos.lat,
+        lng: pos.lng,
+        reopenModal: true,
+      },
+    });
   };
 
-  /* موقعي الحالي */
+  const searchByName = async () => {
+    if (!name.trim()) return;
+    if (!geocoderRef.current) return;
+
+    geocoderRef.current.geocode({ address: name }, (results: any, status: string) => {
+      if (status === "OK" && results?.[0]) {
+        const location = results[0].geometry.location;
+        setPos({
+          lat: Number(location.lat().toFixed(6)),
+          lng: Number(location.lng().toFixed(6)),
+        });
+        setError("");
+      } else {
+        setError("لم يتم العثور على الموقع");
+      }
+    });
+  };
+
   const goToMyLocation = () => {
     if (!navigator.geolocation) {
       setError("المتصفح لا يدعم GPS");
@@ -127,28 +205,24 @@ navigate(returnTo, {
     }
 
     navigator.geolocation.getCurrentPosition(
-      async (p) => {
-        const lat = p.coords.latitude;
-        const lng = p.coords.longitude;
+      (p) => {
+        const nextPos = {
+          lat: Number(p.coords.latitude.toFixed(6)),
+          lng: Number(p.coords.longitude.toFixed(6)),
+        };
 
-        setPos([lat, lng]);
+        setPos(nextPos);
+        setError("");
 
-        // جلب اسم العنوان
-        try {
-          const r = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
-          );
+        if (!geocoderRef.current) return;
 
-          const j = await r.json();
-
-          if (j.display_name) {
-            setName(j.display_name);
+        geocoderRef.current.geocode({ location: nextPos }, (results: any, status: string) => {
+          if (status === "OK" && results?.[0]?.formatted_address) {
+            setName(results[0].formatted_address);
           }
-        } catch {}
+        });
       },
-      () => {
-        setError("فعّل الموقع من الإعدادات");
-      },
+      () => setError("فعّل الموقع من الإعدادات"),
       {
         enableHighAccuracy: true,
         timeout: 10000,
@@ -156,12 +230,11 @@ navigate(returnTo, {
     );
   };
 
-useEffect(() => {
-  console.log("🗺️ Map opened");
-  console.log("User local:", localStorage.getItem("user"));
-}, []);
+  const mapTypeLabel = useMemo(
+    () => (mapType === "roadmap" ? "قمر صناعي" : "خريطة عادية"),
+    [mapType]
+  );
 
-  
   return (
     <div
       style={{
@@ -170,7 +243,6 @@ useEffect(() => {
         position: "relative",
       }}
     >
-      {/* Header */}
       <div
         style={{
           position: "fixed",
@@ -182,7 +254,6 @@ useEffect(() => {
           padding: "22px 12px 12px",
         }}
       >
-        {/* Top */}
         <div
           style={{
             display: "flex",
@@ -202,14 +273,10 @@ useEffect(() => {
             ←
           </button>
 
-          <div style={{ fontWeight: "bold" }}>
-            اختر الموقع
-          </div>
-
+          <div style={{ fontWeight: "bold" }}>اختر الموقع</div>
           <div style={{ width: 40 }} />
         </div>
 
-        {/* Search */}
         <div style={{ display: "flex", gap: 8 }}>
           <input
             value={name}
@@ -235,44 +302,40 @@ useEffect(() => {
               border: "none",
             }}
           >
-            🔍
+            🔎
           </button>
         </div>
       </div>
 
-      {/* Map */}
-      <Suspense fallback={<div>تحميل...</div>}>
-        <MapContainer
-          center={pos}
-          zoom={14}
+      <div
+        ref={mapRef}
+        style={{
+          position: "absolute",
+          top: HEADER_HEIGHT,
+          right: 0,
+          left: 0,
+          bottom: 0,
+          background: "#e5e7eb",
+        }}
+      />
+
+      {!mapsReady && (
+        <div
           style={{
-            height: "100%",
+            position: "fixed",
+            inset: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "rgba(255,255,255,0.5)",
+            zIndex: 900,
             marginTop: HEADER_HEIGHT,
           }}
         >
-          {/* Normal */}
-          {mapType === "normal" && (
-            <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-          )}
+          جاري تحميل الخريطة...
+        </div>
+      )}
 
-          {/* Satellite */}
-          {mapType === "sat" && (
-            <TileLayer url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}" />
-          )}
-
-          <Recenter pos={pos} />
-
-          <ClickHandler
-            onPick={(lat, lng) =>
-              setPos([lat, lng])
-            }
-          />
-
-          <Marker position={pos} />
-        </MapContainer>
-      </Suspense>
-
-      {/* Bottom */}
       <div
         style={{
           position: "fixed",
@@ -299,17 +362,10 @@ useEffect(() => {
           </div>
         )}
 
-        {/* Buttons */}
         <div style={{ display: "flex", gap: 10 }}>
-
-          {/* Satellite toggle */}
           <button
             onClick={() =>
-              setMapType(
-                mapType === "normal"
-                  ? "sat"
-                  : "normal"
-              )
+              setMapType(mapType === "roadmap" ? "satellite" : "roadmap")
             }
             style={{
               flex: 1,
@@ -320,10 +376,9 @@ useEffect(() => {
               fontWeight: "bold",
             }}
           >
-            🛰️ قمر صناعي
+            {mapTypeLabel}
           </button>
 
-          {/* My location */}
           <button
             onClick={goToMyLocation}
             style={{
@@ -335,11 +390,10 @@ useEffect(() => {
               fontWeight: "bold",
             }}
           >
-            📍 موقعي
+            موقعي
           </button>
         </div>
 
-        {/* Save */}
         <button
           onClick={handleSave}
           style={{

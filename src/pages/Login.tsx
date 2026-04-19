@@ -1,6 +1,12 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../services/api";
+import {
+  extractAuthResult,
+  getGoogleLoginUrl,
+  getPostLoginPath,
+  saveAuthSession,
+} from "../utils/auth";
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -9,6 +15,7 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,20 +33,26 @@ const Login: React.FC = () => {
         return;
       }
 
-      const user = res.data.user;
+      const result = extractAuthResult(res.data);
 
-      // حفظ المستخدم + التوكن بالشكل الصحيح
-      localStorage.setItem("user", JSON.stringify(user));
-      if (user?.token) {
-        localStorage.setItem("token", user.token);
+      if (!result.user) {
+        setError(res.data?.message || "فشل تسجيل الدخول");
+        return;
       }
 
-      navigate("/", { replace: true });
+      saveAuthSession(result);
+      navigate(getPostLoginPath(result), { replace: true });
     } catch (err: any) {
       setError(err?.response?.data?.message || "فشل الاتصال بالسيرفر");
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleGoogleLogin = () => {
+    setError("");
+    setGoogleLoading(true);
+    window.location.href = getGoogleLoginUrl();
   };
 
   return (
@@ -89,15 +102,28 @@ const Login: React.FC = () => {
             />
           </div>
 
-          {error && (
-            <p className="text-red-600 text-center mb-4">{error}</p>
-          )}
+          {error && <p className="text-red-600 text-center mb-4">{error}</p>}
 
           <button
             disabled={loading}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg text-lg font-semibold transition disabled:opacity-60"
           >
             {loading ? "جاري الدخول..." : "تسجيل الدخول"}
+          </button>
+
+          <div className="flex items-center gap-3 my-5">
+            <div className="h-px bg-gray-200 flex-1" />
+            <span className="text-sm text-gray-400">أو</span>
+            <div className="h-px bg-gray-200 flex-1" />
+          </div>
+
+          <button
+            type="button"
+            onClick={handleGoogleLogin}
+            disabled={googleLoading}
+            className="w-full border border-gray-300 hover:bg-gray-50 text-gray-700 py-3 rounded-lg text-base font-semibold transition disabled:opacity-60"
+          >
+            {googleLoading ? "جاري التحويل إلى جوجل..." : "الدخول عبر Google"}
           </button>
 
           <p className="text-center text-gray-400 text-sm mt-6">
