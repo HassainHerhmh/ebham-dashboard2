@@ -58,6 +58,7 @@ const AccountStatement: React.FC = () => {
     'receipt': 'سند قبض',
     'opening': 'رصيد افتتاحي',
     'wassel_order': 'طلب وصل لي',
+    'manual_order': 'طلب يدوي',
     'ceiling': 'سند تسقيف حساب' // تم الحل هنا
   };
 

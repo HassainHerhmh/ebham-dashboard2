@@ -1,15 +1,14 @@
 import React, { useEffect, useState } from "react";
 import api from "../../services/api";
 
-/* =========================
-   payment Voucher - UI Only
-========================= */
+type PaymentType = "cash" | "bank" | "";
 
 type Voucher = {
   id: number;
   voucherNo: string;
   date: string;
-  paymentType: "cash" | "bank" | "";
+  paymentType: PaymentType;
+  paymentTypeName?: string;
   cashBox?: string;
   bankAccount?: string;
   transferNo?: string;
@@ -25,7 +24,6 @@ type Voucher = {
   branch: string;
 };
 
-/* ===== Lookups ===== */
 type CashBox = {
   id: number;
   name_ar: string;
@@ -46,10 +44,16 @@ type Currency = {
   name_ar: string;
   code: string;
   symbol: string;
+  is_local?: number;
 };
+
+const today = new Date().toLocaleDateString("en-CA");
 
 const formatLocalDateTime = (dateString: string) => {
   const d = new Date(dateString);
+
+  if (Number.isNaN(d.getTime())) return "-";
+
   return d.toLocaleString("ar-YE", {
     year: "numeric",
     month: "2-digit",
@@ -61,7 +65,12 @@ const formatLocalDateTime = (dateString: string) => {
   });
 };
 
-const today = new Date().toLocaleDateString("en-CA");
+const getPaymentTypeName = (voucher: Voucher) => {
+  if (voucher.paymentTypeName) return voucher.paymentTypeName;
+  if (voucher.paymentType === "cash") return "نقد";
+  if (voucher.paymentType === "bank") return "بنوك";
+  return "-";
+};
 
 const PaymentVoucher: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
@@ -73,25 +82,72 @@ const PaymentVoucher: React.FC = () => {
   const [allDates, setAllDates] = useState(false);
 
   const [list, setList] = useState<Voucher[]>([]);
-
   const [cashBoxes, setCashBoxes] = useState<CashBox[]>([]);
   const [bankAccounts, setBankAccounts] = useState<Bank[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
+  const [journalTypes, setJournalTypes] = useState<any[]>([]);
 
-  useEffect(() => {
-    fetchCashBoxes();
-    fetchBanks();
-    fetchAccounts(); // حسابات فرعية فقط
-    fetchCurrencies();
-    loadVouchers();
-  }, []);
+  const [form, setForm] = useState({
+    voucherNo: "",
+    date: today,
+    paymentType: "" as PaymentType,
+    cashBox: "",
+    bankAccount: "",
+    transferNo: "",
+    currency_id: "",
+    currency: "",
+    amount: "",
+    account: "",
+    analyticAccount: "",
+    costCenter: "",
+    handling: "",
+    notes: "",
+    journalTypeId: "",
+  });
 
-  useEffect(() => {
-    if (cashBoxes.length || bankAccounts.length) {
-      loadVouchers();
-    }
-  }, [cashBoxes, bankAccounts]);
+  const loadVouchers = async () => {
+    const res = await api.get("/payment-vouchers");
+
+    if (!res.data.success) return;
+
+    setList(
+      res.data.list.map((v: any) => {
+        const cashBoxName = v.cash_box_account_id
+          ? cashBoxes.find((c) => c.id === v.cash_box_account_id)?.name_ar ||
+            v.cash_box_name ||
+            ""
+          : "";
+
+        const bankAccountName = v.bank_account_id
+          ? bankAccounts.find((b) => b.id === v.bank_account_id)?.name_ar ||
+            v.bank_name ||
+            ""
+          : "";
+
+        return {
+          id: v.id,
+          voucherNo: String(v.voucher_no),
+          date: v.voucher_date?.split("T")[0] || "",
+          paymentType: v.payment_type,
+          paymentTypeName: v.payment_type_name,
+          cashBox: cashBoxName,
+          bankAccount: bankAccountName,
+          transferNo: v.transfer_no,
+          currency: v.currency_name || "",
+          amount: String(v.amount ?? ""),
+          account: v.account_name || "",
+          analyticAccount: v.analytic_account_id,
+          costCenter: v.cost_center_id,
+          notes: v.notes,
+          handling: v.handling,
+          createdAt: v.created_at,
+          user: v.user_name || "—",
+          branch: v.branch_name || "—",
+        };
+      })
+    );
+  };
 
   const fetchCashBoxes = async () => {
     const res = await api.get("/cash-boxes");
@@ -106,10 +162,9 @@ const PaymentVoucher: React.FC = () => {
 
   const fetchBanks = async () => {
     const res = await api.get("/banks");
-    if (res.data.success) setBankAccounts(res.data.banks);
+    setBankAccounts(res.data.success ? res.data.banks : []);
   };
 
-  // 🔹 حسابات فرعية فقط
   const fetchAccounts = async () => {
     const res = await api.get("/accounts/sub-for-ceiling");
     const data =
@@ -132,83 +187,129 @@ const PaymentVoucher: React.FC = () => {
     setCurrencies(Array.isArray(data) ? data : []);
   };
 
-  const loadVouchers = async () => {
-    const res = await api.get("/payment-vouchers");
-
-    if (res.data.success) {
-      setList(
-        res.data.list.map((v: any) => {
-          const cashBoxName = v.cash_box_account_id
-            ? cashBoxes.find((c) => c.id === v.cash_box_account_id)?.name_ar || ""
-            : "";
-
-          const bankAccountName = v.bank_account_id
-            ? bankAccounts.find((b) => b.id === v.bank_account_id)?.name_ar || ""
-            : "";
-
-          return {
-            id: v.id,
-            voucherNo: v.voucher_no,
-            date: v.voucher_date.split("T")[0],
-            paymentType: v.payment_type,
-            cashBox: cashBoxName,
-            bankAccount: bankAccountName,
-            transferNo: v.transfer_no,
-            currency: v.currency_name,
-            amount: String(v.amount),
-            account: v.account_name,
-            analyticAccount: v.analytic_account_id,
-            costCenter: v.cost_center_id,
-            notes: v.notes,
-            handling: v.handling,
-            createdAt: v.created_at,
-             user: v.user_name || "—",     // بدل الرقم
-             branch: v.branch_name || "—", // بدل الرقم
-          };
-        })
-      );
-    }
+  const fetchJournalTypes = async () => {
+    const res = await api.get("/journal-types");
+    const data =
+      res.data?.list ||
+      res.data?.journalTypes ||
+      res.data?.data ||
+      res.data ||
+      [];
+    setJournalTypes(Array.isArray(data) ? data : []);
   };
 
-  const [form, setForm] = useState({
-    voucherNo: String(list.length + 1),
-    date: today,
-    paymentType: "" as "cash" | "bank" | "",
-    cashBox: "",
-    bankAccount: "",
-    transferNo: "",
-    currency_id: "",
-    currency: "ريال يمني",
-    amount: "",
-    account: "",
-    analyticAccount: "",
-    costCenter: "",
-    handling: "",
-    notes: "",
-  });
+  useEffect(() => {
+    fetchCashBoxes();
+    fetchBanks();
+    fetchAccounts();
+    fetchCurrencies();
+    fetchJournalTypes();
+    loadVouchers();
+  }, []);
+
+  useEffect(() => {
+    if (cashBoxes.length || bankAccounts.length) {
+      loadVouchers();
+    }
+  }, [cashBoxes, bankAccounts]);
+
+  useEffect(() => {
+    if (!form.currency_id && currencies.length > 0) {
+      const defaultCurrency = currencies.find((c) => c.is_local === 1) || currencies[0];
+
+      setForm((prev) => ({
+        ...prev,
+        currency_id: String(defaultCurrency.id),
+        currency: defaultCurrency.name_ar,
+      }));
+    }
+  }, [currencies, form.currency_id]);
+
+  const resetForm = () => {
+    const defaultCurrency = currencies.find((c) => c.is_local === 1) || currencies[0];
+
+    setForm({
+      voucherNo: "",
+      date: today,
+      paymentType: "",
+      cashBox: "",
+      bankAccount: "",
+      transferNo: "",
+      currency_id: defaultCurrency ? String(defaultCurrency.id) : "",
+      currency: defaultCurrency?.name_ar || "",
+      amount: "",
+      account: "",
+      analyticAccount: "",
+      costCenter: "",
+      handling: "",
+      notes: "",
+      journalTypeId: "",
+    });
+  };
+
+  const openAdd = () => {
+    setSelectedId(null);
+    resetForm();
+    setShowModal(true);
+  };
+
+  const getValidatedPayload = () => {
+    if (!form.paymentType) {
+      alert("اختر نوع السند");
+      return null;
+    }
+
+    if (form.paymentType === "cash" && !form.cashBox) {
+      alert("اختر الصندوق");
+      return null;
+    }
+
+    if (form.paymentType === "bank" && !form.bankAccount) {
+      alert("اختر حساب البنك");
+      return null;
+    }
+
+    if (!form.account) {
+      alert("اختر الحساب");
+      return null;
+    }
+
+    if (!form.currency_id) {
+      alert("اختر العملة");
+      return null;
+    }
+
+    if (!form.amount || Number(form.amount) <= 0) {
+      alert("أدخل مبلغ صحيح");
+      return null;
+    }
+
+    return {
+      voucher_no: form.voucherNo,
+      voucher_date: form.date,
+      payment_type: form.paymentType,
+      cash_box_account_id:
+        form.paymentType === "cash" ? Number(form.cashBox) : null,
+      bank_account_id:
+        form.paymentType === "bank" ? Number(form.bankAccount) : null,
+      transfer_no: form.transferNo || null,
+      currency_id: Number(form.currency_id),
+      amount: Number(form.amount),
+      account_id: Number(form.account),
+      analytic_account_id: form.analyticAccount || null,
+      cost_center_id: form.costCenter || null,
+      journal_type_id: form.journalTypeId ? Number(form.journalTypeId) : 1,
+      notes: form.notes || null,
+      handling: form.handling || null,
+      created_by: 1,
+      branch_id: 1,
+    };
+  };
 
   const addVoucher = async () => {
     try {
-      const payload = {
-        voucher_no: form.voucherNo,
-        voucher_date: form.date,
-        payment_type: form.paymentType,
-        cash_box_account_id:
-          form.paymentType === "cash" ? Number(form.cashBox) : null,
-        bank_account_id:
-          form.paymentType === "bank" ? Number(form.bankAccount) : null,
-        transfer_no: form.transferNo || null,
-        currency_id: Number(form.currency_id),
-        amount: Number(form.amount),
-        account_id: Number(form.account),
-        analytic_account_id: form.analyticAccount || null,
-        cost_center_id: form.costCenter || null,
-        journal_type_id: 1,
-        notes: form.notes || null,
-        handling: form.handling || null, // نصي
-        created_by: 1,
-        branch_id: 1,
-      };
+      const payload = getValidatedPayload();
+      if (!payload) return;
 
       const res = await api.post("/payment-vouchers", payload);
       if (!res.data.success) return alert("فشل حفظ السند");
@@ -216,21 +317,7 @@ const PaymentVoucher: React.FC = () => {
       await loadVouchers();
       setShowModal(false);
       setSelectedId(null);
-
-      setForm({
-        ...form,
-        paymentType: "",
-        cashBox: "",
-        bankAccount: "",
-        transferNo: "",
-        currency_id: "",
-        amount: "",
-        account: "",
-        analyticAccount: "",
-        costCenter: "",
-        handling: "",
-        notes: "",
-      });
+      resetForm();
     } catch (err: any) {
       alert(err.response?.data?.message || "خطأ في حفظ سند الصرف");
     }
@@ -240,22 +327,8 @@ const PaymentVoucher: React.FC = () => {
     if (!selectedId) return;
 
     try {
-      const payload = {
-        voucher_date: form.date,
-        payment_type: form.paymentType,
-        cash_box_account_id:
-          form.paymentType === "cash" ? Number(form.cashBox) : null,
-        bank_account_id:
-          form.paymentType === "bank" ? Number(form.bankAccount) : null,
-        transfer_no: form.transferNo || null,
-        currency_id: Number(form.currency_id),
-        amount: Number(form.amount),
-        account_id: Number(form.account),
-        analytic_account_id: form.analyticAccount || null,
-        cost_center_id: form.costCenter || null,
-        handling: form.handling || null,
-        notes: form.notes || null,
-      };
+      const payload = getValidatedPayload();
+      if (!payload) return;
 
       const res = await api.put(`/payment-vouchers/${selectedId}`, payload);
       if (!res.data.success) return alert("فشل التعديل");
@@ -269,12 +342,13 @@ const PaymentVoucher: React.FC = () => {
   };
 
   const remove = async () => {
-    if (!selectedId) return alert("حدد سند أولاً");
+    if (!selectedId) return alert("حدد سند أولًا");
     if (!window.confirm("هل أنت متأكد من حذف السند؟")) return;
 
     try {
       const res = await api.delete(`/payment-vouchers/${selectedId}`);
       if (!res.data.success) return alert("فشل حذف السند");
+
       await loadVouchers();
       setSelectedId(null);
     } catch (err: any) {
@@ -284,6 +358,7 @@ const PaymentVoucher: React.FC = () => {
 
   const openEdit = () => {
     if (!selectedId) return;
+
     const v = list.find((x) => x.id === selectedId);
     if (!v) return;
 
@@ -299,15 +374,16 @@ const PaymentVoucher: React.FC = () => {
         : "",
       transferNo: v.transferNo || "",
       currency_id:
-        currencies.find((c) => c.name_ar === v.currency)?.id?.toString() || "",
-      currency: v.currency,
+        currencies.find((c) => c.name_ar === v.currency)?.id?.toString() ||
+        form.currency_id,
+      currency: v.currency || form.currency,
       amount: v.amount,
-      account:
-        accounts.find((a) => a.name_ar === v.account)?.id?.toString() || "",
+      account: accounts.find((a) => a.name_ar === v.account)?.id?.toString() || "",
       analyticAccount: v.analyticAccount || "",
       costCenter: v.costCenter || "",
       handling: v.handling || "",
       notes: v.notes || "",
+      journalTypeId: "",
     });
 
     setShowModal(true);
@@ -325,56 +401,34 @@ const PaymentVoucher: React.FC = () => {
     return matchSearch && matchDate;
   });
 
-
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" dir="rtl">
+      <div className="flex items-center justify-between rounded-lg bg-[#e9efe6] p-4">
+        <div className="flex gap-2">
+          <button onClick={openAdd} className="btn-green">
+            إضافة
+          </button>
+          <button
+            onClick={openEdit}
+            disabled={!selectedId}
+            className={`btn-gray ${!selectedId ? "cursor-not-allowed opacity-50" : ""}`}
+          >
+            تعديل
+          </button>
+          <button
+            onClick={remove}
+            disabled={!selectedId}
+            className={`btn-red ${!selectedId ? "cursor-not-allowed opacity-50" : ""}`}
+          >
+            حذف
+          </button>
+          <button className="btn-gray">طباعة</button>
+        </div>
+      </div>
 
-      {/* ================= Actions ================= */}
-<div className="flex justify-between items-center bg-[#e9efe6] p-4 rounded-lg">
-  <div className="flex gap-2">
-
-    {/* إضافة */}
-    <button
-      onClick={() => {
-        setSelectedId(null);
-        setShowModal(true);
-      }}
-      className="btn-green"
-    >
-      ➕ إضافة
-    </button>
-
-    {/* تعديل */}
-    <button
-      onClick={openEdit}
-      disabled={!selectedId}
-      className={`btn-gray ${!selectedId ? "opacity-50 cursor-not-allowed" : ""}`}
-    >
-      ✏️ تعديل
-    </button>
-
-    {/* حذف */}
-    <button
-      onClick={remove}
-      disabled={!selectedId}
-      className={`btn-red ${!selectedId ? "opacity-50 cursor-not-allowed" : ""}`}
-    >
-      🗑️ حذف
-    </button>
-
-    {/* طباعة */}
-    <button className="btn-gray">
-      🖨️ طباعة
-    </button>
-
-  </div>
-</div>
-
-
-      {/* ================= Filters ================= */}
-      <div className="flex justify-between items-center px-2">
+      <div className="flex items-center justify-between px-2">
         <input
-          placeholder="🔍 بحث..."
+          placeholder="بحث..."
           className="input w-56 text-right"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -399,83 +453,76 @@ const PaymentVoucher: React.FC = () => {
         </div>
       </div>
 
-      {/* ================= Table ================= */}
-      {/* ================= Table ================= */}
-<div className="bg-white rounded shadow overflow-x-auto">
-  <table className="w-full text-sm text-center border border-gray-200 border-collapse">
-    <thead className="bg-green-600 text-white">
-      <tr>
-        <th className="border border-gray-200 px-2 py-1">رقم السند</th>
-        <th className="border border-gray-200 px-2 py-1">التاريخ</th>
-        <th className="border border-gray-200 px-2 py-1">نوع الصرف</th>
-        <th className="border border-gray-200 px-2 py-1">الصندوق / البنك</th>
-        <th className="border border-gray-200 px-2 py-1">رقم الحوالة</th>
-        <th className="border border-gray-200 px-2 py-1">العملة</th>
-        <th className="border border-gray-200 px-2 py-1">المبلغ</th>
-        <th className="border border-gray-200 px-2 py-1">الحساب</th>
-        <th className="border border-gray-200 px-2 py-1">ملاحظات</th>
-        <th className="border border-gray-200 px-2 py-1">وقت الإنشاء</th>
-        <th className="border border-gray-200 px-2 py-1">المستخدم</th>
-        <th className="border border-gray-200 px-2 py-1">الفرع</th>
-      </tr>
-    </thead>
-    <tbody>
-      {filtered.length ? (
-        filtered.map((v) => (
-          <tr
-            key={v.id}
-            onClick={() => setSelectedId(v.id)}
-            className={`cursor-pointer hover:bg-gray-50 ${
-              selectedId === v.id ? "bg-green-100" : ""
-            }`}
-          >
-            <td className="border border-gray-200 px-2 py-1">{v.voucherNo}</td>
-            <td className="border border-gray-200 px-2 py-1">{v.date}</td>
-            <td className="border border-gray-200 px-2 py-1">
-              {v.paymentType === "cash" ? "نقد" : "بنوك"}
-            </td>
-            <td className="border border-gray-200 px-2 py-1">
-              {v.cashBox || v.bankAccount || "-"}
-            </td>
-            <td className="border border-gray-200 px-2 py-1">
-              {v.transferNo || "-"}
-            </td>
-            <td className="border border-gray-200 px-2 py-1">{v.currency}</td>
-            <td className="border border-gray-200 px-2 py-1">{v.amount}</td>
-            <td className="border border-gray-200 px-2 py-1">{v.account}</td>
-            <td className="border border-gray-200 px-2 py-1">
-              {v.notes || "-"}
-            </td>
-            <td className="border border-gray-200 px-2 py-1">
-              {formatLocalDateTime(v.createdAt)}
-            </td>
-            <td className="border border-gray-200 px-2 py-1">{v.user}</td>
-            <td className="border border-gray-200 px-2 py-1">{v.branch}</td>
-          </tr>
-        ))
-      ) : (
-        <tr>
-          <td colSpan={12} className="py-6 text-gray-400 border border-gray-200">
-            لا توجد بيانات
-          </td>
-        </tr>
-      )}
-    </tbody>
-  </table>
-</div>
+      <div className="overflow-x-auto rounded bg-white shadow">
+        <table className="w-full border-collapse border border-gray-200 text-center text-sm">
+          <thead className="bg-green-600 text-white">
+            <tr>
+              <th className="border border-gray-200 px-2 py-1">رقم السند</th>
+              <th className="border border-gray-200 px-2 py-1">التاريخ</th>
+              <th className="border border-gray-200 px-2 py-1">نوع الصرف</th>
+              <th className="border border-gray-200 px-2 py-1">الصندوق / البنك</th>
+              <th className="border border-gray-200 px-2 py-1">رقم الحوالة</th>
+              <th className="border border-gray-200 px-2 py-1">العملة</th>
+              <th className="border border-gray-200 px-2 py-1">المبلغ</th>
+              <th className="border border-gray-200 px-2 py-1">الحساب</th>
+              <th className="border border-gray-200 px-2 py-1">ملاحظات</th>
+              <th className="border border-gray-200 px-2 py-1">وقت الإنشاء</th>
+              <th className="border border-gray-200 px-2 py-1">المستخدم</th>
+              <th className="border border-gray-200 px-2 py-1">الفرع</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.length ? (
+              filtered.map((v) => (
+                <tr
+                  key={v.id}
+                  onClick={() => setSelectedId(v.id)}
+                  className={`cursor-pointer hover:bg-gray-50 ${
+                    selectedId === v.id ? "bg-green-100" : ""
+                  }`}
+                >
+                  <td className="border border-gray-200 px-2 py-1">{v.voucherNo}</td>
+                  <td className="border border-gray-200 px-2 py-1">{v.date}</td>
+                  <td className="border border-gray-200 px-2 py-1">
+                    {getPaymentTypeName(v)}
+                  </td>
+                  <td className="border border-gray-200 px-2 py-1">
+                    {v.cashBox || v.bankAccount || "-"}
+                  </td>
+                  <td className="border border-gray-200 px-2 py-1">
+                    {v.transferNo || "-"}
+                  </td>
+                  <td className="border border-gray-200 px-2 py-1">{v.currency}</td>
+                  <td className="border border-gray-200 px-2 py-1">{v.amount}</td>
+                  <td className="border border-gray-200 px-2 py-1">{v.account}</td>
+                  <td className="border border-gray-200 px-2 py-1">
+                    {v.notes || "-"}
+                  </td>
+                  <td className="border border-gray-200 px-2 py-1">
+                    {formatLocalDateTime(v.createdAt)}
+                  </td>
+                  <td className="border border-gray-200 px-2 py-1">{v.user}</td>
+                  <td className="border border-gray-200 px-2 py-1">{v.branch}</td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={12} className="border border-gray-200 py-6 text-gray-400">
+                  لا توجد بيانات
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
 
-
-      {/* ================= Modal ================= */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-[#eef3ee] w-[760px] rounded-xl p-6 space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="w-[760px] space-y-4 rounded-xl bg-[#eef3ee] p-6">
+            <h3 className="text-center text-lg font-bold">
+              {selectedId ? "تعديل سند صرف" : "إضافة سند صرف"}
+            </h3>
 
-            <h3 className="text-lg font-bold text-center">
-  {selectedId ? "✏️ تعديل سند صرف" : "➕ إضافة سند صرف"}
-</h3>
-
-
-            {/* الصف العلوي */}
             <div className="grid grid-cols-3 gap-4">
               <input disabled className="input bg-gray-100" value={form.voucherNo} />
               <input
@@ -490,7 +537,7 @@ const PaymentVoucher: React.FC = () => {
                 onChange={(e) =>
                   setForm({
                     ...form,
-                    paymentType: e.target.value as any,
+                    paymentType: e.target.value as PaymentType,
                     cashBox: "",
                     bankAccount: "",
                     transferNo: "",
@@ -503,24 +550,20 @@ const PaymentVoucher: React.FC = () => {
               </select>
             </div>
 
-            {/* الصندوق / البنك + رقم الحوالة + الحساب */}
             <div className="grid grid-cols-3 gap-4">
               {form.paymentType === "cash" && (
                 <select
-  className="input"
-  value={form.cashBox}
-  onChange={(e) =>
-    setForm({ ...form, cashBox: e.target.value })
-  }
->
-  <option value="">-- اختر الصندوق --</option>
-
-  {cashBoxes.map((c) => (
-    <option key={c.id} value={c.id}>
-      {c.name_ar}
-    </option>
-  ))}
-</select>
+                  className="input"
+                  value={form.cashBox}
+                  onChange={(e) => setForm({ ...form, cashBox: e.target.value })}
+                >
+                  <option value="">-- اختر الصندوق --</option>
+                  {cashBoxes.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name_ar}
+                    </option>
+                  ))}
+                </select>
               )}
 
               {form.paymentType === "bank" && (
@@ -528,11 +571,15 @@ const PaymentVoucher: React.FC = () => {
                   <select
                     className="input"
                     value={form.bankAccount}
-                    onChange={(e) => setForm({ ...form, bankAccount: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, bankAccount: e.target.value })
+                    }
                   >
                     <option value="">-- اختر حساب البنك --</option>
                     {bankAccounts.map((b) => (
-                      <option key={b.id} value={b.id}>{b.name_ar}</option>
+                      <option key={b.id} value={b.id}>
+                        {b.name_ar}
+                      </option>
                     ))}
                   </select>
 
@@ -540,7 +587,9 @@ const PaymentVoucher: React.FC = () => {
                     placeholder="رقم الحوالة (اختياري)"
                     className="input"
                     value={form.transferNo}
-                    onChange={(e) => setForm({ ...form, transferNo: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, transferNo: e.target.value })
+                    }
                   />
                 </>
               )}
@@ -552,25 +601,26 @@ const PaymentVoucher: React.FC = () => {
               >
                 <option value="">-- الحساب --</option>
                 {accounts.map((a) => (
-                  <option key={a.id} value={a.id}>{a.name_ar}</option>
+                  <option key={a.id} value={a.id}>
+                    {a.name_ar}
+                  </option>
                 ))}
               </select>
             </div>
 
-            {/* العملة / المبلغ / المناولة */} 
             <div className="grid grid-cols-3 gap-4">
-            <select
-               className="input"
-               value={form.currency_id}
+              <select
+                className="input"
+                value={form.currency_id}
                 onChange={(e) => setForm({ ...form, currency_id: e.target.value })}
               >
-               <option value="">-- العملة --</option>
-               {currencies.map((c) => (
-               <option key={c.id} value={c.id}>
-                {c.name_ar} ({c.code})
-               </option>
-             ))}
-               </select>
+                <option value="">-- العملة --</option>
+                {currencies.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name_ar} ({c.code})
+                  </option>
+                ))}
+              </select>
 
               <input
                 type="number"
@@ -587,52 +637,68 @@ const PaymentVoucher: React.FC = () => {
               />
             </div>
 
-            {/* البيان */}
             <textarea
-              className="input"
+              className="input w-full"
               placeholder="البيان"
               value={form.notes}
               onChange={(e) => setForm({ ...form, notes: e.target.value })}
             />
 
-            {/* خيارات إضافية */}
             <div className="border-t pt-3">
               <button
                 onClick={() => setShowExtra(!showExtra)}
-                className="w-full text-green-700 font-semibold flex items-center justify-between"
+                className="flex w-full items-center justify-between font-semibold text-green-700"
               >
                 <span>الخيارات الإضافية</span>
                 <span>{showExtra ? "▾" : "▸"}</span>
               </button>
 
               {showExtra && (
-                <div className="grid grid-cols-3 gap-4 mt-3">
-                  <input placeholder="نوع السند" className="input" />
+                <div className="mt-3 grid grid-cols-3 gap-4">
+                  <select
+                    className="input"
+                    value={form.journalTypeId}
+                    onChange={(e) =>
+                      setForm({ ...form, journalTypeId: e.target.value })
+                    }
+                  >
+                    <option value="">-- نوع السند --</option>
+                    {journalTypes.map((jt: any) => (
+                      <option key={jt.id} value={jt.id}>
+                        {jt.name_ar} {jt.code ? `(${jt.code})` : ""}
+                      </option>
+                    ))}
+                  </select>
                   <input
                     placeholder="الحساب التحليلي"
                     className="input"
                     value={form.analyticAccount}
-                    onChange={(e) => setForm({ ...form, analyticAccount: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, analyticAccount: e.target.value })
+                    }
                   />
                   <input
                     placeholder="مركز التكلفة"
                     className="input"
                     value={form.costCenter}
-                    onChange={(e) => setForm({ ...form, costCenter: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, costCenter: e.target.value })
+                    }
                   />
                 </div>
               )}
             </div>
 
             <div className="flex justify-between pt-2">
-              <button onClick={() => setShowModal(false)} className="btn-gray">إلغاء</button>
+              <button onClick={() => setShowModal(false)} className="btn-gray">
+                إلغاء
+              </button>
               <button
-  onClick={selectedId ? updateVoucher : addVoucher}
-  className="btn-green"
->
-  {selectedId ? "💾 حفظ التعديل" : "➕ إضافة"}
-</button>
-
+                onClick={selectedId ? updateVoucher : addVoucher}
+                className="btn-green"
+              >
+                {selectedId ? "حفظ التعديل" : "إضافة"}
+              </button>
             </div>
           </div>
         </div>
@@ -640,6 +706,7 @@ const PaymentVoucher: React.FC = () => {
 
       <style>{`
         .input { padding:8px; border-radius:8px; border:1px solid #ccc; background:#fff; }
+        .input:disabled { background:#f3f4f6; color:#374151; }
         .btn-green { background:#14532d; color:#fff; padding:8px 16px; border-radius:8px; }
         .btn-gray { background:#e5e7eb; padding:8px 16px; border-radius:8px; }
         .btn-red { background:#dc2626; color:#fff; padding:8px 16px; border-radius:8px; }

@@ -46,6 +46,7 @@ type Currency = {
   name_ar: string;
   code: string;
   symbol: string;
+  is_local?: number;
 };
 
 const formatLocalDateTime = (dateString: string) => {
@@ -84,18 +85,51 @@ const ReceiptVoucher: React.FC = () => {
   const [cashBoxes, setCashBoxes] = useState<CashBox[]>([]);
   const [bankAccounts, setBankAccounts] = useState<Bank[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
-const [currencies, setCurrencies] = useState<Currency[]>([]);
+  const [currencies, setCurrencies] = useState<Currency[]>([]);
+  const [journalTypes, setJournalTypes] = useState<any[]>([]);
+
+  const [form, setForm] = useState({
+    voucherNo: String(list.length + 1),
+    date: today, // today = YYYY-MM-DD
+    receiptType: "" as "cash" | "bank" | "",
+    cashBox: "",
+    bankAccount: "",
+    transferNo: "",
+    currency_id: "", // âœ…
+    currency: "ط±ظٹط§ظ„ ظٹظ…ظ†ظٹ",
+    amount: "",
+    account: "",
+    analyticAccount: "",
+    costCenter: "",
+    handling: "",
+    notes: "",
+    journalTypeId: "",
+  });
+
 
   /* =========================
      Load Lookups
   ========================= */
-useEffect(() => {
-  fetchCashBoxes();
-  fetchBanks();
-  fetchAccounts();
-  fetchCurrencies();
-  loadVouchers(); // ✅ سطر واحد فقط
-}, []);
+
+  useEffect(() => {
+    fetchCashBoxes();
+    fetchBanks();
+    fetchAccounts();
+    fetchCurrencies();
+    fetchJournalTypes();
+    loadVouchers(); // ✅ سطر واحد فقط
+  }, []);
+
+  const fetchJournalTypes = async () => {
+    const res = await api.get("/journal-types");
+    const data =
+      res.data?.list ||
+      res.data?.journalTypes ||
+      res.data?.data ||
+      res.data ||
+      [];
+    setJournalTypes(Array.isArray(data) ? data : []);
+  };
 
 useEffect(() => {
   if (cashBoxes.length || bankAccounts.length) {
@@ -152,6 +186,70 @@ const fetchAccounts = async () => {
   setCurrencies(Array.isArray(data) ? data : []);
 };
 
+useEffect(() => {
+  if (!form.currency_id && currencies.length > 0) {
+    const defaultCurrency = currencies.find((c) => c.is_local === 1) || currencies[0];
+    setForm((prev) => ({
+      ...prev,
+      currency_id: String(defaultCurrency.id),
+      currency: defaultCurrency.name_ar,
+    }));
+  }
+}, [currencies, form.currency_id]);
+
+const getValidatedPayload = () => {
+  if (!form.receiptType) {
+    alert("اختر نوع السند");
+    return null;
+  }
+
+  if (form.receiptType === "cash" && !form.cashBox) {
+    alert("اختر الصندوق");
+    return null;
+  }
+
+  if (form.receiptType === "bank" && !form.bankAccount) {
+    alert("اختر حساب البنك");
+    return null;
+  }
+
+  if (!form.account) {
+    alert("اختر الحساب");
+    return null;
+  }
+
+  if (!form.currency_id) {
+    alert("اختر العملة");
+    return null;
+  }
+
+  if (!form.amount || Number(form.amount) <= 0) {
+    alert("أدخل مبلغ صحيح");
+    return null;
+  }
+
+  return {
+    voucher_no: form.voucherNo,
+    voucher_date: form.date,
+    receipt_type: form.receiptType,
+    cash_box_account_id:
+      form.receiptType === "cash" ? Number(form.cashBox) : null,
+    bank_account_id:
+      form.receiptType === "bank" ? Number(form.bankAccount) : null,
+    transfer_no: form.transferNo || null,
+    currency_id: Number(form.currency_id),
+    amount: Number(form.amount),
+    account_id: Number(form.account),
+    analytic_account_id: form.analyticAccount || null,
+    cost_center_id: form.costCenter || null,
+    journal_type_id: form.journalTypeId ? Number(form.journalTypeId) : null,
+    notes: form.notes || null,
+    handling: form.handling || 0,
+    created_by: 1,
+    branch_id: 1,
+  };
+};
+
 /* =========================
    Load Vouchers From Server
 ========================= */
@@ -199,52 +297,13 @@ const loadVouchers = async () => {
   }
 };
 
-  const [form, setForm] = useState({
-    voucherNo: String(list.length + 1),
-    date: today, // today = YYYY-MM-DD
-    receiptType: "" as "cash" | "bank" | "",
-    cashBox: "",
-    bankAccount: "",
-    transferNo: "",
-     currency_id: "", // ✅
-    currency: "ريال يمني",
-    amount: "",
-    account: "",
-    analyticAccount: "",
-    costCenter: "",
-    handling: "",
-    notes: "",
-  });
-
   /* =========================
      Add Voucher (UI Only)
   ========================= */
  const addVoucher = async () => {
   try {
-    const payload = {
-      voucher_no: form.voucherNo,
-      voucher_date: form.date,
-      receipt_type: form.receiptType,
-
-      cash_box_account_id:
-        form.receiptType === "cash" ? Number(form.cashBox) : null,
-
-      bank_account_id:
-        form.receiptType === "bank" ? Number(form.bankAccount) : null,
-
-      transfer_no: form.transferNo || null,
-      currency_id: Number(form.currency_id),
-      amount: Number(form.amount),
-      account_id: Number(form.account),
-
-      analytic_account_id: form.analyticAccount || null,
-      cost_center_id: form.costCenter || null,
-      journal_type_id: 1,
-      notes: form.notes || null,
-      handling: form.handling || 0,
-      created_by: 1,
-      branch_id: 1,
-    };
+    const payload = getValidatedPayload();
+    if (!payload) return;
 
     const res = await api.post("/receipt-vouchers", payload);
 
@@ -317,26 +376,8 @@ const loadVouchers = async () => {
   if (!selectedId) return;
 
   try {
-    const payload = {
-      voucher_date: form.date,
-      receipt_type: form.receiptType,
-
-      cash_box_account_id:
-        form.receiptType === "cash" ? Number(form.cashBox) : null,
-
-      bank_account_id:
-        form.receiptType === "bank" ? Number(form.bankAccount) : null,
-
-      transfer_no: form.transferNo || null,
-      currency_id: Number(form.currency_id),
-      amount: Number(form.amount),
-      account_id: Number(form.account),
-
-      analytic_account_id: form.analyticAccount || null,
-      cost_center_id: form.costCenter || null,
-      handling: Number(form.handling) || 0,
-      notes: form.notes || null,
-    };
+    const payload = getValidatedPayload();
+    if (!payload) return;
 
     const res = await api.put(
       `/receipt-vouchers/${selectedId}`,
@@ -385,6 +426,7 @@ const openEdit = () => {
     costCenter: v.costCenter || "",
     handling: v.handling || "",
     notes: v.notes || "",
+    journalTypeId: "", // Could be set from v if available in future
   });
 
   setShowModal(true);
@@ -689,7 +731,18 @@ const openEdit = () => {
 
               {showExtra && (
                 <div className="grid grid-cols-3 gap-4 mt-3">
-                  <input placeholder="نوع السند" className="input" />
+                  <select
+                    className="input"
+                    value={form.journalTypeId}
+                    onChange={e => setForm({ ...form, journalTypeId: e.target.value })}
+                  >
+                    <option value="">-- نوع السند --</option>
+                    {journalTypes.map((jt: any) => (
+                      <option key={jt.id} value={jt.id}>
+                        {jt.name_ar} {jt.code ? `(${jt.code})` : ""}
+                      </option>
+                    ))}
+                  </select>
                   <input
                     placeholder="الحساب التحليلي"
                     className="input"

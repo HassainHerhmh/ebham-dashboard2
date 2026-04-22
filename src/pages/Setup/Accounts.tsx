@@ -1,30 +1,55 @@
 import { useEffect, useState } from "react";
 import api from "../../services/api";
 
-/* =========================
-   Types
-========================= */
+type AccountLevel = "رئيسي" | "فرعي";
+
 type Account = {
   id: number;
   code: string;
   name_ar: string;
   name_en: string | null;
   parent_id: number | null;
+  account_group_id?: number | null;
   parent_name?: string;
-  account_level?: "رئيسي" | "فرعي";
+  account_level?: AccountLevel;
   financial_statement?: string;
-
   created_at?: string;
   created_by?: string;
   branch_name?: string;
   group_name?: string;
-
-  children?: Account[]; 
+  children?: Account[];
 };
 
-/* =========================
-   Floating Input
-========================= */
+type AccountGroup = {
+  id: number;
+  code: string;
+  name_ar: string;
+  name_en?: string | null;
+};
+
+const INITIAL_FORM = {
+  parent: "",
+  costCenter: "",
+  group: "",
+  name_ar: "",
+  name_en: "",
+  level: "رئيسي" as AccountLevel,
+  analysis: "عام",
+  financial: "الميزانية العمومية",
+};
+
+const getRootFinancialStatement = (name: string) => {
+  if (["الأصول", "حقوق الملكية"].includes(name)) {
+    return "الميزانية العمومية";
+  }
+
+  if (["الإيرادات", "المصروفات"].includes(name)) {
+    return "أرباح وخسائر";
+  }
+
+  return "";
+};
+
 const FloatingInput = ({
   label,
   value,
@@ -53,9 +78,6 @@ const FloatingInput = ({
   </div>
 );
 
-/* =========================
-   Floating Select (✔ يدعم disabled)
-========================= */
 const FloatingSelect = ({
   label,
   value,
@@ -74,9 +96,7 @@ const FloatingSelect = ({
       value={value}
       disabled={disabled}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full rounded-lg border border-gray-300 bg-white px-3 py-3
-                 focus:border-green-600 focus:outline-none
-                 disabled:bg-gray-100 disabled:text-gray-500"
+      className="w-full rounded-lg border border-gray-300 bg-white px-3 py-3 focus:border-green-600 focus:outline-none disabled:bg-gray-100 disabled:text-gray-500"
     >
       <option value="">—</option>
       {options.map((o) => (
@@ -92,35 +112,33 @@ const FloatingSelect = ({
   </div>
 );
 
-/* =========================
-   Tree Node (تمييز رئيسي / فرعي)
-========================= */
 const TreeNode = ({ node }: { node: Account }) => {
   const [open, setOpen] = useState(false);
-  const hasChildren = node.children && node.children.length > 0;
+  const hasChildren = Boolean(node.children?.length);
   const isMain = node.account_level === "رئيسي";
 
   return (
     <div className="mr-4 mt-2">
       <div
-        className={`flex items-center gap-2 cursor-pointer hover:text-green-700
-          ${isMain ? "font-bold text-gray-800" : "text-gray-600 italic"}`}
+        className={`flex cursor-pointer items-center gap-2 hover:text-green-700 ${
+          isMain ? "font-bold text-gray-800" : "text-gray-600 italic"
+        }`}
         onClick={() => hasChildren && setOpen(!open)}
       >
         {hasChildren ? <span>{open ? "▼" : "▶"}</span> : <span className="w-4" />}
-        <span>{isMain ? "📁" : "📄"}</span>
+        <span>{isMain ? "●" : "○"}</span>
         <span>
           {node.code} - {node.name_ar}
         </span>
         {!isMain && (
-          <span className="text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
+          <span className="rounded bg-blue-50 px-2 py-0.5 text-xs text-blue-600">
             فرعي
           </span>
         )}
       </div>
 
       {hasChildren && open && (
-        <div className="border-r border-dashed border-gray-400 mr-4 pr-3">
+        <div className="mr-4 border-r border-dashed border-gray-400 pr-3">
           {node.children!.map((child) => (
             <TreeNode key={child.id} node={child} />
           ))}
@@ -130,14 +148,11 @@ const TreeNode = ({ node }: { node: Account }) => {
   );
 };
 
-/* =========================
-   Main Component
-========================= */
 const Accounts = () => {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [accountsList, setAccountsList] = useState<Account[]>([]);
+  const [accountGroups, setAccountGroups] = useState<AccountGroup[]>([]);
   const [loading, setLoading] = useState(true);
-
   const [selectedAccountId, setSelectedAccountId] = useState<number | null>(null);
 
   const [form, setForm] = useState<{
@@ -146,78 +161,105 @@ const Accounts = () => {
     group: string;
     name_ar: string;
     name_en: string;
-    level: "رئيسي" | "فرعي";
+    level: AccountLevel;
     analysis: string;
     financial: string;
-  }>({
-    parent: "",
-    costCenter: "",
-    group: "",
-    name_ar: "",
-    name_en: "",
-    level: "رئيسي",
-    analysis: "عام",
-    financial: "الميزانية العمومية",
-  });
+  }>(INITIAL_FORM);
 
-  /* =========================
-     Load Accounts
-  ========================= */
   const loadAccounts = async () => {
     const data = await api.accounts.getAccounts();
     setAccounts(data.tree);
     setAccountsList(data.list);
   };
 
+  const loadAccountGroups = async () => {
+    const data = await api.accountGroups.getAll();
+    setAccountGroups(data.groups || []);
+  };
+
   useEffect(() => {
-    loadAccounts().finally(() => setLoading(false));
+    Promise.all([loadAccounts(), loadAccountGroups()]).finally(() =>
+      setLoading(false)
+    );
   }, []);
 
-  /* =========================
-     جميع الحسابات كآباء
-  ========================= */
-  const mainAccountsOptions = accountsList.map((a) => ({
-    value: String(a.id),
-    label: `${a.code} - ${a.name_ar}`,
+  const mainAccountsOptions = accountsList
+    .filter((a) => a.account_level === "رئيسي" && a.id !== selectedAccountId)
+    .map((a) => ({
+      value: String(a.id),
+      label: `${a.code} - ${a.name_ar}`,
+    }));
+
+  const accountGroupOptions = accountGroups.map((group) => ({
+    value: String(group.id),
+    label: `${group.code} - ${group.name_ar}`,
   }));
 
-  /* =========================
-     Row Click → Fill Form
-  ========================= */
+  const resetForm = () => {
+    setForm(INITIAL_FORM);
+    setSelectedAccountId(null);
+  };
+
+  useEffect(() => {
+    const selectedParent = accountsList.find((account) => String(account.id) === form.parent);
+
+    setForm((prev) => {
+      const nextFinancial = selectedParent?.financial_statement || getRootFinancialStatement(prev.name_ar);
+
+      if (prev.financial === nextFinancial) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        financial: nextFinancial,
+      };
+    });
+  }, [form.parent, form.name_ar, accountsList]);
+
   const handleRowClick = (row: Account) => {
     setSelectedAccountId(row.id);
     setForm((prev) => ({
       ...prev,
       parent: row.parent_id ? String(row.parent_id) : "",
+      group: row.account_group_id ? String(row.account_group_id) : "",
       name_ar: row.name_ar,
       name_en: row.name_en ?? "",
       level: row.account_level ?? "رئيسي",
+      financial: row.financial_statement ?? "",
     }));
   };
 
-  /* =========================
-     Update
-  ========================= */
   const handleUpdate = async () => {
     if (!selectedAccountId) {
       alert("اختر حساب من الجدول أولًا");
       return;
     }
 
+    if (form.level === "فرعي" && !form.parent) {
+      alert("الحساب الفرعي يجب أن يرتبط بحساب أب");
+      return;
+    }
+
     await api.accounts.updateAccount(selectedAccountId, {
       name_ar: form.name_ar,
       name_en: form.name_en,
+      parent_id: form.parent ? Number(form.parent) : null,
+      account_group_id: form.group ? Number(form.group) : null,
+      account_level: form.level,
     });
 
     await loadAccounts();
   };
 
-  /* =========================
-     Add Account
-  ========================= */
   const handleAdd = async () => {
     if (!form.name_ar) {
       alert("اسم الحساب مطلوب");
+      return;
+    }
+
+    if (form.level === "فرعي" && !form.parent) {
+      alert("الحساب الفرعي يجب أن يرتبط بحساب أب");
       return;
     }
 
@@ -225,40 +267,27 @@ const Accounts = () => {
       name_ar: form.name_ar,
       name_en: form.name_en,
       parent_id: form.parent ? Number(form.parent) : null,
+      account_group_id: form.group ? Number(form.group) : null,
       account_level: form.level,
     });
 
     await loadAccounts();
-
-    setForm({
-      parent: "",
-      costCenter: "",
-      group: "",
-      name_ar: "",
-      name_en: "",
-      level: "رئيسي",
-      analysis: "عام",
-      financial: "الميزانية العمومية",
-    });
-
-    setSelectedAccountId(null);
+    resetForm();
   };
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-bold text-right">دليل الحسابات</h2>
+      <h2 className="text-right text-xl font-bold">دليل الحسابات</h2>
 
       <div className="grid grid-cols-12 gap-6">
-        {/* Tree */}
-        <div className="col-span-4 bg-[#dfe8e1] rounded-xl p-4">
-          <h3 className="font-bold mb-3 text-right">شجرة الحسابات</h3>
+        <div className="col-span-4 rounded-xl bg-[#dfe8e1] p-4">
+          <h3 className="mb-3 text-right font-bold">شجرة الحسابات</h3>
           {loading
             ? "جاري التحميل..."
             : accounts.map((a) => <TreeNode key={a.id} node={a} />)}
         </div>
 
-        {/* Form */}
-        <div className="col-span-8 bg-[#dfe8e1] rounded-xl p-6 space-y-5">
+        <div className="col-span-8 space-y-5 rounded-xl bg-[#dfe8e1] p-6">
           <div className="grid grid-cols-3 gap-4">
             <FloatingSelect
               label="حساب الأب"
@@ -273,10 +302,11 @@ const Accounts = () => {
               onChange={(v) => setForm({ ...form, costCenter: v })}
             />
 
-            <FloatingInput
+            <FloatingSelect
               label="مجموعة الحسابات"
               value={form.group}
               onChange={(v) => setForm({ ...form, group: v })}
+              options={accountGroupOptions}
             />
           </div>
 
@@ -297,9 +327,7 @@ const Accounts = () => {
             <FloatingSelect
               label="نوع الحساب"
               value={form.level}
-              onChange={(v) =>
-                setForm({ ...form, level: v as "رئيسي" | "فرعي" })
-              }
+              onChange={(v) => setForm({ ...form, level: v as AccountLevel })}
               options={[
                 { value: "رئيسي", label: "رئيسي" },
                 { value: "فرعي", label: "فرعي" },
@@ -321,7 +349,10 @@ const Accounts = () => {
               value={form.financial}
               onChange={(v) => setForm({ ...form, financial: v })}
               options={[
-                { value: "الميزانية العمومية", label: "الميزانية العمومية" },
+                {
+                  value: "الميزانية العمومية",
+                  label: "الميزانية العمومية",
+                },
                 { value: "أرباح وخسائر", label: "أرباح وخسائر" },
               ]}
               disabled
@@ -335,7 +366,10 @@ const Accounts = () => {
             >
               تحديث
             </button>
-            <button className="rounded-lg bg-gray-300 px-5 py-2">
+            <button
+              onClick={resetForm}
+              className="rounded-lg bg-gray-300 px-5 py-2"
+            >
               مسح الحقول
             </button>
             <button
@@ -348,9 +382,8 @@ const Accounts = () => {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-xl shadow overflow-x-auto">
-        <table className="w-full text-sm text-right">
+      <div className="overflow-x-auto rounded-xl bg-white shadow">
+        <table className="w-full text-right text-sm">
           <thead className="bg-green-600 text-white">
             <tr>
               <th className="p-2">الحساب الأب</th>
@@ -371,7 +404,7 @@ const Accounts = () => {
               <tr
                 key={row.id}
                 onClick={() => handleRowClick(row)}
-                className="cursor-pointer hover:bg-gray-100 border-b"
+                className="cursor-pointer border-b hover:bg-gray-100"
               >
                 <td className="p-2">{row.parent_name ?? "—"}</td>
                 <td className="p-2">{row.name_ar}</td>
@@ -393,4 +426,3 @@ const Accounts = () => {
 };
 
 export default Accounts;
- 
