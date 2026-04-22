@@ -36,24 +36,32 @@ const JournalTypes: React.FC = () => {
   }, [search]);
 
   const save = async () => {
-    if (!form.code || !form.name_ar || !form.sort_order) {
-      alert("الرقم والاسم والترتيب مطلوبة");
+    if (!form.name_ar.trim()) {
+      alert("الاسم مطلوب");
       return;
     }
 
     try {
       if (editId) {
-        await api.put(`/journal-types/${editId}`, {
+        const payload: {
+          name_ar: string;
+          name_en: string | null;
+          sort_order?: number;
+        } = {
           name_ar: form.name_ar,
           name_en: form.name_en || null,
-          sort_order: Number(form.sort_order),
-        });
+        };
+
+        if (form.sort_order.trim()) {
+          payload.sort_order = Number(form.sort_order);
+        }
+
+        await api.put(`/journal-types/${editId}`, payload);
       } else {
         await api.post("/journal-types", {
-          code: Number(form.code),
           name_ar: form.name_ar,
           name_en: form.name_en || null,
-          sort_order: Number(form.sort_order),
+          ...(form.sort_order.trim() ? { sort_order: Number(form.sort_order) } : {}),
         });
       }
 
@@ -162,8 +170,11 @@ const JournalTypes: React.FC = () => {
               {editId ? "تعديل نوع قيد يومية" : "إضافة نوع قيد يومية"}
             </h2>
 
-            <input className="border p-2 w-full rounded" placeholder="الرقم" value={form.code} disabled={!!editId}
-              onChange={(e) => setForm({ ...form, code: e.target.value })} />
+            {!editId && (
+              <div className="rounded border border-dashed border-gray-300 bg-white px-3 py-2 text-right text-sm text-gray-500">
+                الرقم يتولد تلقائيًا عند الحفظ
+              </div>
+            )}
 
             <input className="border p-2 w-full rounded" placeholder="الاسم" value={form.name_ar}
               onChange={(e) => setForm({ ...form, name_ar: e.target.value })} />
@@ -171,7 +182,7 @@ const JournalTypes: React.FC = () => {
             <input className="border p-2 w-full rounded" placeholder="الاسم الأجنبي" value={form.name_en}
               onChange={(e) => setForm({ ...form, name_en: e.target.value })} />
 
-            <input className="border p-2 w-full rounded" placeholder="الترتيب" value={form.sort_order}
+            <input className="border p-2 w-full rounded" placeholder="الترتيب (اختياري)" value={form.sort_order}
               onChange={(e) => setForm({ ...form, sort_order: e.target.value })} />
 
             <div className="flex justify-between pt-2">

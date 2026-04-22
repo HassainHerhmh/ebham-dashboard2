@@ -62,6 +62,9 @@ interface OrderDetails {
   delivery_fee: number | string | null;
   extra_store_fee?: number | string | null;
   payment_method?: string;
+  bank_id?: number | string | null;
+  bank_name?: string | null;
+  bank_account_number?: string | null;
   depositor_name?: string;
   reference_no?: string;
   attachments?: any[];
@@ -364,6 +367,14 @@ const Orders: React.FC = () => {
   };
   const paymentMethod = (selectedOrderDetails as any)?.payment_method;
   const paymentMethodLabel = paymentMethodLabelMap[paymentMethod] || "غير محدد";
+  const bankDisplay =
+    (selectedOrderDetails as any)?.bank_name &&
+    [
+      (selectedOrderDetails as any).bank_name,
+      (selectedOrderDetails as any).bank_account_number,
+    ]
+      .filter(Boolean)
+      .join(" - ");
 
   // ========= إضافة طلب =========
   const [showAddOrderModal, setShowAddOrderModal] = useState(false);
@@ -533,7 +544,7 @@ const Orders: React.FC = () => {
   useEffect(() => {
     if (!showAddOrderModal) return;
 
-    api.get("/payments/banks/active").then((res) => {
+    api.get("/payment-methods/active").then((res) => {
       setBanks(res.data?.methods || []);
     });
 
@@ -1437,6 +1448,9 @@ const grandTotal = allRestaurantsTotal + delivery + extraStore - discount;
                       <div className="border p-3 rounded bg-white">
                         <h4 className="font-bold mb-2">💳 تفاصيل الدفع</h4>
                         <p>طريقة الدفع: <strong>{paymentMethodLabel}</strong></p>
+                        {paymentMethod === "bank" && (
+                          <p>البنك: <strong>{bankDisplay || "غير محدد"}</strong></p>
+                        )}
                         {(paymentMethod === "bank" || paymentMethod === "wallet") && (
                           <>
                             {depositorName && <p>اسم المودع: {depositorName}</p>}

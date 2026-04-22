@@ -811,10 +811,9 @@ export const accountsApi = {
     (await api.get("/journal-types", { params: { search } })).data,
 
   create: async (data: {
-    code: number;
     name_ar: string;
     name_en?: string | null;
-    sort_order: number;
+    sort_order?: number;
   }) =>
     (await api.post("/journal-types", data)).data,
 
@@ -823,7 +822,7 @@ export const accountsApi = {
     data: {
       name_ar: string;
       name_en?: string | null;
-      sort_order: number;
+      sort_order?: number;
     }
   ) =>
     (await api.put(`/journal-types/${id}`, data)).data,
