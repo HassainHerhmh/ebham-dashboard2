@@ -33,6 +33,7 @@ import PaymentsWallet from "./pages/PaymentsWallet";
 import CommissionReport from "./pages/CommissionReport";
 import AgentReports from "./pages/AgentReports";
 import CaptainReports from "./pages/CaptainReports";
+import UserAttendanceReports from "./pages/UserAttendanceReports";
 
 import WasselOrders from "./pages/WasselOrders";
 import MapPage from "./pages/MapPage";
@@ -46,6 +47,7 @@ import AgentInfo from "./pages/AgentInfo";
 
 // الحسابات
 import Accounting from "./pages/Accounting";
+import AccountsAIAnalysis from "./pages/AccountsAIAnalysis";
 import Currencies from "./pages/Setup/Currencies";
 import Accounts from "./pages/Setup/Accounts";
 import AccountGroups from "./pages/Setup/AccountGroups";
@@ -175,6 +177,7 @@ const App: React.FC = () => {
                     <Route path="/reports/commissions" element={<ProtectedRoute section="commission_reports"><CommissionReport /></ProtectedRoute>} />
                     <Route path="/reports/agents" element={<ProtectedRoute section="agent_reports"><AgentReports /></ProtectedRoute>} />
                     <Route path="/reports/captains" element={<ProtectedRoute section="captain_reports"><CaptainReports /></ProtectedRoute>} />
+                    <Route path="/reports/users-attendance" element={<ProtectedRoute section="reports"><UserAttendanceReports /></ProtectedRoute>} />
 <Route
   path="/loyalty"
   element={
@@ -221,6 +224,14 @@ const App: React.FC = () => {
                     </Route>
 
                     {/* الوكلاء */}
+                    <Route
+                      path="/accounts/ai-analysis"
+                      element={
+                        <ProtectedRoute section="accounts">
+                          <AccountsAIAnalysis />
+                        </ProtectedRoute>
+                      }
+                    />
                     <Route path="/agents" element={<ProtectedRoute section="agents"><Agents /></ProtectedRoute>} />
                     <Route path="/agents/info" element={<ProtectedRoute section="agent_info"><AgentInfo /></ProtectedRoute>} />
                     <Route path="/agents/groups" element={<ProtectedRoute section="agent_groups"><AgentGroups /></ProtectedRoute>} />

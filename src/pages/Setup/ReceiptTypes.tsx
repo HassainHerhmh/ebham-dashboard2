@@ -47,26 +47,32 @@ const ReceiptTypes: React.FC = () => {
      Add / Update
   ========================= */
   const save = async () => {
-    if (!form.code || !form.name_ar || !form.sort_order) {
-      alert("الرقم والاسم والترتيب مطلوبة");
+    if (!form.name_ar.trim()) {
+      alert("الاسم مطلوب");
       return;
     }
 
     try {
       if (editId) {
-        // ✏️ تعديل
-        await api.put(`/receipt-types/${editId}`, {
+        const payload: {
+          name_ar: string;
+          name_en: string | null;
+          sort_order?: number;
+        } = {
           name_ar: form.name_ar,
           name_en: form.name_en || null,
-          sort_order: Number(form.sort_order),
-        });
+        };
+
+        if (form.sort_order.trim()) {
+          payload.sort_order = Number(form.sort_order);
+        }
+
+        await api.put(`/receipt-types/${editId}`, payload);
       } else {
-        // ➕ إضافة
         await api.post("/receipt-types", {
-          code: Number(form.code),
           name_ar: form.name_ar,
           name_en: form.name_en || null,
-          sort_order: Number(form.sort_order),
+          ...(form.sort_order.trim() ? { sort_order: Number(form.sort_order) } : {}),
         });
       }
 
@@ -216,15 +222,11 @@ const ReceiptTypes: React.FC = () => {
               {editId ? "تعديل نوع سند قبض" : "إضافة نوع سند قبض"}
             </h2>
 
-            <input
-              className="border p-2 w-full rounded"
-              placeholder="الرقم"
-              value={form.code}
-              disabled={!!editId}
-              onChange={(e) =>
-                setForm({ ...form, code: e.target.value })
-              }
-            />
+            {!editId && (
+              <div className="rounded border border-dashed border-gray-300 bg-white px-3 py-2 text-right text-sm text-gray-500">
+                الرقم يتولد تلقائيًا عند الحفظ
+              </div>
+            )}
 
             <input
               className="border p-2 w-full rounded"
@@ -246,7 +248,7 @@ const ReceiptTypes: React.FC = () => {
 
             <input
               className="border p-2 w-full rounded"
-              placeholder="الترتيب"
+              placeholder="الترتيب (اختياري)"
               value={form.sort_order}
               onChange={(e) =>
                 setForm({ ...form, sort_order: e.target.value })

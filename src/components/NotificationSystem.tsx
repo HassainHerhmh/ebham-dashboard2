@@ -17,26 +17,26 @@ const NotificationSystem: React.FC = () => {
   const getIcon = (type: string) => {
     switch (type) {
       case 'success':
-        return <CheckCircle size={20} className="text-green-600" />
+        return <CheckCircle size={20} className="text-green-600 dark:text-green-300" />
       case 'error':
-        return <AlertCircle size={20} className="text-red-600" />
+        return <AlertCircle size={20} className="text-red-600 dark:text-red-300" />
       case 'warning':
-        return <AlertTriangle size={20} className="text-yellow-600" />
+        return <AlertTriangle size={20} className="text-yellow-600 dark:text-yellow-300" />
       default:
-        return <Info size={20} className="text-blue-600" />
+        return <Info size={20} className="text-blue-600 dark:text-blue-300" />
     }
   }
 
   const getBackgroundColor = (type: string) => {
     switch (type) {
       case 'success':
-        return 'bg-green-50 border-green-200'
+        return 'bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-700'
       case 'error':
-        return 'bg-red-50 border-red-200'
+        return 'bg-red-50 border-red-200 dark:bg-red-950 dark:border-red-700'
       case 'warning':
-        return 'bg-yellow-50 border-yellow-200'
+        return 'bg-yellow-50 border-yellow-200 dark:bg-yellow-950 dark:border-yellow-700'
       default:
-        return 'bg-blue-50 border-blue-200'
+        return 'bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-700'
     }
   }
 
@@ -56,10 +56,10 @@ const NotificationSystem: React.FC = () => {
             <div className="flex items-start space-x-3 space-x-reverse">
               {getIcon(notification.type)}
               <div className="flex-1">
-                <p className="text-sm text-gray-900">
+                <p className="text-sm text-gray-900 dark:text-white">
                   {notification.message}
                 </p>
-                <p className="text-xs text-gray-400 mt-2">
+                <p className="text-xs text-gray-500 dark:text-gray-300 mt-2">
                   {notification.timestamp.toLocaleTimeString('ar-SA')}
                 </p>
               </div>
@@ -69,7 +69,7 @@ const NotificationSystem: React.FC = () => {
                 e.stopPropagation()
                 actions.markNotificationRead(notification.id)
               }}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
+              className="text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white transition-colors"
             >
               <X size={16} />
             </button>

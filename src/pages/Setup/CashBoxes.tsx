@@ -92,8 +92,8 @@ const CashBoxes: React.FC = () => {
           cash_box_group_id: Number(form.cash_box_group_id),
         });
       } else {
-        if (!form.code || !form.parent_account_id) {
-          alert("يرجى تعبئة جميع الحقول");
+        if (!form.parent_account_id) {
+          alert("يرجى تعبئة جميع الحقول المطلوبة");
           return;
         }
 
@@ -102,7 +102,6 @@ const CashBoxes: React.FC = () => {
         await api.post("/cash-boxes", {
           name_ar: form.name_ar,
           name_en: form.name_en || null,
-          code: form.code,
           cash_box_group_id: Number(form.cash_box_group_id),
           parent_account_id: Number(form.parent_account_id),
           created_by: user.id || null,
@@ -272,14 +271,9 @@ const CashBoxes: React.FC = () => {
 
             {!editId && (
               <>
-                <input
-                  className="border p-2 w-full rounded"
-                  placeholder="الرقم"
-                  value={form.code}
-                  onChange={(e) =>
-                    setForm({ ...form, code: e.target.value })
-                  }
-                />
+                <div className="rounded border border-dashed border-gray-300 bg-white px-3 py-2 text-right text-sm text-gray-500">
+                  الرقم يتولد تلقائيًا من تسلسل الحسابات عند الحفظ
+                </div>
 
                 <select
                   className="border p-2 w-full rounded"

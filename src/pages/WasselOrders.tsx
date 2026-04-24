@@ -30,6 +30,7 @@ const socket = io(SOCKET_URL, {
 ====================== */
 interface WasselOrder {
   id: number;
+  order_number?: number | string;
   customer_name: string;
   customer_id?: number;
   order_type: string | number;
@@ -62,6 +63,9 @@ interface WasselOrder {
   completed_at?: string | null;
   cancelled_at?: string | null;
 }
+
+const getOrderDisplayNumber = (order: { id: number; order_number?: number | string }) =>
+  order.order_number || order.id;
 
 interface Captain {
   id: number;
@@ -172,7 +176,7 @@ const WasselOrders: React.FC = () => {
       { key: "orderType", label: "نوع الطلب" },
       { key: "transport", label: "وسيلة النقل" },
       { key: "captain", label: "كابتن التوصيل" },
-      { key: "locations", label: "المواقع" },
+      { key: "locations", label: "العناوين" },
       { key: "payment", label: "وسيلة الدفع" },
       { key: "fees", label: "إجمالي الرسوم" },
       { key: "status", label: "حالة الطلب" },
@@ -591,6 +595,7 @@ const loadTransportMethods = async () => {
       o.customer_name?.toLowerCase().includes(t) ||
       o.captain_name?.toLowerCase().includes(t) ||
       String(o.id).includes(t) ||
+      String(o.order_number || "").includes(t) ||
       String(o.order_type_name || o.order_type || "")
         .toLowerCase()
         .includes(t);
@@ -1111,7 +1116,7 @@ const loadTransportMethods = async () => {
         order.order_type_name || String(order.order_type || "غير محدد");
 
       actions.addNotification(
-        `تأخر طلب وصل لي #${order.id}\nنوع الطلب: ${orderTypeText}\nالكابتن: ${
+        `تأخر طلب وصل لي #${getOrderDisplayNumber(order)}\nنوع الطلب: ${orderTypeText}\nالكابتن: ${
           order.captain_name || "غير معين"
         }\nمدة التأخير: ${minutes} دقيقة`,
         "warning"
@@ -1119,7 +1124,7 @@ const loadTransportMethods = async () => {
       return;
 
       actions.addNotification(
-        `تأخر طلب وصل لي #${order.id}\nالكابتن: ${
+        `تأخر طلب وصل لي #${getOrderDisplayNumber(order)}\nالكابتن: ${
           order.captain_name || "غير معين"
         }\nمدة التأخير: ${minutes} دقيقة`,
         "warning"
@@ -1247,12 +1252,16 @@ const loadTransportMethods = async () => {
                 onClick={() => setActiveTab(t.k as OrderTab)}
                 className={`px-4 py-2 rounded-lg border-b-4 transition-all ${
                   activeTab === t.k
-                    ? "bg-blue-50 border-blue-600 text-blue-700"
-                    : "bg-white border-transparent text-gray-500 hover:bg-gray-50"
+                    ? "bg-blue-50 dark:bg-blue-600 border-blue-600 text-blue-700 dark:text-white font-bold shadow-sm"
+                    : "bg-white dark:bg-gray-800 border-transparent text-gray-500 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
                 }`}
               >
                 {t.l}{" "}
-                <span className="text-[10px] bg-white/50 px-1.5 rounded-full ml-1">
+                <span className={`text-sm px-1.5 rounded-full ml-1 font-black ${
+                  activeTab === t.k
+                    ? "bg-white/70 dark:bg-white/20 text-blue-700 dark:text-white"
+                    : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-100"
+                }`}>
                   ({counts[t.k as keyof typeof counts]})
                 </span>
               </button>
@@ -1345,7 +1354,7 @@ const loadTransportMethods = async () => {
                     key={o.id}
                     className="hover:bg-blue-50/30 text-sm transition-colors"
                   >
-                    <td className="p-4 font-black text-gray-400">#{o.id}</td>
+                    <td className="p-4 font-black text-gray-400">#{getOrderDisplayNumber(o)}</td>
 
                     <td className="font-bold text-gray-800">{o.customer_name}</td>
 
@@ -1368,34 +1377,49 @@ const loadTransportMethods = async () => {
                     </td>
 
                     <td>
-                      <div className="flex gap-2 justify-center">
-                        <button
-                          onClick={() =>
-                            o.from_lat &&
-                            window.open(
-                              `https://www.google.com/maps?q=${o.from_lat},${o.from_lng}`,
-                              "_blank"
-                            )
-                          }
-                          className="text-blue-500 hover:scale-125 transition"
-                          title="نقطة الانطلاق"
-                        >
-                          <MapPin size={14} />
-                        </button>
-
-                        <button
-                          onClick={() =>
-                            o.to_lat &&
-                            window.open(
-                              `https://www.google.com/maps?q=${o.to_lat},${o.to_lng}`,
-                              "_blank"
-                            )
-                          }
-                          className="text-red-500 hover:scale-125 transition"
-                          title="نقطة الوصول"
-                        >
-                          <MapPin size={14} />
-                        </button>
+                      <div className="flex flex-col gap-1 text-xs text-right">
+                        <div>
+                          <span className="font-bold text-gray-700">من:</span>{" "}
+                          {o.from_neighborhood_name ? (
+                            <span className="text-blue-700 font-bold">{o.from_neighborhood_name} - </span>
+                          ) : null}
+                          {o.from_address_detail || o.from_address || o.from_full_address || "—"}
+                          {o.from_lat && (
+                            <button
+                              onClick={() =>
+                                window.open(
+                                  `https://www.google.com/maps?q=${o.from_lat},${o.from_lng}`,
+                                  "_blank"
+                                )
+                              }
+                              className="ml-1 text-blue-500 hover:scale-125 transition"
+                              title="نقطة الانطلاق"
+                            >
+                              <MapPin size={12} />
+                            </button>
+                          )}
+                        </div>
+                        <div>
+                          <span className="font-bold text-gray-700">إلى:</span>{" "}
+                          {o.to_neighborhood_name ? (
+                            <span className="text-red-700 font-bold">{o.to_neighborhood_name} - </span>
+                          ) : null}
+                          {o.to_address_detail || o.to_address || o.to_full_address || "—"}
+                          {o.to_lat && (
+                            <button
+                              onClick={() =>
+                                window.open(
+                                  `https://www.google.com/maps?q=${o.to_lat},${o.to_lng}`,
+                                  "_blank"
+                                )
+                              }
+                              className="ml-1 text-red-500 hover:scale-125 transition"
+                              title="نقطة الوصول"
+                            >
+                              <MapPin size={12} />
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </td>
 
@@ -1689,7 +1713,7 @@ const loadTransportMethods = async () => {
                         data-lat={a.latitude}
                         data-lng={a.longitude}
                       >
-                        {a.address}
+                        {a.neighborhood_name ? `${a.neighborhood_name} - ${a.address}` : a.address}
                       </option>
                     ))}
                   </select>
@@ -1758,7 +1782,7 @@ const loadTransportMethods = async () => {
                         data-lat={a.latitude}
                         data-lng={a.longitude}
                       >
-                        {a.address}
+                        {a.neighborhood_name ? `${a.neighborhood_name} - ${a.address}` : a.address}
                       </option>
                     ))}
                   </select>

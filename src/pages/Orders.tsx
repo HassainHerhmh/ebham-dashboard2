@@ -11,6 +11,7 @@ import { useResizableColumns } from "../hooks/useResizableColumns";
 
 interface Order {
   id: number;
+  order_number?: number | string;
   customer_name: string;
   customer_phone: string;
   stores_count: number;
@@ -51,6 +52,7 @@ interface Captain {
 
 interface OrderDetails {
   id: number;
+  order_number?: number | string;
   restaurants: any[];
   customer_name: string;
   customer_phone: string;
@@ -81,6 +83,9 @@ type DateFilter = "today" | "week";
 ===================== */
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL?.trim();
 const socket = io(SOCKET_URL);
+
+const getOrderDisplayNumber = (order: { id: number; order_number?: number | string }) =>
+  order.order_number || order.id;
 
 // ========== مكون الخريطة (Live Tracking مع أيقونة دباب) ==========
 const TrackingModal = ({ order, onClose }: { order: Order; onClose: () => void }) => {
@@ -172,7 +177,7 @@ const TrackingModal = ({ order, onClose }: { order: Order; onClose: () => void }
              <h2 className="font-bold text-lg text-gray-800">
                 🛵 تتبع مباشر: {order.captain_name}
              </h2>
-             <p className="text-sm text-gray-500">الطلب #{order.id}</p>
+             <p className="text-sm text-gray-500">الطلب #{getOrderDisplayNumber(order)}</p>
           </div>
           <button
             type="button"
@@ -738,6 +743,11 @@ const updateOrderStatus = async (orderId: number, newStatus: string) => {
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [products, setProducts] = useState<any[]>([]);
   const [showProductsModal, setShowProductsModal] = useState(false);
+  const [parentOptionsModal, setParentOptionsModal] = useState<{
+    parent: any;
+    children: any[];
+    loading: boolean;
+  } | null>(null);
 
   const openCustomerChat = (order: Order) => {
     window.dispatchEvent(
@@ -779,7 +789,36 @@ const updateOrderStatus = async (orderId: number, newStatus: string) => {
     try {
       const prodRes = await api.get(`/restaurants/${currentRestaurant.id}/products`);
       const prods = Array.isArray(prodRes.data?.products) ? prodRes.data.products : [];
-      setProducts(prods);
+      const needsParentMetadata = prods.some(
+        (product: any) =>
+          product?.is_parent === undefined && product?.children_count === undefined
+      );
+
+      if (!needsParentMetadata) {
+        setProducts(prods);
+      } else {
+        const enrichedProducts = await Promise.all(
+          prods.map(async (product: any) => {
+            try {
+              const childRes = await api.get(`/products/${product.id}/children`);
+              const children = Array.isArray(childRes.data?.children)
+                ? childRes.data.children
+                : [];
+
+              return {
+                ...product,
+                is_parent: children.length > 0 ? 1 : product.is_parent,
+                children_count: children.length,
+                children,
+              };
+            } catch {
+              return product;
+            }
+          })
+        );
+
+        setProducts(enrichedProducts);
+      }
       setShowProductsModal(true);
     } catch (err) {
       console.error("خطأ في جلب المنتجات:", err);
@@ -818,6 +857,31 @@ const updateOrderStatus = async (orderId: number, newStatus: string) => {
         };
       });
     });
+  };
+
+  const isParentProduct = (product: any) =>
+    Number(product?.is_parent) === 1 || product?.is_parent === true || Number(product?.children_count) > 0;
+
+  const openParentOptions = async (product: any) => {
+    if (Array.isArray(product.children)) {
+      setParentOptionsModal({
+        parent: product,
+        children: product.children,
+        loading: false,
+      });
+      return;
+    }
+
+    setParentOptionsModal({ parent: product, children: [], loading: true });
+
+    try {
+      const res = await api.get(`/products/${product.id}/children`);
+      const children = Array.isArray(res.data?.children) ? res.data.children : [];
+      setParentOptionsModal({ parent: product, children, loading: false });
+    } catch (error) {
+      console.error("خطأ في جلب خيارات المنتج:", error);
+      setParentOptionsModal({ parent: product, children: [], loading: false });
+    }
   };
 
   const updateItemQty = (restaurantId: number, productId: number, qty: number) => {
@@ -937,6 +1001,7 @@ const updateOrderStatus = async (orderId: number, newStatus: string) => {
       filtered = filtered.filter(o =>
         o.customer_name?.toLowerCase().includes(t) ||
         o.id.toString().includes(t) ||
+        String(o.order_number || "").includes(t) ||
         o.customer_phone?.includes(t)
       );
     }
@@ -977,7 +1042,7 @@ const updateOrderStatus = async (orderId: number, newStatus: string) => {
 
       delayedOrdersRef.current.add(order.id);
       actions.addNotification(
-        `تأخر الطلب #${order.id}\nنوع الطلب: ${
+        `تأخر الطلب #${getOrderDisplayNumber(order)}\nنوع الطلب: ${
           order.order_type || "غير محدد"
         }\nالكابتن: ${
           order.captain_name || "غير معين"
@@ -1237,7 +1302,7 @@ const updateOrderStatus = async (orderId: number, newStatus: string) => {
                 </tr>
               ) : visibleOrders.map((o) => (
                 <tr key={o.id} className="border-b hover:bg-gray-50 text-center">
-                  <td className="px-2">#{o.id}</td>
+                  <td className="px-2">#{getOrderDisplayNumber(o)}</td>
                   <td className="px-2">{o.customer_name}</td>
                   <td className="px-2">{o.stores_count} مطعم</td>
                   
@@ -1387,7 +1452,7 @@ const updateOrderStatus = async (orderId: number, newStatus: string) => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
           <div className="bg-white rounded-lg shadow-lg w-full max-w-3xl flex flex-col max-h-[90vh]">
             <div ref={printRef} className="p-6 overflow-y-auto">
-              <h2 className="text-lg font-bold mb-4 text-center">🧾 فاتورة الطلب #{selectedOrderDetails.id}</h2>
+              <h2 className="text-lg font-bold mb-4 text-center">🧾 فاتورة الطلب #{getOrderDisplayNumber(selectedOrderDetails)}</h2>
               {(() => {
 const allRestaurantsTotal =
   (selectedOrderDetails.restaurants || []).reduce(
@@ -1660,14 +1725,57 @@ const grandTotal = allRestaurantsTotal + delivery + extraStore - discount;
               }).map((p) => (
                 <div key={p.id} className="border p-2 rounded flex flex-col justify-between">
                   <span className="font-bold">{p.name}</span>
-                  <span>{p.price} ريال</span>
-                  <button onClick={() => addToCart(p)} className="bg-green-600 text-white mt-2 px-3 py-1 rounded">➕ إضافة</button>
+                  <span>{isParentProduct(p) ? "خيارات متعددة" : `${p.price} ريال`}</span>
+                  {isParentProduct(p) ? (
+                    <button onClick={() => openParentOptions(p)} className="bg-indigo-600 text-white mt-2 px-3 py-1 rounded">عرض الخيارات</button>
+                  ) : (
+                    <button onClick={() => addToCart(p)} className="bg-green-600 text-white mt-2 px-3 py-1 rounded">➕ إضافة</button>
+                  )}
                 </div>
               ))}
             </div>
             <div className="mt-4 flex justify-end gap-2">
               <button onClick={() => setShowProductsModal(false)} className="bg-gray-400 text-white px-4 py-2 rounded">إغلاق</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {parentOptionsModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-[60]">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-2xl max-h-[85vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b pb-3 mb-4">
+              <h2 className="text-lg font-bold">خيارات {parentOptionsModal.parent?.name}</h2>
+              <button onClick={() => setParentOptionsModal(null)} className="text-gray-500 hover:text-red-600">✖</button>
+            </div>
+
+            {parentOptionsModal.loading ? (
+              <div className="py-8 text-center text-gray-500">جاري تحميل الخيارات...</div>
+            ) : parentOptionsModal.children.length === 0 ? (
+              <div className="py-8 text-center text-gray-500">لا توجد خيارات لهذا المنتج</div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {parentOptionsModal.children.map((child) => (
+                  <div key={child.id} className="border rounded p-3 flex flex-col gap-2">
+                    <div className="font-bold">{child.name}</div>
+                    <div className="text-sm text-gray-600">{child.price} ريال</div>
+                    <button
+                      onClick={() => {
+                        addToCart({
+                          ...child,
+                          parent_id: parentOptionsModal.parent.id,
+                          parent_name: parentOptionsModal.parent.name,
+                        });
+                        setParentOptionsModal(null);
+                      }}
+                      className="bg-green-600 text-white px-3 py-1 rounded"
+                    >
+                      ➕ إضافة
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}

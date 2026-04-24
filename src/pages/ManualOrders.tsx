@@ -18,6 +18,49 @@ const socket = io(SOCKET_URL, {
   autoConnect: true,
 });
 
+const MANUAL_ORDER_NOTIFICATION_TYPES = new Set([
+  "manual_order_created",
+  "manual_order_status",
+  "manual_order_updated",
+  "manual_order_assigned",
+]);
+
+function ToastNotifications() {
+  const [toasts, setToasts] = useState<any[]>([]);
+
+  useEffect(() => {
+    const handler = (data: any) => {
+      if (!MANUAL_ORDER_NOTIFICATION_TYPES.has(data.type)) return;
+
+      const id = Date.now() + Math.random();
+      setToasts((prev) => [...prev, { ...data, id }]);
+
+      setTimeout(() => {
+        setToasts((prev) => prev.filter((t) => t.id !== id));
+      }, 5000);
+    };
+
+    socket.on("admin_notification", handler);
+
+    return () => {
+      socket.off("admin_notification", handler);
+    };
+  }, []);
+
+  return (
+    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 space-y-2 w-[420px] pointer-events-none">
+      {toasts.map((t) => (
+        <div
+          key={t.id}
+          className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg rounded px-4 py-3 text-sm text-gray-900 dark:text-white"
+        >
+          🔔 {t.message}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /* ======================
     الأنواع (Types)
 ====================== */
@@ -36,6 +79,9 @@ type OrderTab =
   | "completed"
   | "cancelled";
 type DateFilter = "today" | "week";
+
+const getOrderDisplayNumber = (order: { id: number; order_number?: number | string }) =>
+  order.order_number || order.id;
 
 const ManualOrders: React.FC = () => {
   const { actions } = useApp();
@@ -185,16 +231,21 @@ api.get("/banks")
 notifiedRef.current.delayed.clear();
 notifiedRef.current.near.clear();
 
-    const slotsRes =
-  await api.get("/manual-orders/available-slots");
-
-setSlots(slotsRes.data.slots || []);
-
     const manualRestaurants =
       (restRes.data?.restaurants || [])
         .filter((r: any) => r.display_type === "manual");
 
     setAgents(manualRestaurants);
+
+    try {
+      const slotsRes =
+    await api.get("/manual-orders/available-slots");
+
+  setSlots(slotsRes.data.slots || []);
+    } catch (slotsError) {
+      console.error("Error loading available slots", slotsError);
+      setSlots([]);
+    }
 
     // ✅ أهم سطر
     setBanks(banksRes.data?.banks || []);
@@ -215,12 +266,7 @@ setSlots(slotsRes.data.slots || []);
 
   useEffect(() => {
     const handler = (data: any) => {
-      if (
-        data.type !== "manual_order_created" &&
-        data.type !== "manual_order_status"
-      ) {
-        return;
-      }
+      if (!MANUAL_ORDER_NOTIFICATION_TYPES.has(data.type)) return;
 
       addNotification(
         "إشعار الطلبات اليدوية",
@@ -305,7 +351,8 @@ const filteredOrders = dateFilteredOrders
       o.customer_name
         ?.toLowerCase()
         .includes(searchTerm.toLowerCase()) ||
-      o.id.toString().includes(searchTerm);
+      o.id.toString().includes(searchTerm) ||
+      String(o.order_number || "").includes(searchTerm);
 
     let tabMatch =
       statusMap[activeTab]?.includes(o.status);
@@ -359,8 +406,8 @@ const getStatusCounts = (status: OrderTab) => {
   ====================== */
   const openOrderDetails = async (order: any) => {
     try {
-      const res = await api.get(`/orders/${order.id}`);
-      setSelectedOrderDetails(res.data);
+      const res = await api.get(`/manual-orders/${order.id}`);
+      setSelectedOrderDetails(res.data?.order || order);
     } catch (e) {
       setSelectedOrderDetails(order);
     }
@@ -598,7 +645,7 @@ const checkDelaysAndSchedules = () => {
       ) {
 
         notifyUser(
-          `⏰ قرب موعد الطلب #${o.id}`,
+          `⏰ قرب موعد الطلب #${getOrderDisplayNumber(o)}`,
           `${o.customer_name} بعد ${Math.ceil(diff / 60000)} دقيقة`
         );
 
@@ -633,8 +680,8 @@ if (!baseTime) {
       !notifiedRef.current.delayed.has(o.id)
     ) {
       notifyUser(
-        `تأخر الطلب #${o.id}`,
-        `رقم الطلب: #${o.id}
+        `تأخر الطلب #${getOrderDisplayNumber(o)}`,
+        `رقم الطلب: #${getOrderDisplayNumber(o)}
 نوع الطلب: يدوي
 العميل: ${o.customer_name}
 الكابتن: ${o.captain_name || "غير معين"}
@@ -645,8 +692,8 @@ if (!baseTime) {
       return;
 
       notifyUser(
-        `تأخر الطلب #${o.id}`,
-        `رقم الطلب: #${o.id}
+        `تأخر الطلب #${getOrderDisplayNumber(o)}`,
+        `رقم الطلب: #${getOrderDisplayNumber(o)}
 العميل: ${o.customer_name}
 الكابتن: ${o.captain_name || "غير معين"}
 تأخر ${Math.floor(diff / 60000)} دقيقة`
@@ -656,7 +703,7 @@ if (!baseTime) {
       return;
 
       notifyUser(
-        `⚠️ طلب متأخر #${o.id}`,
+        `⚠️ طلب متأخر #${getOrderDisplayNumber(o)}`,
         `العميل: ${o.customer_name}
 الكابتن: ${o.captain_name || "غير معين"}
 تأخر ${Math.floor(diff / 60000)} دقيقة`
@@ -795,8 +842,26 @@ useEffect(() => {
 
 
 
+const getOrderItemsTotal = (order: any) =>
+  (order?.items || []).reduce(
+    (sum: number, item: any) =>
+      sum + Number(item.qty || item.quantity || 0) * Number(item.price || 0),
+    0
+  );
+
+const getOrderTotal = (order: any) =>
+  getOrderItemsTotal(order) + Number(order?.delivery_fee || 0);
+
+const getDetailsItemsTotal = () =>
+  getOrderItemsTotal(selectedOrderDetails);
+
+const getDetailsDeliveryFee = () =>
+  Number(selectedOrderDetails?.delivery_fee || 0);
+
   return (
     <>
+    <ToastNotifications />
+
     <div className="w-full min-h-screen bg-[#f8fafc] dark:bg-gray-900 p-4 transition-all" dir="rtl">
       
       {/* 🟢 الهيدر وشريط الفلترة */}
@@ -852,9 +917,9 @@ useEffect(() => {
             { k: "cancelled", l: "ملغي", icon: <X size={14}/> },
              { k: "scheduled", l: "مجدولة", icon: <Calendar size={14}/> },
           ].map((t) => (
-            <button key={t.k} onClick={() => setActiveTab(t.k as any)} className={`px-4 py-2 rounded-lg border-b-4 transition-all flex items-center gap-2 ${activeTab === t.k ? "bg-blue-50 border-blue-600 text-blue-700 font-bold shadow-sm" : "bg-white border-transparent text-gray-500 hover:bg-gray-50"}`}>
+            <button key={t.k} onClick={() => setActiveTab(t.k as any)} className={`px-4 py-2 rounded-lg border-b-4 transition-all flex items-center gap-2 ${activeTab === t.k ? "bg-blue-50 dark:bg-blue-600 border-blue-600 text-blue-700 dark:text-white font-bold shadow-sm" : "bg-white dark:bg-gray-800 border-transparent text-gray-500 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"}`}>
               {t.icon} {t.l}
-              <span className="text-[10px] bg-white/50 px-1.5 rounded-full ml-1 font-bold">({getStatusCounts(t.k as any)})</span>
+              <span className={`text-sm px-1.5 rounded-full ml-1 font-black ${activeTab === t.k ? "bg-white/70 dark:bg-white/20 text-blue-700 dark:text-white" : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-100"}`}>({getStatusCounts(t.k as any)})</span>
             </button>
           ))}
         </div>
@@ -888,13 +953,13 @@ useEffect(() => {
                 </tr>
               ) : filteredOrders.map((o) => (
                 <tr key={o.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors">
-                  <td className="p-4 font-bold text-gray-400">#{o.id}</td>
+                  <td className="p-4 font-bold text-gray-400">#{getOrderDisplayNumber(o)}</td>
                   <td className="p-4 text-right font-black text-gray-800 dark:text-white">{o.customer_name}</td>
                   <td className="p-4 text-right font-bold text-indigo-600">
                     {o.captain_name || <span className="text-gray-300 font-normal">لم يسند</span>}
                   </td>
                   <td className="p-4 text-right font-bold text-orange-600">{o.restaurant_name || "شراء مباشر"}</td>
-                  <td className="p-4 font-black text-gray-900 dark:text-white">{Number(o.total_amount).toLocaleString()} ريال</td>
+                  <td className="p-4 font-black text-gray-900 dark:text-white">{getOrderTotal(o).toLocaleString()} ريال</td>
             <td className="p-4 flex justify-center">
   {renderPaymentIcon(o.payment_method)}
 </td>
@@ -1080,7 +1145,22 @@ onClick={async () => {
                   <h3 className="text-sm font-black border-b dark:border-gray-700 pb-3 flex items-center gap-2 dark:text-white"><FileText size={18} className="text-orange-500"/> بيانات الفاتورة</h3>
                   <div><label className="text-[11px] font-black text-gray-400 mb-2 block uppercase tracking-wider">العميل</label><select className="custom-select border-r-4 border-blue-500 font-bold" value={form.customer_id} onChange={(e)=>setForm({...form, customer_id: e.target.value})}><option value="">-- اختر العميل --</option>{customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
                   <div><label className="text-[11px] font-black text-gray-400 mb-2 block uppercase tracking-wider">المحل المورد</label><select className="custom-select border-r-4 border-orange-500 font-bold" value={form.restaurant_id} onChange={(e)=>setForm({...form, restaurant_id: e.target.value})}><option value="">-- شراء مباشر --</option>{agents.map(r => <option key={r.id} value={r.id}>🏪 {r.name}</option>)}</select></div>
-                  <div><label className="text-[11px] font-black text-gray-400 mb-2 block uppercase tracking-wider">عنوان التوصيل</label><select className="custom-select font-bold" value={form.to_address} onChange={(e)=>setForm({...form, to_address: e.target.value})}><option value="">-- اختر العنوان --</option>{addresses.map(a => <option key={a.id} value={a.address}>{a.address}</option>)}</select></div>
+                  <div>
+                    <label className="text-[11px] font-black text-gray-400 mb-2 block uppercase tracking-wider">عنوان التوصيل</label>
+                    <select
+                      className="custom-select font-bold"
+                      value={form.to_address}
+                      onChange={(e) => setForm({ ...form, to_address: e.target.value })}
+                      disabled={!form.customer_id}
+                    >
+                      <option value="">-- اختر العنوان --</option>
+                      {form.customer_id && addresses.map(a => (
+                        <option key={a.id} value={a.address}>
+                          {a.neighborhood_name ? `${a.neighborhood_name} - ${a.address}` : a.address}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 {/* 💳 وسيلة الدفع */}
 <div className="border p-4 rounded-2xl bg-gray-50 space-y-3">
 
@@ -1378,7 +1458,7 @@ onClick={async () => {
     <div className="p-5 border-b flex justify-between items-center bg-gray-50 dark:bg-gray-900">
 
       <h2 className="text-xl font-black text-indigo-600">
-        🧾 فاتورة الطلب #{selectedOrderDetails.id}
+        🧾 فاتورة الطلب #{getOrderDisplayNumber(selectedOrderDetails)}
       </h2>
 
       <button
@@ -1534,22 +1614,21 @@ onClick={async () => {
     <div className="flex justify-between text-sm">
       <span>المشتريات</span>
       <span className="font-bold">
-        {(Number(selectedOrderDetails.total_amount) -
-         Number(selectedOrderDetails.delivery_fee)).toLocaleString()}
+        {getDetailsItemsTotal().toLocaleString()}
       </span>
     </div>
 
     <div className="flex justify-between text-sm">
       <span>التوصيل</span>
       <span className="font-bold">
-        {Number(selectedOrderDetails.delivery_fee).toLocaleString()}
+        {getDetailsDeliveryFee().toLocaleString()}
       </span>
     </div>
 
     <div className="flex justify-between text-xl font-black text-indigo-600 border-t mt-2 pt-2">
       <span>الإجمالي</span>
       <span>
-        {Number(selectedOrderDetails.total_amount).toLocaleString()} ريال
+        {(getDetailsItemsTotal() + getDetailsDeliveryFee()).toLocaleString()} ريال
       </span>
     </div>
 

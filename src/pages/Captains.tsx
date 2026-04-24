@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Bike } from 'lucide-react'
-import api from "../services/api";
+import api, { API_ORIGIN } from "../services/api";
 
 interface Captain {
   id: number
@@ -16,6 +16,8 @@ interface Captain {
   created_at: string
   branch_name?: string | null
     image_url?: string | null
+  image?: string | null
+  image_full_url?: string | null
 }
 
 const Captains: React.FC = () => {
@@ -25,6 +27,8 @@ const Captains: React.FC = () => {
 
   const [imageUrl, setImageUrl] = useState("");
 const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editId, setEditId] = useState<number | null>(null)
@@ -39,6 +43,41 @@ const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [vehicleType, setVehicleType] = useState('دراجة')
   const [vehicleNumber, setVehicleNumber] = useState('')
   const [status, setStatus] = useState('available')
+
+  useEffect(() => {
+    return () => {
+      if (imagePreview?.startsWith("blob:")) {
+        URL.revokeObjectURL(imagePreview);
+      }
+    };
+  }, [imagePreview]);
+
+  const resolveImageUrl = (value?: string | null) => {
+    if (!value) return "";
+    if (/^https?:\/\//i.test(value)) return value;
+    return `${API_ORIGIN}/${String(value).replace(/^\/+/, "")}`;
+  };
+
+  const resetForm = () => {
+    setName('');
+    setEmail('');
+    setPhone('');
+    setPassword('');
+    setConfirmPassword('');
+    setShowPassword(false);
+    setVehicleType('دراجة');
+    setVehicleNumber('');
+    setStatus('available');
+    setImageUrl('');
+    setImageFile(null);
+    setImagePreview(null);
+  };
+
+  const openAddModal = () => {
+    setEditId(null);
+    resetForm();
+    setIsModalOpen(true);
+  };
 
   const fetchCaptains = async () => {
     try {
@@ -83,10 +122,13 @@ const startEditCaptain = (c: any) => {
   setPhone(c.phone);
   setPassword('');
   setConfirmPassword('');
+  setShowPassword(false);
   setVehicleType(c.vehicle_type);
   setVehicleNumber(c.vehicle_number || '');
   setStatus(c.status);
-  setImageUrl(c.image_url || "");
+  setImageUrl(c.image_full_url || c.image || c.image_url || "");
+  setImageFile(null);
+  setImagePreview(resolveImageUrl(c.image_full_url || c.image || c.image_url || ""));
   setIsModalOpen(true);
 };
 
@@ -107,19 +149,29 @@ const payload = {
   vehicle_type: vehicleType,
   vehicle_number: vehicleNumber,
   status,
-  image_url: imageUrl,
+  image_url: imageFile ? undefined : imageUrl || undefined,
 };
 
 
       if (editId) {
         await api.captains.updateCaptain(editId, payload)
+
+        if (imageFile) {
+          await api.captains.uploadImage(editId, imageFile)
+        }
       } else {
-        await api.captains.addCaptain(payload)
+        const result = await api.captains.addCaptain(payload)
+        const newId = result?.id
+
+        if (imageFile && newId) {
+          await api.captains.uploadImage(newId, imageFile)
+        }
       }
 
       alert('✅ تم الحفظ')
       setIsModalOpen(false)
       setEditId(null)
+      resetForm()
       fetchCaptains()
     } catch (err) {
       console.error(err)
@@ -147,7 +199,7 @@ const payload = {
           <Bike className="w-7 h-7" /> الكباتن
         </h1>
         <button
-          onClick={() => { setEditId(null); setIsModalOpen(true) }}
+          onClick={openAddModal}
           className="bg-green-600 text-white px-4 py-2 rounded-lg"
         >
           ➕ إضافة كابتن
@@ -176,7 +228,7 @@ const payload = {
 </thead>
 
 <tbody>
-  {captains.map((c: any) => (
+  {captains.map((c: Captain) => (
     <tr key={c.id} className="border-t">
       <td className="p-3">#{c.id}</td>
       <td className="p-3">{c.name}</td>
@@ -187,10 +239,10 @@ const payload = {
 
  
 <td className="p-3 text-center">
-  {c.image_url ? (
+  {resolveImageUrl(c.image_full_url || c.image || c.image_url) ? (
     <img
-      src={c.image_url}
-      onClick={() => setPreviewImage(c.image_url)}
+      src={resolveImageUrl(c.image_full_url || c.image || c.image_url)}
+      onClick={() => setPreviewImage(resolveImageUrl(c.image_full_url || c.image || c.image_url))}
       className="w-10 h-10 rounded-full object-cover mx-auto cursor-pointer"
     />
   ) : (
@@ -265,14 +317,14 @@ const payload = {
       
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg w-full max-w-lg">
+          <div className="bg-white p-6 rounded-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto">
             <h2 className="text-lg font-bold mb-4">{editId ? 'تعديل كابتن' : 'إضافة كابتن جديد'}</h2>
-            <form onSubmit={saveCaptain} className="space-y-3">
-              <input value={name} onChange={(e) => setName(e.target.value)} placeholder="الاسم" className="border p-2 w-full" required />
-              <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="البريد الإلكتروني" className="border p-2 w-full" />
-              <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="رقم الهاتف" className="border p-2 w-full" required />
+            <form onSubmit={saveCaptain} className="grid gap-3 md:grid-cols-2" autoComplete="off">
+              <input value={name} onChange={(e) => setName(e.target.value)} placeholder="الاسم" className="border p-2 w-full" required autoComplete="off" />
+              <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="رقم الهاتف" className="border p-2 w-full" required autoComplete="off" />
+              <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="البريد الإلكتروني" className="border p-2 w-full md:col-span-2" autoComplete="off" />
 
-              <div className="relative">
+              <div className="relative md:col-span-1">
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
@@ -280,6 +332,7 @@ const payload = {
                   placeholder="كلمة المرور"
                   className="border p-2 w-full"
                   required={!editId}
+                  autoComplete={editId ? "off" : "new-password"}
                 />
                 <button
                   type="button"
@@ -297,10 +350,11 @@ const payload = {
                 placeholder="تأكيد كلمة المرور"
                 className="border p-2 w-full"
                 required={!editId}
+                autoComplete="new-password"
               />
 
-              <input value={vehicleType} onChange={(e) => setVehicleType(e.target.value)} placeholder="نوع المركبة" className="border p-2 w-full" />
-              <input value={vehicleNumber} onChange={(e) => setVehicleNumber(e.target.value)} placeholder="رقم المركبة" className="border p-2 w-full" />
+              <input value={vehicleType} onChange={(e) => setVehicleType(e.target.value)} placeholder="نوع المركبة" className="border p-2 w-full" autoComplete="off" />
+              <input value={vehicleNumber} onChange={(e) => setVehicleNumber(e.target.value)} placeholder="رقم المركبة" className="border p-2 w-full" autoComplete="off" />
               
 
 
@@ -313,22 +367,35 @@ const payload = {
 
               <input
   type="text"
-  placeholder="رابط صورة الكابتن"
+  placeholder="رابط صورة الكابتن (اختياري)"
   value={imageUrl}
   onChange={(e) => setImageUrl(e.target.value)}
-  className="border p-2 w-full"
+  className="border p-2 w-full md:col-span-2"
+  autoComplete="off"
 />
 
-{imageUrl && (
+              <div className="md:col-span-2 grid gap-3 md:grid-cols-[1fr_auto] items-center">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null
+                    setImageFile(file)
+                    setImagePreview(file ? URL.createObjectURL(file) : null)
+                  }}
+                  className="border p-2 w-full"
+                />
+
+{(imagePreview || imageUrl) && (
   <img
-    src={imageUrl}
+    src={imagePreview || resolveImageUrl(imageUrl)}
     alt="معاينة"
-    className="w-20 h-20 object-cover rounded border mx-auto"
+    className="w-16 h-16 object-cover rounded border mx-auto"
   />
 )}
+              </div>
 
-              
-              <div className="flex justify-end gap-2">
+              <div className="flex justify-end gap-2 md:col-span-2">
                 <button type="button" onClick={() => setIsModalOpen(false)} className="bg-gray-400 text-white px-4 py-2 rounded">إلغاء</button>
                 <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded">حفظ</button>
               </div>

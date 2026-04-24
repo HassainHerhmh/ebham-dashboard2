@@ -5,6 +5,7 @@ import {
 ChevronDown,
 ChevronLeft,
 ChevronUp,
+Bot,
 Settings,
 CreditCard,
 DollarSign,
@@ -22,6 +23,7 @@ Truck,
 Briefcase
 } from "lucide-react";
 import { hasPermission, normalizeRole } from "../utils/permissions";
+import api from "../services/api";
 
 interface SidebarProps {
 isOpen: boolean;
@@ -58,6 +60,11 @@ const [settingsOpen,setSettingsOpen] = useState(false);
 const [reportsOpen,setReportsOpen] = useState(false);
 const [ordersOpen,setOrdersOpen] = useState(false);
 const [marketingOpen, setMarketingOpen] = useState(false);
+const [pendingCounts, setPendingCounts] = useState({
+orders: 0,
+wassel: 0,
+manual: 0,
+});
 
 const areasGroup: MenuItem[] = [
 { key:"settings", label:"رسوم التوصيل", path:"/settings/delivery-fees" },
@@ -91,6 +98,100 @@ const canShow = (key:string)=> isAdmin || hasPermission(user,key,"view");
 const isPathActive = (path:string)=>{
 return location.pathname === path;
 };
+
+const isTodayOrder = (order: any) => {
+const value = order?.created_at || order?.createdAt;
+if (!value) return false;
+
+const orderDate = new Date(value);
+if (Number.isNaN(orderDate.getTime())) return false;
+
+const today = new Date();
+return (
+orderDate.getFullYear() === today.getFullYear() &&
+orderDate.getMonth() === today.getMonth() &&
+orderDate.getDate() === today.getDate()
+);
+};
+
+const countPending = (list: any[]) =>
+list.filter((order) => order?.status === "pending" && isTodayOrder(order)).length;
+
+const visiblePendingTotal =
+(canShow("orders") ? pendingCounts.orders : 0) +
+(canShow("wassel_orders") ? pendingCounts.wassel : 0) +
+(canShow("manual_orders") ? pendingCounts.manual : 0);
+
+const CountBadge = ({ count, compact = false }: { count: number; compact?: boolean }) => {
+if (!count) return null;
+
+return (
+<span className={`${compact ? "absolute -top-1 -left-1 min-w-[18px] h-[18px] text-[10px]" : "mr-auto min-w-[22px] h-[22px] text-[11px]"} px-1.5 rounded-full bg-red-600 text-white font-black flex items-center justify-center shadow-sm`}>
+{count > 99 ? "99+" : count}
+</span>
+);
+};
+
+React.useEffect(() => {
+let cancelled = false;
+
+const loadPendingCounts = async () => {
+const nextCounts = {
+orders: 0,
+wassel: 0,
+manual: 0,
+};
+
+const requests: Promise<void>[] = [];
+
+if (canShow("orders")) {
+requests.push(
+api.get("/orders", { params: { limit: 1000 } })
+.then((res) => {
+const list = res.data?.orders || [];
+nextCounts.orders = countPending(Array.isArray(list) ? list : []);
+})
+.catch((error) => console.error("Sidebar orders count error:", error))
+);
+}
+
+if (canShow("wassel_orders")) {
+requests.push(
+api.get("/wassel-orders")
+.then((res) => {
+const list = res.data?.orders || [];
+nextCounts.wassel = countPending(Array.isArray(list) ? list : []);
+})
+.catch((error) => console.error("Sidebar wassel count error:", error))
+);
+}
+
+if (canShow("manual_orders")) {
+requests.push(
+api.get("/manual-orders/manual-list")
+.then((res) => {
+const list = res.data?.orders || [];
+nextCounts.manual = countPending(Array.isArray(list) ? list : []);
+})
+.catch((error) => console.error("Sidebar manual count error:", error))
+);
+}
+
+await Promise.all(requests);
+
+if (!cancelled) {
+setPendingCounts(nextCounts);
+}
+};
+
+loadPendingCounts();
+const timer = window.setInterval(loadPendingCounts, 60000);
+
+return () => {
+cancelled = true;
+window.clearInterval(timer);
+};
+}, [isAdmin, user?.id, user?.role, user?.branch_id, user?.is_admin_branch]);
 
 const linkBase =
 `flex items-center ${collapsed ? "justify-center" : "gap-3"} rounded-lg px-4 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700 transition-all`;
@@ -199,13 +300,19 @@ className={`${linkBase} ${isPathActive("/customers") ? activeClass : ""}`}
 
 <div
 onClick={()=>setOrdersOpen(!ordersOpen)}
-className={`${linkBase} cursor-pointer flex items-center justify-between`}
+className={`${linkBase} relative cursor-pointer flex items-center justify-between`}
 >
 
 <div className="flex items-center gap-2">
 <ClipboardList size={18}/>
 {!collapsed && <span>الطلبات</span>}
 </div>
+
+{collapsed ? (
+<CountBadge count={visiblePendingTotal} compact />
+) : (
+<CountBadge count={visiblePendingTotal} />
+)}
 
 {!collapsed &&
 (ordersOpen ? <ChevronUp size={18}/> : <ChevronDown size={18}/>)
@@ -223,7 +330,8 @@ to="/orders"
 onClick={onClose}
 className={`${linkBaseSmall} ${isPathActive("/orders") ? activeClass : ""}`}
 >
-📋 كل الطلبات
+<span>📋 كل الطلبات</span>
+<CountBadge count={pendingCounts.orders} />
 </Link>
 )}
 
@@ -233,7 +341,8 @@ to="/orders/wassel"
 onClick={onClose}
 className={`${linkBaseSmall} ${isPathActive("/orders/wassel") ? activeClass : ""}`}
 >
-📦 طلبات وصل لي
+<span>📦 طلبات وصل لي</span>
+<CountBadge count={pendingCounts.wassel} />
 </Link>
 )}
 
@@ -243,7 +352,51 @@ to="/orders/manual"
 onClick={onClose}
 className={`${linkBaseSmall} ${isPathActive("/orders/manual") ? activeClass : ""}`}
 >
-✍️ طلبات يدوية
+<span>✍️ طلبات يدوية</span>
+<CountBadge count={pendingCounts.manual} />
+</Link>
+)}
+
+</div>
+)}
+
+{ordersOpen && collapsed && (
+
+<div className="space-y-1">
+
+{canShow("orders") && (
+<Link
+to="/orders"
+onClick={onClose}
+title="كل الطلبات"
+className={`${linkBase} relative ${isPathActive("/orders") ? activeClass : ""}`}
+>
+<span className="text-lg">📋</span>
+<CountBadge count={pendingCounts.orders} compact />
+</Link>
+)}
+
+{canShow("wassel_orders") && (
+<Link
+to="/orders/wassel"
+onClick={onClose}
+title="طلبات وصل لي"
+className={`${linkBase} relative ${isPathActive("/orders/wassel") ? activeClass : ""}`}
+>
+<span className="text-lg">📦</span>
+<CountBadge count={pendingCounts.wassel} compact />
+</Link>
+)}
+
+{canShow("manual_orders") && (
+<Link
+to="/orders/manual"
+onClick={onClose}
+title="طلبات يدوية"
+className={`${linkBase} relative ${isPathActive("/orders/manual") ? activeClass : ""}`}
+>
+<span className="text-lg">✍️</span>
+<CountBadge count={pendingCounts.manual} compact />
 </Link>
 )}
 
@@ -368,6 +521,16 @@ onClick={onClose}
 className={`${linkBaseSmall} ${isPathActive("/reports/captains") ? activeClass : ""}`}
 >
 🛵 تقارير الكباتن
+</Link>
+)}
+
+{canShow("reports") && (
+<Link
+to="/reports/users-attendance"
+onClick={onClose}
+className={`${linkBaseSmall} ${isPathActive("/reports/users-attendance") ? activeClass : ""}`}
+>
+👤 تقارير المستخدمين
 </Link>
 )}
 
@@ -561,6 +724,18 @@ className={`${linkBase} ${isPathActive("/accounts") ? activeClass : ""}`}
 </Link>
 )}
 
+{canShow("accounts") && (
+<Link
+to="/accounts/ai-analysis"
+onClick={onClose}
+className={`${linkBase} ${isPathActive("/accounts/ai-analysis") ? activeClass : ""}`}
+title="تحليل الذكاء"
+>
+<Bot size={18}/>
+{!collapsed && <span>تحليل الذكاء</span>}
+</Link>
+)}
+
 </nav>
 
 </div>
@@ -572,4 +747,3 @@ className={`${linkBase} ${isPathActive("/accounts") ? activeClass : ""}`}
 };
 
 export default Sidebar;
-

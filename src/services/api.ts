@@ -337,6 +337,19 @@ export const deleteRestaurant = async (id: number) => {
   updateCaptain: async (id: number, data: any) =>
     (await api.put(`/captains/${id}`, data)).data,
 
+  uploadImage: async (id: number, file: File) => {
+    const formData = new FormData();
+    formData.append("image", file);
+
+    return (
+      await api.put(`/captains/${id}/profile-image`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      })
+    ).data;
+  },
+
   deleteCaptain: async (id: number) =>
     (await api.delete(`/captains/${id}`)).data,
 
@@ -512,6 +525,7 @@ export const accountsApi = {
     name_ar: string;
     name_en?: string;
     parent_id?: number | null;
+    account_group_id?: number | null;
     account_level?: "رئيسي" | "فرعي";
   }) => {
     const res = await api.post("/accounts", data);
@@ -524,6 +538,7 @@ export const accountsApi = {
       name_ar?: string;
       name_en?: string;
       parent_id?: number | null;
+      account_group_id?: number | null;
       account_level?: "رئيسي" | "فرعي";
     }
   ) => {
@@ -727,7 +742,6 @@ export const accountsApi = {
   create: async (data: {
     name_ar: string;
     name_en?: string | null;
-    code: string;
     cash_box_group_id: number;
     parent_account_id: number;
   }) => (await api.post("/cash-boxes", data)).data,
@@ -754,10 +768,9 @@ export const accountsApi = {
     (await api.get("/payment-types", { params: { search } })).data,
 
   create: async (data: {
-    code: number;
     name_ar: string;
     name_en?: string | null;
-    sort_order: number;
+    sort_order?: number;
   }) =>
     (await api.post("/payment-types", data)).data,
 
@@ -766,7 +779,7 @@ export const accountsApi = {
     data: {
       name_ar: string;
       name_en?: string | null;
-      sort_order: number;
+      sort_order?: number;
     }
   ) =>
     (await api.put(`/payment-types/${id}`, data)).data,
@@ -782,10 +795,9 @@ export const accountsApi = {
     (await api.get("/receipt-types", { params: { search } })).data,
 
   create: async (data: {
-    code: number;
     name_ar: string;
     name_en?: string | null;
-    sort_order: number;
+    sort_order?: number;
   }) =>
     (await api.post("/receipt-types", data)).data,
 
@@ -794,7 +806,7 @@ export const accountsApi = {
     data: {
       name_ar: string;
       name_en?: string | null;
-      sort_order: number;
+      sort_order?: number;
     }
   ) =>
     (await api.put(`/receipt-types/${id}`, data)).data,
@@ -1183,7 +1195,7 @@ export const executeExchange = async (data: {
 (api as any).manualOrders = {
   // جلب قائمة الطلبات اليدوية فقط
   getAll: async () => 
-    (await api.get("/wassel-orders/manual/manual-list")).data,
+    (await api.get("/manual-orders/manual-list")).data,
 
   // إضافة طلب يدوي جديد (مع مصفوفة المنتجات)
   create: async (data: {
@@ -1196,15 +1208,15 @@ export const executeExchange = async (data: {
     total_amount: number;
     notes?: string;
   }) => 
-    (await api.post("/wassel-orders/manual", data)).data,
+    (await api.post("/manual-orders", data)).data,
 
   // جلب تفاصيل طلب يدوي واحد (الأصناف)
   getItems: async (orderId: number) => 
-    (await api.get(`/wassel-orders/manual/${orderId}/items`)).data,
+    (await api.get(`/manual-orders/${orderId}`)).data,
 
-  // تحديث حالة الطلب اليدوي
+  // تحديث حالة الطلب اليدوي (المسار الموحد)
   updateStatus: async (id: number, status: string) => 
-    (await api.put(`/wassel-orders/manual/status/${id}`, { status })).data,
+    (await api.put(`/manual-orders/status/${id}`, { status })).data,
 
   // إلغاء الطلب اليدوي مع السبب
   cancelOrder: async (id: number, reason: string) =>
@@ -1216,7 +1228,7 @@ export const executeExchange = async (data: {
   
     // ✅ الجديد
   update: async (id: number, data: any) =>
-    (await api.put(`/wassel-orders/manual/${id}`, data)).data,
+    (await api.put(`/manual-orders/${id}`, data)).data,
 };
 
 export default api;

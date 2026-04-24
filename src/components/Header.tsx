@@ -12,10 +12,11 @@ import {
   CheckCheck,
   Languages,
   ChevronDown,
+  Clock3,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { io } from "socket.io-client";
-import api from "../services/api";
+import api, { API_ORIGIN } from "../services/api";
 import { useApp } from "../contexts/AppContext";
 import { getRoleLabel } from "../config/permissions";
 import { normalizeRole } from "../utils/permissions";
@@ -40,7 +41,6 @@ const UI_TEXT = {
     notificationsLog: "سجل إشعارات الطلبات والدردشة",
     markAllRead: "تعليم الكل كمقروء",
     noNotifications: "لا توجد إشعارات حتى الآن",
-    logout: "تسجيل خروج",
     newMessages: "رسائل جديدة",
     closed: "مغلقة",
     open: "مفتوحة",
@@ -54,6 +54,11 @@ const UI_TEXT = {
     userFallback: "مستخدم",
     customerFallback: "عميل",
     lastHandler: "آخر متابع",
+    checkOut: "انصرف",
+    attendanceStartedAt: "وقت الدخول",
+    attendanceNotStarted: "لم يبدأ الدوام",
+    autoLogoutMessage: "تم تسجيل الخروج تلقائيًا بسبب الخمول",
+    accountDisabledMessage: "تم تعطيل حسابك",
   },
   en: {
     language: "Language",
@@ -66,7 +71,6 @@ const UI_TEXT = {
     notificationsLog: "Orders and chat notifications",
     markAllRead: "Mark all as read",
     noNotifications: "No notifications yet",
-    logout: "Log out",
     newMessages: "New messages",
     closed: "Closed",
     open: "Open",
@@ -80,6 +84,11 @@ const UI_TEXT = {
     userFallback: "User",
     customerFallback: "Customer",
     lastHandler: "Last handled by",
+    checkOut: "Check out",
+    attendanceStartedAt: "Started at",
+    attendanceNotStarted: "No active session",
+    autoLogoutMessage: "You were logged out due to inactivity",
+    accountDisabledMessage: "Your account has been disabled",
   },
 } as const;
 
@@ -119,10 +128,24 @@ interface OpenSupportChatDetail {
   customerPhone?: string;
 }
 
+interface AttendanceSession {
+  id: number;
+  login_time: string;
+  logout_time?: string | null;
+}
+
 const Header: React.FC<HeaderProps> = () => {
   const navigate = useNavigate();
   const { state, actions } = useApp();
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(() => {
+    try {
+      return localStorage.getItem("user")
+        ? JSON.parse(localStorage.getItem("user")!)
+        : null;
+    } catch {
+      return null;
+    }
+  });
   const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
   const [currentLanguage, setCurrentLanguage] = useState<"ar" | "en">(
     localStorage.getItem("app_lang") === "en" ? "en" : "ar"
@@ -137,8 +160,14 @@ const Header: React.FC<HeaderProps> = () => {
   const [selectedChat, setSelectedChat] = useState<ChatConversation | null>(null);
   const [messageText, setMessageText] = useState("");
   const [sendingMessage, setSendingMessage] = useState(false);
+  const [attendanceSession, setAttendanceSession] = useState<AttendanceSession | null>(
+    null
+  );
+  const [attendanceLoading, setAttendanceLoading] = useState(false);
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
   const languageMenuRef = useRef<HTMLDivElement | null>(null);
+  const inactivityTimerRef = useRef<number | null>(null);
+  const logoutInProgressRef = useRef(false);
 
   // --- ظ…ظ†ط·ظ‚ ط§ظ„ظˆط¶ط¹ ط§ظ„ظ„ظٹظ„ظٹ ---
   const [darkMode, setDarkMode] = useState<boolean>(
@@ -157,14 +186,52 @@ const Header: React.FC<HeaderProps> = () => {
   }, [darkMode]);
   // -----------------------
 
-  const user = localStorage.getItem("user")
-    ? JSON.parse(localStorage.getItem("user")!)
-    : null;
+  useEffect(() => {
+    const syncUserSession = () => {
+      try {
+        setCurrentUser(
+          localStorage.getItem("user")
+            ? JSON.parse(localStorage.getItem("user")!)
+            : null
+        );
+      } catch {
+        setCurrentUser(null);
+      }
+    };
+
+    window.addEventListener("storage", syncUserSession);
+    window.addEventListener("user-session-updated", syncUserSession as EventListener);
+
+    return () => {
+      window.removeEventListener("storage", syncUserSession);
+      window.removeEventListener("user-session-updated", syncUserSession as EventListener);
+    };
+  }, []);
+
+  const user = currentUser;
 
   const isAdminGeneral = Boolean(user?.is_admin_branch);
   const roleLabel = isAdminGeneral
     ? "مدير النظام"
     : getRoleLabel(normalizeRole(user?.role));
+
+  const userImageUrl = user?.image_url
+    ? /^https?:\/\//i.test(user.image_url)
+      ? user.image_url
+      : `${API_ORIGIN}${String(user.image_url).startsWith("/") ? user.image_url : `/${user.image_url}`}`
+    : "";
+
+  const formatAttendanceTime = (dateString?: string | null) => {
+    if (!dateString) return "--:--";
+
+    return new Date(dateString).toLocaleTimeString(
+      currentLanguage === "ar" ? "ar-SA" : "en-US",
+      {
+        hour: "2-digit",
+        minute: "2-digit",
+      }
+    );
+  };
 
   const getChatHandlers = () => {
     try {
@@ -191,15 +258,79 @@ const Header: React.FC<HeaderProps> = () => {
     };
   };
 
-  const handleLogout = async () => {
+  const clearLocalSessionAndRedirect = () => {
+    localStorage.removeItem("user");
+    localStorage.removeItem("branch_id");
+    localStorage.removeItem("token");
+    sessionStorage.removeItem("wassel_form_draft");
+    window.dispatchEvent(new Event("storage"));
+    navigate("/login", { replace: true });
+  };
+
+  const forceDisabledLogout = (message?: string) => {
+    actions.addNotification(message || t.accountDisabledMessage, "error");
+    window.setTimeout(() => {
+      clearLocalSessionAndRedirect();
+    }, 900);
+  };
+
+  const handleLogout = async (options?: { reason?: "manual" | "idle" }) => {
+    if (logoutInProgressRef.current) return;
+    logoutInProgressRef.current = true;
+
     if (selectedChatId) {
       await releaseChat(selectedChatId);
     }
 
-    localStorage.removeItem("user");
-    localStorage.removeItem("branch_id");
-    window.dispatchEvent(new Event("storage"));
-    navigate("/login", { replace: true });
+    try {
+      await api.post("/user-attendance/check-out");
+    } catch (error) {
+      console.error("User attendance check-out on logout error:", error);
+    }
+
+    if (options?.reason === "idle") {
+      try {
+        window.alert(t.autoLogoutMessage);
+      } catch {
+        // ignore alert failures
+      }
+    }
+
+    clearLocalSessionAndRedirect();
+  };
+
+  const loadAttendanceStatus = async () => {
+    try {
+      const res = await api.get("/user-attendance/status");
+      setAttendanceSession(res.data?.session || null);
+
+      const storedUser = localStorage.getItem("user");
+      if (storedUser) {
+        const parsedUser = JSON.parse(storedUser);
+        parsedUser.current_session_start = res.data?.session?.login_time || null;
+        localStorage.setItem("user", JSON.stringify(parsedUser));
+      }
+    } catch (error) {
+      console.error("Load attendance status error:", error);
+      const status = (error as any)?.response?.status;
+      const message = String((error as any)?.response?.data?.message || "");
+      if (status === 403 && message.includes("معطل")) {
+        forceDisabledLogout(t.accountDisabledMessage);
+        return;
+      }
+      setAttendanceSession(null);
+    }
+  };
+
+  const handleAttendanceAction = async () => {
+    try {
+      setAttendanceLoading(true);
+      await handleLogout({ reason: "manual" });
+    } catch (error) {
+      console.error("Attendance action error:", error);
+    } finally {
+      setAttendanceLoading(false);
+    }
   };
 
   const applyLanguage = async (lang: "ar" | "en") => {
@@ -266,6 +397,61 @@ const Header: React.FC<HeaderProps> = () => {
   useEffect(() => {
     fetchBranches();
   }, []);
+
+  useEffect(() => {
+    void loadAttendanceStatus();
+  }, []);
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const timer = window.setInterval(() => {
+      void loadAttendanceStatus();
+    }, 15000);
+
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, [user?.id]);
+
+  useEffect(() => {
+    const INACTIVITY_LIMIT_MS = 15 * 60 * 1000;
+
+    const resetInactivityTimer = () => {
+      if (inactivityTimerRef.current) {
+        window.clearTimeout(inactivityTimerRef.current);
+      }
+
+      inactivityTimerRef.current = window.setTimeout(() => {
+        void handleLogout({ reason: "idle" });
+      }, INACTIVITY_LIMIT_MS);
+    };
+
+    const activityEvents: Array<keyof WindowEventMap> = [
+      "mousemove",
+      "mousedown",
+      "keydown",
+      "scroll",
+      "touchstart",
+      "click",
+    ];
+
+    activityEvents.forEach((eventName) => {
+      window.addEventListener(eventName, resetInactivityTimer, { passive: true });
+    });
+
+    resetInactivityTimer();
+
+    return () => {
+      activityEvents.forEach((eventName) => {
+        window.removeEventListener(eventName, resetInactivityTimer);
+      });
+
+      if (inactivityTimerRef.current) {
+        window.clearTimeout(inactivityTimerRef.current);
+      }
+    };
+  }, [selectedChatId, t.autoLogoutMessage]);
 
   const handleChangeBranch = (id: number) => {
     setCurrentBranch(id);
@@ -543,6 +729,10 @@ const Header: React.FC<HeaderProps> = () => {
   useEffect(() => {
     if (!chatSocket) return;
 
+    if (user?.id) {
+      chatSocket.emit("join_user", user.id);
+    }
+
     const refreshChatState = async (payload?: any) => {
       const incomingChatId =
         payload?.chat_id ?? payload?.chatId ?? payload?.conversation_id;
@@ -601,12 +791,19 @@ const Header: React.FC<HeaderProps> = () => {
       await refreshChatState(payload);
     };
 
+    const handleUserDisabled = (payload: any) => {
+      const targetId = Number(payload?.user_id || 0);
+      if (targetId && Number(user?.id) !== targetId) return;
+      forceDisabledLogout(payload?.message || t.accountDisabledMessage);
+    };
+
     chatSocket.on("admin_notification", handleAdminNotification);
     chatSocket.on("support_chat_created", handleDirectChatEvent);
     chatSocket.on("support_chat_message", handleDirectChatEvent);
     chatSocket.on("support_chat_updated", handleDirectChatEvent);
     chatSocket.on("chat_message", handleDirectChatEvent);
     chatSocket.on("chat_created", handleDirectChatEvent);
+    chatSocket.on("user_disabled", handleUserDisabled);
 
     return () => {
       chatSocket.off("admin_notification", handleAdminNotification);
@@ -615,8 +812,9 @@ const Header: React.FC<HeaderProps> = () => {
       chatSocket.off("support_chat_updated", handleDirectChatEvent);
       chatSocket.off("chat_message", handleDirectChatEvent);
       chatSocket.off("chat_created", handleDirectChatEvent);
+      chatSocket.off("user_disabled", handleUserDisabled);
     };
-  }, [selectedChatId]);
+  }, [selectedChatId, user?.id, t.accountDisabledMessage]);
 
   const pendingChatsCount = chats.filter(
     (chat) => (chat.unread_count ?? chat.pending_count ?? 0) > 0
@@ -702,7 +900,30 @@ const Header: React.FC<HeaderProps> = () => {
   return (
     <>
       <header className="bg-white dark:bg-gray-800 shadow-md px-6 py-4 flex items-center justify-between relative transition-colors duration-300">
-      <div />
+      <div className="flex items-center gap-3">
+        {attendanceSession?.login_time && !attendanceSession?.logout_time && (
+          <button
+            onClick={() => void handleAttendanceAction()}
+            disabled={attendanceLoading}
+            className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2 text-sm font-extrabold text-white transition hover:bg-red-700 disabled:opacity-60"
+          >
+            <LogOut size={16} />
+            <span>{attendanceLoading ? "..." : t.checkOut}</span>
+          </button>
+        )}
+
+        <div className="hidden sm:flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
+          <Clock3 size={16} className="text-blue-500" />
+          <span className="text-slate-500 dark:text-slate-400">{t.attendanceStartedAt}:</span>
+          <span>
+            {attendanceSession?.login_time
+              ? formatAttendanceTime(attendanceSession.login_time)
+              : user?.current_session_start
+              ? formatAttendanceTime(user.current_session_start)
+              : t.attendanceNotStarted}
+          </span>
+        </div>
+      </div>
 
       <div className="flex items-center gap-4">
         <div className="relative" ref={languageMenuRef}>
@@ -869,35 +1090,26 @@ const Header: React.FC<HeaderProps> = () => {
           )}
         </div>
 
-        <div className="relative">
-          <div
-            className="flex items-center gap-2 cursor-pointer select-none"
-            onClick={() => setMenuOpen(!menuOpen)}
-          >
-            <div className="text-right hidden sm:block">
-              <p className="text-sm font-medium text-gray-900 dark:text-white">
-              {user?.name || t.userFallback}
-              </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-              {roleLabel}
-              </p>
-            </div>
-            <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center shadow-sm">
-              <User size={16} className="text-white" />
-            </div>
+        <div className="flex items-center gap-2 select-none">
+          <div className="text-right hidden sm:block">
+            <p className="text-sm font-medium text-gray-900 dark:text-white">
+            {user?.name || t.userFallback}
+            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+            {roleLabel}
+            </p>
           </div>
-
-          {menuOpen && (
-            <div className="absolute left-0 mt-3 w-44 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg shadow-xl z-50 text-right overflow-hidden">
-              <button
-                onClick={handleLogout}
-                className="flex items-center justify-between w-full px-4 py-3 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-              >
-            <span>{t.logout}</span>
-                <LogOut size={16} />
-              </button>
-            </div>
-          )}
+          <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center shadow-sm overflow-hidden">
+            {userImageUrl ? (
+              <img
+                src={userImageUrl}
+                alt={user?.name || t.userFallback}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <User size={16} className="text-white" />
+            )}
+          </div>
         </div>
       </div>
       </header>
@@ -1122,4 +1334,3 @@ const Header: React.FC<HeaderProps> = () => {
 };
 
 export default Header;
-
