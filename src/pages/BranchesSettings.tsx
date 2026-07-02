@@ -34,6 +34,7 @@ interface Branch {
   name: string;
   address?: string;
   phone?: string;
+  is_active?: number | boolean;
   boundary_points?: Array<{ lat: number; lng: number }>;
   today_from?: string;
   today_to?: string;
@@ -664,6 +665,23 @@ const BranchesSettings: React.FC = () => {
     fetchData();
   };
 
+  const handleToggleActive = async (branch: Branch) => {
+    const currentlyActive = branch.is_active !== 0 && branch.is_active !== false;
+    const nextActive = currentlyActive ? 0 : 1;
+    const actionLabel = nextActive ? "تفعيل" : "تعطيل";
+
+    if (!window.confirm(`هل تريد ${actionLabel} فرع "${branch.name}"؟`)) return;
+
+    try {
+      await api.patch(`/branches/${branch.id}/active`, {
+        is_active: nextActive,
+      });
+      await fetchData();
+    } catch (error: any) {
+      alert(error?.response?.data?.message || "فشل تحديث حالة الفرع");
+    }
+  };
+
   const openTimeModal = (id: number) => {
     setTimeBranchId(id);
     setIsTimeModalOpen(true);
@@ -736,6 +754,7 @@ const BranchesSettings: React.FC = () => {
             <th className="border p-2">العنوان</th>
             <th className="border p-2">الهاتف</th>
             <th className="border p-2">الحدود</th>
+            <th className="border p-2">الحالة</th>
             <th className="border p-2">الوقت / الإجراءات</th>
           </tr>
         </thead>
@@ -749,6 +768,18 @@ const BranchesSettings: React.FC = () => {
                 {b.boundary_points?.length
                   ? `${b.boundary_points.length} نقطة`
                   : "بدون حدود"}
+              </td>
+
+              <td className="border p-2 text-center">
+                {b.is_active === 0 || b.is_active === false ? (
+                  <span className="rounded bg-red-100 px-2 py-1 text-sm text-red-700">
+                    معطّل
+                  </span>
+                ) : (
+                  <span className="rounded bg-green-100 px-2 py-1 text-sm text-green-700">
+                    مفعّل
+                  </span>
+                )}
               </td>
 
               <td className="border p-2 text-center">
@@ -768,6 +799,21 @@ const BranchesSettings: React.FC = () => {
                 </div>
 
                 <div className="space-x-1 space-x-reverse">
+                  {user?.is_admin_branch && (
+                    <button
+                      onClick={() => handleToggleActive(b)}
+                      className={`rounded px-2 py-1 text-white ${
+                        b.is_active === 0 || b.is_active === false
+                          ? "bg-green-600"
+                          : "bg-orange-500"
+                      }`}
+                    >
+                      {b.is_active === 0 || b.is_active === false
+                        ? "تفعيل"
+                        : "تعطيل"}
+                    </button>
+                  )}
+
                   {canEditBranch(b) && (
                     <button
                       onClick={() => openEditModal(b)}
