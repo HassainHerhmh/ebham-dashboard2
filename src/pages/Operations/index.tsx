@@ -9,7 +9,6 @@ import {
 const Operations = () => {
   const location = useLocation();
 
-  // إعادة توجيه تلقائي لأول صفحة
   if (location.pathname.endsWith("/operations")) {
     return <Navigate to="receipt-voucher" replace />;
   }
@@ -18,14 +17,13 @@ const Operations = () => {
     `flex items-center gap-2 px-4 py-2 rounded text-sm font-semibold transition
      ${
        isActive
-         ? "bg-green-100 text-green-700"
-         : "text-gray-600 hover:bg-gray-100"
+         ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400"
+         : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
      }`;
 
   return (
     <div className="space-y-6" dir="rtl">
-      {/* شريط العمليات */}
-      <div className="bg-white rounded shadow px-4 py-3 flex flex-wrap gap-4">
+      <div className="bg-white dark:bg-gray-800 rounded shadow px-4 py-3 flex flex-wrap gap-4">
         <NavLink to="receipt-voucher" className={linkClass}>
           <ArrowUpCircle size={18} />
           سند قبض
@@ -41,15 +39,13 @@ const Operations = () => {
           قيد يومي
         </NavLink>
 
-        {/* مصارفة عملة */}
         <NavLink to="currency-exchange" className={linkClass}>
           <RefreshCcw size={18} />
           مصارفة عملة
         </NavLink>
       </div>
 
-      {/* المحتوى */}
-      <div className="bg-white rounded shadow p-6 min-h-[300px]">
+      <div className="bg-white dark:bg-gray-800 rounded shadow p-6 min-h-[300px]">
         <Outlet />
       </div>
     </div>

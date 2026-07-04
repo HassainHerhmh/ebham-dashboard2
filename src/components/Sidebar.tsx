@@ -3,8 +3,6 @@ import { Link, useLocation } from "react-router-dom";
 
 import {
 ChevronDown,
-ChevronLeft,
-ChevronUp,
 Bot,
 Settings,
 CreditCard,
@@ -315,7 +313,7 @@ className={`${linkBase} relative cursor-pointer flex items-center justify-betwee
 )}
 
 {!collapsed &&
-(ordersOpen ? <ChevronUp size={18}/> : <ChevronDown size={18}/>)
+<ChevronDown size={18}/>
 }
 
 </div>
@@ -422,9 +420,9 @@ className={`${linkBase} relative ${isPathActive("/orders/manual") ? activeClass 
       {!collapsed && <span>التسويق</span>}
     </div>
 
-    {!collapsed &&
-      (marketingOpen ? <ChevronUp size={18}/> : <ChevronDown size={18}/>)
-    }
+{!collapsed &&
+      <ChevronDown size={18}/>
+}
 
   </div>
 
@@ -475,7 +473,7 @@ onClick={()=>setReportsOpen(!reportsOpen)}
 </div>
 
 {!collapsed &&
-(reportsOpen ? <ChevronUp size={16}/> : <ChevronDown size={16}/>)
+<ChevronDown size={16}/>
 }
 
 </div>
@@ -554,7 +552,7 @@ onClick={()=>setAreasOpen(!areasOpen)}
 <span className="flex items-center gap-2"><MapPin size={18}/>{!collapsed && "إعدادات التوصيل"}</span>
 
 {!collapsed &&
-(areasOpen ? <ChevronDown size={16}/> : <ChevronLeft size={16}/>)
+<ChevronDown size={16}/>
 }
 
 </div>
@@ -595,7 +593,7 @@ onClick={()=>setDeliveryOpen(!deliveryOpen)}
 <span className="flex items-center gap-2"><Truck size={18}/>{!collapsed && "تهيئة المحلات"}</span>
 
 {!collapsed &&
-(deliveryOpen ? <ChevronDown size={16}/> : <ChevronLeft size={16}/>)
+<ChevronDown size={16}/>
 }
 
 </div>
@@ -636,7 +634,7 @@ onClick={()=>setAgentsOpen(!agentsOpen)}
 <span className="flex items-center gap-2"><Briefcase size={18}/>{!collapsed && "تهيئة الوكلاء/الكباتن"}</span>
 
 {!collapsed &&
-(agentsOpen ? <ChevronDown size={16}/> : <ChevronLeft size={16}/>)
+<ChevronDown size={16}/>
 }
 
 </div>
@@ -680,7 +678,7 @@ onClick={()=>setSettingsOpen(!settingsOpen)}
 </span>
 
 {!collapsed &&
-(settingsOpen ? <ChevronDown size={16}/> : <ChevronLeft size={16}/>)
+<ChevronDown size={16}/>
 }
 
 </div>

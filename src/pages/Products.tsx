@@ -1,5 +1,5 @@
 import React, { useState, useEffect, FormEvent } from "react";
-import api from "../services/api";
+import api, { API_ORIGIN } from "../services/api";
 
 interface Product {
   id: number;
@@ -25,6 +25,56 @@ interface Product {
 interface Restaurant { id: number; name: string }
 interface Category { id: number; name: string }
 interface Unit { id: number; name: string }
+
+const resolveImageUrl = (value?: string | null) => {
+  if (!value) return "";
+  if (/^https?:\/\//i.test(value)) return value;
+  return `${API_ORIGIN}/${String(value).replace(/^\/+/, "")}`;
+};
+
+const ProductImage: React.FC<{ src?: string | null; alt: string; className?: string }> = ({
+  src,
+  alt,
+  className = "w-16 h-16",
+}) => {
+  const imageSrc = resolveImageUrl(src);
+  const [loaded, setLoaded] = useState(false);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    setLoaded(false);
+    setFailed(false);
+  }, [imageSrc]);
+
+  return (
+    <div className={`relative overflow-hidden rounded border bg-gray-100 ${className}`}>
+      {!loaded && !failed && <div className="absolute inset-0 animate-pulse bg-gray-200" />}
+
+      {!failed && imageSrc ? (
+        <img
+          src={imageSrc}
+          alt={alt}
+          loading="lazy"
+          decoding="async"
+          onLoad={() => setLoaded(true)}
+          onError={() => {
+            setFailed(true);
+            setLoaded(true);
+          }}
+          className={`h-full w-full object-cover transition-opacity duration-200 ${
+            loaded ? "opacity-100" : "opacity-0"
+          }`}
+        />
+      ) : null}
+
+      {(failed || !imageSrc) && (
+        <div className="flex h-full w-full items-center justify-center text-xs font-semibold text-gray-400">
+          لا صورة
+        </div>
+      )}
+    </div>
+  );
+};
 
 const Products: React.FC = () => {
   const user = localStorage.getItem("user")
@@ -58,6 +108,7 @@ const Products: React.FC = () => {
 const [childrenModalOpen, setChildrenModalOpen] = useState(false);
 const [parentProduct, setParentProduct] = useState<any>(null);
 const [children, setChildren] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const [isAvailable, setIsAvailable] = useState(true);
 const [isParent, setIsParent] = useState(false);
@@ -82,11 +133,16 @@ const [selectedChildren, setSelectedChildren] = useState<number[]>([]);
   };
 
   const fetchProducts = async () => {
-    const res = await api.get("/products", {
-      headers: buildHeaders(),
-    });
-    const data = res.data;
-    setProducts(Array.isArray(data) ? data : data.products || []);
+    setLoading(true);
+    try {
+      const res = await api.get("/products", {
+        headers: buildHeaders(),
+      });
+      const data = res.data;
+      setProducts(Array.isArray(data) ? data : data.products || []);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const fetchRestaurants = async () => {
@@ -324,7 +380,19 @@ if (imageUrl) formData.append("image_url", imageUrl);
 </thead>
 
 <tbody>
-  {filteredProducts.map((p, i) => (
+  {loading ? (
+    <tr>
+      <td colSpan={11} className="py-8 text-center text-gray-500">
+        جاري تحميل المنتجات...
+      </td>
+    </tr>
+  ) : filteredProducts.length === 0 ? (
+    <tr>
+      <td colSpan={11} className="py-8 text-center text-gray-500">
+        لا توجد منتجات مطابقة
+      </td>
+    </tr>
+  ) : filteredProducts.map((p, i) => (
     <tr key={p.id} className="border-t">
       <td>{i + 1}</td>
       <td>{p.name}</td>
@@ -360,16 +428,8 @@ if (imageUrl) formData.append("image_url", imageUrl);
       </td>
 
       <td>
-
-
-  {p.image_url && (
-    <img
-      src={p.image_url}
-      alt={p.name}
-      className="w-16 h-16 object-cover rounded"
-    />
-  )}
-</td>
+        <ProductImage src={p.image_url} alt={p.name} />
+      </td>
 
       
       <td className="flex gap-2 justify-center">

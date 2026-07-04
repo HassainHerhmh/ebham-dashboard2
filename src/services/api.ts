@@ -1231,4 +1231,116 @@ export const executeExchange = async (data: {
     (await api.put(`/manual-orders/${id}`, data)).data,
 };
 
+const isSameDate = (value: string | null | undefined, target: Date) => {
+  if (!value) return false;
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return false;
+
+  return date.toDateString() === target.toDateString();
+};
+
+const formatShortDay = (date: Date) =>
+  new Intl.DateTimeFormat("ar", { weekday: "short" }).format(date);
+
+(api as any).admin = {
+  getStatistics: async () => {
+    const today = new Date();
+
+    const [ordersResponse, customersResponse, captainsResponse] =
+      await Promise.all([
+        (api as any).orders.getOrders({ limit: 500 }),
+        (api as any).customers.getCustomers(),
+        (api as any).captains.getAll(),
+      ]);
+
+    const orders = Array.isArray(ordersResponse?.orders)
+      ? ordersResponse.orders
+      : [];
+    const customers = Array.isArray(customersResponse?.customers)
+      ? customersResponse.customers
+      : Array.isArray(customersResponse)
+        ? customersResponse
+        : [];
+    const captains = Array.isArray(captainsResponse)
+      ? captainsResponse
+      : Array.isArray(captainsResponse?.captains)
+        ? captainsResponse.captains
+        : [];
+
+    const todayOrders = orders.filter((order: any) =>
+      isSameDate(order?.created_at, today)
+    );
+
+    const completedTodayOrders = todayOrders.filter(
+      (order: any) => order?.status === "completed"
+    );
+
+    const activeCustomers = customers.filter(
+      (customer: any) =>
+        Number(customer?.is_online_calculated) === 1 ||
+        Number(customer?.is_online) === 1 ||
+        customer?.is_online === true
+    ).length;
+
+    const availableCaptains = captains.filter((captain: any) => {
+      const status = String(captain?.status || "").toLowerCase();
+
+      return (
+        status === "available" ||
+        status === "online" ||
+        status === "active" ||
+        captain?.is_active === true ||
+        Number(captain?.is_active) === 1
+      );
+    }).length;
+
+    const totalSales = completedTodayOrders.reduce(
+      (sum: number, order: any) => sum + Number(order?.total_amount || 0),
+      0
+    );
+
+    return {
+      success: true,
+      stats: {
+        totalOrders: todayOrders.length,
+        activeCustomers,
+        availableCaptains,
+        totalSales,
+        averageDeliveryTime: 0,
+        dailyTarget: 0,
+      },
+    };
+  },
+};
+
+(api as any).reports = {
+  ...(api as any).reports,
+
+  getSalesReport: async () => {
+    const response = await (api as any).orders.getOrders({ limit: 500 });
+    const orders = Array.isArray(response?.orders) ? response.orders : [];
+    const today = new Date();
+
+    return Array.from({ length: 7 }, (_, index) => {
+      const date = new Date(today);
+      date.setHours(0, 0, 0, 0);
+      date.setDate(today.getDate() - (6 - index));
+
+      const value = orders.reduce((sum: number, order: any) => {
+        if (order?.status !== "completed") return sum;
+
+        return isSameDate(order?.created_at, date)
+          ? sum + Number(order?.total_amount || 0)
+          : sum;
+      }, 0);
+
+      return {
+        name: formatShortDay(date),
+        value,
+      };
+    });
+  },
+};
+
 export default api;

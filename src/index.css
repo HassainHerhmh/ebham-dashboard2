@@ -194,6 +194,12 @@ html, body, #root {
   color: #d1d5db !important;
 }
 
+.dark thead.ops-table-head,
+.dark thead.ops-table-head th {
+  background-color: #14532d !important;
+  color: #ffffff !important;
+}
+
 .dark tbody tr {
   border-color: #374151;
 }

@@ -1,5 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
 import api from "../../services/api";
+import {
+  OPERATIONS_CSS,
+  opsEmptyCell,
+  opsPanel,
+  opsTableHead,
+  opsTableWrap,
+  opsTd,
+} from "./operationsTheme";
 
 type Currency = {
   id: number;
@@ -173,47 +181,47 @@ const submit = async () => {
   return (
     <div className="space-y-4" dir="rtl">
       <div className="flex justify-between items-center">
-        <h2 className="text-xl font-bold">مصارفة عملة</h2>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white">مصارفة عملة</h2>
         <button
           onClick={() => setShowModal(true)}
-          className="bg-green-600 text-white px-4 py-2 rounded"
+          className="bg-green-600 dark:bg-green-700 text-white px-4 py-2 rounded"
         >
           إضافة
         </button>
       </div>
 
       {/* جدول العمليات */}
-      <div className="bg-white rounded shadow overflow-x-auto">
-        <table className="w-full text-sm text-center border">
-          <thead className="bg-green-600 text-white">
+      <div className={opsTableWrap}>
+        <table className="w-full text-sm text-center border border-gray-200 dark:border-gray-700">
+          <thead className={opsTableHead}>
             <tr>
-              <th className="border px-2 py-1">رقم</th>
-              <th className="border px-2 py-1">التاريخ</th>
-              <th className="border px-2 py-1">مدين</th>
-              <th className="border px-2 py-1">دائن</th>
-              <th className="border px-2 py-1">النوع</th>
-              <th className="border px-2 py-1">سعر الصرف</th>
-              <th className="border px-2 py-1">البيان</th>
+              <th className="border dark:border-gray-700 px-2 py-1">رقم</th>
+              <th className="border dark:border-gray-700 px-2 py-1">التاريخ</th>
+              <th className="border dark:border-gray-700 px-2 py-1">مدين</th>
+              <th className="border dark:border-gray-700 px-2 py-1">دائن</th>
+              <th className="border dark:border-gray-700 px-2 py-1">النوع</th>
+              <th className="border dark:border-gray-700 px-2 py-1">سعر الصرف</th>
+              <th className="border dark:border-gray-700 px-2 py-1">البيان</th>
             </tr>
           </thead>
           <tbody>
             {rows.length ? (
               rows.map((r) => (
                 <tr key={r.id}>
-                  <td className="border px-2 py-1">{r.id}</td>
-                  <td className="border px-2 py-1">{r.date}</td>
-                  <td className="border px-2 py-1">{r.from_text}</td>
-                  <td className="border px-2 py-1">{r.to_text}</td>
-                  <td className="border px-2 py-1">
+                  <td className={opsTd}>{r.id}</td>
+                  <td className={opsTd}>{r.date}</td>
+                  <td className={opsTd}>{r.from_text}</td>
+                  <td className={opsTd}>{r.to_text}</td>
+                  <td className={opsTd}>
                     {r.type === "buy" ? "شراء" : "بيع"}
                   </td>
-                  <td className="border px-2 py-1">{r.rate}</td>
-                  <td className="border px-2 py-1">{r.notes}</td>
+                  <td className={opsTd}>{r.rate}</td>
+                  <td className={opsTd}>{r.notes}</td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan={7} className="py-6 text-gray-400 border">
+                <td colSpan={7} className={opsEmptyCell}>
                   لا توجد عمليات
                 </td>
               </tr>
@@ -224,31 +232,37 @@ const submit = async () => {
 
       {showModal && (
   <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
-    <div className="bg-white rounded-lg p-4 w-[700px] space-y-3">
+    <div className="bg-white dark:bg-gray-800 dark:border dark:border-gray-700 rounded-lg p-4 w-[700px] space-y-3">
 
-      {/* اختيار نوع العملية */}
       <div className="grid grid-cols-2 gap-2">
         <button
           onClick={() => setMode("buy")}
-          className={`p-2 rounded border ${mode === "buy" ? "bg-green-600 text-white" : ""}`}
+          className={`p-2 rounded border dark:border-gray-600 ${
+            mode === "buy"
+              ? "bg-green-600 text-white"
+              : "bg-transparent text-gray-700 dark:text-gray-200"
+          }`}
         >
           شراء
         </button>
         <button
           onClick={() => setMode("sell")}
-          className={`p-2 rounded border ${mode === "sell" ? "bg-green-600 text-white" : ""}`}
+          className={`p-2 rounded border dark:border-gray-600 ${
+            mode === "sell"
+              ? "bg-green-600 text-white"
+              : "bg-transparent text-gray-700 dark:text-gray-200"
+          }`}
         >
           بيع
         </button>
       </div>
 
-      {/* الهيدر الموحد: رقم السند + العنوان + التاريخ */}
-      <div className="flex items-center justify-between bg-white p-3 rounded-lg border mb-3">
-        <div className="text-sm text-gray-600">
-          رقم السند: <span className="font-bold">{reference}</span>
+      <div className="flex items-center justify-between bg-white dark:bg-gray-900 dark:border-gray-700 p-3 rounded-lg border mb-3">
+        <div className="text-sm text-gray-600 dark:text-gray-300">
+          رقم السند: <span className="font-bold text-gray-900 dark:text-white">{reference}</span>
         </div>
 
-        <h3 className="font-bold text-lg text-green-700">
+        <h3 className="font-bold text-lg text-green-700 dark:text-green-400">
           {mode === "buy" ? "شراء عملة" : mode === "sell" ? "بيع عملة" : "عملية جديدة"}
         </h3>
 
@@ -261,8 +275,8 @@ const submit = async () => {
       </div>
 
      {/* تفاصيل الشراء/البيع */}
-<div className="bg-[#eef3ea] p-4 rounded-lg space-y-3">
-  <h4 className="font-bold text-green-700 text-center">
+<div className={opsPanel}>
+  <h4 className="font-bold text-green-700 dark:text-green-400 text-center">
     {mode === "buy" ? "تفاصيل الشراء" : "تفاصيل البيع"}
   </h4>
 
@@ -322,7 +336,7 @@ const submit = async () => {
     onChange={(e) => setFromRate(e.target.value)}
   />
   <input
-    className="input bg-gray-100"
+    className="input bg-gray-100 dark:bg-gray-900"
     disabled
     value={
       fromAmount && fromRate
@@ -336,8 +350,8 @@ const submit = async () => {
 </div>
 
 {/* تفاصيل القيمة */}
-<div className="bg-[#eef3ea] p-4 rounded-lg space-y-3">
-  <h4 className="font-bold text-green-700 text-center">تفاصيل القيمة</h4>
+<div className={opsPanel}>
+  <h4 className="font-bold text-green-700 dark:text-green-400 text-center">تفاصيل القيمة</h4>
 
   <select
     className="input"
@@ -394,7 +408,7 @@ const submit = async () => {
     onChange={(e) => setToRate(e.target.value)}
   />
   <input
-    className="input bg-gray-100"
+    className="input bg-gray-100 dark:bg-gray-900"
     disabled
     value={
       toAmount && toRate
@@ -434,13 +448,13 @@ const submit = async () => {
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setShowModal(false)}
-                className="px-4 py-2 bg-gray-200 rounded"
+                className="px-4 py-2 bg-gray-200 dark:bg-gray-700 dark:text-white rounded"
               >
                 إلغاء
               </button>
               <button
                 onClick={submit}
-                className="px-4 py-2 bg-green-600 text-white rounded"
+                className="px-4 py-2 bg-green-600 dark:bg-green-700 text-white rounded"
               >
                 حفظ
               </button>
@@ -449,9 +463,7 @@ const submit = async () => {
         </div>
       )}
 
-      <style>{`
-        .input { padding:10px; border-radius:8px; border:1px solid #ccc; }
-      `}</style>
+      <style>{OPERATIONS_CSS}</style>
     </div>
   );
 };

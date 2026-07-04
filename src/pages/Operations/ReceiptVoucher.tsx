@@ -1,5 +1,18 @@
 import React, { useEffect, useState } from "react";
 import api from "../../services/api";
+import {
+  OPERATIONS_CSS,
+  opsActionBar,
+  opsEmptyCell,
+  opsFilterLabel,
+  opsModalShell,
+  opsRowBase,
+  opsRowSelected,
+  opsTableHead,
+  opsTableWrap,
+  opsTd,
+  opsTh,
+} from "./operationsTheme";
 
 /* =========================
    Receipt Voucher - UI Only
@@ -454,7 +467,7 @@ const openEdit = () => {
     <div className="space-y-4">
 
       {/* ================= Actions ================= */}
-<div className="flex justify-between items-center bg-[#e9efe6] p-4 rounded-lg">
+<div className={opsActionBar}>
   <div className="flex gap-2">
 
     {/* إضافة */}
@@ -512,7 +525,7 @@ const openEdit = () => {
             value={date}
             onChange={(e) => setDate(e.target.value)}
           />
-          <label className="flex items-center gap-2 text-sm">
+          <label className={opsFilterLabel}>
             <input
               type="checkbox"
               checked={allDates}
@@ -525,22 +538,22 @@ const openEdit = () => {
 
       {/* ================= Table ================= */}
       {/* ================= Table ================= */}
-<div className="bg-white rounded shadow overflow-x-auto">
-  <table className="w-full text-sm text-center border border-gray-200 border-collapse">
-    <thead className="bg-green-600 text-white">
+<div className={opsTableWrap}>
+  <table className="w-full text-sm text-center border border-gray-200 dark:border-gray-700 border-collapse">
+    <thead className={opsTableHead}>
       <tr>
-        <th className="border border-gray-200 px-2 py-1">رقم السند</th>
-        <th className="border border-gray-200 px-2 py-1">التاريخ</th>
-        <th className="border border-gray-200 px-2 py-1">نوع القبض</th>
-        <th className="border border-gray-200 px-2 py-1">الصندوق / البنك</th>
-        <th className="border border-gray-200 px-2 py-1">رقم الحوالة</th>
-        <th className="border border-gray-200 px-2 py-1">العملة</th>
-        <th className="border border-gray-200 px-2 py-1">المبلغ</th>
-        <th className="border border-gray-200 px-2 py-1">الحساب</th>
-        <th className="border border-gray-200 px-2 py-1">ملاحظات</th>
-        <th className="border border-gray-200 px-2 py-1">وقت الإنشاء</th>
-        <th className="border border-gray-200 px-2 py-1">المستخدم</th>
-        <th className="border border-gray-200 px-2 py-1">الفرع</th>
+        <th className={opsTh}>رقم السند</th>
+        <th className={opsTh}>التاريخ</th>
+        <th className={opsTh}>نوع القبض</th>
+        <th className={opsTh}>الصندوق / البنك</th>
+        <th className={opsTh}>رقم الحوالة</th>
+        <th className={opsTh}>العملة</th>
+        <th className={opsTh}>المبلغ</th>
+        <th className={opsTh}>الحساب</th>
+        <th className={opsTh}>ملاحظات</th>
+        <th className={opsTh}>وقت الإنشاء</th>
+        <th className={opsTh}>المستخدم</th>
+        <th className={opsTh}>الفرع</th>
       </tr>
     </thead>
     <tbody>
@@ -549,37 +562,37 @@ const openEdit = () => {
           <tr
             key={v.id}
             onClick={() => setSelectedId(v.id)}
-            className={`cursor-pointer hover:bg-gray-50 ${
-              selectedId === v.id ? "bg-green-100" : ""
+            className={`${opsRowBase} ${
+              selectedId === v.id ? opsRowSelected : ""
             }`}
           >
-            <td className="border border-gray-200 px-2 py-1">{v.voucherNo}</td>
-            <td className="border border-gray-200 px-2 py-1">{v.date}</td>
-            <td className="border border-gray-200 px-2 py-1">
+            <td className={opsTd}>{v.voucherNo}</td>
+            <td className={opsTd}>{v.date}</td>
+            <td className={opsTd}>
               {v.receiptType === "cash" ? "نقد" : "بنوك"}
             </td>
-            <td className="border border-gray-200 px-2 py-1">
+            <td className={opsTd}>
               {v.cashBox || v.bankAccount || "-"}
             </td>
-            <td className="border border-gray-200 px-2 py-1">
+            <td className={opsTd}>
               {v.transferNo || "-"}
             </td>
-            <td className="border border-gray-200 px-2 py-1">{v.currency}</td>
-            <td className="border border-gray-200 px-2 py-1">{v.amount}</td>
-            <td className="border border-gray-200 px-2 py-1">{v.account}</td>
-            <td className="border border-gray-200 px-2 py-1">
+            <td className={opsTd}>{v.currency}</td>
+            <td className={opsTd}>{v.amount}</td>
+            <td className={opsTd}>{v.account}</td>
+            <td className={opsTd}>
               {v.notes || "-"}
             </td>
-            <td className="border border-gray-200 px-2 py-1">
+            <td className={opsTd}>
               {formatLocalDateTime(v.createdAt)}
             </td>
-            <td className="border border-gray-200 px-2 py-1">{v.user}</td>
-            <td className="border border-gray-200 px-2 py-1">{v.branch}</td>
+            <td className={opsTd}>{v.user}</td>
+            <td className={opsTd}>{v.branch}</td>
           </tr>
         ))
       ) : (
         <tr>
-          <td colSpan={12} className="py-6 text-gray-400 border border-gray-200">
+          <td colSpan={12} className={opsEmptyCell}>
             لا توجد بيانات
           </td>
         </tr>
@@ -592,7 +605,7 @@ const openEdit = () => {
       {/* ================= Modal ================= */}
       {showModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-[#eef3ee] w-[760px] rounded-xl p-6 space-y-4">
+          <div className={opsModalShell}>
 
             <h3 className="text-lg font-bold text-center">
   {selectedId ? "✏️ تعديل سند قبض" : "➕ إضافة سند قبض"}
@@ -723,7 +736,7 @@ const openEdit = () => {
             <div className="border-t pt-3">
               <button
                 onClick={() => setShowExtra(!showExtra)}
-                className="w-full text-green-700 font-semibold flex items-center justify-between"
+                className="w-full text-green-700 dark:text-green-400 font-semibold flex items-center justify-between"
               >
                 <span>الخيارات الإضافية</span>
                 <span>{showExtra ? "▾" : "▸"}</span>
@@ -773,12 +786,7 @@ const openEdit = () => {
         </div>
       )}
 
-      <style>{`
-        .input { padding:8px; border-radius:8px; border:1px solid #ccc; background:#fff; }
-        .btn-green { background:#14532d; color:#fff; padding:8px 16px; border-radius:8px; }
-        .btn-gray { background:#e5e7eb; padding:8px 16px; border-radius:8px; }
-        .btn-red { background:#dc2626; color:#fff; padding:8px 16px; border-radius:8px; }
-      `}</style>
+      <style>{OPERATIONS_CSS}</style>
     </div>
   );
 };

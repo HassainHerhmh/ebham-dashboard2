@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import api from "../services/api";
 import {
   extractAuthResult,
-  getGoogleLoginUrl,
   getPostLoginPath,
   saveAuthSession,
 } from "../utils/auth";
@@ -18,7 +17,6 @@ const Login: React.FC = () => {
   const [website, setWebsite] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,12 +61,6 @@ const Login: React.FC = () => {
     }
   };
 
-  const handleGoogleLogin = () => {
-    setError("");
-    setGoogleLoading(true);
-    window.location.href = getGoogleLoginUrl();
-  };
-
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-gray-100 px-4 dark:from-slate-950 dark:to-slate-900">
       <div className="w-full max-w-md">
@@ -79,7 +71,10 @@ const Login: React.FC = () => {
           <p className="mt-2 text-gray-500">نظام إدارة الطلبات والتوصيل</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="relative rounded-2xl bg-white p-8 shadow-xl dark:bg-slate-900 dark:ring-1 dark:ring-slate-800">
+        <form
+          onSubmit={handleSubmit}
+          className="relative rounded-2xl bg-white p-8 shadow-xl dark:bg-slate-900 dark:ring-1 dark:ring-slate-800"
+        >
           <h2 className="mb-6 text-center text-2xl font-bold text-gray-700 dark:text-white">
             تسجيل الدخول
           </h2>
@@ -126,28 +121,17 @@ const Login: React.FC = () => {
             />
           </div>
 
-          {error && <p className="mb-4 text-center text-red-600 dark:text-red-400">{error}</p>}
+          {error && (
+            <p className="mb-4 text-center text-red-600 dark:text-red-400">
+              {error}
+            </p>
+          )}
 
           <button
             disabled={loading}
             className="w-full rounded-lg bg-blue-600 py-3 text-lg font-semibold text-white transition hover:bg-blue-700 disabled:opacity-60"
           >
             {loading ? "جاري الدخول..." : "تسجيل الدخول"}
-          </button>
-
-          <div className="my-5 flex items-center gap-3">
-            <div className="h-px flex-1 bg-gray-200 dark:bg-slate-700" />
-            <span className="text-sm text-gray-400">أو</span>
-            <div className="h-px flex-1 bg-gray-200 dark:bg-slate-700" />
-          </div>
-
-          <button
-            type="button"
-            onClick={handleGoogleLogin}
-            disabled={googleLoading}
-            className="w-full rounded-lg border border-gray-300 py-3 text-base font-semibold text-gray-700 transition hover:bg-gray-50 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:hover:bg-slate-800"
-          >
-            {googleLoading ? "جاري التحويل إلى جوجل..." : "الدخول عبر Google"}
           </button>
 
           <p className="mt-6 text-center text-sm text-gray-400 dark:text-slate-500">

@@ -1,5 +1,18 @@
 import React, { useEffect, useState } from "react";
 import api from "../../services/api";
+import {
+  OPERATIONS_CSS,
+  opsActionBar,
+  opsDropdown,
+  opsDropdownItem,
+  opsEmptyCell,
+  opsModalShellSm,
+  opsRowBase,
+  opsRowSelected,
+  opsTableHead,
+  opsTableWrap,
+  opsTd,
+} from "./operationsTheme";
 
 /* =========================
    Journal Entry
@@ -226,11 +239,11 @@ const base = {
         />
 
         {open && (
-          <div className="absolute z-50 bg-white border rounded-lg mt-1 w-full max-h-48 overflow-y-auto">
+          <div className={opsDropdown}>
             {list.map(a => (
               <div
                 key={a.id}
-                className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                className={opsDropdownItem}
                 onClick={() => {
                   setValue(a.name_ar);
                   setId(String(a.id));
@@ -257,7 +270,7 @@ const base = {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center bg-[#e9efe6] p-4 rounded-lg">
+      <div className={opsActionBar}>
         <div className="flex gap-2">
           <button onClick={openAdd} className="btn-green">➕ إضافة</button>
           <button onClick={openEdit} className="btn-gray">✏️ تعديل</button>
@@ -273,19 +286,19 @@ const base = {
         />
       </div>
 
-      <div className="bg-white rounded shadow overflow-x-auto">
-  <table className="w-full text-sm text-center border">
-    <thead className="bg-green-600 text-white">
+      <div className={opsTableWrap}>
+  <table className="w-full text-sm text-center border border-gray-200 dark:border-gray-700">
+    <thead className={opsTableHead}>
       <tr>
-        <th className="border px-2 py-1">رقم السند</th>
-        <th className="border px-2 py-1">التاريخ</th>
-        <th className="border px-2 py-1">المبلغ</th>
-        <th className="border px-2 py-1">العملة</th>
-        <th className="border px-2 py-1">من حساب</th>
-        <th className="border px-2 py-1">إلى حساب</th>
-        <th className="border px-2 py-1">ملاحظات</th>
-        <th className="border px-2 py-1">المستخدم</th>
-        <th className="border px-2 py-1">الفرع</th>
+        <th className="border dark:border-gray-700 px-2 py-1">رقم السند</th>
+        <th className="border dark:border-gray-700 px-2 py-1">التاريخ</th>
+        <th className="border dark:border-gray-700 px-2 py-1">المبلغ</th>
+        <th className="border dark:border-gray-700 px-2 py-1">العملة</th>
+        <th className="border dark:border-gray-700 px-2 py-1">من حساب</th>
+        <th className="border dark:border-gray-700 px-2 py-1">إلى حساب</th>
+        <th className="border dark:border-gray-700 px-2 py-1">ملاحظات</th>
+        <th className="border dark:border-gray-700 px-2 py-1">المستخدم</th>
+        <th className="border dark:border-gray-700 px-2 py-1">الفرع</th>
       </tr>
     </thead>
     <tbody>
@@ -294,24 +307,24 @@ const base = {
           <tr
             key={r.id}
             onClick={() => setSelectedRow(r)}
-            className={`cursor-pointer ${
-              selectedRow?.id === r.id ? "bg-green-100" : ""
+            className={`${opsRowBase} ${
+              selectedRow?.id === r.id ? opsRowSelected : ""
             }`}
           >
-            <td className="border px-2 py-1">{r.reference_id}</td>
-            <td className="border px-2 py-1">{r.journal_date}</td>
-            <td className="border px-2 py-1">{r.amount}</td>
-            <td className="border px-2 py-1">{r.currency_name}</td>
-            <td className="border px-2 py-1">{r.from_account}</td>
-            <td className="border px-2 py-1">{r.to_account}</td>
-            <td className="border px-2 py-1">{r.notes}</td>
-            <td className="border px-2 py-1">{r.user_name}</td>
-            <td className="border px-2 py-1">{r.branch_name}</td>
+            <td className={opsTd}>{r.reference_id}</td>
+            <td className={opsTd}>{r.journal_date}</td>
+            <td className={opsTd}>{r.amount}</td>
+            <td className={opsTd}>{r.currency_name}</td>
+            <td className={opsTd}>{r.from_account}</td>
+            <td className={opsTd}>{r.to_account}</td>
+            <td className={opsTd}>{r.notes}</td>
+            <td className={opsTd}>{r.user_name}</td>
+            <td className={opsTd}>{r.branch_name}</td>
           </tr>
         ))
       ) : (
         <tr>
-          <td colSpan={9} className="py-6 text-gray-400 border">
+          <td colSpan={9} className={opsEmptyCell}>
             لا توجد بيانات
           </td>
         </tr>
@@ -323,8 +336,8 @@ const base = {
 
       {showModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white w-[720px] rounded-xl p-6 space-y-4">
-            <h3 className="text-lg font-bold text-center">
+          <div className={opsModalShellSm}>
+            <h3 className="text-lg font-bold text-center text-gray-900 dark:text-white">
               {isEdit ? "تعديل قيد يومي" : "إضافة قيد يومي"}
             </h3>
 
@@ -342,11 +355,11 @@ const base = {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <AccountInput value={fromAccountName} setValue={setFromAccountName} setId={setFromAccount} placeholder="الحساب المدين" />
-                <input disabled className="input mt-1 bg-gray-100" placeholder="كود الحساب" value={getCode(fromAccount)} />
+                <input disabled className="input mt-1 bg-gray-100 dark:bg-gray-900" placeholder="كود الحساب" value={getCode(fromAccount)} />
               </div>
               <div>
                 <AccountInput value={toAccountName} setValue={setToAccountName} setId={setToAccount} placeholder="الحساب الدائن" />
-                <input disabled className="input mt-1 bg-gray-100" placeholder="كود الحساب" value={getCode(toAccount)} />
+                <input disabled className="input mt-1 bg-gray-100 dark:bg-gray-900" placeholder="كود الحساب" value={getCode(toAccount)} />
               </div>
             </div>
 
@@ -370,12 +383,7 @@ const base = {
         </div>
       )}
 
-      <style>{`
-        .input { padding:10px; border-radius:8px; border:1px solid #ccc; }
-        .btn-green { background:#14532d; color:#fff; padding:8px 16px; border-radius:8px; }
-        .btn-gray { background:#e5e7eb; padding:8px 16px; border-radius:8px; }
-        .btn-red { background:#dc2626; color:#fff; padding:8px 16px; border-radius:8px; }
-      `}</style>
+      <style>{OPERATIONS_CSS}</style>
     </div>
   );
 };

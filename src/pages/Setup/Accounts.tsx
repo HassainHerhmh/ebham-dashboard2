@@ -66,11 +66,11 @@ const FloatingInput = ({
       type={type}
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full rounded-lg border border-gray-300 bg-white px-3 py-3 focus:border-green-600 focus:outline-none"
+      className="w-full rounded-lg border border-gray-300 bg-white dark:bg-slate-900 px-3 py-3 focus:border-green-600 focus:outline-none dark:border-slate-700 dark:text-white"
     />
     <label
-      className={`absolute right-3 px-1 bg-[#dfe8e1] transition-all ${
-        value ? "-top-2 text-xs text-green-700" : "top-3 text-sm text-gray-500"
+      className={`absolute right-3 px-1 bg-[#dfe8e1] dark:bg-slate-800 transition-all ${
+        value ? "-top-2 text-xs text-green-700 dark:text-green-400" : "top-3 text-sm text-gray-500 dark:text-gray-300"
       }`}
     >
       {label}
@@ -96,7 +96,7 @@ const FloatingSelect = ({
       value={value}
       disabled={disabled}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full rounded-lg border border-gray-300 bg-white px-3 py-3 focus:border-green-600 focus:outline-none disabled:bg-gray-100 disabled:text-gray-500"
+      className="w-full rounded-lg border border-gray-300 bg-white dark:bg-slate-900 px-3 py-3 focus:border-green-600 focus:outline-none disabled:bg-gray-100 disabled:text-gray-500 dark:border-slate-700 dark:text-white dark:disabled:bg-slate-800 dark:disabled:text-gray-400"
     >
       <option value="">—</option>
       {options.map((o) => (
@@ -106,7 +106,7 @@ const FloatingSelect = ({
       ))}
     </select>
 
-    <label className="-top-2 absolute right-3 bg-[#dfe8e1] px-1 text-xs text-green-700">
+    <label className="-top-2 absolute right-3 bg-[#dfe8e1] dark:bg-slate-800 px-1 text-xs text-green-700 dark:text-green-400">
       {label}
     </label>
   </div>
@@ -120,8 +120,8 @@ const TreeNode = ({ node }: { node: Account }) => {
   return (
     <div className="mr-4 mt-2">
       <div
-        className={`flex cursor-pointer items-center gap-2 hover:text-green-700 ${
-          isMain ? "font-bold text-gray-800" : "text-gray-600 italic"
+        className={`flex cursor-pointer items-center gap-2 hover:text-green-700 dark:hover:text-green-400 ${
+          isMain ? "font-bold text-gray-800 dark:text-white" : "text-gray-600 dark:text-gray-300 italic"
         }`}
         onClick={() => hasChildren && setOpen(!open)}
       >
@@ -131,14 +131,14 @@ const TreeNode = ({ node }: { node: Account }) => {
           {node.code} - {node.name_ar}
         </span>
         {!isMain && (
-          <span className="rounded bg-blue-50 px-2 py-0.5 text-xs text-blue-600">
+          <span className="rounded bg-blue-50 dark:bg-blue-900 px-2 py-0.5 text-xs text-blue-600 dark:text-blue-300">
             فرعي
           </span>
         )}
       </div>
 
       {hasChildren && open && (
-        <div className="mr-4 border-r border-dashed border-gray-400 pr-3">
+        <div className="mr-4 border-r border-dashed border-gray-400 dark:border-slate-700 pr-3">
           {node.children!.map((child) => (
             <TreeNode key={child.id} node={child} />
           ))}
@@ -277,17 +277,17 @@ const Accounts = () => {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-right text-xl font-bold">دليل الحسابات</h2>
+      <h2 className="text-right text-xl font-bold dark:text-white">دليل الحسابات</h2>
 
       <div className="grid grid-cols-12 gap-6">
-        <div className="col-span-4 rounded-xl bg-[#dfe8e1] p-4">
-          <h3 className="mb-3 text-right font-bold">شجرة الحسابات</h3>
+        <div className="col-span-4 rounded-xl bg-[#dfe8e1] dark:bg-slate-800 p-4">
+          <h3 className="mb-3 text-right font-bold dark:text-white">شجرة الحسابات</h3>
           {loading
-            ? "جاري التحميل..."
+            ? <span className="dark:text-gray-200">جاري التحميل...</span>
             : accounts.map((a) => <TreeNode key={a.id} node={a} />)}
         </div>
 
-        <div className="col-span-8 space-y-5 rounded-xl bg-[#dfe8e1] p-6">
+        <div className="col-span-8 space-y-5 rounded-xl bg-[#dfe8e1] dark:bg-slate-800 p-6">
           <div className="grid grid-cols-3 gap-4">
             <FloatingSelect
               label="حساب الأب"
@@ -362,19 +362,19 @@ const Accounts = () => {
           <div className="flex justify-end gap-3 pt-4">
             <button
               onClick={handleUpdate}
-              className="rounded-lg bg-green-700 px-5 py-2 text-white"
+              className="rounded-lg bg-green-700 px-5 py-2 text-white dark:bg-green-800 dark:text-white"
             >
               تحديث
             </button>
             <button
               onClick={resetForm}
-              className="rounded-lg bg-gray-300 px-5 py-2"
+              className="rounded-lg bg-gray-300 px-5 py-2 dark:bg-slate-700 dark:text-white"
             >
               مسح الحقول
             </button>
             <button
               onClick={handleAdd}
-              className="rounded-lg bg-blue-600 px-5 py-2 text-white"
+              className="rounded-lg bg-blue-600 px-5 py-2 text-white dark:bg-blue-800 dark:text-white"
             >
               إضافة
             </button>
@@ -382,9 +382,9 @@ const Accounts = () => {
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-xl bg-white shadow">
+      <div className="overflow-x-auto rounded-xl bg-white shadow dark:bg-slate-900">
         <table className="w-full text-right text-sm">
-          <thead className="bg-green-600 text-white">
+          <thead className="bg-green-600 text-white dark:bg-green-900 dark:text-green-100">
             <tr>
               <th className="p-2">الحساب الأب</th>
               <th className="p-2">اسم الحساب</th>
@@ -404,7 +404,7 @@ const Accounts = () => {
               <tr
                 key={row.id}
                 onClick={() => handleRowClick(row)}
-                className="cursor-pointer border-b hover:bg-gray-100"
+                className="cursor-pointer border-b hover:bg-gray-100 dark:hover:bg-slate-800 dark:border-slate-700"
               >
                 <td className="p-2">{row.parent_name ?? "—"}</td>
                 <td className="p-2">{row.name_ar}</td>

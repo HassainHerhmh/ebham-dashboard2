@@ -1,6 +1,12 @@
 ﻿import React, { useState, useEffect, useRef, useMemo } from "react";
+
+// نزول الطلب المجدول تلقائياً قبل موعده بـ 40 دقيقة
+// يجب أن يكون بعد استيراد React
+
 import { Plus, MapPin } from "lucide-react"; // ✅ أضفنا MapPin
-import api from "../services/api";
+import apiImport from "../services/api";
+
+const api = apiImport as any;
 import { io } from "socket.io-client";
 import { useApp } from "../contexts/AppContext";
 import { useResizableColumns } from "../hooks/useResizableColumns";
@@ -90,7 +96,8 @@ const getOrderDisplayNumber = (order: { id: number; order_number?: number | stri
 // ========== مكون الخريطة (Live Tracking مع أيقونة دباب) ==========
 const TrackingModal = ({ order, onClose }: { order: Order; onClose: () => void }) => {
   const mapRef = useRef<HTMLDivElement>(null);
-  const markerRef = useRef<google.maps.Marker | null>(null);
+  const api = apiImport as any;
+  const markerRef = useRef<any>(null);
   const [googleMapsReady, setGoogleMapsReady] = useState(false);
 
   // 1. تحميل الخريطة
@@ -259,6 +266,7 @@ const Orders: React.FC = () => {
 
   const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
   const isAdminBranch = !!currentUser?.is_admin_branch;
+  const [activeTab, setActiveTab] = useState<OrderTab>("pending");
   const orderTableColumns = useMemo(() => {
     const columns = [
       { key: "id", label: "رقم" },
@@ -271,6 +279,7 @@ const Orders: React.FC = () => {
       { key: "details", label: "تفاصيل" },
       { key: "assign", label: "تعيين كابتن" },
       { key: "chat", label: "محادثة" },
+      ...(activeTab === "scheduled" ? [{ key: "scheduled_time", label: "موعد الطلب" }] : []),
       { key: "timeline", label: "وقت الحركة" },
       { key: "user", label: "المستخدم" },
     ];
@@ -280,16 +289,21 @@ const Orders: React.FC = () => {
     }
 
     return columns;
-  }, [isAdminBranch]);
-  const initialOrderColumnWidths = useMemo(() => {
-    const widths = [90, 180, 120, 150, 120, 140, 150, 100, 220, 110, 190, 180];
+  }, [isAdminBranch, activeTab]);
+const initialOrderColumnWidths = useMemo(() => {
+  const widths = [
+    90, 180, 120, 150, 120, 140, 150, 100, 220, 110,
+    ...(activeTab === "scheduled" ? [190] : []),
+    180,
+    180,
+  ];
 
-    if (isAdminBranch) {
-      widths.push(140);
-    }
+  if (isAdminBranch) {
+    widths.push(140);
+  }
 
-    return widths;
-  }, [isAdminBranch]);
+  return widths;
+}, [isAdminBranch, activeTab]);
   const { columnWidths: orderColumnWidths, startResize: startOrderColumnResize } =
     useResizableColumns(initialOrderColumnWidths, {
       minWidths: initialOrderColumnWidths.map((width) =>
@@ -336,10 +350,10 @@ const Orders: React.FC = () => {
       ? { index, invertDelta: false, mode: "pair" as const, edge: side }
       : { index: index - 1, invertDelta: true, mode: "pair" as const, edge: side };
   };
-  const ordersTableWidth = orderColumnWidths.reduce(
-    (totalWidth, width) => totalWidth + width,
-    0
-  );
+ const ordersTableWidth = orderTableColumns.reduce(
+  (totalWidth, _, index) => totalWidth + (orderColumnWidths[index] || 120),
+  0
+);
  const [updatingOrders, setUpdatingOrders] = useState<{[key:number]:boolean}>({})
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [cancelOrderId, setCancelOrderId] = useState<number | null>(null);
@@ -400,6 +414,8 @@ const Orders: React.FC = () => {
 
   const printRef = useRef<HTMLDivElement>(null);
   const liveRefreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const skipCustomerAddressResetRef = useRef(false);
+  const skipFeeRecalcRef = useRef(false);
 
   const [newOrderPaymentMethod, setNewOrderPaymentMethod] = useState<
     "cod" | "bank" | "electronic" | "wallet" | null
@@ -413,6 +429,10 @@ const Orders: React.FC = () => {
   // عند اختيار عميل، نقوم بجلب عناوينه فقط
   useEffect(() => {
     if (selectedCustomer) {
+      if (skipCustomerAddressResetRef.current) {
+        skipCustomerAddressResetRef.current = false;
+        return;
+      }
       setSelectedAddress(null);
       setGpsLink("");
       fetchCustomerAddresses(selectedCustomer.id);
@@ -739,6 +759,11 @@ const updateOrderStatus = async (orderId: number, newStatus: string) => {
   };
 
   const [groups, setGroups] = useState<CartGroup[]>([]);
+  const [editingOrderId, setEditingOrderId] = useState<number | null>(null);
+  const [deliveryFee, setDeliveryFee] = useState("0");
+  const [extraStoreFee, setExtraStoreFee] = useState("0");
+  const [perStoreExtraFee, setPerStoreExtraFee] = useState(0);
+  const [pricingMethod, setPricingMethod] = useState<string>("");
   const [restaurantCategories, setRestaurantCategories] = useState<any[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [products, setProducts] = useState<any[]>([]);
@@ -902,6 +927,149 @@ const updateOrderStatus = async (orderId: number, newStatus: string) => {
     setGroups((prev) => prev.filter((g) => g.restaurant.id !== restaurantId));
   };
 
+  const buildFeeRestaurantsPayload = (cartGroups = groups) =>
+    cartGroups.map((g) => ({ restaurant_id: g.restaurant.id }));
+
+  const recalcOrderFees = async (
+    addressId = selectedAddress?.id,
+    cartGroups = groups
+  ) => {
+    if (!addressId) {
+      setDeliveryFee("0");
+      setExtraStoreFee("0");
+      setPerStoreExtraFee(0);
+      setPricingMethod("");
+      return;
+    }
+
+    try {
+      const res = await api.post("/orders/calc-fees", {
+        address_id: addressId,
+        restaurants: buildFeeRestaurantsPayload(cartGroups),
+      });
+
+      if (res.data?.success) {
+        setDeliveryFee(String(res.data.delivery_fee ?? 0));
+        setExtraStoreFee(String(res.data.extra_store_fee ?? 0));
+        setPerStoreExtraFee(Number(res.data.per_store_extra_fee || 0));
+        setPricingMethod(res.data.pricing_method || "");
+      }
+    } catch (error) {
+      console.error("خطأ في حساب الرسوم:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (!showAddOrderModal) return;
+    if (skipFeeRecalcRef.current) {
+      skipFeeRecalcRef.current = false;
+      return;
+    }
+    void recalcOrderFees(selectedAddress?.id, groups);
+  }, [selectedAddress?.id, groups.length, showAddOrderModal]);
+
+  const openNewOrderModal = () => {
+    setEditingOrderId(null);
+    setSelectedCustomer(null);
+    setSelectedAddress(null);
+    setAddresses([]);
+    setGpsLink("");
+    setGroups([]);
+    setCurrentRestaurant(null);
+    setNewOrderPaymentMethod(null);
+    setSelectedBankId(null);
+    setScheduleMode("now");
+    setScheduledAt(null);
+    setDeliveryFee("0");
+    setExtraStoreFee("0");
+    setPerStoreExtraFee(0);
+    setPricingMethod("");
+    setShowAddOrderModal(true);
+  };
+
+  const resetAddOrderModal = () => {
+    setShowAddOrderModal(false);
+    setEditingOrderId(null);
+    setSelectedCustomer(null);
+    setSelectedAddress(null);
+    setAddresses([]);
+    setGpsLink("");
+    setGroups([]);
+    setCurrentRestaurant(null);
+    setNewOrderPaymentMethod(null);
+    setSelectedBankId(null);
+    setScheduleMode("now");
+    setScheduledAt(null);
+    setDeliveryFee("0");
+    setExtraStoreFee("0");
+    setPerStoreExtraFee(0);
+    setPricingMethod("");
+  };
+
+  const openEditOrderModal = async () => {
+    const details = selectedOrderDetails as any;
+    if (!details?.id) return;
+
+    const customer = customers.find((c) => Number(c.id) === Number(details.customer_id));
+    if (!customer) {
+      alert("تعذر العثور على العميل");
+      return;
+    }
+
+    setEditingOrderId(Number(details.id));
+
+    try {
+      const addrRes = await api.get(`/customer-addresses/customer/${customer.id}`);
+      const customerAddresses = addrRes.data?.addresses || [];
+
+      const matchedAddress =
+        customerAddresses.find((a: any) => Number(a.id) === Number(details.address_id)) ||
+        customerAddresses.find((a: any) => a.address === details.customer_address) ||
+        null;
+
+      setGpsLink(details.gps_link || details.map_url || "");
+
+      const restoredGroups: CartGroup[] = (details.restaurants || []).map((r: any) => ({
+        restaurant: restaurants.find((entry) => Number(entry.id) === Number(r.id)) || {
+          id: r.id,
+          name: r.name,
+        },
+        items: (r.items || []).map((item: any) => ({
+          id: item.product_id || item.id,
+          name: item.name,
+          price: Number(item.price || 0),
+          quantity: Number(item.quantity || 1),
+        })),
+      }));
+
+      setGroups(restoredGroups);
+      setDeliveryFee(String(details.delivery_fee ?? 0));
+      setExtraStoreFee(String(details.extra_store_fee ?? 0));
+      setNewOrderPaymentMethod(details.payment_method || null);
+      setSelectedBankId(details.bank_id ? Number(details.bank_id) : null);
+
+      if (details.scheduled_at) {
+        setScheduleMode("today");
+        setScheduledAt(details.scheduled_at);
+      } else {
+        setScheduleMode("now");
+        setScheduledAt(null);
+      }
+
+      skipCustomerAddressResetRef.current = true;
+      skipFeeRecalcRef.current = true;
+      setSelectedCustomer(customer);
+      setAddresses(customerAddresses);
+      setSelectedAddress(matchedAddress);
+
+      setIsDetailsModalOpen(false);
+      setShowAddOrderModal(true);
+    } catch (error) {
+      console.error("خطأ في تحميل بيانات التعديل:", error);
+      alert("تعذر فتح نموذج التعديل");
+    }
+  };
+
   const saveOrder = async () => {
     if (!selectedCustomer || !selectedAddress || groups.length === 0) {
       return alert("اكمل البيانات المطلوبة");
@@ -920,6 +1088,8 @@ const updateOrderStatus = async (orderId: number, newStatus: string) => {
       scheduled_at: scheduleMode === "now" ? null : scheduledAt,
       payment_method: newOrderPaymentMethod,
       bank_id: newOrderPaymentMethod === "bank" ? selectedBankId : null,
+      delivery_fee: Number(deliveryFee || 0),
+      extra_store_fee: Number(extraStoreFee || 0),
       restaurants: groups.map((g) => ({
         restaurant_id: g.restaurant.id,
         products: g.items.map((i) => ({
@@ -929,14 +1099,21 @@ const updateOrderStatus = async (orderId: number, newStatus: string) => {
       })),
     };
 
-    await api.post("/orders", payload);
-    alert("✅ تم إضافة الطلب");
-    setShowAddOrderModal(false);
-    setGroups([]);
-    setCurrentRestaurant(null);
-    setNewOrderPaymentMethod(null);
-    setSelectedBankId(null);
-    fetchOrders();
+    try {
+      if (editingOrderId) {
+        await api.put(`/orders/${editingOrderId}/update`, payload);
+        alert("✅ تم تحديث الطلب");
+      } else {
+        await api.post("/orders", payload);
+        alert("✅ تم إضافة الطلب");
+      }
+
+      resetAddOrderModal();
+      fetchOrders();
+    } catch (error: any) {
+      console.error("خطأ في حفظ الطلب:", error);
+      alert(error?.response?.data?.message || "فشل حفظ الطلب");
+    }
   };
 
   // ========= تبويبات الحالات والفلترة =========
@@ -950,7 +1127,6 @@ const updateOrderStatus = async (orderId: number, newStatus: string) => {
     | "cancelled"
     | "scheduled";
 
-  const [activeTab, setActiveTab] = useState<OrderTab>("pending");
   const [searchTerm, setSearchTerm] = useState("");
   const delayedOrdersRef = useRef<Set<number>>(new Set());
 
@@ -1159,7 +1335,7 @@ const updateOrderStatus = async (orderId: number, newStatus: string) => {
           <h1 className="text-2xl font-bold">الطلبات</h1>
           <div className="flex gap-2">
             <button
-              onClick={() => setShowAddOrderModal(true)}
+              onClick={openNewOrderModal}
               className="bg-green-600 text-white px-4 py-2 rounded flex items-center gap-2"
             >
               <Plus className="w-4 h-4" /> إضافة طلب
@@ -1239,8 +1415,11 @@ const updateOrderStatus = async (orderId: number, newStatus: string) => {
             style={{ width: `${ordersTableWidth}px`, minWidth: `${ordersTableWidth}px` }}
           >
 <colgroup>
-  {orderColumnWidths.map((width, index) => (
-    <col key={orderTableColumns[index].key} style={{ width: `${width}px` }} />
+  {orderTableColumns.map((column, index) => (
+    <col
+      key={column.key}
+      style={{ width: `${orderColumnWidths[index] || 120}px` }}
+    />
   ))}
 </colgroup>
             <thead className="bg-gray-50">
@@ -1376,29 +1555,77 @@ const updateOrderStatus = async (orderId: number, newStatus: string) => {
   </button>
 </td>
 
-<td className="px-2 text-[11px] text-center  space-y-1 font-bold text-indigo-600">
-  {o.scheduled_at && <div>📅 {formatScheduleTime(o.scheduled_at)}</div>}
+{/* موعد الطلب المجدول أولاً */}
+{activeTab === "scheduled" && (
+  <td className="px-2 text-center">
+    {o.scheduled_at ? (
+      <>
+        <div className="font-bold text-indigo-700">
+          {formatScheduleTime(o.scheduled_at)}
+        </div>
+
+        {(() => {
+          const now = new Date();
+          const scheduled = new Date(o.scheduled_at);
+
+          if (
+            scheduled.getTime() - now.getTime() <= 60 * 60 * 1000 ||
+            now >= scheduled
+          ) {
+            return (
+              <button
+                className="mt-1 px-2 py-1 rounded bg-green-600 text-white text-xs font-bold hover:bg-green-700"
+                onClick={() => updateOrderStatus(o.id, "confirmed")}
+                disabled={o.status !== "scheduled" && o.status !== "pending"}
+              >
+                اعتماد الطلب
+              </button>
+            );
+          }
+
+          return null;
+        })()}
+
+        {o.status === "scheduled" && (
+          <button
+            className="mt-1 px-2 py-1 rounded bg-orange-500 text-white text-xs font-bold hover:bg-orange-600"
+            onClick={() => updateOrderStatus(o.id, "pending")}
+          >
+            إنزال الطلب
+          </button>
+        )}
+      </>
+    ) : (
+      <span className="text-gray-400">-</span>
+    )}
+  </td>
+)}
+
+{/* بعدها وقت الحركة */}
+<td className="px-2 text-[11px] text-center space-y-1 font-bold text-indigo-600">
   {o.processing_at && <div>⚙️ {new Date(o.processing_at).toLocaleTimeString("ar-YE")}</div>}
   {o.ready_at && <div>✅ {new Date(o.ready_at).toLocaleTimeString("ar-YE")}</div>}
   {o.delivering_at && <div>🚚 {new Date(o.delivering_at).toLocaleTimeString("ar-YE")}</div>}
   {o.completed_at && <div className="text-green-600">✔️ {new Date(o.completed_at).toLocaleTimeString("ar-YE")}</div>}
   {o.cancelled_at && <div className="text-red-600">❌ {new Date(o.cancelled_at).toLocaleTimeString("ar-YE")}</div>}
 </td>
-                  <td className="px-2 text-sm text-gray-700 font-medium">
-                    {o.updater_name ? (
-                      <div className="flex flex-col items-center">
-                        <span className="text-blue-600">📝 {o.updater_name}</span>
-                        <small className="text-[10px] text-gray-400">آخر تحديث</small>
-                      </div>
-                    ) : o.creator_name ? (
-                      <div className="flex flex-col items-center">
-                        <span className="text-gray-800">👤 {o.creator_name}</span>
-                        <small className="text-[10px] text-gray-400">لوحة التحكم</small>
-                      </div>
-                    ) : (
-                      <span className="text-gray-400 italic text-xs">📱 طلب تطبيق</span>
-                    )}
-                  </td>
+
+{/* بعدها المستخدم */}
+<td className="px-2 text-sm text-gray-700 font-medium">
+  {o.updater_name ? (
+    <div className="flex flex-col items-center">
+      <span className="text-blue-600">📝 {o.updater_name}</span>
+      <small className="text-[10px] text-gray-400">آخر تحديث</small>
+    </div>
+  ) : o.creator_name ? (
+    <div className="flex flex-col items-center">
+      <span className="text-gray-800">👤 {o.creator_name}</span>
+      <small className="text-[10px] text-gray-400">لوحة التحكم</small>
+    </div>
+  ) : (
+    <span className="text-gray-400 italic text-xs">📱 طلب تطبيق</span>
+  )}
+</td>
                   {isAdminBranch && <td className="px-2 text-sm text-gray-700">{o.branch_name || "—"}</td>}
                 </tr>
               ))}
@@ -1564,7 +1791,7 @@ const grandTotal = allRestaurantsTotal + delivery + extraStore - discount;
                         </div>
                         <div className="border p-3 rounded bg-yellow-50">
                           <h3 className="font-bold mb-1">📝 ملاحظات الطلب</h3>
-                          <p className="text-gray-700">{selectedOrderDetails.notes || "لا توجد ملاحظات"}</p>
+                          <p className="text-gray-700">{(selectedOrderDetails as any).notes || (selectedOrderDetails as any).note || "لا توجد ملاحظات"}</p>
                         </div>
                       </div>
                     </div>
@@ -1584,6 +1811,14 @@ const grandTotal = allRestaurantsTotal + delivery + extraStore - discount;
                 <div className="text-xs text-gray-500 dir-ltr">🕒 {new Date((selectedOrderDetails as any).updated_at || new Date()).toLocaleString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true, day: 'numeric', month: 'numeric' })}</div>
               </div>
               <div className="flex gap-3">
+                {["pending", "scheduled"].includes(String(selectedOrderDetails.status)) && (
+                  <button
+                    onClick={openEditOrderModal}
+                    className="bg-amber-500 text-white px-4 py-2 rounded hover:bg-amber-600 transition"
+                  >
+                    ✏️ تعديل الطلب
+                  </button>
+                )}
                 <button onClick={handlePrint} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">🧾 طباعة الفاتورة</button>
                 <button onClick={() => setIsDetailsModalOpen(false)} className="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500 transition">إغلاق</button>
               </div>
@@ -1596,9 +1831,15 @@ const grandTotal = allRestaurantsTotal + delivery + extraStore - discount;
       {showAddOrderModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
           <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-            <h2 className="text-lg font-bold mb-4">➕ إضافة طلب جديد</h2>
+            <h2 className="text-lg font-bold mb-4">
+              {editingOrderId ? "✏️ تعديل الطلب" : "➕ إضافة طلب جديد"}
+            </h2>
             <label className="block font-semibold mb-1">👤 اختر العميل:</label>
-            <select onChange={(e) => selectCustomer(Number(e.target.value))} className="border w-full p-2 rounded mb-3 focus:ring-2 focus:ring-blue-500">
+            <select
+              value={selectedCustomer?.id || ""}
+              onChange={(e) => selectCustomer(Number(e.target.value))}
+              className="border w-full p-2 rounded mb-3 focus:ring-2 focus:ring-blue-500"
+            >
               <option value="">-- اختر العميل من القائمة --</option>
               {customers.map((c) => <option key={c.id} value={c.id}>{c.name} ({c.phone})</option>)}
             </select>
@@ -1612,6 +1853,48 @@ const grandTotal = allRestaurantsTotal + delivery + extraStore - discount;
               <option value="">{selectedCustomer ? "-- اختر عنوان العميل --" : "⚠️ يرجى اختيار عميل أولاً"}</option>
               {addresses.map((a) => <option key={a.id} value={a.id}>{`${a.neighborhood_name || "بدون حي"} - ${a.address || ""}`}</option>)}
             </select>
+
+            {selectedAddress && (
+              <div className="border p-3 rounded bg-emerald-50 mt-3 space-y-3">
+                <h3 className="font-bold text-sm text-emerald-800">🚚 رسوم التوصيل</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">
+                      رسوم التوصيل {selectedAddress.neighborhood_name ? `(${selectedAddress.neighborhood_name})` : ""}
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={deliveryFee}
+                      onChange={(e) => setDeliveryFee(e.target.value)}
+                      className="border w-full p-2 rounded"
+                    />
+                  </div>
+                  {groups.length > 1 && (
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-600 mb-1">
+                        رسوم المحلات الإضافية
+                        {perStoreExtraFee > 0 ? ` (${perStoreExtraFee} × ${groups.length - 1})` : ""}
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={extraStoreFee}
+                        onChange={(e) => setExtraStoreFee(e.target.value)}
+                        className="border w-full p-2 rounded"
+                      />
+                    </div>
+                  )}
+                </div>
+                {pricingMethod && (
+                  <p className="text-xs text-gray-500">
+                    طريقة التسعير: {pricingMethod === "neighborhood" ? "حسب الحي" : pricingMethod === "distance" ? "حسب المسافة" : pricingMethod}
+                  </p>
+                )}
+              </div>
+            )}
 
             <div className="border p-3 rounded bg-gray-50 mt-4 space-y-3">
               <h3 className="font-bold text-sm text-gray-700">⏰ وقت التوصيل</h3>
@@ -1700,8 +1983,10 @@ const grandTotal = allRestaurantsTotal + delivery + extraStore - discount;
             ))}
             <button onClick={() => { setCurrentRestaurant(null); setRestaurantCategories([]); setProducts([]); setSelectedCategory(null); }} className="mt-3 bg-indigo-600 text-white px-3 py-2 rounded">➕ إضافة مطعم آخر</button>
             <div className="mt-4 flex justify-end gap-2">
-              <button onClick={saveOrder} className="bg-green-600 text-white px-4 py-2 rounded">💾 حفظ</button>
-              <button onClick={() => setShowAddOrderModal(false)} className="bg-gray-400 text-white px-4 py-2 rounded">إلغاء</button>
+              <button onClick={saveOrder} className="bg-green-600 text-white px-4 py-2 rounded">
+                💾 {editingOrderId ? "حفظ التعديل" : "حفظ"}
+              </button>
+              <button onClick={resetAddOrderModal} className="bg-gray-400 text-white px-4 py-2 rounded">إلغاء</button>
             </div>
           </div>
         </div>
