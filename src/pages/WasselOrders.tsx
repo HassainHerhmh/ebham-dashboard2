@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import api from "../services/api";
+import api, { SOCKET_URL } from "../services/api";
 import {
   Plus,
   Edit,
@@ -17,8 +17,6 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { io } from "socket.io-client";
 import { useApp } from "../contexts/AppContext";
 import { useResizableColumns } from "../hooks/useResizableColumns";
-
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL?.trim();
 
 const socket = io(SOCKET_URL, {
   transports: ["websocket"],

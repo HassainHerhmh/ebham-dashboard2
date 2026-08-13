@@ -1,6 +1,17 @@
 import axios from "axios";
 
-export const RAW_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const HOSTINGER_API = "https://purple-pig-461825.hostingersite.com";
+
+function cleanEnvUrl(value?: string) {
+  const v = String(value || "")
+    .trim()
+    .replace(/\/$/, "");
+  if (!v || v === "undefined" || v === "null") return "";
+  return v;
+}
+
+export const RAW_URL =
+  cleanEnvUrl(import.meta.env.VITE_API_URL) || HOSTINGER_API;
 
 export const API_URL = RAW_URL.endsWith("/api")
   ? RAW_URL
@@ -9,6 +20,9 @@ export const API_URL = RAW_URL.endsWith("/api")
 export const API_ORIGIN = API_URL.endsWith("/api")
   ? API_URL.slice(0, -4)
   : API_URL;
+
+export const SOCKET_URL =
+  cleanEnvUrl(import.meta.env.VITE_SOCKET_URL) || API_ORIGIN;
 
 const api = axios.create({
   baseURL: API_URL,

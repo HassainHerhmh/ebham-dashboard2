@@ -16,12 +16,11 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { io } from "socket.io-client";
-import api, { API_ORIGIN } from "../services/api";
+import api, { API_ORIGIN, SOCKET_URL } from "../services/api";
 import { useApp } from "../contexts/AppContext";
 import { getRoleLabel } from "../config/permissions";
 import { normalizeRole } from "../utils/permissions";
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL?.trim();
 const chatSocket = SOCKET_URL
   ? io(SOCKET_URL, {
       transports: ["websocket"],

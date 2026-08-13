@@ -1,9 +1,8 @@
 import React, { ChangeEvent, FormEvent, useEffect, useState } from "react";
 import { Edit3, GripVertical, PlusCircle, Trash2, X } from "lucide-react";
-import api from "../services/api";
+import api, { API_ORIGIN } from "../services/api";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
-const BASE_URL = API_URL.replace(/\/api$/, "");
+const BASE_URL = API_ORIGIN;
 
 interface Category {
   id: number;

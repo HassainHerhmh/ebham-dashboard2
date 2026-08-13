@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
-const BASE_URL = API_URL.replace(/\/api$/, "");
+import { API_ORIGIN } from "../services/api";
+
+const BASE_URL = API_ORIGIN;
 
 interface Branch {
   id: number;

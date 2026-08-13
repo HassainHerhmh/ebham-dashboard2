@@ -4,7 +4,7 @@
 // يجب أن يكون بعد استيراد React
 
 import { Plus, MapPin } from "lucide-react"; // ✅ أضفنا MapPin
-import apiImport from "../services/api";
+import apiImport, { SOCKET_URL } from "../services/api";
 
 const api = apiImport as any;
 import { io } from "socket.io-client";
@@ -87,7 +87,6 @@ type DateFilter = "today" | "week";
 /* =====================
    Component & Socket
 ===================== */
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL?.trim();
 const socket = io(SOCKET_URL);
 
 const getOrderDisplayNumber = (order: { id: number; order_number?: number | string }) =>

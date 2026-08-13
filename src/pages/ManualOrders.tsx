@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import api from "../services/api";
+import api, { SOCKET_URL } from "../services/api";
 import { io } from "socket.io-client";
 import {  
   Plus, Trash2, Save, ShoppingCart,  
@@ -10,8 +10,6 @@ import {
 import { useReactToPrint } from 'react-to-print';
 import { Calendar } from "lucide-react";
 import { useApp } from "../contexts/AppContext";
-
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL?.trim();
 
 const socket = io(SOCKET_URL, {
   transports: ["websocket"],

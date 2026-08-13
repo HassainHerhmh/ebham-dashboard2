@@ -17,9 +17,7 @@ import { DollarSign, ShoppingBag, Truck, Users } from "lucide-react";
 import StatCard from "../components/StatCard";
 import { useApp } from "../contexts/AppContext";
 import { useApi } from "../hooks/useApi";
-import api from "../services/api";
-
-const SOCKET_URL = "https://ebham-backend-production.up.railway.app";
+import api, { SOCKET_URL } from "../services/api";
 
 const getOrderDisplayNumber = (order: {
   id: number;
