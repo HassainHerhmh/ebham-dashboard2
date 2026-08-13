@@ -156,12 +156,9 @@ const Users: React.FC = () => {
 
     const formData = new FormData();
     formData.append("name", name);
-
-    if (identifier.includes("@")) {
-      formData.append("email", identifier);
-    } else {
-      formData.append("phone", identifier);
-    }
+    formData.append("username", identifier);
+    formData.append("email", identifier);
+    formData.append("phone", identifier);
 
     formData.append("role", role);
 
