@@ -163,8 +163,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     );
   }, [state.notifications]);
 
+  const isAuthenticated = () =>
+    Boolean(localStorage.getItem("token") && localStorage.getItem("user"));
+
   const actions: AppActions = {
     loadStats: async () => {
+      if (!isAuthenticated()) {
+        return;
+      }
       try {
         const api = await import("../services/api");
         const hasGetStats = Boolean((api.default as any)?.admin?.getStatistics);
@@ -258,11 +264,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   usePolling(
     () => {
-      if (state.realTimeUpdates) {
+      if (state.realTimeUpdates && isAuthenticated()) {
         actions.loadStats();
       }
     },
-    { interval: 10000, enabled: state.realTimeUpdates }
+    { interval: 10000, enabled: Boolean(state.user && state.realTimeUpdates) }
   );
 
   return (

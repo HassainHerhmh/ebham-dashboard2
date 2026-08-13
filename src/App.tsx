@@ -124,6 +124,7 @@ const App: React.FC = () => {
         <Route
           path="/*"
           element={
+            <ProtectedRoute>
             <div className="flex min-h-screen">
               <Sidebar
                 isOpen={sidebarOpen}
@@ -265,6 +266,7 @@ const App: React.FC = () => {
                 </main>
               </div>
             </div>
+            </ProtectedRoute>
           }
         />
       </Routes>
