@@ -48,18 +48,21 @@ const handleTypedImageUpload = async (
 
   const formData = new FormData();
   formData.append("image", file);
+  formData.append("folder", "types");
 
   try {
-    const res = await fetch(BASE_URL + "/upload", {
+    const token = localStorage.getItem("token");
+    const res = await fetch(`${BASE_URL}/api/upload`, {
       method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       body: formData,
     });
 
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     const url = data.url || data.path;
 
-    if (!data.success || !url) {
-      alert("فشل رفع الصورة");
+    if (!res.ok || !data.success || !url) {
+      alert(data.message || "فشل رفع الصورة");
       return;
     }
 
