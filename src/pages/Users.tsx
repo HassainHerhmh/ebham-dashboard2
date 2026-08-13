@@ -19,6 +19,7 @@ interface User {
 interface Branch {
   id: number;
   name: string;
+  is_admin?: number | boolean;
 }
 
 const Users: React.FC = () => {
@@ -48,6 +49,27 @@ const Users: React.FC = () => {
   const [branchId, setBranchId] = useState<number | "">("");
 
   const fileInputRefs = useRef<Record<number, HTMLInputElement | null>>({});
+
+  const hqBranch = useMemo(
+    () =>
+      branches.find((b) => b.is_admin === 1 || b.is_admin === true) || null,
+    [branches]
+  );
+  const operatingBranches = useMemo(
+    () => branches.filter((b) => !(b.is_admin === 1 || b.is_admin === true)),
+    [branches]
+  );
+
+  const branchLabel = (user: User) => {
+    if (
+      hqBranch &&
+      user.branch_id != null &&
+      Number(user.branch_id) === Number(hqBranch.id)
+    ) {
+      return "الإدارة العامة";
+    }
+    return user.branch_name || "—";
+  };
 
   const syncCurrentUserSession = (updatedUser: User) => {
     if (!currentUser || Number(currentUser.id) !== Number(updatedUser.id)) return;
@@ -168,7 +190,11 @@ const Users: React.FC = () => {
 
     if (image) formData.append("image", image);
 
-    if (isAdminBranch && branchId) {
+    if (isAdminBranch) {
+      if (!branchId) {
+        alert("حدد الإدارة العامة أو الفرع");
+        return;
+      }
       formData.append("branch_id", String(branchId));
     }
 
@@ -345,7 +371,7 @@ const Users: React.FC = () => {
                     </td>
                     <td className="p-3 font-semibold">{user.name}</td>
                     <td className="p-3">{getRoleLabel(normalizeRole(user.role))}</td>
-                    <td className="p-3">{user.branch_name || "-"}</td>
+                    <td className="p-3">{branchLabel(user)}</td>
                     <td className="p-3">
                       <span
                         className={
@@ -484,11 +510,15 @@ const Users: React.FC = () => {
                   onChange={(event) =>
                     setBranchId(event.target.value ? Number(event.target.value) : "")
                   }
+                  required
                 >
-                  <option value="">اختر الفرع</option>
-                  {branches.map((branch) => (
+                  <option value="">اختر التبعية</option>
+                  {hqBranch && (
+                    <option value={hqBranch.id}>الإدارة العامة</option>
+                  )}
+                  {operatingBranches.map((branch) => (
                     <option key={branch.id} value={branch.id}>
-                      {branch.name}
+                      فرع: {branch.name}
                     </option>
                   ))}
                 </select>

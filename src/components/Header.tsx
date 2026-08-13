@@ -97,6 +97,7 @@ interface HeaderProps {
 interface Branch {
   id: number;
   name: string;
+  is_admin?: number | boolean;
 }
 
 interface ChatMessage {
@@ -211,7 +212,7 @@ const Header: React.FC<HeaderProps> = () => {
 
   const isAdminGeneral = Boolean(user?.is_admin_branch);
   const roleLabel = isAdminGeneral
-    ? "مدير النظام"
+    ? "الإدارة العامة"
     : getRoleLabel(normalizeRole(user?.role));
 
   const userImageUrl = user?.image_url
@@ -377,18 +378,29 @@ const Header: React.FC<HeaderProps> = () => {
       }
 
       const res = await api.get("/branches");
-      const list = Array.isArray(res.data?.branches) ? res.data.branches : [];
-      setBranches(list);
+      const all = Array.isArray(res.data?.branches) ? res.data.branches : [];
+      // الهيدر يعرض الفروع التشغيلية فقط — الإدارة العامة فوقها وليست خيار تبديل
+      const operating = all.filter(
+        (b: Branch) => !(b.is_admin === 1 || b.is_admin === true)
+      );
+      setBranches(operating);
 
       const saved = localStorage.getItem("branch_id");
-      if (saved) {
-        setCurrentBranch(Number(saved));
-      } else if (user?.branch_id) {
-        setCurrentBranch(user.branch_id);
-        localStorage.setItem("branch_id", String(user.branch_id));
+      const savedNum = saved ? Number(saved) : NaN;
+      const savedIsOperating =
+        Number.isFinite(savedNum) &&
+        operating.some((b: Branch) => Number(b.id) === savedNum);
+
+      if (savedIsOperating) {
+        setCurrentBranch(savedNum);
+      } else if (operating[0]?.id) {
+        setCurrentBranch(operating[0].id);
+        localStorage.setItem("branch_id", String(operating[0].id));
+      } else {
+        setCurrentBranch(null);
       }
     } catch (err) {
-      console.error("ط®ط·ط£ ظپظٹ ط¬ظ„ط¨ ط§ظ„ظپط±ظˆط¹:", err);
+      console.error("خطأ في جلب الفروع:", err);
       setBranches([]);
     }
   };

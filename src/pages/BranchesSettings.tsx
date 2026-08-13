@@ -35,6 +35,7 @@ interface Branch {
   address?: string;
   phone?: string;
   is_active?: number | boolean;
+  is_admin?: number | boolean;
   boundary_points?: Array<{ lat: number; lng: number }>;
   today_from?: string;
   today_to?: string;
@@ -605,6 +606,12 @@ const BranchesSettings: React.FC = () => {
   const canEditBranch = (branch: Branch) =>
     Boolean(user?.is_admin_branch || Number(user?.branch_id) === Number(branch.id));
 
+  const isHqBranch = (branch: Branch) =>
+    branch.is_admin === 1 || branch.is_admin === true;
+
+  const operatingBranches = branches.filter((b) => !isHqBranch(b));
+  const hqBranch = branches.find((b) => isHqBranch(b)) || null;
+
   const normalizedBoundaryPoints = boundaryPoints
     .map((point) => ({
       lat: Number(point.lat),
@@ -735,7 +742,14 @@ const BranchesSettings: React.FC = () => {
   return (
     <div className="p-4" style={{ direction: "rtl" }}>
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-2xl font-bold">الفروع</h2>
+        <div>
+          <h2 className="text-2xl font-bold">الفروع</h2>
+          {hqBranch && (
+            <p className="mt-1 text-sm text-slate-500">
+              تحت الإدارة العامة — الفروع التشغيلية الظاهرة أدناه
+            </p>
+          )}
+        </div>
 
         {user?.is_admin_branch && (
           <button
@@ -759,7 +773,7 @@ const BranchesSettings: React.FC = () => {
           </tr>
         </thead>
         <tbody>
-          {branches.map((b) => (
+          {operatingBranches.map((b) => (
             <tr key={b.id}>
               <td className="border p-2">{b.name}</td>
               <td className="border p-2">{b.address || "-"}</td>

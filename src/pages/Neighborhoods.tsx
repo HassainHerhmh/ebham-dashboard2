@@ -421,7 +421,13 @@ const Neighborhoods: React.FC = () => {
 
     try {
       const res = await api.get("/branches");
-      setBranches(res.data.branches || []);
+      const list = res.data.branches || [];
+      setBranches(
+        list.filter(
+          (b: { is_admin?: number | boolean }) =>
+            !(b.is_admin === 1 || b.is_admin === true)
+        )
+      );
     } catch (err) {
       console.error("خطأ جلب الفروع:", err);
     }
