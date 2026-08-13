@@ -36,10 +36,28 @@ api.interceptors.request.use((config) => {
     config.headers.Authorization = `Bearer ${token}`;
   }
 
-  // 🔹 ربط الفرع المختار من الهيدر
-  const branchId = localStorage.getItem("branch_id");
-  if (branchId) {
-    config.headers["x-branch-id"] = branchId;
+  // إرسال فرع الهيدر فقط لمستخدمي الإدارة العامة (أو إن طابق فرع المستخدم)
+  try {
+    const rawUser = localStorage.getItem("user");
+    const user = rawUser ? JSON.parse(rawUser) : null;
+    const isHqAdmin = Boolean(
+      user?.is_admin_branch === true ||
+        user?.is_admin_branch === 1 ||
+        Number(user?.is_admin_branch) === 1 ||
+        user?.is_admin === true ||
+        user?.is_admin === 1
+    );
+    const branchId = localStorage.getItem("branch_id");
+    if (
+      branchId &&
+      (isHqAdmin ||
+        (user?.branch_id != null &&
+          String(user.branch_id) === String(branchId)))
+    ) {
+      config.headers["x-branch-id"] = branchId;
+    }
+  } catch {
+    // ignore
   }
 
   return config;
