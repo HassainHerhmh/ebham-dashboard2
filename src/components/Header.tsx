@@ -989,28 +989,41 @@ const Header: React.FC<HeaderProps> = () => {
           )}
         </button>
 
-        {/* ط§ط®طھظٹط§ط± ط§ظ„ظپط±ط¹ ط£ظˆ ط¹ط±ط¶ظ‡ */}
-        {isAdminGeneral ? (
-          branches.length > 0 && (
-            <select
-              value={currentBranch ?? ""}
-              onChange={(e) => handleChangeBranch(Number(e.target.value))}
-              className="border rounded px-3 py-1 text-sm bg-white dark:bg-gray-700 dark:text-white dark:border-gray-600 outline-none"
-            >
-              {branches.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                </option>
-              ))}
-            </select>
-          )
-        ) : (
-          user?.branch_name && (
-            <div className="px-3 py-1 text-sm border rounded bg-gray-50 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600">
-              {user.branch_name}
+        {/* الفرع: قائمة فقط للإدارة العامة عند وجود أكثر من فرع */}
+        {(() => {
+          const canSwitchBranch = isAdminGeneral && branches.length > 1;
+          const singleBranchName =
+            (isAdminGeneral &&
+              branches.find((b) => Number(b.id) === Number(currentBranch))
+                ?.name) ||
+            branches[0]?.name ||
+            user?.branch_name ||
+            "";
+
+          if (canSwitchBranch) {
+            return (
+              <select
+                value={currentBranch ?? ""}
+                onChange={(e) => handleChangeBranch(Number(e.target.value))}
+                className="border rounded px-3 py-1 text-sm bg-white dark:bg-gray-700 dark:text-white dark:border-gray-600 outline-none"
+              >
+                {branches.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name}
+                  </option>
+                ))}
+              </select>
+            );
+          }
+
+          if (!singleBranchName) return null;
+
+          return (
+            <div className="px-3 py-1 text-sm border rounded bg-gray-50 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 select-none pointer-events-none">
+              {singleBranchName}
             </div>
-          )
-        )}
+          );
+        })()}
 
         <button
           onClick={handleOpenChat}
