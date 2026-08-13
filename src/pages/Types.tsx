@@ -202,6 +202,12 @@ if (imageColorUrl)
     }
   };
 
+  const resolveImageSrc = (url?: string | null) => {
+    if (!url) return "";
+    if (/^https?:\/\//i.test(url)) return url;
+    return `${BASE_URL}${url.startsWith("/") ? url : `/${url}`}`;
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -215,6 +221,8 @@ if (imageColorUrl)
             setSortOrder(0);
             setImage(null);
             setImageUrl("");
+            setImageOutlineUrl("");
+            setImageColorUrl("");
             setIsModalOpen(true);
           }}
           className="flex items-center gap-2 rounded bg-blue-500 px-4 py-2 text-white"
@@ -235,13 +243,18 @@ if (imageColorUrl)
               <tr>
                 <th className="p-3">#</th>
                 <th className="p-3">اسم النوع</th>
-                <th className="p-3">الصورة</th>
+                <th className="p-3">بدون لون</th>
+                <th className="p-3">ملونة</th>
                 <th className="p-3">الترتيب</th>
                 <th className="p-3">إجراءات</th>
               </tr>
             </thead>
             <tbody>
-              {types.map((t) => (
+              {types.map((t) => {
+                const outlineSrc = resolveImageSrc(t.image_outline_url);
+                const colorSrc = resolveImageSrc(t.image_color_url);
+
+                return (
                 <tr
                   key={t.id}
                   draggable={!isReordering}
@@ -266,19 +279,26 @@ if (imageColorUrl)
                     </div>
                   </td>
                   <td className="p-3">{t.name}</td>
-                  <td className="p-3">
-                    {t.image_url ? (
+                  <td className="p-3 text-center">
+                    {outlineSrc ? (
                       <img
-                        src={
-                          t.image_url.startsWith("http")
-                            ? t.image_url
-                            : `${BASE_URL}${t.image_url}`
-                        }
-                        alt={t.name}
-                        className="mx-auto h-16 w-16 rounded object-cover"
+                        src={outlineSrc}
+                        alt={`${t.name} بدون لون`}
+                        className="mx-auto h-14 w-14 rounded border bg-slate-50 object-contain"
                       />
                     ) : (
-                      "-"
+                      <span className="text-slate-400">—</span>
+                    )}
+                  </td>
+                  <td className="p-3 text-center">
+                    {colorSrc ? (
+                      <img
+                        src={colorSrc}
+                        alt={`${t.name} ملونة`}
+                        className="mx-auto h-14 w-14 rounded border bg-slate-50 object-contain"
+                      />
+                    ) : (
+                      <span className="text-slate-400">—</span>
                     )}
                   </td>
                   <td className="p-3">{t.sort_order ?? 0}</td>
@@ -297,7 +317,8 @@ if (imageColorUrl)
                     </button>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         ) : (
