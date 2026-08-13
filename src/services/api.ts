@@ -7,6 +7,7 @@ function cleanEnvUrl(value?: string) {
     .trim()
     .replace(/\/$/, "");
   if (!v || v === "undefined" || v === "null") return "";
+  if (/railway\.app/i.test(v)) return "";
   return v;
 }
 
