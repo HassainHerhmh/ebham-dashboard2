@@ -3,7 +3,10 @@ import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 import { AppProvider } from "./contexts/AppContext";
+import { startVersionWatcher } from "./utils/versionWatch";
 import "./index.css";
+
+startVersionWatcher();
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
