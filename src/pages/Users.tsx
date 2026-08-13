@@ -152,7 +152,10 @@ const Users: React.FC = () => {
     setConfirmPassword("");
     setImage(null);
     setRole("employee");
-    setBranchId("");
+    const selected = localStorage.getItem("branch_id");
+    setBranchId(
+      isAdminBranch && selected && selected !== "all" ? Number(selected) : ""
+    );
     setIsModalOpen(true);
   };
 

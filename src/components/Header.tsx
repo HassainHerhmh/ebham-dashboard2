@@ -152,6 +152,7 @@ const Header: React.FC<HeaderProps> = () => {
   );
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [branches, setBranches] = useState<Branch[]>([]);
+  const [hqBranchId, setHqBranchId] = useState<number | null>(null);
   const [currentBranch, setCurrentBranch] = useState<number | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
   const [chatLoading, setChatLoading] = useState(false);
@@ -374,25 +375,41 @@ const Header: React.FC<HeaderProps> = () => {
           localStorage.setItem("branch_id", String(user.branch_id));
         }
         setBranches([]);
+        setHqBranchId(null);
         return;
       }
 
       const res = await api.get("/branches");
       const all = Array.isArray(res.data?.branches) ? res.data.branches : [];
-      // الهيدر يعرض الفروع التشغيلية فقط — الإدارة العامة فوقها وليست خيار تبديل
+      const hq = all.find(
+        (b: Branch) => b.is_admin === 1 || b.is_admin === true
+      );
       const operating = all.filter(
         (b: Branch) => !(b.is_admin === 1 || b.is_admin === true)
       );
-      setBranches(operating);
+
+      // الإدارة العامة فرع مستقل + صلاحية تصفح الفروع التشغيلية
+      const switchOptions: Branch[] = [
+        ...(hq
+          ? [{ ...hq, name: "الإدارة العامة", is_admin: 1 as const }]
+          : []),
+        ...operating,
+      ];
+      setBranches(switchOptions);
+      setHqBranchId(hq?.id != null ? Number(hq.id) : null);
 
       const saved = localStorage.getItem("branch_id");
       const savedNum = saved ? Number(saved) : NaN;
-      const savedIsOperating =
+      const savedIsValid =
         Number.isFinite(savedNum) &&
-        operating.some((b: Branch) => Number(b.id) === savedNum);
+        switchOptions.some((b) => Number(b.id) === savedNum);
 
-      if (savedIsOperating) {
+      if (savedIsValid) {
         setCurrentBranch(savedNum);
+      } else if (hq?.id != null) {
+        // الافتراضي: بيانات الإدارة العامة نفسها
+        setCurrentBranch(Number(hq.id));
+        localStorage.setItem("branch_id", String(hq.id));
       } else if (operating[0]?.id) {
         setCurrentBranch(operating[0].id);
         localStorage.setItem("branch_id", String(operating[0].id));
@@ -402,6 +419,7 @@ const Header: React.FC<HeaderProps> = () => {
     } catch (err) {
       console.error("خطأ في جلب الفروع:", err);
       setBranches([]);
+      setHqBranchId(null);
     }
   };
 
@@ -989,16 +1007,20 @@ const Header: React.FC<HeaderProps> = () => {
           )}
         </button>
 
-        {/* الفرع: قائمة فقط للإدارة العامة عند وجود أكثر من فرع */}
+        {/* الإدارة العامة: تبديل بين فرعها والفروع الأخرى — مستخدم الفرع: اسم ثابت فقط */}
         {(() => {
           const canSwitchBranch = isAdminGeneral && branches.length > 1;
-          const singleBranchName =
-            (isAdminGeneral &&
-              branches.find((b) => Number(b.id) === Number(currentBranch))
-                ?.name) ||
-            branches[0]?.name ||
-            user?.branch_name ||
-            "";
+          const labelForId = (id: number | null) => {
+            if (id == null) return user?.branch_name || "";
+            const match = branches.find((b) => Number(b.id) === Number(id));
+            if (match) {
+              return Number(match.id) === Number(hqBranchId)
+                ? "الإدارة العامة"
+                : match.name;
+            }
+            return user?.branch_name || "";
+          };
+          const singleBranchName = labelForId(currentBranch);
 
           if (canSwitchBranch) {
             return (
@@ -1006,10 +1028,13 @@ const Header: React.FC<HeaderProps> = () => {
                 value={currentBranch ?? ""}
                 onChange={(e) => handleChangeBranch(Number(e.target.value))}
                 className="border rounded px-3 py-1 text-sm bg-white dark:bg-gray-700 dark:text-white dark:border-gray-600 outline-none"
+                title="تصفح بيانات فرع آخر"
               >
                 {branches.map((b) => (
                   <option key={b.id} value={b.id}>
-                    {b.name}
+                    {Number(b.id) === Number(hqBranchId)
+                      ? "الإدارة العامة"
+                      : b.name}
                   </option>
                 ))}
               </select>
