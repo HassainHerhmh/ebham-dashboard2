@@ -157,10 +157,17 @@ const [displayType, setDisplayType] = useState("product"); // "product" أو "ma
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const img = e.target.files?.[0];
-    if (img) {
-      setFile(img);
-      setPreview(URL.createObjectURL(img));
+    e.target.value = "";
+    if (!img) return;
+
+    if (!img.type.startsWith("image/")) {
+      alert("اختر ملف صورة فقط");
+      return;
     }
+
+    setFile(img);
+    setImageUrl("");
+    setPreview(URL.createObjectURL(img));
   };
 
 const handleSubmit = async (e: React.FormEvent) => {
@@ -285,6 +292,8 @@ setDisplayType("product"); // إعادة القيمة الافتراضية
 
   setFile(null);
   setPreview(null);
+  setImageUrl("");
+  setMapUrl("");
   setEditMode(false);
   setShowModal(false);
 };
@@ -732,21 +741,38 @@ useEffect(() => {
 </div> {/* 👈 هذا الإغلاق كان ناقص */}
 
 {/* الصورة */}
-<div className="col-span-2 flex items-center gap-3">
-  <input
-    type="text"
-    placeholder="الصق رابط الصورة هنا"
-    className="border rounded-lg px-3 py-2 w-full"
-    value={imageUrl}
-    onChange={(e) => setImageUrl(e.target.value)}
-  />
+<div className="col-span-2 rounded border p-3 space-y-2">
+  <label className="block font-bold text-sm text-gray-700">صورة المطعم</label>
 
-  {imageUrl && (
-    <img
-      src={imageUrl}
-      alt="معاينة"
-      className="w-16 h-16 rounded object-cover border"
+  <label className="block cursor-pointer rounded bg-gray-100 px-3 py-2 text-center hover:bg-gray-200">
+    رفع صورة من الملفات
+    <input
+      type="file"
+      accept="image/*"
+      className="hidden"
+      onChange={handleImageChange}
     />
+  </label>
+
+  {(preview || imageUrl) && (
+    <div className="flex items-center gap-3">
+      <img
+        src={preview || imageUrl}
+        alt="معاينة"
+        className="w-20 h-20 rounded object-cover border"
+      />
+      <button
+        type="button"
+        onClick={() => {
+          setFile(null);
+          setPreview(null);
+          setImageUrl("");
+        }}
+        className="text-red-600 text-sm"
+      >
+        إزالة
+      </button>
+    </div>
   )}
 </div>
 
