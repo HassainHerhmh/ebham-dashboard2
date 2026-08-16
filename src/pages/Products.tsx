@@ -12,7 +12,9 @@ interface Product {
   unit_id?: number;
   unit_name?: string;
   restaurant_id?: number;
+  restaurant_ids?: number[] | string;
   restaurant_name?: string;
+  restaurant_names?: string;
 
   // 🆕 أضف هذه
   branch_name?: string;
@@ -93,7 +95,7 @@ const Products: React.FC = () => {
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
   const [notes, setNotes] = useState("");
-  const [restaurantId, setRestaurantId] = useState("");
+  const [restaurantIds, setRestaurantIds] = useState<string[]>([]);
   const [categoryIds, setCategoryIds] = useState<string[]>([]);
   const [unitId, setUnitId] = useState("");
 
@@ -200,7 +202,7 @@ const [selectedChildren, setSelectedChildren] = useState<number[]>([]);
   setName("");
   setPrice("");
   setNotes("");
-  setRestaurantId("");
+  setRestaurantIds([]);
   setCategoryIds([]);
   setUnitId("");
   setImage(null);
@@ -270,7 +272,7 @@ const handleSubmit = async (e: FormEvent) => {
   }
 
   if (!categoryIds.length) return alert("❌ اختر فئة واحدة على الأقل");
-  if (!restaurantId) return alert("❌ اختر المطعم");
+  if (!restaurantIds.length) return alert("❌ اختر مطعماً واحداً على الأقل");
   if (!unitId) return alert("❌ اختر الوحدة");
 
   // إذا المنتج ليس (أب) يجب إدخال سعر
@@ -282,7 +284,8 @@ const handleSubmit = async (e: FormEvent) => {
   formData.append("name", name);
   formData.append("price", isParent ? "" : price); // الأب بدون سعر
   formData.append("notes", notes || "");
-  formData.append("restaurant_id", restaurantId);
+  formData.append("restaurant_id", restaurantIds[0]);
+  formData.append("restaurant_ids", JSON.stringify(restaurantIds.map(Number)));
   formData.append("unit_id", unitId);
   formData.append("category_ids", JSON.stringify(categoryIds));
 
@@ -330,7 +333,15 @@ const handleSubmit = async (e: FormEvent) => {
   setName(p.name);
   setPrice(String(p.price || ""));
   setNotes(p.notes || "");
-  setRestaurantId(p.restaurant_id?.toString() || "");
+  setRestaurantIds(
+    Array.isArray(p.restaurant_ids)
+      ? p.restaurant_ids.map(String)
+      : p.restaurant_ids
+        ? String(p.restaurant_ids).split(",").map((x) => x.trim()).filter(Boolean)
+        : p.restaurant_id
+          ? [String(p.restaurant_id)]
+          : []
+  );
   setUnitId(p.unit_id?.toString() || "");
   setImageUrl(p.image_url || "");
 
@@ -360,7 +371,11 @@ const handleSubmit = async (e: FormEvent) => {
   const filteredProducts = products.filter((p) => {
     const matchName = p.name.toLowerCase().includes(searchName.toLowerCase());
 
-    const matchRestaurant = (p.restaurant_name || "")
+    const matchRestaurant = (
+      p.restaurant_names ||
+      p.restaurant_name ||
+      ""
+    )
       .toLowerCase()
       .includes(searchRestaurant.toLowerCase());
 
@@ -449,7 +464,7 @@ const handleSubmit = async (e: FormEvent) => {
       <td>{i + 1}</td>
       <td>{p.name}</td>
       <td>{p.categories || "-"}</td>
-      <td>{p.restaurant_name || "-"}</td>
+      <td>{p.restaurant_names || p.restaurant_name || "-"}</td>
       <td>{p.branch_name || "-"}</td>
       <td>{p.unit_name || "-"}</td>
       <td>{p.is_parent ? "—" : p.price}</td>
@@ -524,7 +539,7 @@ const handleSubmit = async (e: FormEvent) => {
               <td>{i + 1}</td>
               <td>{c.name}</td>
               <td>{c.price}</td>
-              <td>{c.restaurant_name}</td>
+              <td>{c.restaurant_names || c.restaurant_name || "-"}</td>
               <td>{c.categories}</td>
               <td>
                 <span
@@ -590,16 +605,28 @@ const handleSubmit = async (e: FormEvent) => {
         className="border w-full px-3 py-2"
       />
 
-      <select
-        value={restaurantId}
-        onChange={(e) => setRestaurantId(e.target.value)}
-        className="border w-full px-3 py-2"
-      >
-        <option value="">اختر المطعم</option>
-        {restaurants.map((r) => (
-          <option key={r.id} value={r.id}>{r.name}</option>
-        ))}
-      </select>
+      <div className="col-span-2 max-h-40 space-y-2 overflow-y-auto rounded border p-3">
+        <div className="mb-1 text-sm font-bold">المطاعم (يمكن اختيار أكثر من واحد)</div>
+        {restaurants.map((r) => {
+          const id = String(r.id);
+          return (
+            <label key={r.id} className="flex cursor-pointer items-center gap-2">
+              <input
+                type="checkbox"
+                checked={restaurantIds.includes(id)}
+                onChange={() => {
+                  setRestaurantIds((prev) =>
+                    prev.includes(id)
+                      ? prev.filter((x) => x !== id)
+                      : [...prev, id]
+                  );
+                }}
+              />
+              <span>{r.name}</span>
+            </label>
+          );
+        })}
+      </div>
 
       {/* متوفر / غير متوفر */}
       <div className="flex gap-2 col-span-2">
