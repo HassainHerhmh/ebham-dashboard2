@@ -101,6 +101,7 @@ const Products: React.FC = () => {
   const [preview, setPreview] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [imageUrl, setImageUrl] = useState("");
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const [searchName, setSearchName] = useState("");
   const [searchRestaurant, setSearchRestaurant] = useState("");
@@ -204,15 +205,69 @@ const [selectedChildren, setSelectedChildren] = useState<number[]>([]);
   setUnitId("");
   setImage(null);
   setPreview(null);
+  setImageUrl("");
   setIsAvailable(true);
   setIsParent(false);
   setSelectedChildren([]);
 };
 
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      alert("اختر ملف صورة فقط");
+      return;
+    }
+
+    const localPreview = URL.createObjectURL(file);
+    setImage(file);
+    setPreview(localPreview);
+    setUploadingImage(true);
+
+    try {
+      const body = new FormData();
+      body.append("image", file);
+      body.append("folder", "products");
+
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_ORIGIN}/api/upload`, {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        body,
+      });
+
+      const data = await res.json().catch(() => ({}));
+      const url = data.url || data.path;
+
+      if (!res.ok || !data.success || !url) {
+        alert(data.message || "فشل رفع الصورة");
+        setImage(null);
+        setPreview(null);
+        return;
+      }
+
+      setImageUrl(url);
+      setPreview(url);
+      setImage(null);
+    } catch {
+      alert("خطأ في رفع الصورة");
+      setImage(null);
+      setPreview(null);
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   /* ================= SUBMIT ================= */
 const handleSubmit = async (e: FormEvent) => {
   e.preventDefault();
+
+  if (uploadingImage) {
+    return alert("انتظر حتى ينتهي رفع الصورة");
+  }
 
   if (!categoryIds.length) return alert("❌ اختر فئة واحدة على الأقل");
   if (!restaurantId) return alert("❌ اختر المطعم");
@@ -236,27 +291,24 @@ const handleSubmit = async (e: FormEvent) => {
   formData.append("is_parent", isParent ? "1" : "0");
   formData.append("children", JSON.stringify(selectedChildren || []));
 
-if (imageUrl) formData.append("image_url", imageUrl);
-
-
+  if (imageUrl) formData.append("image_url", imageUrl);
+  if (image) formData.append("image", image);
 
   try {
     const res = editingId
-      ? await api.put(`/products/${editingId}`, formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        })
-      : await api.post("/products", formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
+      ? await api.put(`/products/${editingId}`, formData)
+      : await api.post("/products", formData);
 
     if (res.data?.success) {
       resetForm();
       setShowForm(false);
       fetchProducts();
+    } else {
+      alert(res.data?.message || "❌ فشل الحفظ");
     }
-  } catch (err) {
+  } catch (err: any) {
     console.error(err);
-    alert("❌ حدث خطأ أثناء الحفظ");
+    alert(err?.response?.data?.message || "❌ حدث خطأ أثناء الحفظ");
   }
 };
 
