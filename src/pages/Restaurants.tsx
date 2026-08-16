@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Store, Plus, X, Trash2, Edit3 } from "lucide-react";
-import api from "../services/api";
+import api, { API_ORIGIN } from "../services/api";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { GripVertical } from "lucide-react";
 
@@ -75,6 +75,7 @@ const [isActive, setIsActive] = useState(true);
 const [deliveryFrom, setDeliveryFrom] = useState("");
 const [deliveryTo, setDeliveryTo] = useState("");
 const [imageUrl, setImageUrl] = useState("");
+const [uploadingImage, setUploadingImage] = useState(false);
 const [displayType, setDisplayType] = useState("product"); // "product" أو "manual"
   const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
   const [selectedType, setSelectedType] = useState<number | "">("");
@@ -155,7 +156,7 @@ const [displayType, setDisplayType] = useState("product"); // "product" أو "ma
     );
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const img = e.target.files?.[0];
     e.target.value = "";
     if (!img) return;
@@ -165,13 +166,53 @@ const [displayType, setDisplayType] = useState("product"); // "product" أو "ma
       return;
     }
 
+    const localPreview = URL.createObjectURL(img);
     setFile(img);
-    setImageUrl("");
-    setPreview(URL.createObjectURL(img));
+    setPreview(localPreview);
+    setUploadingImage(true);
+
+    try {
+      const body = new FormData();
+      body.append("image", img);
+      body.append("folder", "restaurants");
+
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_ORIGIN}/api/upload`, {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        body,
+      });
+
+      const data = await res.json().catch(() => ({}));
+      const url = data.url || data.path;
+
+      if (!res.ok || !data.success || !url) {
+        alert(data.message || "فشل رفع الصورة");
+        setFile(null);
+        setPreview(null);
+        return;
+      }
+
+      setImageUrl(url);
+      setPreview(url);
+      setFile(null);
+    } catch {
+      alert("خطأ في رفع الصورة");
+      setFile(null);
+      setPreview(null);
+    } finally {
+      setUploadingImage(false);
+    }
   };
 
 const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
+
+  if (uploadingImage) {
+    alert("انتظر حتى ينتهي رفع الصورة");
+    return;
+  }
+
   const data = new FormData();
 
   data.append("name", formData.name);
@@ -194,23 +235,30 @@ const handleSubmit = async (e: React.FormEvent) => {
     data.append("agent_id", String(selectedAgent));
   }
 
-  if (file) data.append("image", file);
-  if (imageUrl) data.append("image_url", imageUrl);
-
+  if (imageUrl) {
+    data.append("image_url", imageUrl);
+  }
+  if (file) {
+    data.append("image", file);
+  }
 
   const headers =
     isAdminGeneral && selectedBranch ? { "x-branch-id": selectedBranch } : {};
 
-  if (editMode) {
-    await api.put(`/restaurants/${formData.id}`, data, { headers });
-    alert("✅ تم تعديل المطعم");
-  } else {
-    await api.post(`/restaurants`, data, { headers });
-    alert("✅ تم إضافة المطعم");
-  }
+  try {
+    if (editMode) {
+      await api.put(`/restaurants/${formData.id}`, data, { headers });
+      alert("✅ تم تعديل المطعم");
+    } else {
+      await api.post(`/restaurants`, data, { headers });
+      alert("✅ تم إضافة المطعم");
+    }
 
-  resetForm();
-  fetchRestaurants();
+    resetForm();
+    fetchRestaurants();
+  } catch (err: any) {
+    alert(err?.response?.data?.message || "❌ فشل حفظ المطعم");
+  }
 };
 
 
@@ -744,12 +792,17 @@ useEffect(() => {
 <div className="col-span-2 rounded border p-3 space-y-2">
   <label className="block font-bold text-sm text-gray-700">صورة المطعم</label>
 
-  <label className="block cursor-pointer rounded bg-gray-100 px-3 py-2 text-center hover:bg-gray-200">
-    رفع صورة من الملفات
+  <label
+    className={`block cursor-pointer rounded bg-gray-100 px-3 py-2 text-center hover:bg-gray-200 ${
+      uploadingImage ? "opacity-60 pointer-events-none" : ""
+    }`}
+  >
+    {uploadingImage ? "جاري رفع الصورة..." : "رفع صورة من الملفات"}
     <input
       type="file"
       accept="image/*"
       className="hidden"
+      disabled={uploadingImage}
       onChange={handleImageChange}
     />
   </label>
@@ -769,6 +822,7 @@ useEffect(() => {
           setImageUrl("");
         }}
         className="text-red-600 text-sm"
+        disabled={uploadingImage}
       >
         إزالة
       </button>
@@ -780,7 +834,11 @@ useEffect(() => {
 
   {/* الأزرار */}
   <div className="flex gap-2 col-span-2">
-    <button type="submit" className="flex-1 bg-blue-600 text-white px-4 py-2 rounded">
+    <button
+      type="submit"
+      disabled={uploadingImage}
+      className="flex-1 bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-60"
+    >
       حفظ
     </button>
     <button type="button" onClick={resetForm} className="flex-1 bg-gray-400 text-white px-4 py-2 rounded">
