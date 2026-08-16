@@ -700,26 +700,52 @@ const handleSubmit = async (e: FormEvent) => {
         ))}
       </select>
 
-<div          className="border w-full px-3 py-2 col-span-2">
-  <input
-    type="text"
-    placeholder="الصق رابط الصورة هنا"
-             className="border w-full px-3 py-2 col-span-2"
-    value={imageUrl}
-    onChange={(e) => setImageUrl(e.target.value)}
-  />
+<div className="col-span-2 space-y-2 rounded border p-3">
+  <label className="block text-sm font-bold text-gray-700">صورة المنتج</label>
 
-  {imageUrl && (
-    <img
-      src={imageUrl}
-      alt="معاينة"
-      className="w-16 h-16 rounded object-cover border"
+  <label
+    className={`block cursor-pointer rounded bg-gray-100 px-3 py-2 text-center hover:bg-gray-200 ${
+      uploadingImage ? "pointer-events-none opacity-60" : ""
+    }`}
+  >
+    {uploadingImage ? "جاري رفع الصورة..." : "رفع صورة من الملفات"}
+    <input
+      type="file"
+      accept="image/*"
+      className="hidden"
+      disabled={uploadingImage}
+      onChange={handleImageUpload}
     />
+  </label>
+
+  {(preview || imageUrl) && (
+    <div className="flex items-center gap-3">
+      <img
+        src={resolveImageUrl(preview || imageUrl)}
+        alt="معاينة"
+        className="h-16 w-16 rounded border object-cover"
+      />
+      <button
+        type="button"
+        onClick={() => {
+          setImage(null);
+          setPreview(null);
+          setImageUrl("");
+        }}
+        className="text-sm text-red-600"
+        disabled={uploadingImage}
+      >
+        إزالة
+      </button>
+    </div>
   )}
 </div>
 
       <div className="flex gap-2">
-        <button className="bg-blue-600 text-white px-4 py-2 rounded w-full">
+        <button
+          className="w-full rounded bg-blue-600 px-4 py-2 text-white disabled:opacity-60"
+          disabled={uploadingImage}
+        >
           حفظ
         </button>
         <button
@@ -728,7 +754,7 @@ const handleSubmit = async (e: FormEvent) => {
             resetForm();
             setShowForm(false);
           }}
-          className="bg-gray-400 text-white px-4 py-2 rounded w-full"
+          className="w-full rounded bg-gray-400 px-4 py-2 text-white"
         >
           إلغاء
         </button>
