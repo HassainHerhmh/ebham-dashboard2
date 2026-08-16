@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import api from "../services/api";
+import api, { API_ORIGIN } from "../services/api";
 import { hasPermission } from "../utils/permissions";
 
 interface Agent {
@@ -10,7 +10,8 @@ interface Agent {
   address?: string;
   is_active: number;
   branch_id?: number;
-  branch_name?: string; // ← أضف هذا السطر
+  branch_name?: string;
+  image_url?: string;
 }
 
 
@@ -26,7 +27,55 @@ const Agents: React.FC = () => {
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
   const [imageUrl, setImageUrl] = useState("");
-const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+
+  const resolveImageUrl = (url?: string | null) => {
+    if (!url) return "";
+    if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("blob:")) {
+      return url;
+    }
+    return `${API_ORIGIN}${url.startsWith("/") ? "" : "/"}${url}`;
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      alert("اختر ملف صورة فقط");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("image", file);
+    formData.append("folder", "agents");
+
+    setUploadingImage(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_ORIGIN}/api/upload`, {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        body: formData,
+      });
+
+      const data = await res.json().catch(() => ({}));
+      const url = data.url || data.path;
+
+      if (!res.ok || !data.success || !url) {
+        alert(data.message || "فشل رفع الصورة");
+        return;
+      }
+
+      setImageUrl(url);
+    } catch {
+      alert("خطأ في رفع الصورة");
+    } finally {
+      setUploadingImage(false);
+    }
+  };
 
 
   // modal
@@ -40,6 +89,11 @@ const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [address, setAddress] = useState("");
   const [password, setPassword] = useState("");
   const [branchId, setBranchId] = useState<number | "">("");
+
+  const isHqUser =
+    Number(user?.is_admin) === 1 ||
+    Number(user?.is_admin_branch) === 1 ||
+    user?.role === "admin";
 
   /* =========================
      Load
@@ -58,12 +112,19 @@ const [previewImage, setPreviewImage] = useState<string | null>(null);
 useEffect(() => {
   fetchAgents();
 
-  if (user?.is_admin === 1) {
+  if (isHqUser) {
     api.get("/branches").then((res) => {
       setBranches(res.data?.list || []);
     });
-  } else {
-    setBranchId(user?.branch_id);
+
+    const selected = localStorage.getItem("branch_id");
+    if (selected && selected !== "all") {
+      setBranchId(Number(selected));
+    } else if (user?.branch_id) {
+      setBranchId(Number(user.branch_id));
+    }
+  } else if (user?.branch_id) {
+    setBranchId(Number(user.branch_id));
   }
 }, []);
 
@@ -85,7 +146,7 @@ const openEditModal = (agent: Agent) => {
   setAddress(agent.address || "");
   setBranchId(agent.branch_id || "");
   setPassword("");
-  setImageUrl((agent as any).image_url || "");
+  setImageUrl(agent.image_url || "");
   setIsModalOpen(true);
 };
 
@@ -112,20 +173,30 @@ const openEditModal = (agent: Agent) => {
       return;
     }
 
-const payload: any = { name, email, phone, address };
+    const resolvedBranch =
+      branchId ||
+      user?.branch_id ||
+      (localStorage.getItem("branch_id") !== "all"
+        ? localStorage.getItem("branch_id")
+        : "") ||
+      "";
 
- if (imageUrl) {
-    payload.image_url = imageUrl; // 👈 أضف هذا السطر
-  }
-    
-if (user?.is_admin === 1) {
-  if (!branchId) {
-    alert("❌ اختر الفرع");
-    return;
-  }
-  payload.branch_id = branchId;
-}
+    if (!resolvedBranch) {
+      alert("❌ اختر الفرع أولاً (من النموذج أو من أعلى الصفحة)");
+      return;
+    }
 
+    const payload: any = {
+      name,
+      email,
+      phone,
+      address,
+      branch_id: Number(resolvedBranch),
+    };
+
+    if (imageUrl) {
+      payload.image_url = imageUrl;
+    }
 
     if (!editingAgent && !password) {
       alert("❌ كلمة المرور مطلوبة عند الإضافة");
@@ -138,14 +209,18 @@ if (user?.is_admin === 1) {
         await api.agents.updateAgent(editingAgent.id, payload);
         alert("✅ تم تعديل الوكيل");
       } else {
-        await api.agents.addAgent(payload);
-        alert("✅ تم إضافة الوكيل");
+        const res = await api.agents.addAgent(payload);
+        alert(
+          res?.password
+            ? `✅ تم إضافة الوكيل\nكلمة المرور: ${res.password}`
+            : "✅ تم إضافة الوكيل"
+        );
       }
 
       setIsModalOpen(false);
       fetchAgents();
-    } catch {
-      alert("❌ حدث خطأ");
+    } catch (err: any) {
+      alert(err?.response?.data?.message || "❌ حدث خطأ");
     }
   };
 
@@ -210,7 +285,7 @@ const resetPassword = async (agentId: number) => {
           <th className="px-4 py-3">الاسم</th>
           <th className="px-4 py-3">الجوال</th>
 
-         {(user?.is_admin_branch || user?.role === "admin") && (
+         {(isHqUser) && (
   <th className="px-4 py-3">الفرع</th>
 )}
 
@@ -227,18 +302,19 @@ const resetPassword = async (agentId: number) => {
             <td className="px-4 py-2">{a.name}</td>
             <td className="px-4 py-2">{a.phone || "-"}</td>
 
-{(user?.is_admin_branch || user?.role === "admin") && (
+{(isHqUser) && (
   <td className="px-4 py-2">
     {a.branch_name || "-"}
   </td>
 )}
 
 <td className="px-4 py-2">
-  {(a as any).image_url ? (
+  {a.image_url ? (
     <img
-      src={(a as any).image_url}
+      src={resolveImageUrl(a.image_url)}
       className="w-10 h-10 rounded-full object-cover cursor-pointer"
-      onClick={() => setPreviewImage((a as any).image_url)}
+      onClick={() => setPreviewImage(resolveImageUrl(a.image_url))}
+      alt=""
     />
   ) : (
     "-"
@@ -343,17 +419,14 @@ const resetPassword = async (agentId: number) => {
     />
   )}
 
-  {/* اختيار الفرع – يظهر فقط لإدارة الفروع */}
-{(user?.is_admin_branch || user?.role === "admin") && (
+  {/* اختيار الفرع – يظهر لإدارة الفروع / الإدارة العامة */}
+{isHqUser && (
   <select
   className="border p-2 rounded w-full"
   value={branchId}
   onChange={(e) => setBranchId(Number(e.target.value))}
-  disabled={user?.is_admin !== 1}
 >
-  <option value="">
-    {user?.is_admin === 1 ? "اختر الفرع" : "فرعك الحالي"}
-  </option>
+  <option value="">اختر الفرع</option>
 
   {branches.map((b) => (
     <option key={b.id} value={b.id}>
@@ -372,26 +445,48 @@ const resetPassword = async (agentId: number) => {
     value={address}
     onChange={(e) => setAddress(e.target.value)}
   />
-<input
-  type="text"
-  placeholder="رابط شعار الوكيل"
-  value={imageUrl}
-  onChange={(e) => setImageUrl(e.target.value)}
-  className="border p-2 rounded w-full"
-/>
+<div className="rounded border p-3 space-y-2">
+  <label className="block font-bold text-sm text-gray-700">شعار الوكيل</label>
 
-{imageUrl && (
-  <img
-    src={imageUrl}
-    alt="معاينة"
-    className="w-20 h-20 object-cover rounded border"
-  />
-)}
+  <label
+    className={`block cursor-pointer rounded bg-gray-100 px-3 py-2 text-center hover:bg-gray-200 ${
+      uploadingImage ? "opacity-60 pointer-events-none" : ""
+    }`}
+  >
+    {uploadingImage ? "جاري رفع الصورة..." : "رفع صورة من الملفات"}
+    <input
+      type="file"
+      accept="image/*"
+      className="hidden"
+      disabled={uploadingImage}
+      onChange={handleLogoUpload}
+    />
+  </label>
+
+  {imageUrl && (
+    <div className="flex items-center gap-3">
+      <img
+        src={resolveImageUrl(imageUrl)}
+        alt="معاينة الشعار"
+        className="w-20 h-20 object-cover rounded border"
+      />
+      <button
+        type="button"
+        onClick={() => setImageUrl("")}
+        className="text-red-600 text-sm"
+        disabled={uploadingImage}
+      >
+        إزالة
+      </button>
+    </div>
+  )}
+</div>
 
   <div className="flex justify-end gap-2 pt-2">
     <button
       type="submit"
-      className="bg-green-600 text-white px-4 py-2 rounded"
+      disabled={uploadingImage}
+      className="bg-green-600 text-white px-4 py-2 rounded disabled:opacity-60"
     >
       حفظ
     </button>
