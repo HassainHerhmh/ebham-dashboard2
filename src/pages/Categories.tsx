@@ -13,6 +13,41 @@ interface Category {
   sort_order?: number;
 }
 
+const resolveMediaUrl = (url?: string | null) => {
+  if (!url) return "";
+  if (
+    url.startsWith("http://") ||
+    url.startsWith("https://") ||
+    url.startsWith("blob:") ||
+    url.startsWith("data:")
+  ) {
+    return url;
+  }
+  return `${BASE_URL}${url.startsWith("/") ? "" : "/"}${url}`;
+};
+
+const uploadCategoryImage = async (file: File) => {
+  const body = new FormData();
+  body.append("image", file);
+  body.append("folder", "categories");
+
+  const token = localStorage.getItem("token");
+  const res = await fetch(`${API_ORIGIN}/api/upload`, {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    body,
+  });
+
+  const data = await res.json().catch(() => ({}));
+  const url = data.url || data.path;
+
+  if (!res.ok || !data.success || !url) {
+    throw new Error(data.message || "فشل رفع الصورة");
+  }
+
+  return url as string;
+};
+
 const Categories: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [draggingId, setDraggingId] = useState<number | null>(null);
@@ -21,16 +56,16 @@ const Categories: React.FC = () => {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [iconUrl, setIconUrl] = useState("");
-  const [image, setImage] = useState<File | null>(null);
   const [imageUrl, setImageUrl] = useState("");
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [sortOrder, setSortOrder] = useState(0);
 
   const [editId, setEditId] = useState<number | null>(null);
   const [editName, setEditName] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [editIcon, setEditIcon] = useState("");
-  const [editImage, setEditImage] = useState<File | null>(null);
   const [editImageUrl, setEditImageUrl] = useState("");
+  const [editUploadingImage, setEditUploadingImage] = useState(false);
   const [editSortOrder, setEditSortOrder] = useState(0);
 
   const [isAddSidebarOpen, setIsAddSidebarOpen] = useState(false);
@@ -56,9 +91,7 @@ const Categories: React.FC = () => {
         items.map((item, index) => {
           const formData = new FormData();
           formData.append("sort_order", String(index + 1));
-          return api.put(`/categories/${item.id}`, formData, {
-            headers: { "Content-Type": "multipart/form-data" },
-          });
+          return api.put(`/categories/${item.id}`, formData);
         })
       );
     } catch (err) {
@@ -98,31 +131,80 @@ const Categories: React.FC = () => {
     await persistCategoryOrder(reordered);
   };
 
+  const handleAddImageUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      alert("اختر ملف صورة فقط");
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      const url = await uploadCategoryImage(file);
+      setImageUrl(url);
+    } catch (err: any) {
+      alert(err?.message || "فشل رفع الصورة");
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleEditImageUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      alert("اختر ملف صورة فقط");
+      return;
+    }
+
+    setEditUploadingImage(true);
+    try {
+      const url = await uploadCategoryImage(file);
+      setEditImageUrl(url);
+    } catch (err: any) {
+      alert(err?.message || "فشل رفع الصورة");
+    } finally {
+      setEditUploadingImage(false);
+    }
+  };
+
   const handleAdd = async (e: FormEvent) => {
     e.preventDefault();
+
+    if (uploadingImage) {
+      alert("انتظر حتى ينتهي رفع الصورة");
+      return;
+    }
 
     const formData = new FormData();
     formData.append("name", name);
     formData.append("description", description);
     formData.append("icon_url", iconUrl);
     formData.append("sort_order", String(sortOrder));
-    if (image) formData.append("image", image);
     if (imageUrl) formData.append("image_url", imageUrl);
 
-    const res = await api.post("/categories", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    try {
+      const res = await api.post("/categories", formData);
 
-    if (res.data?.success) {
-      alert("تمت إضافة الفئة بنجاح");
-      setName("");
-      setDescription("");
-      setIconUrl("");
-      setImage(null);
-      setImageUrl("");
-      setSortOrder(0);
-      setIsAddSidebarOpen(false);
-      fetchCategories();
+      if (res.data?.success) {
+        alert("تمت إضافة الفئة بنجاح");
+        setName("");
+        setDescription("");
+        setIconUrl("");
+        setImageUrl("");
+        setSortOrder(0);
+        setIsAddSidebarOpen(false);
+        fetchCategories();
+      } else {
+        alert(res.data?.message || "فشل إضافة الفئة");
+      }
+    } catch (err: any) {
+      alert(err?.response?.data?.message || "فشل إضافة الفئة");
     }
   };
 
@@ -141,29 +223,36 @@ const Categories: React.FC = () => {
     e.preventDefault();
     if (!editId) return;
 
+    if (editUploadingImage) {
+      alert("انتظر حتى ينتهي رفع الصورة");
+      return;
+    }
+
     const formData = new FormData();
     formData.append("name", editName);
     formData.append("description", editDescription);
     formData.append("icon_url", editIcon);
     formData.append("sort_order", String(editSortOrder));
-    if (editImage) formData.append("image", editImage);
     if (editImageUrl) formData.append("image_url", editImageUrl);
 
-    const res = await api.put(`/categories/${editId}`, formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    try {
+      const res = await api.put(`/categories/${editId}`, formData);
 
-    if (res.data?.success) {
-      alert("تم تعديل الفئة");
-      setEditId(null);
-      setEditName("");
-      setEditDescription("");
-      setEditIcon("");
-      setEditImage(null);
-      setEditImageUrl("");
-      setEditSortOrder(0);
-      setIsEditSidebarOpen(false);
-      fetchCategories();
+      if (res.data?.success) {
+        alert("تم تعديل الفئة");
+        setEditId(null);
+        setEditName("");
+        setEditDescription("");
+        setEditIcon("");
+        setEditImageUrl("");
+        setEditSortOrder(0);
+        setIsEditSidebarOpen(false);
+        fetchCategories();
+      } else {
+        alert(res.data?.message || "فشل تعديل الفئة");
+      }
+    } catch (err: any) {
+      alert(err?.response?.data?.message || "فشل تعديل الفئة");
     }
   };
 
@@ -193,85 +282,99 @@ const Categories: React.FC = () => {
           </tr>
         </thead>
         <tbody>
-          {categories.map((cat, i) => (
-            <tr
-              key={cat.id}
-              draggable={!isReordering}
-              onDragStart={() => setDraggingId(cat.id)}
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={() => handleDropCategory(cat.id)}
-              onDragEnd={() => setDraggingId(null)}
-              className={`${draggingId === cat.id ? "bg-blue-50" : ""} ${
-                isReordering ? "opacity-70" : ""
-              }`}
-            >
-              <td className="border p-2">
-                <div className="flex items-center justify-center gap-2">
-                  <button
-                    type="button"
-                    className="cursor-grab text-gray-400 active:cursor-grabbing"
-                    title="اسحب لإعادة الترتيب"
-                  >
-                    <GripVertical className="h-4 w-4" />
-                  </button>
-                  <span>{i + 1}</span>
-                </div>
-              </td>
-              <td className="border p-2">{cat.name}</td>
-              <td className="border p-2">{cat.description || "-"}</td>
-              <td className="border p-2">
-                {cat.icon_url ? (
-                  <img src={cat.icon_url} alt="Icon" className="h-8 w-8" />
-                ) : (
-                  "-"
-                )}
-              </td>
-              <td className="border p-2 text-center">
-                {cat.image_url ? (
-                  <img
-                    src={
-                      cat.image_url.startsWith("http")
-                        ? cat.image_url
-                        : `${BASE_URL}${cat.image_url}`
-                    }
-                    alt={cat.name}
-                    width={60}
-                    height={60}
-                    className="rounded object-cover"
-                  />
-                ) : (
-                  "بدون صورة"
-                )}
-              </td>
-              <td className="border p-2">{cat.sort_order ?? 0}</td>
-              <td className="border p-2 text-center">
-                <div className="flex justify-center gap-2">
-                  <button
-                    onClick={() => {
-                      setEditId(cat.id);
-                      setEditName(cat.name);
-                      setEditDescription(cat.description || "");
-                      setEditIcon(cat.icon_url || "");
-                      setEditImageUrl(cat.image_url || "");
-                      setEditSortOrder(cat.sort_order || 0);
-                      setIsEditSidebarOpen(true);
-                    }}
-                    className="flex items-center gap-1 rounded bg-blue-500 px-3 py-1 text-white transition hover:bg-blue-600"
-                  >
-                    <Edit3 size={16} />
-                    تعديل
-                  </button>
-                  <button
-                    onClick={() => handleDelete(cat.id)}
-                    className="flex items-center gap-1 rounded bg-red-500 px-3 py-1 text-white transition hover:bg-red-600"
-                  >
-                    <Trash2 size={16} />
-                    حذف
-                  </button>
-                </div>
-              </td>
-            </tr>
-          ))}
+          {categories.map((cat, i) => {
+            const imageSrc = resolveMediaUrl(cat.image_url);
+            const brokenPath =
+              !imageSrc ||
+              imageSrc.includes("/uploads/undefined") ||
+              imageSrc.endsWith("/undefined");
+
+            return (
+              <tr
+                key={cat.id}
+                draggable={!isReordering}
+                onDragStart={() => setDraggingId(cat.id)}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={() => handleDropCategory(cat.id)}
+                onDragEnd={() => setDraggingId(null)}
+                className={`${draggingId === cat.id ? "bg-blue-50" : ""} ${
+                  isReordering ? "opacity-70" : ""
+                }`}
+              >
+                <td className="border p-2">
+                  <div className="flex items-center justify-center gap-2">
+                    <button
+                      type="button"
+                      className="cursor-grab text-gray-400 active:cursor-grabbing"
+                      title="اسحب لإعادة الترتيب"
+                    >
+                      <GripVertical className="h-4 w-4" />
+                    </button>
+                    <span>{i + 1}</span>
+                  </div>
+                </td>
+                <td className="border p-2">{cat.name}</td>
+                <td className="border p-2">{cat.description || "-"}</td>
+                <td className="border p-2">
+                  {cat.icon_url ? (
+                    <img
+                      src={resolveMediaUrl(cat.icon_url)}
+                      alt="Icon"
+                      className="h-8 w-8"
+                    />
+                  ) : (
+                    "-"
+                  )}
+                </td>
+                <td className="border p-2 text-center">
+                  {!brokenPath ? (
+                    <img
+                      src={imageSrc}
+                      alt={cat.name}
+                      width={60}
+                      height={60}
+                      className="mx-auto rounded object-cover"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).style.display =
+                          "none";
+                      }}
+                    />
+                  ) : (
+                    "بدون صورة"
+                  )}
+                </td>
+                <td className="border p-2">{cat.sort_order ?? 0}</td>
+                <td className="border p-2 text-center">
+                  <div className="flex justify-center gap-2">
+                    <button
+                      onClick={() => {
+                        setEditId(cat.id);
+                        setEditName(cat.name);
+                        setEditDescription(cat.description || "");
+                        setEditIcon(cat.icon_url || "");
+                        setEditImageUrl(
+                          brokenPath ? "" : cat.image_url || ""
+                        );
+                        setEditSortOrder(cat.sort_order || 0);
+                        setIsEditSidebarOpen(true);
+                      }}
+                      className="flex items-center gap-1 rounded bg-blue-500 px-3 py-1 text-white transition hover:bg-blue-600"
+                    >
+                      <Edit3 size={16} />
+                      تعديل
+                    </button>
+                    <button
+                      onClick={() => handleDelete(cat.id)}
+                      className="flex items-center gap-1 rounded bg-red-500 px-3 py-1 text-white transition hover:bg-red-600"
+                    >
+                      <Trash2 size={16} />
+                      حذف
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
 
@@ -293,10 +396,10 @@ const Categories: React.FC = () => {
           setDescription={setDescription}
           iconUrl={iconUrl}
           setIconUrl={setIconUrl}
-          image={image}
-          setImage={setImage}
           imageUrl={imageUrl}
           setImageUrl={setImageUrl}
+          uploadingImage={uploadingImage}
+          onImageUpload={handleAddImageUpload}
           sortOrder={sortOrder}
           setSortOrder={setSortOrder}
         />
@@ -313,10 +416,10 @@ const Categories: React.FC = () => {
           setDescription={setEditDescription}
           iconUrl={editIcon}
           setIconUrl={setEditIcon}
-          image={editImage}
-          setImage={setEditImage}
           imageUrl={editImageUrl}
           setImageUrl={setEditImageUrl}
+          uploadingImage={editUploadingImage}
+          onImageUpload={handleEditImageUpload}
           sortOrder={editSortOrder}
           setSortOrder={setEditSortOrder}
         />
@@ -335,10 +438,10 @@ interface SidebarProps {
   setDescription: (val: string) => void;
   iconUrl: string;
   setIconUrl: (val: string) => void;
-  image: File | null;
-  setImage: (val: File | null) => void;
   imageUrl: string;
   setImageUrl: (val: string) => void;
+  uploadingImage: boolean;
+  onImageUpload: (e: ChangeEvent<HTMLInputElement>) => void;
   sortOrder: number;
   setSortOrder: (val: number) => void;
 }
@@ -353,10 +456,10 @@ const SidebarForm: React.FC<SidebarProps> = ({
   setDescription,
   iconUrl,
   setIconUrl,
-  image,
-  setImage,
   imageUrl,
   setImageUrl,
+  uploadingImage,
+  onImageUpload,
   sortOrder,
   setSortOrder,
 }) => {
@@ -394,32 +497,48 @@ const SidebarForm: React.FC<SidebarProps> = ({
               onChange={(e) => setSortOrder(Number(e.target.value))}
               className="w-full rounded border p-2"
             />
+
+            <div className="space-y-2 rounded border p-3">
+              <label className="block text-sm font-bold text-gray-700">
+                صورة الفئة
+              </label>
+              <label
+                className={`block cursor-pointer rounded bg-gray-100 px-3 py-2 text-center hover:bg-gray-200 ${
+                  uploadingImage ? "pointer-events-none opacity-60" : ""
+                }`}
+              >
+                {uploadingImage ? "جاري رفع الصورة..." : "رفع صورة من الملفات"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={uploadingImage}
+                  onChange={onImageUpload}
+                />
+              </label>
+
+              {imageUrl && (
+                <div className="flex items-center gap-3">
+                  <img
+                    src={resolveMediaUrl(imageUrl)}
+                    alt="معاينة"
+                    className="h-20 w-20 rounded border object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setImageUrl("")}
+                    className="text-sm text-red-600"
+                    disabled={uploadingImage}
+                  >
+                    إزالة
+                  </button>
+                </div>
+              )}
+            </div>
+
             <input
               type="text"
-              placeholder="رابط صورة الفئة"
-              value={imageUrl}
-              onChange={(e) => setImageUrl(e.target.value)}
-              className="w-full rounded border p-2"
-            />
-
-            {imageUrl && (
-              <img
-                src={imageUrl}
-                alt="معاينة"
-                className="h-20 w-20 rounded border object-cover"
-              />
-            )}
-
-            <input
-              type="file"
-              onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                setImage(e.target.files ? e.target.files[0] : null)
-              }
-            />
-
-            <input
-              type="text"
-              placeholder="رابط الأيقونة"
+              placeholder="رابط الأيقونة (اختياري)"
               value={iconUrl}
               onChange={(e) => setIconUrl(e.target.value)}
               className="w-full rounded border p-2"
@@ -427,7 +546,8 @@ const SidebarForm: React.FC<SidebarProps> = ({
 
             <button
               type="submit"
-              className="w-full rounded bg-green-600 px-4 py-2 text-white hover:bg-green-700"
+              disabled={uploadingImage}
+              className="w-full rounded bg-green-600 px-4 py-2 text-white hover:bg-green-700 disabled:opacity-60"
             >
               حفظ
             </button>
