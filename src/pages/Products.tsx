@@ -88,6 +88,7 @@ const Products: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [allCategories, setAllCategories] = useState<Category[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
 
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -159,8 +160,52 @@ const [selectedChildren, setSelectedChildren] = useState<number[]>([]);
   const fetchCategories = async () => {
     const res = await api.get("/categories");
     const data = res.data;
-    setCategories(Array.isArray(data) ? data : data.categories || []);
+    const list = Array.isArray(data) ? data : data.categories || [];
+    setAllCategories(list);
+    setCategories(list);
   };
+
+  // عند اختيار المحلات: اعرض فقط الفئات المرتبطة بأي محل مختار
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadLinkedCategories = async () => {
+      if (!restaurantIds.length) {
+        setCategories(allCategories);
+        return;
+      }
+
+      try {
+        const results = await Promise.all(
+          restaurantIds.map((id) => api.get(`/restaurants/${id}/categories`))
+        );
+
+        if (cancelled) return;
+
+        const map = new Map<number, Category>();
+        results.forEach((res) => {
+          const list = res.data?.categories || [];
+          list.forEach((c: Category) => {
+            if (c?.id != null) map.set(Number(c.id), c);
+          });
+        });
+
+        const linked = Array.from(map.values());
+        setCategories(linked);
+
+        const allowed = new Set(linked.map((c) => String(c.id)));
+        setCategoryIds((prev) => prev.filter((id) => allowed.has(String(id))));
+      } catch (err) {
+        console.error(err);
+        if (!cancelled) setCategories(allCategories);
+      }
+    };
+
+    void loadLinkedCategories();
+    return () => {
+      cancelled = true;
+    };
+  }, [restaurantIds, allCategories]);
 
   const openChildrenModal = async (parent: any) => {
   setParentProduct(parent);
@@ -691,28 +736,37 @@ const handleSubmit = async (e: FormEvent) => {
       {/* الفئات */}
       <div className="border p-3 rounded-lg max-h-40 overflow-y-auto">
         <h4 className="font-semibold mb-2">الفئات</h4>
-      {categories.map((c) => {
-  const id = String(c.id);
+        {!restaurantIds.length ? (
+          <p className="text-sm text-gray-500">اختر المطاعم أولاً لعرض فئاتها</p>
+        ) : !categories.length ? (
+          <p className="text-sm text-amber-700">
+            لا توجد فئات مرتبطة بالمطاعم المحددة — اربط الفئات من شاشة المطعم أولاً
+          </p>
+        ) : (
+          categories.map((c) => {
+            const id = String(c.id);
 
-  return (
-    <label key={c.id} className="flex items-center gap-2 mb-1 cursor-pointer">
-      <input
-        type="checkbox"
-        checked={categoryIds.includes(id)}
-        onChange={() => {
-          setCategoryIds((prev) => {
-            const clean = Array.from(new Set(prev.map(String)));
+            return (
+              <label key={c.id} className="mb-1 flex cursor-pointer items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={categoryIds.includes(id)}
+                  onChange={() => {
+                    setCategoryIds((prev) => {
+                      const clean = Array.from(new Set(prev.map(String)));
 
-            return clean.includes(id)
-              ? clean.filter((x) => x !== id)
-              : [...clean, id];
-          });
-        }}
-      />
-      <span>{c.name}</span>
-    </label>
-  );
-})}
+                      return clean.includes(id)
+                        ? clean.filter((x) => x !== id)
+                        : [...clean, id];
+                    });
+                  }}
+                />
+                <span>{c.name}</span>
+              </label>
+            );
+          })
+        )}
+      </div>
 
       </div>
 
