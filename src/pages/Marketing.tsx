@@ -38,6 +38,7 @@ const Marketing: React.FC = () => {
   const [type,setType] = useState("promo")
   const [discount,setDiscount] = useState(0)
   const [image,setImage] = useState("")
+  const [uploadingImage,setUploadingImage] = useState(false)
   const [startDate,setStartDate] = useState("")
   const [endDate,setEndDate] = useState("")
  const [coupons,setCoupons] = useState<any[]>([])
@@ -83,6 +84,41 @@ if(url.startsWith("http://") || url.startsWith("https://")) return url
 if(url.startsWith("/")) return `${API_ORIGIN}${url}`
 return undefined
 }
+
+const resolveMediaUrl = (url?: string | null) => {
+  if (!url) return "";
+  if (
+    url.startsWith("http://") ||
+    url.startsWith("https://") ||
+    url.startsWith("blob:") ||
+    url.startsWith("data:")
+  ) {
+    return url;
+  }
+  return `${API_ORIGIN}${url.startsWith("/") ? "" : "/"}${url}`;
+};
+
+const uploadAdImage = async (file: File) => {
+  const body = new FormData();
+  body.append("image", file);
+  body.append("folder", "ads");
+
+  const token = localStorage.getItem("token");
+  const res = await fetch(`${API_ORIGIN}/api/upload`, {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    body,
+  });
+
+  const data = await res.json().catch(() => ({}));
+  const url = data.url || data.path;
+
+  if (!res.ok || !data.success || !url) {
+    throw new Error(data.message || "فشل رفع الصورة");
+  }
+
+  return url as string;
+};
 
 useEffect(()=>{
 
@@ -141,6 +177,10 @@ loadRestaurants()
 
   const createAd = async ()=>{
     try{
+      if (uploadingImage) {
+        alert("انتظر حتى ينتهي رفع الصورة");
+        return;
+      }
 
       const payload = {
         name:name.trim(),
@@ -162,17 +202,7 @@ loadRestaurants()
       }
 
       setShowModal(false)
-      setEditingId(null)
-
-      setName("")
-      setDescription("")
-      setDiscount(0)
-      setImage("")
-      setStartDate("")
-      setEndDate("")
-      setRestaurantId(null)
-      setCategoryId(null)
-      setProductIds([])
+      resetAdForm()
 
       loadAds()
 
@@ -235,6 +265,45 @@ loadRestaurants()
   setShowModal(true)
 
 }
+
+  const handleAdImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const img = e.target.files?.[0];
+    e.target.value = "";
+    if (!img) return;
+
+    if (!img.type.startsWith("image/")) {
+      alert("اختر ملف صورة فقط");
+      return;
+    }
+
+    setUploadingImage(true);
+
+    try {
+      const url = await uploadAdImage(img);
+      setImage(url);
+    } catch (err: any) {
+      alert(err?.message || "خطأ في رفع الصورة");
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const resetAdForm = () => {
+    setEditingId(null);
+    setName("");
+    setDescription("");
+    setType("promo");
+    setDiscount(0);
+    setImage("");
+    setUploadingImage(false);
+    setStartDate("");
+    setEndDate("");
+    setRestaurantId(null);
+    setCategoryId(null);
+    setProductIds([]);
+    setCategories([]);
+    setProducts([]);
+  };
 
   const toggleStatus = async (ad:Ad)=>{
     try{
@@ -381,7 +450,10 @@ console.error(err)
 <div className="flex gap-3">
 
 <button
-onClick={()=>setShowModal(true)}
+onClick={()=>{
+  resetAdForm();
+  setShowModal(true);
+}}
 className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg"
 >
 <Plus size={18}/>
@@ -759,16 +831,20 @@ className="col-span-2 border rounded-lg p-2"
 )}
 
 <input
-placeholder="رابط صورة الإعلان"
-value={image}
-onChange={(e)=>setImage(e.target.value)}
-className="col-span-2 border rounded-lg p-2"
+type="file"
+accept="image/*"
+onChange={handleAdImageChange}
+disabled={uploadingImage}
+className="col-span-2 border rounded-lg p-2 file:mr-3 file:rounded file:border-0 file:bg-blue-50 file:px-3 file:py-1 file:text-blue-700"
 />
+{uploadingImage && (
+  <p className="col-span-2 text-sm text-blue-600">جاري رفع الصورة...</p>
+)}
 
 {image && (
 
 <img
-src={image}
+src={resolveMediaUrl(image)}
 className="col-span-2 w-full h-40 object-cover rounded border"
 onError={(e:any)=>{
 e.target.style.display="none"
@@ -796,7 +872,10 @@ className="border rounded-lg p-2"
 <div className="flex justify-end gap-3 mt-6">
 
 <button
-onClick={()=>setShowModal(false)}
+onClick={()=>{
+  setShowModal(false);
+  resetAdForm();
+}}
 className="px-4 py-2 bg-gray-200 rounded"
 >
 إلغاء
