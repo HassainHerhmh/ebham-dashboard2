@@ -768,8 +768,6 @@ const handleSubmit = async (e: FormEvent) => {
         )}
       </div>
 
-      </div>
-
       <select
         value={unitId}
         onChange={(e) => setUnitId(e.target.value)}
