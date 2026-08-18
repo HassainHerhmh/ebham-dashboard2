@@ -32,6 +32,7 @@ declare global {
 interface Branch {
   id: number;
   name: string;
+  name_en?: string | null;
   address?: string;
   phone?: string;
   is_active?: number | boolean;
@@ -548,6 +549,7 @@ const BranchesSettings: React.FC = () => {
   const [editMode, setEditMode] = useState(false);
   const [selectedBranchId, setSelectedBranchId] = useState<number | null>(null);
   const [name, setName] = useState("");
+  const [nameEn, setNameEn] = useState("");
   const [address, setAddress] = useState("");
   const [phone, setPhone] = useState("");
   const [boundaryPoints, setBoundaryPoints] = useState<BoundaryPoint[]>([
@@ -575,6 +577,7 @@ const BranchesSettings: React.FC = () => {
   const resetForm = () => {
     setSelectedBranchId(null);
     setName("");
+    setNameEn("");
     setAddress("");
     setPhone("");
     setBoundaryPoints([emptyBoundaryPoint()]);
@@ -590,6 +593,7 @@ const BranchesSettings: React.FC = () => {
     setEditMode(true);
     setSelectedBranchId(branch.id);
     setName(branch.name);
+    setNameEn(branch.name_en || "");
     setAddress(branch.address || "");
     setPhone(branch.phone || "");
     setBoundaryPoints(
@@ -640,6 +644,7 @@ const BranchesSettings: React.FC = () => {
 
     const data = {
       name,
+      name_en: nameEn || "",
       address,
       phone,
       boundary_points: normalizedBoundaryPoints,
@@ -765,6 +770,7 @@ const BranchesSettings: React.FC = () => {
         <thead>
           <tr className="bg-gray-100">
             <th className="border p-2">الاسم</th>
+            <th className="border p-2">الاسم (EN)</th>
             <th className="border p-2">العنوان</th>
             <th className="border p-2">الهاتف</th>
             <th className="border p-2">الحدود</th>
@@ -776,6 +782,7 @@ const BranchesSettings: React.FC = () => {
           {operatingBranches.map((b) => (
             <tr key={b.id}>
               <td className="border p-2">{b.name}</td>
+              <td className="border p-2" dir="ltr">{b.name_en || "—"}</td>
               <td className="border p-2">{b.address || "-"}</td>
               <td className="border p-2">{b.phone || "-"}</td>
               <td className="border p-2 text-center">
@@ -864,6 +871,13 @@ const BranchesSettings: React.FC = () => {
               placeholder="اسم الفرع"
               value={name}
               onChange={(e) => setName(e.target.value)}
+            />
+            <input
+              className="mb-2 w-full border p-2"
+              placeholder="Branch name (English)"
+              dir="ltr"
+              value={nameEn}
+              onChange={(e) => setNameEn(e.target.value)}
             />
             <input
               className="mb-2 w-full border p-2"

@@ -4,9 +4,11 @@ import api, { API_ORIGIN } from "../services/api";
 interface Product {
   id: number;
   name: string;
+  name_en?: string | null;
   price: number;
   image_url?: string;
   notes?: string;
+  notes_en?: string | null;
   category_ids?: string;
   categories?: string;
   unit_id?: number;
@@ -94,8 +96,10 @@ const Products: React.FC = () => {
   const [editingId, setEditingId] = useState<number | null>(null);
 
   const [name, setName] = useState("");
+  const [nameEn, setNameEn] = useState("");
   const [price, setPrice] = useState("");
   const [notes, setNotes] = useState("");
+  const [notesEn, setNotesEn] = useState("");
   const [restaurantIds, setRestaurantIds] = useState<string[]>([]);
   const [categoryIds, setCategoryIds] = useState<string[]>([]);
   const [unitId, setUnitId] = useState("");
@@ -245,8 +249,10 @@ const [selectedChildren, setSelectedChildren] = useState<number[]>([]);
  const resetForm = () => {
   setEditingId(null);
   setName("");
+  setNameEn("");
   setPrice("");
   setNotes("");
+  setNotesEn("");
   setRestaurantIds([]);
   setCategoryIds([]);
   setUnitId("");
@@ -327,8 +333,10 @@ const handleSubmit = async (e: FormEvent) => {
 
   const formData = new FormData();
   formData.append("name", name);
+  formData.append("name_en", nameEn || "");
   formData.append("price", isParent ? "" : price); // الأب بدون سعر
   formData.append("notes", notes || "");
+  formData.append("notes_en", notesEn || "");
   formData.append("restaurant_id", restaurantIds[0]);
   formData.append("restaurant_ids", JSON.stringify(restaurantIds.map(Number)));
   formData.append("unit_id", unitId);
@@ -376,8 +384,10 @@ const handleSubmit = async (e: FormEvent) => {
  const handleEdit = async (p: Product) => {
   setEditingId(p.id);
   setName(p.name);
+  setNameEn(p.name_en || "");
   setPrice(String(p.price || ""));
   setNotes(p.notes || "");
+  setNotesEn(p.notes_en || "");
   setRestaurantIds(
     Array.isArray(p.restaurant_ids)
       ? p.restaurant_ids.map(String)
@@ -478,6 +488,7 @@ const handleSubmit = async (e: FormEvent) => {
   <tr>
     <th>#</th>
     <th>الاسم</th>
+    <th>English</th>
     <th>الفئات</th>
     <th>المطعم</th>
     <th>الفرع</th>
@@ -494,13 +505,13 @@ const handleSubmit = async (e: FormEvent) => {
 <tbody>
   {loading ? (
     <tr>
-      <td colSpan={11} className="py-8 text-center text-gray-500">
+      <td colSpan={12} className="py-8 text-center text-gray-500">
         جاري تحميل المنتجات...
       </td>
     </tr>
   ) : filteredProducts.length === 0 ? (
     <tr>
-      <td colSpan={11} className="py-8 text-center text-gray-500">
+      <td colSpan={12} className="py-8 text-center text-gray-500">
         لا توجد منتجات مطابقة
       </td>
     </tr>
@@ -508,6 +519,7 @@ const handleSubmit = async (e: FormEvent) => {
     <tr key={p.id} className="border-t">
       <td>{i + 1}</td>
       <td>{p.name}</td>
+      <td dir="ltr">{p.name_en || "-"}</td>
       <td>{p.categories || "-"}</td>
       <td>{p.restaurant_names || p.restaurant_name || "-"}</td>
       <td>{p.branch_name || "-"}</td>
@@ -631,8 +643,16 @@ const handleSubmit = async (e: FormEvent) => {
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}
-        placeholder="الاسم"
+        placeholder="الاسم (عربي)"
         className="border w-full px-3 py-2"
+      />
+
+      <input
+        value={nameEn}
+        onChange={(e) => setNameEn(e.target.value)}
+        placeholder="Name (English)"
+        className="border w-full px-3 py-2"
+        dir="ltr"
       />
 
       <input
@@ -646,8 +666,16 @@ const handleSubmit = async (e: FormEvent) => {
       <textarea
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
-        placeholder="ملاحظات"
+        placeholder="ملاحظات (عربي)"
         className="border w-full px-3 py-2"
+      />
+
+      <textarea
+        value={notesEn}
+        onChange={(e) => setNotesEn(e.target.value)}
+        placeholder="Notes (English)"
+        className="border w-full px-3 py-2"
+        dir="ltr"
       />
 
       <div className="col-span-2 max-h-40 space-y-2 overflow-y-auto rounded border p-3">

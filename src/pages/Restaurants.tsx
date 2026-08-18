@@ -9,7 +9,9 @@ import { GripVertical } from "lucide-react";
 interface Restaurant {
   id: number;
   name: string;
+  name_en?: string | null;
   address: string;
+  address_en?: string | null;
   phone: string;
   image_url: string;
   categories?: string;
@@ -96,7 +98,9 @@ const [displayType, setDisplayType] = useState("product"); // "product" أو "ma
   const [formData, setFormData] = useState({
     id: 0,
     name: "",
+    name_en: "",
     address: "",
+    address_en: "",
     phone: "",
     image_url: "",
   });
@@ -216,7 +220,9 @@ const handleSubmit = async (e: React.FormEvent) => {
   const data = new FormData();
 
   data.append("name", formData.name);
+  data.append("name_en", formData.name_en || "");
   data.append("address", formData.address);
+  data.append("address_en", formData.address_en || "");
   data.append("phone", formData.phone);
   data.append("type_id", String(selectedType));
   data.append("display_type", displayType);
@@ -269,7 +275,9 @@ const handleEdit = (r: Restaurant) => {
   setFormData({
     id: r.id,
     name: r.name,
+    name_en: r.name_en || "",
     address: r.address,
+    address_en: r.address_en || "",
     phone: r.phone,
     image_url: r.image_url || "",
   });
@@ -321,7 +329,7 @@ const handleEdit = (r: Restaurant) => {
 };
 
   const resetForm = () => {
-  setFormData({ id: 0, name: "", address: "", phone: "", image_url: "" });
+  setFormData({ id: 0, name: "", name_en: "", address: "", address_en: "", phone: "", image_url: "" });
   setSelectedCategories([]);
   setSelectedType("");
   setSelectedBranch("");
@@ -601,20 +609,38 @@ useEffect(() => {
   {/* اسم المطعم */}
   <input
     type="text"
-    placeholder="اسم المطعم"
+    placeholder="اسم المطعم (عربي)"
     value={formData.name}
     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
     required
     className="border rounded-lg px-3 py-2 w-full col-span-2"
   />
 
+  <input
+    type="text"
+    placeholder="Restaurant name (English)"
+    value={formData.name_en}
+    onChange={(e) => setFormData({ ...formData, name_en: e.target.value })}
+    className="border rounded-lg px-3 py-2 w-full col-span-2"
+    dir="ltr"
+  />
+
   {/* العنوان + الهاتف */}
   <input
     type="text"
-    placeholder="العنوان"
+    placeholder="العنوان (عربي)"
     value={formData.address}
     onChange={(e) => setFormData({ ...formData, address: e.target.value })}
     className="border rounded-lg px-3 py-2 w-full col-span-1"
+  />
+
+  <input
+    type="text"
+    placeholder="Address (English)"
+    value={formData.address_en}
+    onChange={(e) => setFormData({ ...formData, address_en: e.target.value })}
+    className="border rounded-lg px-3 py-2 w-full col-span-1"
+    dir="ltr"
   />
 
   <input

@@ -7,7 +7,9 @@ const BASE_URL = API_ORIGIN;
 interface Category {
   id: number;
   name: string;
+  name_en?: string | null;
   description?: string;
+  description_en?: string | null;
   icon_url?: string;
   image_url?: string;
   sort_order?: number;
@@ -54,7 +56,9 @@ const Categories: React.FC = () => {
   const [isReordering, setIsReordering] = useState(false);
 
   const [name, setName] = useState("");
+  const [nameEn, setNameEn] = useState("");
   const [description, setDescription] = useState("");
+  const [descriptionEn, setDescriptionEn] = useState("");
   const [iconUrl, setIconUrl] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -62,7 +66,9 @@ const Categories: React.FC = () => {
 
   const [editId, setEditId] = useState<number | null>(null);
   const [editName, setEditName] = useState("");
+  const [editNameEn, setEditNameEn] = useState("");
   const [editDescription, setEditDescription] = useState("");
+  const [editDescriptionEn, setEditDescriptionEn] = useState("");
   const [editIcon, setEditIcon] = useState("");
   const [editImageUrl, setEditImageUrl] = useState("");
   const [editUploadingImage, setEditUploadingImage] = useState(false);
@@ -183,7 +189,9 @@ const Categories: React.FC = () => {
 
     const formData = new FormData();
     formData.append("name", name);
+    formData.append("name_en", nameEn || "");
     formData.append("description", description);
+    formData.append("description_en", descriptionEn || "");
     formData.append("icon_url", iconUrl);
     formData.append("sort_order", String(sortOrder));
     if (imageUrl) formData.append("image_url", imageUrl);
@@ -194,7 +202,9 @@ const Categories: React.FC = () => {
       if (res.data?.success) {
         alert("تمت إضافة الفئة بنجاح");
         setName("");
+        setNameEn("");
         setDescription("");
+        setDescriptionEn("");
         setIconUrl("");
         setImageUrl("");
         setSortOrder(0);
@@ -230,7 +240,9 @@ const Categories: React.FC = () => {
 
     const formData = new FormData();
     formData.append("name", editName);
+    formData.append("name_en", editNameEn || "");
     formData.append("description", editDescription);
+    formData.append("description_en", editDescriptionEn || "");
     formData.append("icon_url", editIcon);
     formData.append("sort_order", String(editSortOrder));
     if (editImageUrl) formData.append("image_url", editImageUrl);
@@ -242,7 +254,9 @@ const Categories: React.FC = () => {
         alert("تم تعديل الفئة");
         setEditId(null);
         setEditName("");
+        setEditNameEn("");
         setEditDescription("");
+        setEditDescriptionEn("");
         setEditIcon("");
         setEditImageUrl("");
         setEditSortOrder(0);
@@ -274,6 +288,7 @@ const Categories: React.FC = () => {
           <tr>
             <th className="border p-2">#</th>
             <th className="border p-2">الاسم</th>
+            <th className="border p-2">الاسم (EN)</th>
             <th className="border p-2">الوصف</th>
             <th className="border p-2">الأيقونة</th>
             <th className="border p-2">الصورة</th>
@@ -314,6 +329,7 @@ const Categories: React.FC = () => {
                   </div>
                 </td>
                 <td className="border p-2">{cat.name}</td>
+                <td className="border p-2" dir="ltr">{cat.name_en || "-"}</td>
                 <td className="border p-2">{cat.description || "-"}</td>
                 <td className="border p-2">
                   {cat.icon_url ? (
@@ -350,7 +366,9 @@ const Categories: React.FC = () => {
                       onClick={() => {
                         setEditId(cat.id);
                         setEditName(cat.name);
+                        setEditNameEn(cat.name_en || "");
                         setEditDescription(cat.description || "");
+                        setEditDescriptionEn(cat.description_en || "");
                         setEditIcon(cat.icon_url || "");
                         setEditImageUrl(
                           brokenPath ? "" : cat.image_url || ""
@@ -392,8 +410,12 @@ const Categories: React.FC = () => {
           onSubmit={handleAdd}
           name={name}
           setName={setName}
+          nameEn={nameEn}
+          setNameEn={setNameEn}
           description={description}
           setDescription={setDescription}
+          descriptionEn={descriptionEn}
+          setDescriptionEn={setDescriptionEn}
           iconUrl={iconUrl}
           setIconUrl={setIconUrl}
           imageUrl={imageUrl}
@@ -412,8 +434,12 @@ const Categories: React.FC = () => {
           onSubmit={handleUpdate}
           name={editName}
           setName={setEditName}
+          nameEn={editNameEn}
+          setNameEn={setEditNameEn}
           description={editDescription}
           setDescription={setEditDescription}
+          descriptionEn={editDescriptionEn}
+          setDescriptionEn={setEditDescriptionEn}
           iconUrl={editIcon}
           setIconUrl={setEditIcon}
           imageUrl={editImageUrl}
@@ -434,8 +460,12 @@ interface SidebarProps {
   onSubmit: (e: FormEvent) => void;
   name: string;
   setName: (val: string) => void;
+  nameEn: string;
+  setNameEn: (val: string) => void;
   description: string;
   setDescription: (val: string) => void;
+  descriptionEn: string;
+  setDescriptionEn: (val: string) => void;
   iconUrl: string;
   setIconUrl: (val: string) => void;
   imageUrl: string;
@@ -452,8 +482,12 @@ const SidebarForm: React.FC<SidebarProps> = ({
   onSubmit,
   name,
   setName,
+  nameEn,
+  setNameEn,
   description,
   setDescription,
+  descriptionEn,
+  setDescriptionEn,
   iconUrl,
   setIconUrl,
   imageUrl,
@@ -477,18 +511,34 @@ const SidebarForm: React.FC<SidebarProps> = ({
           <form onSubmit={onSubmit} className="space-y-3">
             <input
               type="text"
-              placeholder="اسم الفئة"
+              placeholder="اسم الفئة (عربي)"
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="w-full rounded border p-2"
               required
             />
+            <input
+              type="text"
+              placeholder="Category name (English)"
+              value={nameEn}
+              onChange={(e) => setNameEn(e.target.value)}
+              className="w-full rounded border p-2"
+              dir="ltr"
+            />
             <textarea
-              placeholder="وصف الفئة"
+              placeholder="وصف الفئة (عربي)"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               className="w-full rounded border p-2"
               rows={3}
+            />
+            <textarea
+              placeholder="Category description (English)"
+              value={descriptionEn}
+              onChange={(e) => setDescriptionEn(e.target.value)}
+              className="w-full rounded border p-2"
+              rows={3}
+              dir="ltr"
             />
             <input
               type="number"

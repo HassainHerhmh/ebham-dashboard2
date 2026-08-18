@@ -9,6 +9,7 @@ type BoundaryPoint = {
 interface Neighborhood {
   id: number;
   name: string;
+  name_en?: string | null;
   delivery_fee: number;
   branch_id: number;
   branch_name?: string;
@@ -379,6 +380,7 @@ const Neighborhoods: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
   const [name, setName] = useState("");
+  const [nameEn, setNameEn] = useState("");
   const [fee, setFee] = useState<number>(0);
   const [branchId, setBranchId] = useState<number>(0);
   const [boundaryPoints, setBoundaryPoints] = useState<BoundaryPoint[]>([
@@ -441,6 +443,7 @@ const Neighborhoods: React.FC = () => {
   const openAdd = () => {
     setEditId(null);
     setName("");
+    setNameEn("");
     setFee(0);
     setBoundaryPoints([emptyBoundaryPoint()]);
 
@@ -461,6 +464,7 @@ const Neighborhoods: React.FC = () => {
   const startEdit = (n: Neighborhood) => {
     setEditId(n.id);
     setName(n.name);
+    setNameEn(n.name_en || "");
     setFee(n.delivery_fee);
     setBranchId(n.branch_id);
     setBoundaryPoints(
@@ -512,6 +516,7 @@ const Neighborhoods: React.FC = () => {
       const payload = {
         branch_id: finalBranchId,
         name,
+        name_en: nameEn || "",
         delivery_fee: fee,
         boundary_points: normalizedBoundaryPoints,
       };
@@ -610,6 +615,7 @@ const Neighborhoods: React.FC = () => {
             <tr>
               <th className="p-2">#</th>
               <th className="p-2">اسم الحي</th>
+              <th className="p-2">الاسم (EN)</th>
               <th className="p-2">سعر التوصيل</th>
               <th className="p-2">الفرع</th>
               <th className="p-2">الحدود</th>
@@ -621,6 +627,7 @@ const Neighborhoods: React.FC = () => {
               <tr key={n.id} className="border-t">
                 <td className="p-2 text-center">{i + 1}</td>
                 <td className="p-2">{n.name}</td>
+                <td className="p-2" dir="ltr">{n.name_en || "—"}</td>
                 <td className="p-2">{n.delivery_fee}</td>
                 <td className="p-2">{n.branch_name || "-"}</td>
                 <td className="p-2 text-center">
@@ -646,7 +653,7 @@ const Neighborhoods: React.FC = () => {
             ))}
             {!neighborhoods.length && (
               <tr>
-                <td colSpan={6} className="py-4 text-center">
+                <td colSpan={7} className="py-4 text-center">
                   لا توجد بيانات
                 </td>
               </tr>
@@ -684,6 +691,14 @@ const Neighborhoods: React.FC = () => {
                 className="w-full border p-2"
                 placeholder="اسم الحي"
                 required
+              />
+
+              <input
+                value={nameEn}
+                onChange={(e) => setNameEn(e.target.value)}
+                className="w-full border p-2"
+                placeholder="Neighborhood name (English)"
+                dir="ltr"
               />
 
               <input

@@ -9,6 +9,7 @@ const BASE_URL = API_ORIGIN;
 interface TypeItem {
   id: number;
   name: string;
+  name_en?: string | null;
 
   image_url?: string | null;
 
@@ -36,6 +37,7 @@ const [imageColorUrl, setImageColorUrl] = useState("");
   const [editId, setEditId] = useState<number | null>(null);
 
   const [name, setName] = useState("");
+  const [nameEn, setNameEn] = useState("");
   const [sortOrder, setSortOrder] = useState(0);
   const [image, setImage] = useState<File | null>(null);
 
@@ -99,6 +101,7 @@ const handleTypedImageUpload = async (
   const startEditType = (t: TypeItem) => {
     setEditId(t.id);
     setName(t.name);
+    setNameEn(t.name_en || "");
     setSortOrder(t.sort_order || 0);
     setImage(null);
     setImageUrl(t.image_url || "");
@@ -158,6 +161,7 @@ setImageColorUrl(t.image_color_url || "");
     e.preventDefault();
     const formData = new FormData();
     formData.append("name", name);
+    formData.append("name_en", nameEn || "");
     formData.append("sort_order", String(sortOrder));
     if (image) formData.append("image", image);
     if (imageUrl) formData.append("image_url", imageUrl);
@@ -177,6 +181,7 @@ if (imageColorUrl)
         setIsModalOpen(false);
         setEditId(null);
         setName("");
+        setNameEn("");
         setSortOrder(0);
         setImage(null);
         setImageUrl("");
@@ -243,6 +248,7 @@ if (imageColorUrl)
               <tr>
                 <th className="p-3">#</th>
                 <th className="p-3">اسم النوع</th>
+                <th className="p-3">English</th>
                 <th className="p-3">بدون لون</th>
                 <th className="p-3">ملونة</th>
                 <th className="p-3">الترتيب</th>
@@ -279,6 +285,7 @@ if (imageColorUrl)
                     </div>
                   </td>
                   <td className="p-3">{t.name}</td>
+                  <td className="p-3" dir="ltr">{t.name_en || "—"}</td>
                   <td className="p-3 text-center">
                     {outlineSrc ? (
                       <img
@@ -343,9 +350,16 @@ if (imageColorUrl)
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="اسم النوع"
+                placeholder="اسم النوع (عربي)"
                 className="w-full border p-2"
                 required
+              />
+              <input
+                value={nameEn}
+                onChange={(e) => setNameEn(e.target.value)}
+                placeholder="Type name (English)"
+                className="w-full border p-2"
+                dir="ltr"
               />
               <input
                 type="number"
