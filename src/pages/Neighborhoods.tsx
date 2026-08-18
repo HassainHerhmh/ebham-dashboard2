@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import api from "../services/api";
+import EnglishFieldWithTranslate from "../components/EnglishFieldWithTranslate";
 
 type BoundaryPoint = {
   lat: string;
@@ -693,12 +694,11 @@ const Neighborhoods: React.FC = () => {
                 required
               />
 
-              <input
+              <EnglishFieldWithTranslate
+                arabicText={name}
                 value={nameEn}
-                onChange={(e) => setNameEn(e.target.value)}
-                className="w-full border p-2"
+                onChange={setNameEn}
                 placeholder="Neighborhood name (English)"
-                dir="ltr"
               />
 
               <input

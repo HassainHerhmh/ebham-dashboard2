@@ -3,8 +3,7 @@ import { Store, Plus, X, Trash2, Edit3 } from "lucide-react";
 import api, { API_ORIGIN } from "../services/api";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { GripVertical } from "lucide-react";
-
-
+import EnglishFieldWithTranslate from "../components/EnglishFieldWithTranslate";
 
 interface Restaurant {
   id: number;
@@ -616,13 +615,13 @@ useEffect(() => {
     className="border rounded-lg px-3 py-2 w-full col-span-2"
   />
 
-  <input
-    type="text"
-    placeholder="Restaurant name (English)"
+  <EnglishFieldWithTranslate
+    arabicText={formData.name}
     value={formData.name_en}
-    onChange={(e) => setFormData({ ...formData, name_en: e.target.value })}
-    className="border rounded-lg px-3 py-2 w-full col-span-2"
-    dir="ltr"
+    onChange={(value) => setFormData({ ...formData, name_en: value })}
+    placeholder="Restaurant name (English)"
+    className="col-span-2"
+    inputClassName="border rounded-lg px-3 py-2 w-full"
   />
 
   {/* العنوان + الهاتف */}
@@ -634,13 +633,13 @@ useEffect(() => {
     className="border rounded-lg px-3 py-2 w-full col-span-1"
   />
 
-  <input
-    type="text"
-    placeholder="Address (English)"
+  <EnglishFieldWithTranslate
+    arabicText={formData.address}
     value={formData.address_en}
-    onChange={(e) => setFormData({ ...formData, address_en: e.target.value })}
-    className="border rounded-lg px-3 py-2 w-full col-span-1"
-    dir="ltr"
+    onChange={(value) => setFormData({ ...formData, address_en: value })}
+    placeholder="Address (English)"
+    className="col-span-1"
+    inputClassName="border rounded-lg px-3 py-2 w-full"
   />
 
   <input

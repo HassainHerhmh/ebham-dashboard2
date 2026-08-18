@@ -1,6 +1,7 @@
 import React, { ChangeEvent, FormEvent, useEffect, useState } from "react";
 import { Edit3, GripVertical, PlusCircle, Trash2, X } from "lucide-react";
 import api, { API_ORIGIN } from "../services/api";
+import EnglishFieldWithTranslate from "../components/EnglishFieldWithTranslate";
 
 const BASE_URL = API_ORIGIN;
 
@@ -517,13 +518,11 @@ const SidebarForm: React.FC<SidebarProps> = ({
               className="w-full rounded border p-2"
               required
             />
-            <input
-              type="text"
-              placeholder="Category name (English)"
+            <EnglishFieldWithTranslate
+              arabicText={name}
               value={nameEn}
-              onChange={(e) => setNameEn(e.target.value)}
-              className="w-full rounded border p-2"
-              dir="ltr"
+              onChange={setNameEn}
+              placeholder="Category name (English)"
             />
             <textarea
               placeholder="وصف الفئة (عربي)"
@@ -532,13 +531,13 @@ const SidebarForm: React.FC<SidebarProps> = ({
               className="w-full rounded border p-2"
               rows={3}
             />
-            <textarea
-              placeholder="Category description (English)"
+            <EnglishFieldWithTranslate
+              arabicText={description}
               value={descriptionEn}
-              onChange={(e) => setDescriptionEn(e.target.value)}
-              className="w-full rounded border p-2"
+              onChange={setDescriptionEn}
+              placeholder="Category description (English)"
+              multiline
               rows={3}
-              dir="ltr"
             />
             <input
               type="number"

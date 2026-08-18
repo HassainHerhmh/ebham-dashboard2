@@ -1,5 +1,6 @@
 import React, { useState, useEffect, FormEvent } from "react";
 import api, { API_ORIGIN } from "../services/api";
+import EnglishFieldWithTranslate from "../components/EnglishFieldWithTranslate";
 
 interface Product {
   id: number;
@@ -647,12 +648,12 @@ const handleSubmit = async (e: FormEvent) => {
         className="border w-full px-3 py-2"
       />
 
-      <input
+      <EnglishFieldWithTranslate
+        arabicText={name}
         value={nameEn}
-        onChange={(e) => setNameEn(e.target.value)}
+        onChange={setNameEn}
         placeholder="Name (English)"
-        className="border w-full px-3 py-2"
-        dir="ltr"
+        inputClassName="border w-full px-3 py-2"
       />
 
       <input
@@ -670,12 +671,13 @@ const handleSubmit = async (e: FormEvent) => {
         className="border w-full px-3 py-2"
       />
 
-      <textarea
+      <EnglishFieldWithTranslate
+        arabicText={notes}
         value={notesEn}
-        onChange={(e) => setNotesEn(e.target.value)}
+        onChange={setNotesEn}
         placeholder="Notes (English)"
-        className="border w-full px-3 py-2"
-        dir="ltr"
+        multiline
+        inputClassName="border w-full px-3 py-2"
       />
 
       <div className="col-span-2 max-h-40 space-y-2 overflow-y-auto rounded border p-3">

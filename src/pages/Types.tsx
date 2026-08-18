@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
   
 import { Plus, GripVertical } from "lucide-react";
 import api, { API_ORIGIN } from "../services/api";
+import EnglishFieldWithTranslate from "../components/EnglishFieldWithTranslate";
 
 const BASE_URL = API_ORIGIN;
 
@@ -354,12 +355,11 @@ if (imageColorUrl)
                 className="w-full border p-2"
                 required
               />
-              <input
+              <EnglishFieldWithTranslate
+                arabicText={name}
                 value={nameEn}
-                onChange={(e) => setNameEn(e.target.value)}
+                onChange={setNameEn}
                 placeholder="Type name (English)"
-                className="w-full border p-2"
-                dir="ltr"
               />
               <input
                 type="number"

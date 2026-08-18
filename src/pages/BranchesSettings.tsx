@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import api from "../services/api";
+import EnglishFieldWithTranslate from "../components/EnglishFieldWithTranslate";
 
 type BoundaryPoint = {
   lat: string;
@@ -872,12 +873,12 @@ const BranchesSettings: React.FC = () => {
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
-            <input
-              className="mb-2 w-full border p-2"
-              placeholder="Branch name (English)"
-              dir="ltr"
+            <EnglishFieldWithTranslate
+              arabicText={name}
               value={nameEn}
-              onChange={(e) => setNameEn(e.target.value)}
+              onChange={setNameEn}
+              placeholder="Branch name (English)"
+              className="mb-2"
             />
             <input
               className="mb-2 w-full border p-2"
