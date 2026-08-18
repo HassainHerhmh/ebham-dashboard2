@@ -1,5 +1,6 @@
 ﻿import React, { useState, useEffect, useRef } from "react";
 import api from "../services/api";
+import EnglishFieldWithTranslate from "../components/EnglishFieldWithTranslate";
 
 interface Branch {
   id: number;
@@ -9,6 +10,7 @@ interface Branch {
 interface Customer {
   id: number;
   name: string;
+  name_en?: string | null;
   phone: string;
   phone_alt?: string;
   email?: string;
@@ -186,6 +188,7 @@ const Customers: React.FC = () => {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editCustomer, setEditCustomer] = useState<Customer | null>(null);
   const [editName, setEditName] = useState("");
+  const [editNameEn, setEditNameEn] = useState("");
   const [editPhone, setEditPhone] = useState("");
   const [editPhoneAlt, setEditPhoneAlt] = useState("");
   const [editEmail, setEditEmail] = useState("");
@@ -283,6 +286,7 @@ const Customers: React.FC = () => {
   const openEditCustomer = (c: Customer) => {
     setEditCustomer(c);
     setEditName(c.name);
+    setEditNameEn(c.name_en || "");
     setEditPhone(c.phone);
     setEditPhoneAlt(c.phone_alt || "");
     setEditEmail(c.email || "");
@@ -294,6 +298,7 @@ const Customers: React.FC = () => {
 
     await api.put(`/customers/${editCustomer.id}`, {
       name: editName,
+      name_en: editNameEn || null,
       phone: editPhone,
       phone_alt: editPhoneAlt || null,
       email: editEmail || null,
@@ -795,6 +800,15 @@ const Customers: React.FC = () => {
               placeholder="الاسم"
               value={editName}
               onChange={(e) => setEditName(e.target.value)}
+            />
+
+            <EnglishFieldWithTranslate
+              arabicText={editName}
+              value={editNameEn}
+              onChange={setEditNameEn}
+              placeholder="Name (English)"
+              className="mb-2"
+              inputClassName="border p-2 w-full"
             />
 
             <input
