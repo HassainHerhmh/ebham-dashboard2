@@ -63,6 +63,26 @@ const daysOfWeek = [
   "الجمعة",
 ];
 
+const FULL_HOURS_START = "00:00";
+const FULL_HOURS_END = "00:00";
+
+const buildFullHoursSchedule = (): ScheduleItem[] =>
+  daysOfWeek.map((day) => ({
+    day,
+    start: FULL_HOURS_START,
+    end: FULL_HOURS_END,
+    closed: false,
+  }));
+
+const isFullHoursSchedule = (schedule: ScheduleItem[]) =>
+  schedule.length === daysOfWeek.length &&
+  schedule.every(
+    (item) =>
+      !item.closed &&
+      (item.start || item.start_time) === FULL_HOURS_START &&
+      (item.end || item.end_time) === FULL_HOURS_END
+  );
+
 const Restaurants: React.FC = () => {
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const isAdminGeneral = user?.is_admin_branch === true;
@@ -157,6 +177,10 @@ const [displayType, setDisplayType] = useState("product"); // "product" أو "ma
     setSelectedCategories((prev) =>
       prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]
     );
+  };
+
+  const applyFullHoursSchedule = () => {
+    setStoreSchedule(buildFullHoursSchedule());
   };
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -689,7 +713,23 @@ useEffect(() => {
 
   {/* جدول التوقيت */}
   <div className="border p-3 rounded-lg col-span-2">
-    <h3 className="font-semibold mb-2">🕐 جدول التوقيت</h3>
+    <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+      <h3 className="font-semibold">🕐 جدول التوقيت</h3>
+      <button
+        type="button"
+        onClick={applyFullHoursSchedule}
+        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
+          isFullHoursSchedule(storeSchedule)
+            ? "bg-green-700 text-white"
+            : "bg-green-600 text-white hover:bg-green-700"
+        }`}
+      >
+        دوام كامل (24 ساعة)
+      </button>
+    </div>
+    <p className="text-[11px] text-gray-500 mb-3">
+      يضبط جميع الأيام على 00:00 - 00:00 (مفتوح 24 ساعة). احفظ التعديل لتطبيقه.
+    </p>
     {storeSchedule.map((dayItem, index) => (
       <div key={dayItem.day} className="flex items-center gap-2 mb-2">
         <label className="w-20">{dayItem.day}</label>
