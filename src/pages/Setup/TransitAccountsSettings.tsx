@@ -60,7 +60,12 @@ useEffect(() => {
 
     try {
       await api.post("/settings/transit-accounts", payload);
-      alert("تم حفظ الإعدادات بنجاح");
+      const processed = (await api.post("/journal-posting/retry")).data?.processed;
+      if (processed?.posted) {
+        alert(`تم حفظ الإعدادات ومعالجة ${processed.posted} قيد تلقائياً`);
+      } else {
+        alert("تم حفظ الإعدادات بنجاح");
+      }
     } catch {
       alert("فشل حفظ الإعدادات");
     }

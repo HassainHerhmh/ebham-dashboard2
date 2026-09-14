@@ -458,7 +458,7 @@ className={`${linkBase} relative ${isPathActive("/orders/manual") ? activeClass 
 
 {/* reports */}
 
-{(canShow("reports") || canShow("commission_reports") || canShow("agent_reports") || canShow("captain_reports")) && (
+{(canShow("reports") || canShow("commission_reports") || canShow("agent_reports") || canShow("captain_reports") || canShow("ratings") || canShow("audit_logs")) && (
 
 <div className="space-y-1">
 
@@ -519,6 +519,26 @@ onClick={onClose}
 className={`${linkBaseSmall} ${isPathActive("/reports/captains") ? activeClass : ""}`}
 >
 🛵 تقارير الكباتن
+</Link>
+)}
+
+{canShow("ratings") && (
+<Link
+to="/ratings"
+onClick={onClose}
+className={`${linkBaseSmall} ${isPathActive("/ratings") ? activeClass : ""}`}
+>
+⭐ تقييمات العملاء
+</Link>
+)}
+
+{canShow("audit_logs") && (
+<Link
+to="/audit-logs"
+onClick={onClose}
+className={`${linkBaseSmall} ${isPathActive("/audit-logs") ? activeClass : ""}`}
+>
+🗂️ سجل التدقيق
 </Link>
 )}
 

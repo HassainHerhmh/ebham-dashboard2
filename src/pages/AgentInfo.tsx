@@ -91,12 +91,15 @@ const loadData = async () => {
       api.currencies.getAll(),
     ]);
 
-setRows(info?.list || []);
-    setAgents(agentsData?.agents || []);
-    setCaptains(captainsData || []);
+    const asList = (x: any) =>
+      Array.isArray(x) ? x : x?.list || x?.groups || x?.data || [];
 
-    setAgentGroups(agentGroupsData || []);
-    setCaptainGroups(captainGroupsData || []);
+    setRows(info?.list || []);
+    setAgents(agentsData?.agents || asList(agentsData));
+    setCaptains(asList(captainsData));
+
+    setAgentGroups(asList(agentGroupsData));
+    setCaptainGroups(asList(captainGroupsData));
 
     const list = accountsRes?.list || [];
     setAccounts(list.filter((a: any) => a.parent_id));
@@ -139,17 +142,18 @@ const handleAdd = async () => {
     currency_id: currencyId ? Number(currencyId) : null,
   };
 
-  if (editingId) {
-    // تعديل
-    await api.agentInfo.update(editingId, payload);
-  } else {
-    // إضافة جديدة
-    await api.agentInfo.add(payload);
+  const result = editingId
+    ? await api.agentInfo.update(editingId, payload)
+    : await api.agentInfo.add(payload);
+
+  if (!result?.success) {
+    alert(result?.message || "فشل الحفظ");
+    return;
   }
 
-  // إعادة تعيين الحالات
   setEditingId(null);
   setShowModal(false);
+  setAccountType("agent");
   setAgentId("");
   setGroupId("");
   setCommission("0");
@@ -161,6 +165,12 @@ const handleAdd = async () => {
 
   loadData();
 };
+
+  const groupLabel = (r: any) => {
+    if (r.group_name) return r.group_name;
+    const list = r.account_type === "captain" ? captainGroups : agentGroups;
+    return list.find((g) => Number(g.id) === Number(r.group_id))?.name || "-";
+  };
 
 
 
@@ -254,7 +264,7 @@ const handleDelete = async (id: number) => {
   {r.branch_name || "-"}
 </td>
 
-      <td className="p-3 text-center">{r.group_name || "-"}</td>
+      <td className="p-3 text-center">{groupLabel(r)}</td>
       <td className="p-3 text-center">{r.agent_account_name || "-"}</td>
       <td className="p-3 text-center">
         {r.commission_type === "percent" ? "نسبة مئوية" : "مبلغ ثابت"}
@@ -441,6 +451,8 @@ const handleDelete = async (id: number) => {
     onClick={() => {
       setShowModal(false);
       setEditingId(null);
+      setAccountType("agent");
+      setGroupId("");
     }}
     className="text-green-700"
   >

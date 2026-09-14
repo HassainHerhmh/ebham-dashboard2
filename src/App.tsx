@@ -34,6 +34,8 @@ import CommissionReport from "./pages/CommissionReport";
 import AgentReports from "./pages/AgentReports";
 import CaptainReports from "./pages/CaptainReports";
 import UserAttendanceReports from "./pages/UserAttendanceReports";
+import Ratings from "./pages/Ratings";
+import AuditLogs from "./pages/AuditLogs";
 
 import WasselOrders from "./pages/WasselOrders";
 import MapPage from "./pages/MapPage";
@@ -47,6 +49,7 @@ import AgentInfo from "./pages/AgentInfo";
 
 // الحسابات
 import Accounting from "./pages/Accounting";
+import JournalPostingAlerts from "./pages/JournalPostingAlerts";
 import AccountsAIAnalysis from "./pages/AccountsAIAnalysis";
 import Currencies from "./pages/Setup/Currencies";
 import Accounts from "./pages/Setup/Accounts";
@@ -179,6 +182,8 @@ const App: React.FC = () => {
                     <Route path="/reports/agents" element={<ProtectedRoute section="agent_reports"><AgentReports /></ProtectedRoute>} />
                     <Route path="/reports/captains" element={<ProtectedRoute section="captain_reports"><CaptainReports /></ProtectedRoute>} />
                     <Route path="/reports/users-attendance" element={<ProtectedRoute section="reports"><UserAttendanceReports /></ProtectedRoute>} />
+                    <Route path="/ratings" element={<ProtectedRoute section="ratings"><Ratings /></ProtectedRoute>} />
+                    <Route path="/audit-logs" element={<ProtectedRoute section="audit_logs"><AuditLogs /></ProtectedRoute>} />
 <Route
   path="/loyalty"
   element={
@@ -207,7 +212,8 @@ const App: React.FC = () => {
                       <Route path="setup/receipt-types" element={<ReceiptTypes />} />
                       <Route path="setup/payment-types" element={<PaymentTypes />} />
                       <Route path="setup/journal-types" element={<JournalTypes />} />
-                       <Route path="setup/transit-accounts"element={<TransitAccountsSettings />}  />
+                      <Route path="setup/transit-accounts"element={<TransitAccountsSettings />}  />
+                      <Route path="journal-alerts" element={<JournalPostingAlerts />} />
                       
                       {/* العمليات */}
                       <Route path="operations" element={<Operations />}>

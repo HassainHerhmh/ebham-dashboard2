@@ -1181,6 +1181,24 @@ export const executeExchange = async (data: {
 };
 
 /* =========================
+   JOURNAL POSTING ALERTS
+========================= */
+(api as any).journalPosting = {
+  getAll: async () => (await api.get("/journal-posting")).data,
+  retry: async () => (await api.post("/journal-posting/retry")).data,
+};
+
+(api as any).ratings = {
+  getAll: async (search = "") =>
+    (await api.get("/ratings", { params: { search: search || undefined } })).data,
+};
+
+(api as any).auditLogs = {
+  getAll: async (search = "") =>
+    (await api.get("/audit-logs", { params: { search: search || undefined } })).data,
+};
+
+/* =========================
    AGENT INFO (العمولات)
 ========================= */
 (api as any).agentInfo = {

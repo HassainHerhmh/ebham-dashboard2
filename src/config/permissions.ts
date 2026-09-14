@@ -69,6 +69,8 @@ export const permissionGroups: PermissionGroup[] = [
       { key: "commission_reports", label: "تقرير العمولات", path: "/reports/commissions" },
       { key: "agent_reports", label: "تقارير الوكلاء", path: "/reports/agents" },
       { key: "captain_reports", label: "تقارير الكباتن", path: "/reports/captains" },
+      { key: "ratings", label: "تقييمات العملاء", path: "/ratings" },
+      { key: "audit_logs", label: "سجل التدقيق", path: "/audit-logs" },
     ],
   },
   {

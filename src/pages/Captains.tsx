@@ -91,14 +91,14 @@ const [previewImage, setPreviewImage] = useState<string | null>(null);
 
       const res = await api.get("/captains", { headers })
       const data = res.data
+      const list = Array.isArray(data?.captains)
+        ? data.captains
+        : Array.isArray(data)
+          ? data
+          : []
 
-      if (data.success && Array.isArray(data.captains)) {
-        setCaptains(data.captains)
-        setError(null)
-      } else {
-        setError('🚫 لا توجد بيانات')
-      }
-
+      setCaptains(list)
+      setError(null)
       setLoading(false)
     } catch (err: any) {
       setError(err.message || "خطأ في الجلب")
@@ -141,26 +141,33 @@ const startEditCaptain = (c: any) => {
     }
 
     try {
-const payload = {
-  name,
-  email,
-  phone,
-  password: editId ? undefined : password,
-  vehicle_type: vehicleType,
-  vehicle_number: vehicleNumber,
-  status,
-  image_url: imageFile ? undefined : imageUrl || undefined,
-};
-
+      const payload: any = {
+        name,
+        email,
+        phone,
+        password: editId ? undefined : password,
+        vehicle_type: vehicleType,
+        vehicle_number: vehicleNumber,
+        status,
+        image_url: imageFile ? undefined : imageUrl || undefined,
+      };
 
       if (editId) {
-        await api.captains.updateCaptain(editId, payload)
+        const result = await api.captains.updateCaptain(editId, payload)
+        if (result?.success === false) {
+          alert(result.message || '❌ فشل الحفظ')
+          return
+        }
 
         if (imageFile) {
           await api.captains.uploadImage(editId, imageFile)
         }
       } else {
         const result = await api.captains.addCaptain(payload)
+        if (!result?.success) {
+          alert(result?.message || '❌ فشل الحفظ')
+          return
+        }
         const newId = result?.id
 
         if (imageFile && newId) {

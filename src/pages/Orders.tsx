@@ -592,13 +592,20 @@ const initialOrderColumnWidths = useMemo(() => {
   const assignCaptain = async (captainId: number) => {
     if (!selectedOrderId) return;
     try {
-      await api.orders.assignCaptain(selectedOrderId, captainId);
+      const result = await api.orders.assignCaptain(selectedOrderId, captainId);
+      if (result?.success === false) {
+        alert(result?.message || "فشل تعيين الكابتن");
+        return;
+      }
       alert("✅ تم تعيين الكابتن بنجاح");
       setIsCaptainModalOpen(false);
       setSelectedOrderId(null);
       fetchOrders();
-    } catch (error) {
+    } catch (error: any) {
       console.error("❌ خطأ في إسناد الكابتن:", error);
+      alert(
+        error?.response?.data?.message || "فشل تعيين الكابتن"
+      );
     }
   };
 
@@ -615,13 +622,18 @@ const updateOrderStatus = async (orderId: number, newStatus: string) => {
 
   try {
 
-    await api.orders.updateStatus(orderId, newStatus);
+    const result = await api.orders.updateStatus(orderId, newStatus);
+    if (result?.success === false) {
+      alert(result?.message || "فشل تحديث الحالة");
+      return;
+    }
 
     fetchOrders();
 
-  } catch (error) {
+  } catch (error: any) {
 
     console.error("❌ خطأ في تحديث الحالة:", error);
+    alert(error?.response?.data?.message || "فشل تحديث الحالة");
 
   } finally {
 
