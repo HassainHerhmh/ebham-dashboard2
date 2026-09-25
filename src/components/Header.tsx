@@ -779,6 +779,24 @@ const Header: React.FC<HeaderProps> = () => {
 
     const handleAdminNotification = async (payload: any) => {
       const type = payload?.type;
+      const ORDER_NOTIFY_TYPES = new Set([
+        "order_created",
+        "order_status_updated",
+        "captain_assigned",
+        "manual_order_created",
+        "manual_order_status",
+        "manual_order_updated",
+        "manual_order_assigned",
+        "wassel_order_created",
+        "wassel_assigned",
+        "wassel_status",
+        "wassel_price_decision",
+        "wassel_order_updated",
+      ]);
+
+      if (ORDER_NOTIFY_TYPES.has(type) && payload?.message) {
+        actions.addNotification(payload.message, "info");
+      }
 
       if (type === "support_chat_message" && payload?.sender_type === "customer") {
         const customerName =

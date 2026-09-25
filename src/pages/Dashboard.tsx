@@ -64,11 +64,18 @@ const Dashboard: React.FC = () => {
     });
 
     socket.on("admin_notification", (data: any) => {
-      if (data?.message) {
-        alert(data.message);
+      if (
+        data?.type === "order_created" ||
+        data?.type === "order_status_updated" ||
+        data?.type === "captain_assigned" ||
+        data?.type === "manual_order_created" ||
+        data?.type === "manual_order_status" ||
+        data?.type === "wassel_order_created" ||
+        data?.type === "wassel_status" ||
+        data?.type === "wassel_assigned"
+      ) {
+        actions.loadStats();
       }
-
-      actions.loadStats();
     });
 
     return () => {
