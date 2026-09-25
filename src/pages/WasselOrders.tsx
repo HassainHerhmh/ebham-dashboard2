@@ -84,17 +84,20 @@ interface TransportMethodItem {
   name: string;
 }
 
+const WASSEL_LIVE_TYPES = new Set([
+  "wassel_order_created",
+  "wassel_assigned",
+  "wassel_status",
+  "wassel_price_decision",
+  "wassel_order_updated",
+]);
+
 function ToastNotifications() {
   const [toasts, setToasts] = useState<any[]>([]);
 
   useEffect(() => {
     const handler = (data: any) => {
-      if (
-        data.type !== "wassel_order_created" &&
-        data.type !== "wassel_assigned" &&
-        data.type !== "wassel_status"
-      )
-        return;
+      if (!WASSEL_LIVE_TYPES.has(data.type)) return;
 
       const id = Date.now() + Math.random();
       setToasts((prev) => [...prev, { ...data, id }]);
@@ -516,26 +519,6 @@ const loadTransportMethods = async () => {
     }
   }, [location.state]);
 
-  useEffect(() => {
-    const handler = (data: any) => {
-      if (
-        data.type === "wassel_order_created" ||
-        data.type === "wassel_assigned" ||
-        data.type === "wassel_status"
-      ) {
-        loadOrders({ silent: true });
-      }
-    };
-
-    const unbindRooms = bindDashboardSocketRooms(socket);
-    socket.on("admin_notification", handler);
-
-    return () => {
-      unbindRooms();
-      socket.off("admin_notification", handler);
-    };
-  }, []);
-
   /* ======================
       الفلترة والبيانات
   ====================== */
@@ -652,6 +635,28 @@ const loadTransportMethods = async () => {
 
     api.get("/customers").then((res) => setCustomers(res.data.customers || []));
     api.get("/wassel-orders/banks").then((res) => setBanks(res.data.banks || []));
+  }, []);
+
+  useEffect(() => {
+    const refresh = () => {
+      loadOrders({ silent: true });
+    };
+    const handler = (data: any) => {
+      if (WASSEL_LIVE_TYPES.has(data?.type)) refresh();
+    };
+
+    const unbindRooms = bindDashboardSocketRooms(socket);
+    socket.on("admin_notification", handler);
+    WASSEL_LIVE_TYPES.forEach((type) => socket.on(type, refresh));
+
+    const poll = window.setInterval(refresh, 8000);
+
+    return () => {
+      unbindRooms();
+      socket.off("admin_notification", handler);
+      WASSEL_LIVE_TYPES.forEach((type) => socket.off(type, refresh));
+      window.clearInterval(poll);
+    };
   }, []);
 
   useEffect(() => {
