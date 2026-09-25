@@ -48,6 +48,7 @@ interface WasselOrder {
   to_lng?: number | string | null;
   delivery_fee: number;
   extra_fee: number;
+  customer_price_decision?: string | null;
   notes?: string;
   status: string;
   payment_method: string;
@@ -179,6 +180,7 @@ const WasselOrders: React.FC = () => {
       { key: "locations", label: "العناوين" },
       { key: "payment", label: "وسيلة الدفع" },
       { key: "fees", label: "إجمالي الرسوم" },
+      { key: "customerDecision", label: "قرار العميل" },
       { key: "status", label: "حالة الطلب" },
       { key: "action", label: "الإجراء" },
       { key: "user", label: "المستخدم" },
@@ -188,7 +190,7 @@ const WasselOrders: React.FC = () => {
     []
   );
   const initialWasselColumnWidths = useMemo(
-    () => [100, 180, 150, 140, 160, 110, 110, 130, 170, 140, 180, 90, 220],
+    () => [100, 180, 150, 140, 160, 110, 110, 130, 150, 170, 140, 180, 90, 220],
     []
   );
   const { columnWidths: wasselColumnWidths, startResize: startWasselColumnResize } =
@@ -926,6 +928,34 @@ const loadTransportMethods = async () => {
     }
   };
 
+  const renderCustomerDecision = (o: WasselOrder) => {
+    const decision = o.customer_price_decision || (Number(o.delivery_fee) + Number(o.extra_fee) > 0 ? "approved" : "pending_quote");
+    const map: Record<string, { label: string; className: string }> = {
+      pending_quote: {
+        label: "بانتظار التسعير",
+        className: "bg-amber-100 text-amber-800",
+      },
+      pending_approval: {
+        label: "بانتظار موافقة العميل",
+        className: "bg-blue-100 text-blue-800",
+      },
+      approved: {
+        label: "وافق العميل",
+        className: "bg-green-100 text-green-700",
+      },
+      rejected: {
+        label: "ألغى العميل",
+        className: "bg-red-100 text-red-700",
+      },
+    };
+    const item = map[decision] || map.pending_quote;
+    return (
+      <span className={`px-2 py-1 rounded-md text-[10px] font-black ${item.className}`}>
+        {item.label}
+      </span>
+    );
+  };
+
   const renderActions = (o: WasselOrder) => {
     if (o.status === "scheduled") {
       return (
@@ -1409,6 +1439,8 @@ const loadTransportMethods = async () => {
                     <td className="text-xs font-bold text-gray-800 bg-gray-50/50">
                       {Number(o.delivery_fee) + Number(o.extra_fee)} ريال
                     </td>
+
+                    <td className="px-2">{renderCustomerDecision(o)}</td>
 
                     <td className="px-2">
                       {o.status === "completed" || o.status === "cancelled" ? (
