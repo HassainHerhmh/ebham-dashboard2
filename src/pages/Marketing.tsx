@@ -442,10 +442,13 @@ console.error(err)
 
     <div className="flex justify-between items-center">
 
+<div>
 <h1 className="text-2xl font-bold flex items-center gap-2">
 <TrendingUp className="w-7 h-7"/>
 إدارة الإعلانات
 </h1>
+<p className="mt-1 text-sm text-slate-500">إعلانات هذا الفرع فقط — لا تظهر للفروع الأخرى.</p>
+</div>
 
 <div className="flex gap-3">
 

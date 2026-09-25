@@ -81,7 +81,6 @@ interface OrderTypeItem {
 interface TransportMethodItem {
   id: number;
   name: string;
-  price_per_km: number;
 }
 
 function ToastNotifications() {
@@ -297,7 +296,6 @@ const WasselOrders: React.FC = () => {
     useState<TransportMethodItem | null>(null);
   const [transportForm, setTransportForm] = useState({
     name: "",
-    price_per_km: "",
   });
 
   const loadOrderTypes = async () => {
@@ -343,19 +341,16 @@ const WasselOrders: React.FC = () => {
           name: typeForm.name.trim(),
         });
       } else {
-        await api.post("/wassel-orders/types", {
+        const created = await api.post("/wassel-orders/types", {
           name: typeForm.name.trim(),
         });
+        setForm((prev: any) => ({
+          ...prev,
+          order_type: String(created.data?.id || ""),
+        }));
       }
 
       await loadOrderTypes();
-
-      if (!editingType) {
-        setForm((prev: any) => ({
-          ...prev,
-          order_type: typeForm.name.trim(),
-        }));
-      }
 
       resetTypeForm();
     } catch (error: any) {
@@ -373,7 +368,7 @@ const WasselOrders: React.FC = () => {
       await api.delete(`/wassel-orders/types/${type.id}`);
       await loadOrderTypes();
 
-      if (form.order_type === type.name) {
+      if (String(form.order_type) === String(type.id)) {
         setForm((prev: any) => ({ ...prev, order_type: "" }));
       }
 
@@ -408,13 +403,11 @@ const loadTransportMethods = async () => {
       setEditingTransport(method);
       setTransportForm({
         name: method.name || "",
-        price_per_km: String(method.price_per_km ?? ""),
       });
     } else {
       setEditingTransport(null);
       setTransportForm({
         name: "",
-        price_per_km: "",
       });
     }
 
@@ -425,7 +418,6 @@ const loadTransportMethods = async () => {
     setEditingTransport(null);
     setTransportForm({
       name: "",
-      price_per_km: "",
     });
     setShowTransportFormModal(false);
   };
@@ -437,18 +429,10 @@ const loadTransportMethods = async () => {
         return;
       }
 
-      if (transportForm.price_per_km === "") {
-        alert("اكتب سعر الكيلو");
-        return;
-      }
-
       setTransportSaving(true);
 
       const payload = {
         name: transportForm.name.trim(),
-        base_fee: 0,
-        price_per_km: Number(transportForm.price_per_km),
-        included_km: 0,
       };
 
    if (editingTransport) {
@@ -464,7 +448,7 @@ const loadTransportMethods = async () => {
       resetTransportForm();
     } catch (error: any) {
       alert(
-        error?.response?.data?.message || "حدث خطأ أثناء حفظ تسعيرة وسيلة النقل"
+        error?.response?.data?.message || "حدث خطأ أثناء حفظ وسيلة النقل"
       );
     } finally {
       setTransportSaving(false);
@@ -488,10 +472,6 @@ const loadTransportMethods = async () => {
       );
     }
   };
-
-  const selectedTransportMethod = transportMethods.find(
-    (method) => String(method.id) === String(form.transport_method_id)
-  );
 
   /* ======================
       الخريطة والمسودة
@@ -716,8 +696,6 @@ const loadTransportMethods = async () => {
         setForm((prev: any) => ({
           ...prev,
           distance_km: Number(res.data?.distance_km || 0),
-          delivery_fee: Number(res.data?.delivery_fee || 0),
-          extra_fee: Number(res.data?.extra_fee || 0),
         }));
       } catch (error) {
         if (!cancelled) {
@@ -2017,7 +1995,7 @@ const loadTransportMethods = async () => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-xs text-gray-400 font-bold">
-                    رسوم التوصيل
+                    رسوم التوصيل (بعد المراجعة)
                   </label>
                   <input
                     type="number"
@@ -2027,15 +2005,9 @@ const loadTransportMethods = async () => {
                       setForm({ ...form, delivery_fee: e.target.value })
                     }
                   />
-                  {feeLoading && (
-                    <p className="text-[11px] text-blue-600 font-semibold">
-                      جاري حساب الرسوم...
-                    </p>
-                  )}
-                  {selectedTransportMethod && Number(form.distance_km) > 0 && !feeLoading && (
-                    <p className="text-[11px] text-amber-700 font-semibold">
-                      المسافة: {Number(form.distance_km || 0)} كم
-                      {" | "}سعر الكيلو: {Number(selectedTransportMethod.price_per_km || 0)} ريال
+                  {Number(form.distance_km) > 0 && (
+                    <p className="text-[11px] text-gray-500 font-semibold">
+                      المسافة التقريبية: {Number(form.distance_km || 0)} كم — السعر يُحدد بعد المراجعة
                     </p>
                   )}
                 </div>
@@ -2255,9 +2227,6 @@ const loadTransportMethods = async () => {
                           <div className="font-bold text-gray-800">
                             {method.name}
                           </div>
-                          <div className="text-sm text-amber-700 font-semibold">
-                            كل 1 كم = {Number(method.price_per_km || 0)} ريال
-                          </div>
                         </div>
 
                         <div className="flex items-center gap-2">
@@ -2322,26 +2291,8 @@ const loadTransportMethods = async () => {
                   />
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-sm font-bold text-gray-600">
-                    سعر كل 1 كم
-                  </label>
-                  <input
-                    type="number"
-                    className="w-full p-3 border rounded-xl outline-none focus:border-amber-500"
-                    placeholder="اكتب سعر الكيلو"
-                    value={transportForm.price_per_km}
-                    onChange={(e) =>
-                      setTransportForm((prev) => ({
-                        ...prev,
-                        price_per_km: e.target.value,
-                      }))
-                    }
-                  />
-                </div>
-
                 <p className="text-xs text-gray-400">
-                  الرسوم ستُحسب من السيرفر حسب المسافة × سعر الكيلو.
+                  هذه الوسيلة تظهر للعميل في تطبيق وصل لي لنفس الفرع. السعر يُحدد بعد مراجعة الطلب.
                 </p>
               </div>
 

@@ -71,7 +71,7 @@ export default function Loyalty() {
             نقاط الولاء
           </h2>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            متابعة السجل وإعدادات احتساب النقاط.
+            سجل وإعدادات نقاط الولاء لهذا الفرع فقط.
           </p>
         </div>
 
