@@ -10,6 +10,7 @@ import {
 import { useReactToPrint } from 'react-to-print';
 import { Calendar } from "lucide-react";
 import { useApp } from "../contexts/AppContext";
+import { bindDashboardSocketRooms } from "../utils/dashboardSocket";
 
 const socket = io(SOCKET_URL, {
   transports: ["websocket"],
@@ -38,9 +39,11 @@ function ToastNotifications() {
       }, 5000);
     };
 
+    const unbindRooms = bindDashboardSocketRooms(socket);
     socket.on("admin_notification", handler);
 
     return () => {
+      unbindRooms();
       socket.off("admin_notification", handler);
     };
   }, []);
@@ -274,9 +277,11 @@ notifiedRef.current.near.clear();
       loadInitialData({ silent: true });
     };
 
+    const unbindRooms = bindDashboardSocketRooms(socket);
     socket.on("admin_notification", handler);
 
     return () => {
+      unbindRooms();
       socket.off("admin_notification", handler);
     };
   }, []);

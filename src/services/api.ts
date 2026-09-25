@@ -81,14 +81,10 @@ api.interceptors.request.use((config) => {
     (await api.get("/users", config)).data,
 
   addUser: async (formData: FormData) =>
-    (await api.post("/users", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    })).data,
+    (await api.post("/users", formData)).data,
 
   updateUser: async (id: number, formData: FormData) =>
-    (await api.put(`/users/${id}`, formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    })).data,
+    (await api.put(`/users/${id}`, formData)).data,
 
   deleteUser: async (id: number) =>
     (await api.delete(`/users/${id}`)).data,

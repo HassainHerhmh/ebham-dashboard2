@@ -201,16 +201,42 @@ const Users: React.FC = () => {
       formData.append("branch_id", String(branchId));
     }
 
-    if (editingUser) {
-      await (api as any).users.updateUser(editingUser.id, formData);
-      alert("تم التعديل");
-    } else {
-      await (api as any).users.addUser(formData);
-      alert("تمت الإضافة");
-    }
+    try {
+      const res = editingUser
+        ? await (api as any).users.updateUser(editingUser.id, formData)
+        : await (api as any).users.addUser(formData);
 
-    setIsModalOpen(false);
-    await fetchUsers();
+      if (!res?.success) {
+        alert(res?.message || (editingUser ? "فشل التعديل" : "فشل الإضافة"));
+        return;
+      }
+
+      alert(editingUser ? "تم التعديل" : "تمت الإضافة");
+      setIsModalOpen(false);
+
+      const selected = localStorage.getItem("branch_id");
+      const assignedToOtherBranch =
+        isAdminBranch &&
+        branchId &&
+        selected &&
+        selected !== "all" &&
+        Number(selected) !== Number(branchId) &&
+        !(hqBranch && Number(selected) === Number(hqBranch.id));
+
+      if (assignedToOtherBranch) {
+        localStorage.setItem("branch_id", String(branchId));
+        window.location.reload();
+        return;
+      }
+
+      await fetchUsers();
+    } catch (error: any) {
+      const message =
+        error?.response?.data?.message ||
+        error?.message ||
+        (editingUser ? "فشل التعديل" : "فشل الإضافة");
+      alert(message);
+    }
   };
 
   const handleImageChange = async (user: User, file: File | null) => {

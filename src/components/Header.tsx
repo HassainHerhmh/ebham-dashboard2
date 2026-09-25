@@ -20,6 +20,7 @@ import api, { API_ORIGIN, SOCKET_URL } from "../services/api";
 import { useApp } from "../contexts/AppContext";
 import { getRoleLabel } from "../config/permissions";
 import { normalizeRole } from "../utils/permissions";
+import { bindDashboardSocketRooms } from "../utils/dashboardSocket";
 
 const chatSocket = SOCKET_URL
   ? io(SOCKET_URL, {
@@ -826,6 +827,8 @@ const Header: React.FC<HeaderProps> = () => {
       forceDisabledLogout(payload?.message || t.accountDisabledMessage);
     };
 
+    const unbindRooms = bindDashboardSocketRooms(chatSocket);
+
     chatSocket.on("admin_notification", handleAdminNotification);
     chatSocket.on("support_chat_created", handleDirectChatEvent);
     chatSocket.on("support_chat_message", handleDirectChatEvent);
@@ -835,6 +838,7 @@ const Header: React.FC<HeaderProps> = () => {
     chatSocket.on("user_disabled", handleUserDisabled);
 
     return () => {
+      unbindRooms();
       chatSocket.off("admin_notification", handleAdminNotification);
       chatSocket.off("support_chat_created", handleDirectChatEvent);
       chatSocket.off("support_chat_message", handleDirectChatEvent);
@@ -843,7 +847,7 @@ const Header: React.FC<HeaderProps> = () => {
       chatSocket.off("chat_created", handleDirectChatEvent);
       chatSocket.off("user_disabled", handleUserDisabled);
     };
-  }, [selectedChatId, user?.id, t.accountDisabledMessage]);
+  }, [selectedChatId, user?.id, t.accountDisabledMessage, currentBranch]);
 
   const pendingChatsCount = chats.filter(
     (chat) => (chat.unread_count ?? chat.pending_count ?? 0) > 0

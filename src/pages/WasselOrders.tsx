@@ -17,6 +17,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { io } from "socket.io-client";
 import { useApp } from "../contexts/AppContext";
 import { useResizableColumns } from "../hooks/useResizableColumns";
+import { bindDashboardSocketRooms } from "../utils/dashboardSocket";
 
 const socket = io(SOCKET_URL, {
   transports: ["websocket"],
@@ -103,9 +104,11 @@ function ToastNotifications() {
       }, 5000);
     };
 
+    const unbindRooms = bindDashboardSocketRooms(socket);
     socket.on("admin_notification", handler);
 
     return () => {
+      unbindRooms();
       socket.off("admin_notification", handler);
     };
   }, []);
@@ -542,9 +545,11 @@ const loadTransportMethods = async () => {
       }
     };
 
+    const unbindRooms = bindDashboardSocketRooms(socket);
     socket.on("admin_notification", handler);
 
     return () => {
+      unbindRooms();
       socket.off("admin_notification", handler);
     };
   }, []);

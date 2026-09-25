@@ -18,6 +18,7 @@ import StatCard from "../components/StatCard";
 import { useApp } from "../contexts/AppContext";
 import { useApi } from "../hooks/useApi";
 import api, { SOCKET_URL } from "../services/api";
+import { bindDashboardSocketRooms } from "../utils/dashboardSocket";
 
 const getOrderDisplayNumber = (order: {
   id: number;
@@ -52,6 +53,7 @@ const Dashboard: React.FC = () => {
     });
 
     socketRef.current = socket;
+    const unbindRooms = bindDashboardSocketRooms(socket);
 
     socket.on("connect", () => {
       console.log("Socket connected:", socket.id);
@@ -70,6 +72,7 @@ const Dashboard: React.FC = () => {
     });
 
     return () => {
+      unbindRooms();
       socket.disconnect();
     };
   }, []);

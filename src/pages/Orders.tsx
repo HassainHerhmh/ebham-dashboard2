@@ -10,6 +10,7 @@ const api = apiImport as any;
 import { io } from "socket.io-client";
 import { useApp } from "../contexts/AppContext";
 import { useResizableColumns } from "../hooks/useResizableColumns";
+import { bindDashboardSocketRooms } from "../utils/dashboardSocket";
 
 /* =====================
    Interfaces
@@ -217,6 +218,8 @@ function ToastNotifications() {
       }, 5000);
     };
 
+    const unbindRooms = bindDashboardSocketRooms(socket);
+
     socket.on("connect", () => {
       console.log("🟢 Socket connected with id:", socket.id);
     });
@@ -228,6 +231,7 @@ function ToastNotifications() {
     socket.on("admin_notification", handler);
 
     return () => {
+      unbindRooms();
       socket.off("admin_notification", handler);
       socket.off("connect");
       socket.off("connect_error");
@@ -544,9 +548,11 @@ const initialOrderColumnWidths = useMemo(() => {
       scheduleOrdersRefresh();
     };
 
+    const unbindRooms = bindDashboardSocketRooms(socket);
     socket.on("admin_notification", handleAdminNotification);
 
     return () => {
+      unbindRooms();
       socket.off("admin_notification", handleAdminNotification);
 
       if (liveRefreshTimerRef.current) {

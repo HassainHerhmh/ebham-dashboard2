@@ -119,6 +119,7 @@ const BranchBoundaryMap = ({
   branchName,
   branchAddress,
   onAddPoint,
+  onUpdatePoint,
   onRemoveLast,
   onClear,
 }: {
@@ -126,11 +127,13 @@ const BranchBoundaryMap = ({
   branchName?: string;
   branchAddress?: string;
   onAddPoint: (lat: string, lng: string) => void;
+  onUpdatePoint: (index: number, lat: string, lng: string) => void;
   onRemoveLast: () => void;
   onClear: () => void;
 }) => {
   const [mapsReady, setMapsReady] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [searchText, setSearchText] = useState("");
   const mapRef = React.useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = React.useRef<any>(null);
   const markersRef = React.useRef<any[]>([]);
@@ -150,6 +153,29 @@ const BranchBoundaryMap = ({
         Math.abs(point.lat) <= 90 &&
         Math.abs(point.lng) <= 180
     );
+
+  const searchLocation = () => {
+    if (!mapsReady || !mapInstanceRef.current || !geocoderRef.current) return;
+
+    const query = searchText.trim();
+    if (!query) return;
+
+    geocoderRef.current.geocode(
+      { address: query },
+      (results: any, status: string) => {
+        if (status === "OK" && results?.[0]?.geometry?.location) {
+          const location = results[0].geometry.location;
+          mapInstanceRef.current.setCenter({
+            lat: location.lat(),
+            lng: location.lng(),
+          });
+          mapInstanceRef.current.setZoom(17);
+        } else {
+          window.alert("تعذر العثور على الموقع المطلوب");
+        }
+      }
+    );
+  };
 
   useEffect(() => {
     loadGoogleMaps()
@@ -316,6 +342,15 @@ const BranchBoundaryMap = ({
         position: point,
         map: mapInstanceRef.current,
         label: String(index + 1),
+        draggable: true,
+      });
+
+      marker.addListener("dragend", (event: any) => {
+        onUpdatePoint(
+          index,
+          event.latLng.lat().toFixed(6),
+          event.latLng.lng().toFixed(6)
+        );
       });
 
       markersRef.current.push(marker);
@@ -397,6 +432,29 @@ const BranchBoundaryMap = ({
           className="rounded bg-slate-800 px-3 py-1 text-sm text-white"
         >
           {isFullscreen ? "إغلاق الملء" : "ملء الشاشة"}
+        </button>
+      </div>
+
+      <div className="mb-3 flex flex-col gap-2 md:flex-row">
+        <input
+          type="text"
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              searchLocation();
+            }
+          }}
+          placeholder="ابحث عن المدينة أو الحي أو الشارع"
+          className="w-full rounded border px-3 py-2"
+        />
+        <button
+          type="button"
+          onClick={searchLocation}
+          className="rounded bg-blue-600 px-4 py-2 text-sm text-white"
+        >
+          انتقال
         </button>
       </div>
 
@@ -916,6 +974,10 @@ const BranchesSettings: React.FC = () => {
                   branchName={name}
                   branchAddress={address}
                   onAddPoint={addBoundaryPointFromMap}
+                  onUpdatePoint={(index, lat, lng) => {
+                    updateBoundaryPoint(index, "lat", lat);
+                    updateBoundaryPoint(index, "lng", lng);
+                  }}
                   onRemoveLast={removeLastBoundaryPoint}
                   onClear={clearBoundaryPoints}
                 />
