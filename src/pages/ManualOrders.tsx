@@ -502,7 +502,13 @@ const updateOrderStatus = async (orderId: number, newStatus: string) => {
       scheduled_time: order.scheduled_time || ""
     });
 
-    setItems(order.items || []);
+    setItems(
+      Array.isArray(order.items)
+        ? order.items
+        : typeof order.items === "string"
+        ? JSON.parse(order.items || "[]")
+        : []
+    );
 
     setShowModal(true);
 
@@ -556,6 +562,8 @@ const saveOrder = async () => {
       ...form,
       items,
       total_amount: calculateTotal(),
+      bank_id: form.bank_id || null,
+      payment_method_id: form.bank_id || null,
     };
 
     console.log("🚀 Saving:", editingId, payload); // للتأكد
