@@ -24,6 +24,19 @@ const MANUAL_ORDER_NOTIFICATION_TYPES = new Set([
   "manual_order_assigned",
 ]);
 
+function asItemList(value: any): any[] {
+  if (Array.isArray(value)) return value.filter(Boolean);
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed.filter(Boolean) : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
 function ToastNotifications() {
   const [toasts, setToasts] = useState<any[]>([]);
 
@@ -227,7 +240,14 @@ const loadInitialData = async ({ silent = false }: { silent?: boolean } = {}) =>
 api.get("/banks")
     ]);
 
-    setOrders(ordersRes.data?.orders || []);
+    setOrders(
+      (Array.isArray(ordersRes.data?.orders) ? ordersRes.data.orders : []).map(
+        (order: any) => ({
+          ...order,
+          items: asItemList(order.items),
+        })
+      )
+    );
     setCustomers(custRes.data.customers || []);
 notifiedRef.current.delayed.clear();
 notifiedRef.current.near.clear();
@@ -502,13 +522,7 @@ const updateOrderStatus = async (orderId: number, newStatus: string) => {
       scheduled_time: order.scheduled_time || ""
     });
 
-    setItems(
-      Array.isArray(order.items)
-        ? order.items
-        : typeof order.items === "string"
-        ? JSON.parse(order.items || "[]")
-        : []
-    );
+    setItems(asItemList(order.items));
 
     setShowModal(true);
 
@@ -854,7 +868,7 @@ useEffect(() => {
 
 
 const getOrderItemsTotal = (order: any) =>
-  (order?.items || []).reduce(
+  asItemList(order?.items).reduce(
     (sum: number, item: any) =>
       sum + Number(item.qty || item.quantity || 0) * Number(item.price || 0),
     0
@@ -1591,7 +1605,7 @@ onClick={async () => {
 
     <tbody className="divide-y">
 
-      {(selectedOrderDetails.items || []).map((p,i)=>(
+      {(asItemList(selectedOrderDetails.items)).map((p,i)=>(
         <tr key={i} className="hover:bg-gray-50">
 
           <td className="p-3 text-right font-bold">
