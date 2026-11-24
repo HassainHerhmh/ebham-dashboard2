@@ -62,6 +62,7 @@ const UI_TEXT = {
     waitingFor: "مدة الانتظار",
     claimChat: "استلام المحادثة",
     closeChat: "إغلاق",
+    endManualChat: "إقفال الدردشة اليدوية",
     chatNumber: "محادثة",
     checkOut: "انصرف",
     attendanceStartedAt: "وقت الدخول",
@@ -101,6 +102,7 @@ const UI_TEXT = {
     waitingFor: "Waiting",
     claimChat: "Claim chat",
     closeChat: "Close",
+    endManualChat: "End manual chat",
     chatNumber: "Chat",
     checkOut: "Check out",
     attendanceStartedAt: "Started at",
@@ -133,6 +135,9 @@ interface ChatConversation {
   customer_name: string;
   customer_phone: string;
   status: "pending" | "open" | "closed" | "AI_ACTIVE" | "WAITING_AGENT" | "AGENT_ACTIVE" | "RESOLVED" | "CLOSED" | string;
+  handler_mode?: string | null;
+  assigned_agent_id?: number | null;
+  agent_claimed_at?: string | null;
   pending_count?: number;
   unread_count?: number;
   last_message?: string;
@@ -660,6 +665,29 @@ const Header: React.FC<HeaderProps> = () => {
       await fetchChatDetails(chatId, { silent: true });
     } catch (err) {
       console.error("Close chat error:", err);
+    }
+  };
+
+  const isManualChatActive = (chat?: ChatConversation | null) => {
+    if (!chat) return false;
+    if (chat.status === "CLOSED" || chat.status === "closed" || chat.status === "AI_ACTIVE") {
+      return false;
+    }
+    return (
+      chat.status === "AGENT_ACTIVE" ||
+      chat.status === "open" ||
+      Boolean(chat.assigned_agent_id) ||
+      Boolean(chat.agent_claimed_at)
+    );
+  };
+
+  const handleEndManualChat = async (chatId: number) => {
+    try {
+      await api.post(`/support/chats/${chatId}/end-human`);
+      await fetchChats({ silent: true });
+      await fetchChatDetails(chatId, { silent: true });
+    } catch (err) {
+      console.error("End manual chat error:", err);
     }
   };
 
@@ -1366,6 +1394,16 @@ const Header: React.FC<HeaderProps> = () => {
                       </p>
                     )}
                     </div>
+                    <div className="flex flex-col items-stretch gap-2">
+                    {isManualChatActive(selectedChat) && (
+                      <button
+                        type="button"
+                        onClick={() => void handleEndManualChat(selectedChat.id)}
+                        className="text-xs px-3 py-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700"
+                      >
+                        {t.endManualChat}
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => void handleResolveChat(selectedChat.id)}
@@ -1373,6 +1411,7 @@ const Header: React.FC<HeaderProps> = () => {
                     >
                       {t.closeChat}
                     </button>
+                    </div>
                     </div>
                   </div>
                 ) : (
