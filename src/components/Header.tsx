@@ -1448,6 +1448,14 @@ const Header: React.FC<HeaderProps> = () => {
                           </div>
                         )}
 
+                        {String(message.message || "").trim() ===
+                        "حالياً موظف الذكاء في خدمتك" ? (
+                          <div className="flex justify-center py-3">
+                            <p className="w-1/2 text-center text-xs font-light text-gray-400 dark:text-gray-500 leading-6">
+                              {message.message}
+                            </p>
+                          </div>
+                        ) : (
                         <div
                           className={`flex ${
                             message.sender_type === "customer"
@@ -1482,6 +1490,7 @@ const Header: React.FC<HeaderProps> = () => {
                             </div>
                           </div>
                         </div>
+                        )}
                       </React.Fragment>
                     );
                   })
