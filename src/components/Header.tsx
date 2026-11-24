@@ -121,6 +121,15 @@ interface Branch {
   is_admin?: number | boolean;
 }
 
+function isSessionNotice(message?: string) {
+  const value = String(message || "").trim();
+  return (
+    value === "موظف الذكاء في خدمتك" ||
+    value === "حالياً موظف الذكاء في خدمتك" ||
+    value === "موظف خدمة العملاء في خدمتك"
+  );
+}
+
 interface ChatMessage {
   id: number;
   sender_type: "customer" | "admin" | "ai";
@@ -1448,8 +1457,7 @@ const Header: React.FC<HeaderProps> = () => {
                           </div>
                         )}
 
-                        {String(message.message || "").trim() ===
-                        "حالياً موظف الذكاء في خدمتك" ? (
+                        {isSessionNotice(message.message) ? (
                           <div className="flex justify-center py-3">
                             <p className="w-1/2 text-center text-xs font-light text-gray-400 dark:text-gray-500 leading-6">
                               {message.message}
