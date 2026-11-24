@@ -54,6 +54,15 @@ const UI_TEXT = {
     userFallback: "مستخدم",
     customerFallback: "عميل",
     lastHandler: "آخر متابع",
+    waitingAgent: "بانتظار موظف",
+    aiActive: "الذكاء الاصطناعي",
+    agentActive: "موظف يتابع",
+    resolved: "تم الحل",
+    handoffReason: "سبب التحويل",
+    waitingFor: "مدة الانتظار",
+    claimChat: "استلام المحادثة",
+    closeChat: "إغلاق",
+    chatNumber: "محادثة",
     checkOut: "انصرف",
     attendanceStartedAt: "وقت الدخول",
     attendanceNotStarted: "لم يبدأ الدوام",
@@ -84,6 +93,15 @@ const UI_TEXT = {
     userFallback: "User",
     customerFallback: "Customer",
     lastHandler: "Last handled by",
+    waitingAgent: "Waiting for agent",
+    aiActive: "AI handling",
+    agentActive: "Agent active",
+    resolved: "Resolved",
+    handoffReason: "Handoff reason",
+    waitingFor: "Waiting",
+    claimChat: "Claim chat",
+    closeChat: "Close",
+    chatNumber: "Chat",
     checkOut: "Check out",
     attendanceStartedAt: "Started at",
     attendanceNotStarted: "No active session",
@@ -103,7 +121,7 @@ interface Branch {
 
 interface ChatMessage {
   id: number;
-  sender_type: "customer" | "admin";
+  sender_type: "customer" | "admin" | "ai";
   message: string;
   created_at: string;
   status?: "sent" | "delivered" | "read";
@@ -114,12 +132,15 @@ interface ChatConversation {
   id: number;
   customer_name: string;
   customer_phone: string;
-  status: "pending" | "open" | "closed";
+  status: "pending" | "open" | "closed" | "AI_ACTIVE" | "WAITING_AGENT" | "AGENT_ACTIVE" | "RESOLVED" | "CLOSED" | string;
   pending_count?: number;
   unread_count?: number;
   last_message?: string;
   updated_at?: string;
   handled_by_name?: string;
+  handoff_reason?: string | null;
+  handed_off_at?: string | null;
+  waiting_seconds?: number;
   messages?: ChatMessage[];
 }
 
@@ -622,9 +643,42 @@ const Header: React.FC<HeaderProps> = () => {
     }
 
     setSelectedChatId(chatId);
+    try {
+      await api.post(`/support/chats/${chatId}/claim`);
+    } catch (err) {
+      console.error("Claim chat error:", err);
+    }
     markChatAsOpenLocally(chatId);
     await markChatAsRead(chatId);
     await fetchChatDetails(chatId);
+  };
+
+  const handleResolveChat = async (chatId: number) => {
+    try {
+      await api.patch(`/support/chats/${chatId}/status`, { status: "CLOSED" });
+      await fetchChats({ silent: true });
+      await fetchChatDetails(chatId, { silent: true });
+    } catch (err) {
+      console.error("Close chat error:", err);
+    }
+  };
+
+  const chatStatusLabel = (status?: string) => {
+    if (status === "WAITING_AGENT" || status === "pending") return t.waitingAgent;
+    if (status === "AI_ACTIVE") return t.aiActive;
+    if (status === "AGENT_ACTIVE" || status === "open") return t.agentActive;
+    if (status === "RESOLVED") return t.resolved;
+    if (status === "CLOSED" || status === "closed") return t.closed;
+    return t.open;
+  };
+
+  const formatWait = (seconds?: number) => {
+    const value = Number(seconds || 0);
+    if (value <= 0) return "";
+    const minutes = Math.floor(value / 60);
+    if (minutes < 1) return `${value} ث`;
+    if (minutes < 60) return `${minutes} د`;
+    return `${Math.floor(minutes / 60)} س ${minutes % 60} د`;
   };
 
   const handleCloseChat = async () => {
@@ -798,36 +852,28 @@ const Header: React.FC<HeaderProps> = () => {
         actions.addNotification(payload.message, "info");
       }
 
-      if (type === "support_chat_message" && payload?.sender_type === "customer") {
-        const customerName =
-          payload?.customer_name ||
-          chats.find((chat) => chat.id === Number(payload?.chat_id))?.customer_name ||
-          "ط¹ظ…ظٹظ„";
-        const notificationText =
-          payload?.notification_message ||
-          `ط§ظ„ط¹ظ…ظٹظ„ ${customerName} ط£ط±ط³ظ„ ظ„ظƒ ط±ط³ط§ظ„ط© ط¬ط¯ظٹط¯ط©`;
-        const body = payload?.message ? `: ${payload.message}` : "";
-
-        actions.addNotification(`${notificationText}${body}`, "info");
-      }
-
-      if (type === "support_chat_created" && payload?.sender_type === "customer") {
-        const customerName =
-          payload?.customer_name ||
-          chats.find((chat) => chat.id === Number(payload?.chat_id))?.customer_name ||
-          "ط¹ظ…ظٹظ„";
-        const notificationText =
-          payload?.notification_message ||
-          `ط§ظ„ط¹ظ…ظٹظ„ ${customerName} ط¨ط¯ط£ ظ…ط­ط§ط¯ط«ط© ط¬ط¯ظٹط¯ط©`;
-        const body = payload?.message ? `: ${payload.message}` : "";
-
-        actions.addNotification(`${notificationText}${body}`, "info");
+      if (
+        type === "support_chat_handoff" ||
+        (payload?.needs_agent && payload?.sender_type === "customer")
+      ) {
+        const customerName = payload?.customer_name || "عميل";
+        const phone = payload?.customer_phone ? ` — ${payload.customer_phone}` : "";
+        const reason = payload?.handoff_reason
+          ? `\nسبب التحويل: ${payload.handoff_reason}`
+          : "";
+        const last = payload?.message || payload?.last_message || "";
+        const body = last ? `\nآخر رسالة: ${last}` : "";
+        actions.addNotification(
+          `${payload?.notification_message || `محادثة #${payload?.chat_id} بانتظار موظف`}\n${customerName}${phone}${reason}${body}`,
+          "info"
+        );
       }
 
       if (
         type === "support_chat_created" ||
         type === "support_chat_message" ||
         type === "support_chat_updated" ||
+        type === "support_chat_handoff" ||
         type === "chat_message" ||
         type === "chat_created"
       ) {
@@ -851,6 +897,7 @@ const Header: React.FC<HeaderProps> = () => {
     chatSocket.on("support_chat_created", handleDirectChatEvent);
     chatSocket.on("support_chat_message", handleDirectChatEvent);
     chatSocket.on("support_chat_updated", handleDirectChatEvent);
+    chatSocket.on("support_chat_handoff", handleDirectChatEvent);
     chatSocket.on("chat_message", handleDirectChatEvent);
     chatSocket.on("chat_created", handleDirectChatEvent);
     chatSocket.on("user_disabled", handleUserDisabled);
@@ -861,6 +908,7 @@ const Header: React.FC<HeaderProps> = () => {
       chatSocket.off("support_chat_created", handleDirectChatEvent);
       chatSocket.off("support_chat_message", handleDirectChatEvent);
       chatSocket.off("support_chat_updated", handleDirectChatEvent);
+      chatSocket.off("support_chat_handoff", handleDirectChatEvent);
       chatSocket.off("chat_message", handleDirectChatEvent);
       chatSocket.off("chat_created", handleDirectChatEvent);
       chatSocket.off("user_disabled", handleUserDisabled);
@@ -868,7 +916,10 @@ const Header: React.FC<HeaderProps> = () => {
   }, [selectedChatId, user?.id, t.accountDisabledMessage, currentBranch]);
 
   const pendingChatsCount = chats.filter(
-    (chat) => (chat.unread_count ?? chat.pending_count ?? 0) > 0
+    (chat) =>
+      chat.status === "WAITING_AGENT" ||
+      chat.status === "pending" ||
+      (chat.unread_count ?? chat.pending_count ?? 0) > 0
   ).length;
   const unreadNotificationsCount = state.notifications.filter(
     (notification) => !notification.isRead
@@ -1239,11 +1290,16 @@ const Header: React.FC<HeaderProps> = () => {
                       <div className="flex items-start justify-between gap-3">
                         <div className="text-right min-w-0">
                           <div className="font-semibold text-gray-900 dark:text-white truncate">
-                            {chat.customer_name || t.customerFallback}
+                            #{chat.id} · {chat.customer_name || t.customerFallback}
                           </div>
                           <div className="text-xs text-gray-500 dark:text-gray-400">
                             {chat.customer_phone || "-"}
                           </div>
+                          {chat.handoff_reason && (
+                            <div className="text-[11px] text-amber-700 dark:text-amber-300 mt-1 truncate">
+                              {t.handoffReason}: {chat.handoff_reason}
+                            </div>
+                          )}
                           <div className="text-xs text-gray-600 dark:text-gray-300 mt-1 truncate">
                             {chat.last_message || t.noMessageYet}
                           </div>
@@ -1261,9 +1317,7 @@ const Header: React.FC<HeaderProps> = () => {
                           >
                             {(chat.unread_count ?? chat.pending_count ?? 0) > 0
                               ? t.newMessages
-                              : chat.status === "closed"
-                              ? t.closed
-                              : t.open}
+                              : chatStatusLabel(chat.status)}
                           </span>
 
                           {chat.handled_by_name && (
@@ -1289,18 +1343,37 @@ const Header: React.FC<HeaderProps> = () => {
               <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-800">
                 {selectedChat ? (
                   <div className="text-right">
+                    <div className="flex items-start justify-between gap-3">
+                    <div>
                     <h3 className="font-bold text-gray-900 dark:text-white">
-                      {selectedChat.customer_name || t.customerFallback}
+                      {t.chatNumber} #{selectedChat.id} · {selectedChat.customer_name || t.customerFallback}
                     </h3>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
                       {selectedChat.customer_phone || ""}
                     </p>
                     <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                      {selectedChat.status === "closed" ? t.closed : t.open}
+                      {chatStatusLabel(selectedChat.status)}
                       {selectedChat.handled_by_name
                         ? ` • ${t.lastHandler}: ${selectedChat.handled_by_name}`
                         : ""}
+                      {selectedChat.status === "WAITING_AGENT" && selectedChat.waiting_seconds
+                        ? ` • ${t.waitingFor}: ${formatWait(selectedChat.waiting_seconds)}`
+                        : ""}
                     </p>
+                    {selectedChat.handoff_reason && (
+                      <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                        {t.handoffReason}: {selectedChat.handoff_reason}
+                      </p>
+                    )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => void handleResolveChat(selectedChat.id)}
+                      className="text-xs px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200"
+                    >
+                      {t.closeChat}
+                    </button>
+                    </div>
                   </div>
                 ) : (
                     <div className="text-sm text-gray-500 dark:text-gray-400 text-center">
@@ -1338,18 +1411,25 @@ const Header: React.FC<HeaderProps> = () => {
 
                         <div
                           className={`flex ${
-                            message.sender_type === "admin"
-                              ? "justify-start"
-                              : "justify-end"
+                            message.sender_type === "customer"
+                              ? "justify-end"
+                              : "justify-start"
                           }`}
                         >
                           <div
                             className={`max-w-[75%] rounded-2xl px-4 py-3 shadow-sm ${
                               message.sender_type === "admin"
                                 ? "bg-blue-600 text-white"
+                                : message.sender_type === "ai"
+                                ? "bg-emerald-50 dark:bg-emerald-900/30 text-gray-900 dark:text-white border border-emerald-200 dark:border-emerald-800"
                                 : "bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                             }`}
                           >
+                            {message.sender_type === "ai" && (
+                              <div className="text-[10px] font-semibold mb-1 text-emerald-700 dark:text-emerald-300">
+                                AI
+                              </div>
+                            )}
                             <p className="text-sm leading-6">{message.message}</p>
                             <div
                               className={`text-[11px] mt-2 flex items-center gap-1 ${
